@@ -1,6 +1,6 @@
 # Perlbug configuration data
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Config.pm,v 1.40 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Config.pm,v 1.41 2001/07/04 15:12:25 uid51918 Exp $
 #
 
 =head1 NAME
@@ -12,17 +12,19 @@ Perlbug::Config - Perlbug Configuration data handler
 package Perlbug::Config;
 use strict;
 use vars(qw($VERSION @ISA $AUTOLOAD));
-$VERSION = do { my @r = (q$Revision: 1.40 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.41 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+# print map { $_=$ENV{$_} . "\n" } grep(/Perlbug/i, keys %ENV);
 my $DEBUG = $ENV{'Perlbug_Config_DEBUG'} || $Perlbug::Config::DEBUG || '';
 $|=1;
 
+# use AutoLoader;
 use Carp;
 use Data::Dumper;
 use FileHandle;
 use Perlbug; # for DEBUG
 
-my $CONFIG = $ENV{'Perlbug_Config'} = $ENV{'Perlbug_Config'} || $Perlbug::Config || 
-	'/home/perlbug/config/Configuration'; # <-- !!! CHANGE THIS !!!
+my $CONFIG = $ENV{'Perlbug_Config'} = 
+	$ENV{'Perlbug_Config'} || $Perlbug::Config || '/home/perlbug/config/Configuration';
 
 
 =head1 DESCRIPTION
@@ -90,7 +92,6 @@ sub get_config_data {
 		croak("Can't read file($file) for config data: $!");
 	} else {
 		$h_data = do $file;
-		croak("Duff data($h_data) from file($file)!") unless ref($h_data) eq 'HASH';
 	}
 	
 	return $h_data;
@@ -108,24 +109,20 @@ Update config data structure for current/local environment
 sub update_data (\%) {
 	my $self = shift;
 	my $prefs = shift;
+	my $TYPE  = ($0 =~ /\W_{0,1}(?:perl)*bug\.{0,1}(cgi|cron|db|fix|graph|hist|mail|obj|tk|tron)$/)
+		? $1 : 'xxx';	
 
-	if (ref($prefs) ne 'HASH') {
-		croak("Duff prefs($prefs) given to update_data");
-	} else {
-		my $TYPE  = ($0 =~ /\W_{0,1}(?:perl)*bug\.{0,1}(cgi|cron|db|fix|graph|hist|mail|obj|tk|tron)$/)
-			? $1 : 'xxx';	
+	my $DATE = &get_date;
+	my $spooldir = $$prefs{'DIRECTORY'}{'spool'};
 
-		my $DATE = &get_date;
-		my $spooldir = $$prefs{'DIRECTORY'}{'spool'};
+	$$prefs{'CURRENT'}{'log_file'} = $spooldir.'/logs/'   .$TYPE.'_'.$DATE.'.log';  # guess :-) 
+    $$prefs{'CURRENT'}{'tmp_file'} = $spooldir.'/temp/'   .$TYPE.'_'.$DATE.'_'.$$.'.tmp';    
 
-		$$prefs{'CURRENT'}{'log_file'} = $spooldir.'/logs/'   .$TYPE.'_'.$DATE.'.log';  # guess :-) 
-		$$prefs{'CURRENT'}{'tmp_file'} = $spooldir.'/temp/'   .$TYPE.'_'.$DATE.'_'.$$.'.tmp';    
-
-		$$prefs{'CURRENT'}{'admin'}    =  '';    
-		my $current = $ENV{'Perlbug_DEBUG'} || $Perlbug::DEBUG || $$prefs{'CURRENT'}{'debug'};
-		$$prefs{'CURRENT'}{'debug'}    = $Perlbug::DEBUG = $ENV{'Perlbug_DEBUG'} = $current;
-		$ENV{'PATH'}                   = $$prefs{'SYSTEM'}{'path'};
-	}
+	$$prefs{'CURRENT'}{'admin'}    =  '';    
+	# my $current = $self->current('debug');
+	$$prefs{'CURRENT'}{'debug'}    = $Perlbug::DEBUG = $ENV{'Perlbug_DEBUG'} =
+	$ENV{'Perlbug_DEBUG'} || $Perlbug::DEBUG || $$prefs{'CURRENT'}{'debug'} || $DEBUG;
+	$ENV{'PATH'} = $$prefs{'SYSTEM'}{'path'};
 
 	return $prefs;
 }

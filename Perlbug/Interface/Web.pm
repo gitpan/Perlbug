@@ -1,6 +1,6 @@
 # Perlbug WWW interface
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Web.pm,v 1.94 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Web.pm,v 1.98 2001/07/29 14:11:36 richardf Exp $
 # 
 
 =head1 NAME
@@ -17,7 +17,7 @@ package Perlbug::Interface::Web;
 use strict;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Perlbug::Base);
-$VERSION = do { my @r = (q$Revision: 1.94 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.98 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG = $ENV{'Perlbug_Interface_Web_DEBUG'} || $Perlbug::Interface::Web::DEBUG || '';
 $| = 1; 
 
@@ -668,8 +668,11 @@ sub date {
     }
 
 	my $o_bug = $self->object('bug');
-    my @bids = $o_bug->ids("TO_DAYS(created) >= $filter"); 
+    my @bids = $o_bug->ids("TO_DAYS(created) >= $filter ORDER BY created DESC"); 
 
+	my $max = $cgi->param('trim') || 10;
+	print "found ".@bids." bugs ($filter) showing max($max)<br>\n";
+	($#bids) = ($max - 1) if scalar(@bids) > $max;
 	foreach my $id (@bids) {
 		print $o_bug->read($id)->format;
 	}
@@ -743,7 +746,7 @@ sub hist {
 		my $admin = $data{'userid'};
 		$o_usr->read($admin);
 		if ($o_usr->READ) {
-			my $h_usr = $o_usr->htmlify($o_usr->_oref('data'));
+			my $h_usr = $o_usr->htmlify($o_usr->_oref('data'), 'noadmin');
 			my $name = $$h_usr{'name'}.' '.$$h_usr{'address'}; 
 			my $date = $data{'ts'};
 			my $entry = $data{'entry'}; 
@@ -1105,7 +1108,7 @@ sub web_query {	# results - don't map to query() unless Base::query modified
 
 	my $o_bug = $self->object('bug');
 	my $found = my @bids = $o_bug->ids($sql);
-	print "Found $found bug ids<br>";
+	print "Found $found relevant bug ids<br>";
 
 	if (@bids) {
 		my $o_rng = $self->object('range');
@@ -1136,7 +1139,7 @@ sub web_query {	# results - don't map to query() unless Base::query modified
 
 =item search
 
-Search form into result
+Construct earch form 
 
 	with chosen params as defaults...
 
@@ -1183,7 +1186,9 @@ sub search {
     #}
     my $andor_def = ($cgi->param('andor') =~ /^(AND|OR)$/) ? $1 : 'AND';
     my $andor    = $cgi->radio_group(-'name'=> 'andor',     -'values' => ['AND', 'OR'], -'default' => $andor_def, -'override' => 1);
-    my $restrict_def = ($cgi->param('trim') =~ /^(\d+)$/) ? $1 : 25;
+    my $msgs_def = ($cgi->param('msgs') =~ /^(\d+\+*)$/) ? $1 : 'ALL';
+    my $msgs     = $cgi->popup_menu(-'name' => 'msgs',      -'values' => ['All', '0', '1', '1+', '5+', '20+'],  -'default' => $msgs_def, -'override' => 1);
+    my $restrict_def = ($cgi->param('trim') =~ /^(\d+)$/) ? $1 : 10;
     my $restrict = $cgi->popup_menu(-'name' => 'trim',      -'values' => ['All', '5', '10', '25', '50', '100'],  -'default' => $restrict_def, -'override' => 1);
     my %format   = ( 'h' => 'Html list', 'H' => 'Html block', 'L' => 'Html lean', 'a' => 'Ascii list', 'A' => 'Ascii block', 'l' => 'Ascii lean',); 
 	# my %format   = ( 'h' => 'Html list', 'H' => 'Html block', 'a' => 'Ascii list', 'A' => 'Ascii block', 'l' => 'Ascii lean', -'override' => 1); 
@@ -1209,6 +1214,7 @@ sub search {
 	my $SRCADDR = $self->help_ref('source_addr', 'Source address');
 	my $DATES	= $self->help_ref('dates', 'Dates');
 	my $ADMIN   = $self->help_ref('admin', 'Administrator');
+	my $MSGS    = $self->help_ref('messages', 'Number of messages');
 	my $RESTRICT= $self->help_ref('restrict', 'Restrict returns to');
 	my $FMT		= $self->help_ref('format', 'Formatter');
 	my $SHOWSQL = $self->help_ref('show_sql', 'Show SQL');
@@ -1226,7 +1232,7 @@ sub search {
 	    <tr><td><b>$STAT:</b><br>$status</td><td><b>$CAT:</b><br>$group</td><td><b>$SEV:</b><br>$severity</td><td><b>$OS:</b><br>$osnames</td></tr>
 	    <tr><td colspan=2><b>$SUBJ:</b>&nbsp;$subject</td><td colspan=2><b>$SRCADDR:</b>&nbsp;$sourceaddr</td></tr>
 	    <tr><td colspan=2><b>$BODY:&nbsp;&nbsp;&nbsp;</b>&nbsp;$body</td><td colspan=2><b>$MSGID:</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$msgid</td></tr>
-	    <tr><td><b>$DATES:</b><br>$date</td><td colspan=2><b>$ADMIN</b><br>$admins</td><td><b>$RESTRICT</b>:<br>$restrict</td></tr>
+	    <tr><td><b>$DATES:</b><br>$date</td><td><b>$ADMIN</b><br>$admins</td><td><b>$RESTRICT</b>:<br>$restrict</td><td><b>$MSGS</b>:<br>$msgs</td></tr>
 	    <tr><td colspan=2><b>$FMT:<br></b>$format</td><td><b>$SHOWSQL:<br></b>$sqlshow<hr><b>$ANDOR:</b><br>$andor</td><td><b>$PROJECT:<br></b>$project</td></tr>
 		<tr><td><b>$NOTE</b>&nbsp;$noteid<br>$note</td><td><b>$PATCH</b>&nbsp; $patchid<br>$patch</td><td><b>$TEST</b>&nbsp; $testid<br>$test</td><td><b>$ASCD:</b><br>$order</td></tr>
 		</table>
@@ -1610,7 +1616,7 @@ sub format_query {
     my $self = shift;
     my $cgi = $self->cgi();
     $self->debug(3, "Formating web query") if $DEBUG;
-    my %dates = $self->date_hash;
+    my %dates = $self->date_hash; 
     # parameters
     my $admin       = ($cgi->param('admin') eq 'any') ? '' : $cgi->param('admin');
     my $andor       = $cgi->param('andor') || 'AND';
@@ -1623,6 +1629,7 @@ sub format_query {
     my $fixed		= $cgi->param('fixedin') || '';
     my $index		= $cgi->param('index') || '';
     my $msgid       = $self->wildcard($cgi->param('messageid')) || '';
+    my $msgs        = ($cgi->param('msgs') eq 'ALL') ? '' : $cgi->param('msgs');
     my $noteid      = $cgi->param('noteid') || '';
 	my $note        = $cgi->param('note') || '';
     my $testid      = $cgi->param('testid') || '';
@@ -1676,6 +1683,7 @@ sub format_query {
 
 		my $o_change = $self->object('change');
 		my $o_child  = $self->object('child');
+		my $o_fixed  = $self->object('fixed');
 		my $o_parent = $self->object('parent');
 		my $o_project= $self->object('project');
 		my $o_osname = $self->object('osname');
@@ -1785,7 +1793,24 @@ sub format_query {
 			my $found = join("', '", @ids);	
 			$sql .= " $andor bugid IN ('$found') ";
 		}
-
+		if ($msgs =~ /(\d+)(\+)*/) {
+			my $x = $1; 
+			my $comp = ($2 eq '+') ? '>=' : '=';
+			$wnt++;
+			$self->exec('DELETE FROM pb_bug_message_count');
+			$self->exec(q|INSERT INTO pb_bug_message_count 
+				SELECT bugid, COUNT(messageid) FROM pb_bug_message GROUP BY bugid|
+			);
+			my @replied = $o_msg->relation('bug')->ids();
+			my $replied = join("', '", @replied);
+			my $insert = qq|INSERT INTO pb_bug_message_count SELECT bugid, 0 FROM pb_bug WHERE bugid NOT IN ('$replied')|;
+			$self->exec($insert);
+			my $count = qq|SELECT DISTINCT bugid FROM pb_bug_message_count WHERE messagecount $comp $x|;
+			$fnd += my @ids = $self->get_list($count);
+			print "Found ".@ids." message_bug count relations with msgs($x)<br>";
+			my $found = join("', '", @ids);	
+			$sql .= " $andor bugid IN ('$found') ";
+		}
 		if ($bugid =~ /^\s*(.*\w+.*)\s*$/) {
 			my $x = $1;
 			$sql .= " $andor bugid LIKE '$x' ";
@@ -1793,14 +1818,22 @@ sub format_query {
 		if ($version =~ /(.+)/) {
 			my $x = $1;
 			$wnt++;
-			($x) = $o_version->name2id([$x]) if $x !~ /^\d+$/;
-			$fnd += my @ids = $o_version->relation('bug')->ids("versionid LIKE '$x%'");
+			# ($x) = $o_version->name2id([$x]) if $x !~ /^\d+$/;
+			my @vids = $o_version->ids("name LIKE '$x%'");
+			$fnd += my @ids = map { $o_version->read($_)->rel_ids('bug') } @vids;
 			print "Found ".@ids." bug_version relations from versionid($x)<br>";
 			my $found = join("', '", @ids);	
 			$sql .= " $andor bugid IN ('$found') " if scalar(@ids) >= 1;
 		}
-		if ($fixed =~ /.+/) {
-			$sql .= " $andor fixed LIKE '$fixed' ";
+		if ($fixed =~ /(.+)/) {
+			my $x = $1;
+			$wnt++;
+			# ($x) = $o_fixed->name2id([$x]) if $x !~ /^\d+$/;
+			my @fids = $o_fixed->ids("name LIKE '$x%'");
+			$fnd += my @ids = map { $o_fixed->read($_)->rel_ids('bug') } @fids;
+			print "Found ".@ids." bug_fixed relations from fixed($x)<br>";
+			my $found = join("', '", @ids);	
+			$sql .= " $andor bugid IN ('$found') " if scalar(@ids) >= 1;
 		}
 		if ($status =~ /(\w+)/) {
 			my $x = $1;

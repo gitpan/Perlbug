@@ -1,0 +1,38 @@
+#!/usr/bin/perl 
+# Perlbug runnable interface (for tests etc.)
+# (C) 2000 Richard Foley RFI perlbug@rfi.net 
+# $Id: bugdb,v 1.5 2001/02/18 13:55:56 perlbug Exp $
+# 
+# 
+
+use strict;
+use vars(qw($VERSION));
+$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+
+use FindBin;
+use lib "$FindBin::Bin/..";
+use Benchmark;
+use Data::Dumper;
+use Perlbug::Interface::Cmd;
+$|=1;
+
+my $iterations = $ARGV[0] || 0;
+
+$DB::single=2;
+my $pb = Perlbug::Interface::Cmd->new(@ARGV);
+$pb->debug(1, "$0: starting($pb)");
+
+my $o_obj = $pb->object('Bug');
+$o_obj->read('19870502.007');
+# print Dumper($o_obj); exit;
+
+timethese($iterations, {
+	'anonymous'	=> q|call('attr')|,
+	'explicit'	=> q|call('xattr')|,
+});
+sub call { my $call = shift; return $o_obj->$call('objectid'); }
+
+$pb->debug(1, "$0: done()");
+$DB::single=2;
+$pb->clean_up;
+exit 0;

@@ -1,4 +1,4 @@
-# $Id: Bug.pm,v 1.33 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Bug.pm,v 1.34 2001/07/04 15:27:37 uid51918 Exp $
 #
 
 =head1 NAME
@@ -10,7 +10,7 @@ Perlbug::Object::Bug - Bug class
 package Perlbug::Object::Bug;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.33 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.34 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG = $ENV{'Perlbug_Object_Bug_DEBUG'} || $Perlbug::Object::Bug::DEBUG || '';
 $|=1;
 
@@ -143,6 +143,7 @@ See also L<Perlbug::Object::htmlify()>
 sub htmlify {
     my $self = shift;
     my $h_bug= shift;
+	my $req  = shift || 'admin';
 	return undef unless ref($h_bug) eq 'HASH';
     # $self->debug(3, $self->base->dump($h_bug)) if $DEBUG;
     my $cgi = $self->base->cgi();
@@ -178,7 +179,7 @@ sub htmlify {
 	}
 		
 	# admin?
-    if ($self->base->isadmin && $self->base->current('format') ne 'L') { # LEAN for browsing...
+    if ($self->base->isadmin && $self->base->current('format') ne 'L' && $req ne 'noadmin') { # LEAN for browsing...
 	    $self->debug(3, "Admin of bug($bid) called.") if $DEBUG;
 		my ($group)    = @{$$h_bug{'group_ids'}}    if $$h_bug{'group_ids'};
 		my ($osname)   = @{$$h_bug{'osname_ids'}}   if $$h_bug{'osname_ids'};

@@ -1,6 +1,6 @@
 # Perlbug object attribute handler
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Object.pm,v 1.32 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Object.pm,v 1.35 2001/07/29 14:11:36 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Object;
 use strict;
 use vars(qw($VERSION @ISA $AUTOLOAD));
 @ISA = qw(Perlbug::Format); 
-$VERSION = do { my @r = (q$Revision: 1.32 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.35 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG = $ENV{'Perlbug_Object_DEBUG'} || $Perlbug::Object::DEBUG || '';
 $|=1;
 
@@ -91,7 +91,7 @@ sub new { # table, key
 
 	my $name = ucfirst($input{'name'});
 	my $key  = lc($name);
-	unless ($key =~ /\w+/) {
+	unless ($key =~ /\w+/o) {
 		$o_Perlbug_Base->error("Fatal error: no keyname($name) given!\n".Dumper(\%input)."\n");
 	}
 
@@ -168,8 +168,8 @@ sub init_data { # generic attribute from db
 		next FIELD unless ref($f) eq 'HASH';
 		my $field = $$f{'Field'};
 		my $type  = 'VARCHAR'; # default
-		$type = 'DATETIME' if $$f{'Type'} =~ /^DATE(TIME)*$/i;
-		$type = 'INTEGER'  if $$f{'Type'} =~ /^(BIG|SMALL)*INT(EGER)*(\(\d+\))*/i;
+		$type = 'DATETIME' if $$f{'Type'} =~ /^DATE(TIME)*$/io;
+		$type = 'INTEGER'  if $$f{'Type'} =~ /^(BIG|SMALL)*INT(EGER)*(\(\d+\))*/io;
 		$self->{'_data'}{$field} = ''; 		# init	
 		$self->{'_type'}{$field} = $type; 	# init	
 		# $self->_gen_field_handler($field);# don't call 
@@ -194,7 +194,7 @@ sub init_types { # generic attribute from db
 	
 	$self->{'_relation'} = {}; # reset
 	foreach my $type (@types) { # float|from|to
-		foreach my $targ ( @{$self->attr($type)} ) { # patch changeid bug address user
+		foreach my $targ ( @{$self->attr($type)} ) { # patch change bug address user
 			$self->{'_relation'}{$targ}{'type'} = $type;
 			push(@rels, $targ);
 		}
@@ -236,7 +236,28 @@ sub reset {
 	# $self->oid($oid) if $oid;
 	$self->debug(3, "rjsf: object($oid) reset(".$self->attr('key').") types(@types) rels(@rels)") if $DEBUG;
 
-	$self;
+	return $self;
+}
+
+
+=item refresh_relations
+
+Refresh relation data
+
+=cut
+
+sub refresh_relations {
+	my $self = shift;
+
+	foreach my $rel ($self->relations) { # should not be here! -> call rel($rel, 'ids')
+		my @rids  = $self->rel_ids($rel, '', 'refresh');	# refresh
+		my @names = $self->rel_names($rel); 	# $self->relation($rel)->id2name(\@rids);
+		$self->{'_relation'}{$rel}{'ids'}   = \@rids; # all we need (should never use this?)
+		$self->{'_relation'}{$rel}{'count'} =  @rids;	
+		$self->{'_relation'}{$rel}{'names'} = \@names;	
+	}
+
+	return $self;
 }
 
 
@@ -278,7 +299,7 @@ sub RESET {
 	my $self = shift;
 	my $i_flag = shift || ''; 
 
-	$self->flag('reset', $1) if $i_flag =~ /^(1|0)$/;	
+	$self->flag('reset', $1) if $i_flag =~ /^(1|0)$/o;	
 
 	$i_flag = $self->flag('reset');
 
@@ -289,6 +310,8 @@ sub RESET {
 =item exists
 
 Examines the database to see if current object exists already.
+
+Second optional parameter overrides sql caching
 
 Return @ids
 
@@ -319,6 +342,8 @@ sub exists {
 =item _exists
 
 Examines the database to see if current object exists by B<identifier> already.
+
+Second optional parameter overrides sql caching
 
 	print "yup\n" if $o_obj->_exists(\@ids);
 
@@ -409,7 +434,7 @@ sub ok_ids { #
 		if (!(scalar(@ids) >= 1)) {
 			$self->debug(2, "no ids(@ids) given") if $DEBUG;
 		} else {
-			my @wids = map { ($_ =~ /\w+/ ? $_ : ()) } @ids;  
+			my @wids = map { ($_ =~ /\w+/o ? $_ : ()) } @ids;  
 			if (!(scalar(@wids))) {
 				$self->debug(2, "no word-like ids(@wids) given(@ids)") if $DEBUG;
 			} else {
@@ -456,7 +481,7 @@ sub key {
 	my $self = shift;
 	my $in = shift || '';
 	
-	if ($in =~ /\w+/) {
+	if ($in =~ /\w+/o) {
 		$self->attr({'key', $in}); # explicit	
 	}
 
@@ -500,7 +525,7 @@ Which is a bit like an unrestricted B<col($primary_key, '')> call.
 
 More useful are the following examples, restrained by object, or sql WHERE statement:
 
-	my @rel_ids  = $o_obj->ids($o_rel, [$further_restrained_by_sql]);
+	my @rel_ids  = $o_obj->ids($o_rel, [$further_restrained_by_sql], 'refresh');
 
 	my @selected = $o_obj->ids($where);
 
@@ -510,19 +535,21 @@ sub ids { # class
 	my $self  = shift;
 	my $input = shift || '';
 	my $extra = shift || '';
+	my $refresh = shift || '';
 	my @ids   = ();
 	
 	my $sql = "SELECT DISTINCT ".$self->attr('primary_key')." FROM ".$self->attr('table');
 	if (ref($input)) {				# OBJECT with ids, etc.
 		$sql .= ' WHERE '.$input->attr('primary_key')." = '".$input->oid()."'";		
 		$sql .= " AND $extra" if $extra;
-	} elsif ($input =~ /\w+/) { 	# SQL where clause
-		$input =~ s/^\s*WHERE\s*//i;	
+	} elsif ($input =~ /\w+/o) { 	# SQL where clause
+		$input =~ s/^\s*WHERE\s*//io;	
 		$sql  .= " WHERE $input";	
 	} 								# ALL
 	$sql .= " ORDER BY name " if $self->identifier eq 'name';
-
-	@ids = $self->base->get_list($sql);
+	
+	@ids = $self->base->get_list($sql, $refresh);
+	# print "<hr>$self, $input, $extra, $refresh -> ids(@ids)<hr>";
 	$self->debug(4, "input($input) extra($extra) -> ids(@ids)") if $DEBUG;
 
 	return @ids;
@@ -553,7 +580,7 @@ sub names { # class
 		if (ref($input)) {				# OBJECT with ids, etc.
 			$sql .= ' WHERE '.$input->attr('primary_key')." = '".$input->oid()."'";		
 			$sql .= " AND $extra" if $extra;
-		} elsif ($input =~ /\w+/) { 	# SQL where clause
+		} elsif ($input =~ /\w+/o) { 	# SQL where clause
 			$input =~ s/^\s*WHERE\s*//i;	
 			$sql  .= " WHERE $input";	
 		}
@@ -1151,6 +1178,8 @@ sub relation_ids { # object
 	my $self = shift;
 	my $rel  = shift;
 	my $args = shift || '';
+	my $refresh = shift || '';
+	
 	my @ids  = ();
 	if (!defined($rel)) { 
 		$self->error("Unable to get ids for non-existent ".ref($self)." relation($rel)");
@@ -1161,12 +1190,21 @@ sub relation_ids { # object
 			$self->error("inappropriate relation($rel) given for rel_ids from ".ref($self)." object ok(@rellies)");
 		} else {
 			my $o_rel = $self->relation($rel);
-			@ids = $o_rel->ids($self, $args);
+			@ids = $o_rel->ids($self, $args, $refresh);
 			$self->debug(4, "rel($rel) -> o_rel($o_rel) -> ids(".@ids.')') if $DEBUG;
 		}
 	}	
 	return @ids;
 }
+
+
+=item _rel_ids
+
+Refresh rel_ids
+
+=cut
+
+sub _rel_ids { my $self = shift; return $self->rel(@_, 'refresh'); } # wrapper for rel_ids()
 
 
 =item relation_names
@@ -1224,11 +1262,12 @@ To check whether the object was succesfully read, ask:
 sub read { # by id
 	my $self = shift;
 	my $oid = shift || $self->oid;
-	$self->reset; 
+	$self->reset; # always want a fresh one
 	$self->READ(0);
 	if ($self->ok_ids([$oid]) != 1) {
 		my @caller = caller(1);
-		$self->error("requires a valid id($oid) to read against(@caller)");
+		$self->debug(0, "$self requires a valid id($oid) to read against(@caller)");
+		# $self->error("requires a valid id($oid) to read against(@caller)");
 	} else {
 		my $pri	  = $self->attr('primary_key');
 		my $table = $self->attr('table');
@@ -1240,16 +1279,6 @@ sub read { # by id
 			$self->debug(2, $self->key." oid($oid)") if $DEBUG;
 			my $res = $self->data($h_data); 			# set
 			my $xoid = $self->oid($oid);				# set
-=pod
-			migrated to format() :-)
-			foreach my $rel ($self->relations) {
-				my @rids  = $self->rel_ids($rel); 		#
-				my @names = $self->rel_names($rel); 	# $self->relation($rel)->id2name(\@rids);
-				$self->{'_relation'}{$rel}{'ids'}   = \@rids; # all we need (should never use this?)
-				$self->{'_relation'}{$rel}{'count'} =  @rids;	
-				$self->{'_relation'}{$rel}{'names'} = \@names;	
-			}
-=cut
 			# $self = $self->object($self->attr('key'), $self); # cache
 			$self->READ(1) if $self->exists([$oid]); 	# catchy :)
 		}
@@ -1316,7 +1345,6 @@ sub column_type {
 	my $type = 'VARCHAR';
 
 	if (!($col =~ /^\w+$/ && grep(/^$col$/, keys %{$self->{'_type'}}))) {
-
 		$self->error("can't define type for unrecognised column($col)");
 	} else {
 		$type = $self->{'_type'}{$col};
@@ -1365,8 +1393,11 @@ sub prep {
 			my $val = $$h_data{$key};
 			$self->debug(3, "key($key) type($type) val(".length($val).")") if $DEBUG;
 			# $val =~ s/(\&nbsp\;)//gsi;	# trim against duff web updates
-			$val =~ s/^\s+(.+)/$1/;	# and so on...
-			$val =~ s/(.+)\s+$/$1/;	# and so on...
+			#if ($key eq 'range') { # strip 25 secs... 
+			#	key(range) type(VARCHAR) val(20010320.008,20010320.004...) val is 14754 long etc.!!!
+			#	$val =~ tr/\s+//;
+				$val =~ s/^\s+//;		# front
+				$val =~ s/\s+$//;		# front
 			if ($type eq 'DATETIME') {
 				if ($key =~ /modified/i || ($key =~ /created/i && $control eq 'INSERT')) {
 					push(@args, "$key = SYSDATE()");
@@ -1821,31 +1852,29 @@ sub format { # return $self->FORMAT(@_)
 		'x'	=> 1, 	'X'	=> 1,
 	);
 	$self->max($map{$fmt}); # !
-	foreach my $rel ($self->relations) {
-		my @rids  = $self->rel_ids($rel); 		#
-		my @names = $self->rel_names($rel); 	# $self->relation($rel)->id2name(\@rids);
-		$self->{'_relation'}{$rel}{'ids'}   = \@rids; # all we need (should never use this?)
-		$self->{'_relation'}{$rel}{'count'} =  @rids;	
-		$self->{'_relation'}{$rel}{'names'} = \@names;	
-	}
+
+	$self->refresh_relations;
+
 	return $self->FORMAT($fmt, @_); # Perlbug::FORMAT
 }
 
 
-=item _format
+=item x_format
 
-simple wrapper for combined B<read()>, B<format()>, B<print()>
+simple wrapper for combined B<read()>, B<format()>
 
-	$o_obj->_format('h');
+	$o_obj->x_format('h');
 
 =cut
 
 sub x_format { # return $self->format(@_)  
 	my $self = shift;
 
-	print $self->format(@_);
+	$self->refresh(@_);
 
-	return $self; #
+	return $self->format(@_);
+
+	# return $self; #
 }
 
 
@@ -1997,6 +2026,37 @@ sub AUTOLOAD {
 	return wantarray ? @ret : $ret[0];
 }
 
+
+sub xattr { # explicit version
+	my $self = shift;
+	my $get  = shift;
+	my @ret = ();
+
+	if (ref($self->{"_attribute"}) ne 'HASH') {
+		confess("invalid object($self) structure(attr): ".Dumper($self));
+	} else {	
+		my @keys = @ret = keys %{$self->{"_attribute"}}; 	# ref
+		if (defined($get)) {
+			if (ref($get) ne 'HASH') { 				# get
+				@ret = ($self->{"_attribute"}{$get});
+			} else {								# set
+				my $keys = join('|', @keys);
+				@ret = ();
+				SET:
+				foreach my $key (keys %{$get}) {
+					if ($key !~ /^($keys)$/) {
+						$self->error("$self has no such attribute key($key) valid($keys)");
+					} else {
+						$self->{"_attribute"}->{$key} = $$get{$key}; # SET
+						push(@ret, $$get{$key});
+					}
+				}
+			}
+		}
+	}
+	# print "get($get) got(@ret)\n";
+	return wantarray ? @ret : $ret[0];
+}
 
 =head1 AUTHOR
 

@@ -107,6 +107,14 @@ CREATE TABLE pb_bug_message (
   messageid bigint(20) unsigned DEFAULT '0' NOT NULL
 );
 
+# 
+# counting the replies (no sub selects in mysql :-()
+#
+CREATE TABLE pb_bug_message_count (
+        bugid VARCHAR(12),
+        messagecount INT(5)
+);
+
 #
 # Table structure for table 'pb_bug_note'
 #

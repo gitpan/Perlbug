@@ -4,7 +4,7 @@ NAME
 DESCRIPTION
     Frequently Asked Questions related to Perl Bug Administration.
 
-    $Revision: 1.1 $ $Date: 2001/03/23 14:37:34 $
+    $Revision: 1.2 $ $Date: 2001/05/29 01:10:43 $
 
 This FAQ
     This FAQ is intended for use by the perlbug administrators. The latest
@@ -88,11 +88,11 @@ Web Interface: Those Checkboxes
 
     The perlbugtron user interface has a lot of checkboxes. When you modify
     items, you need to check the box for that item. Otherwise, when you
-    click update, nothing will happen and you will recieve an error.
+    click update, nothing will happen and you will receive an error.
 
     The page you get back after altering bugs will only have the bugs
     checked on it. So if you have a list of 25 bugs, and you edit 3 of them,
-    the page you recieve will have only these 3 bugs in it, for you to
+    the page you receive will have only these 3 bugs in it, for you to
     peruse/check. If you edit all 25 of them at once, the same applies, it
     just may not look vastly different to begin with.
 

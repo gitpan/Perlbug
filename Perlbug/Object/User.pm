@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: User.pm,v 1.25 2001/04/21 20:48:48 perlbug Exp $
+# $Id: User.pm,v 1.26 2001/07/04 15:27:37 uid51918 Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::User - User class
 package Perlbug::Object::User;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.25 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.26 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG = $ENV{'Perlbug_Object_User_DEBUG'} || $Perlbug::Object::User::DEBUG || '';
 $|=1;
 
@@ -122,6 +122,7 @@ html formatter for individual user entries for placement
 sub htmlify {
     my $self = shift;
     my $h_usr= shift || $self->_oref('data');
+	my $req  = shift || 'admin';
 	return undef unless ref($h_usr) eq 'HASH';
     my $cgi = $self->base->cgi();
     my $url = $self->base->url;
@@ -138,7 +139,7 @@ sub htmlify {
     my $password = $usr{'password'};
 	%usr = %{$self->SUPER::htmlify($h_usr)};	
 
-    if ($self->base->isadmin && $self->updatable([$userid]) && $self->base->current('format') ne 'L') { 
+    if ($self->base->isadmin && $self->updatable([$userid]) && $self->base->current('format') ne 'L' && $req ne 'noadmin') { 
 		my @status = qw(1 0); push(@status, 'NULL') if $self->base->isadmin eq $self->base->system('bugmaster');
         $usr{'active'}        = $cgi->popup_menu(-'name' => $userid.'_active',    -'values' => \@status, -'labels' => {1 => 'Yes', 0 => 'No'}, -'default' => $active, -'override' => 1);
         $usr{'name'}          = $cgi->textfield( -'name' => $userid.'_name',      -'value' => $name, -'size' => 25, -'maxlength' => 50, -'override' => 1);

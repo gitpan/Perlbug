@@ -1,17 +1,17 @@
 # 
-# $Id: Email.pm,v 1.91 2001/04/26 13:19:48 perlbug Exp $ 
+# $Id: Email.pm,v 1.95 2001/07/05 09:36:31 richardf Exp $ 
 # 
 
 =head1 NAME
 
-Perlbug::Interface::Email - Email interface to perlbug database.
+Perlbug::Interface::Email - Email  interface to perlbug database.
 
 =cut
 
 package Perlbug::Interface::Email;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.91 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.95 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG = $ENV{'Perlbug_Interface_Email_DEBUG'} || $Perlbug::Interface::Email::DEBUG || '';
 $|=1;
 
@@ -197,15 +197,18 @@ sub splice { # splice o_mail into useful bits
     my $self = shift;
 	my $mail = shift || $self->_mail;
 
-	unless (ref($mail)) {	
-		$self->error("Can't splice mail($mail) object!")
+	my @data = ();
+	if (!ref($mail)) {	
+		$self->error("Can't splice inappropriate mail($mail) object!")
+	} else {
+		$mail->remove_sig;
+		@data = (
+			$mail->head,
+			join('', @{$mail->head->header}),
+			join('', @{$mail->body}),
+		);
 	}
-    $mail->remove_sig if ref($mail);
-    my @data = (
-        $mail->head,
-        join('', @{$mail->head->header}),
-        join('', @{$mail->body}),
-    );
+
 	return @data;
 }
 
@@ -766,7 +769,7 @@ sub send_mail { # sends mail :-)
                 }
         	}
 			$self->debug(1, "...mailing...") if $DEBUG;
-			if (open(MAIL, "|/usr/lib/sendmail -t")) {  		# :-( sigh...
+			if (open(MAIL, "|/usr/sbin/sendmail -t")) {  		# :-( sigh...
         		if (print MAIL "$hdr\n$body\n") {
 					if (close MAIL) {
 						$self->debug(0, "Mail(MAIL) sent?(".length($body).") -> to(@to), cc(@cc)") if $DEBUG;

@@ -1,4 +1,4 @@
-# $Id: Fix.pm,v 1.28 2001/04/21 20:48:48 perlbug Exp $ 
+# $Id: Fix.pm,v 1.29 2001/07/05 08:32:26 richardf Exp $ 
 # 	
 
 =head1 NAME
@@ -10,7 +10,7 @@ Perlbug::Fix - Command line interface to fixing perlbug database.
 package Perlbug::Fix;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.28 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.29 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG  = $ENV{'Perlbug_Database_DEBUG'} || $Perlbug::Database::DEBUG || '';
 $|=1;
 
@@ -83,7 +83,7 @@ sub new {
 
 my $FIX = 0;
 my $MAX = $ENV{'Perlbug_Max'} || 33;
-my %MAP = (
+my %MAP = ( # a=pb_address bu=pb_bug_user l=pb_log...
 	'a' 	=> 'address      [bugid%]',		'ah' 	=> 'trawls for in/valid addresses - see also "r (bug|group) address"',
 	'c'		=> 'change       [filename',  	'ch'	=> 'trawls given file for bugid=>patchid=>changid relations',
 	'd'		=> 'discard      [bugid%]',		'dh'	=> 'discard duplicates or redundant data, see also r=relations',

@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Group.pm,v 1.21 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Group.pm,v 1.22 2001/07/04 15:27:37 uid51918 Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Group - Group class
 package Perlbug::Object::Group;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.21 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.22 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG = $ENV{'Perlbug_Object_Group_DEBUG'} || $Perlbug::Object::Group::DEBUG || '';
 $|=1;
 
@@ -78,6 +78,7 @@ html formatter for individual group entries for placement
 sub htmlify {
     my $self = shift;
     my $h_grp= shift;
+	my $req  = shift || 'admin';
 	return undef unless ref($h_grp) eq 'HASH';
     my %grp = %{$h_grp};
     my $cgi = $self->base->cgi();
@@ -92,7 +93,7 @@ sub htmlify {
 	($grp{'name'}) = $self->href('group_id', [$gid], $name, $stat);
 
 	my $o_usr = $self->object('user');
-    if ($self->base->isadmin && $self->base->current('format') ne 'L') {
+    if ($self->base->isadmin && $self->base->current('format') ne 'L' && $req ne 'noadmin') {
 		$grp{'addaddress'}	= $cgi->textfield(-'name' => $gid.'_addaddress', -'value' => '', -'size' => 45, -'maxlength' => 99, -'override' => 1);
 		$grp{'addabugid'}	= $cgi->textfield(-'name' => $gid.'_addabugid', -'value' => '', -'size' => 12, -'maxlength' => 12, -'override' => 1);
 		$grp{'description'}	= $cgi->textfield(-'name' => $gid.'_description', -'value' => $grp{'description'}, -'size' => 45, -'maxlength' => 99, -'override' => 1);

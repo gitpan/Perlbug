@@ -1,6 +1,6 @@
 # Perlbug base class 
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Base.pm,v 1.75 2001/04/26 13:19:48 perlbug Exp $
+# $Id: Base.pm,v 1.77 2001/07/29 14:11:36 richardf Exp $
 # 
 # get_(list|data) -> hashref/array
 # $o_PB->debug('s', "<$i_SQL> ".$sql) if $DEBUG;
@@ -23,7 +23,7 @@ see L<Perlbug::Interface::Cmd>, L<Perlbug::Interface::Web> etc.
 package Perlbug::Base;
 use strict;
 use vars qw($AUTOLOAD @ISA $VERSION); 
-$VERSION = do { my @r = (q$Revision: 1.75 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.77 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG  = $ENV{'Perlbug_Base_DEBUG'} || $Perlbug::Base::DEBUG || '';
 @ISA = qw(Perlbug::Do); 
 $| = 1; 
@@ -1070,19 +1070,23 @@ sub clean_cache {
 
 Returns a simple list of items (column values?), from a sql query.
 
-	my @list = $pb->get_list('SELECT COUNT(bugid) FROM db_table');
+Optional second parameter overrides sql statement/result cacheing.
+
+	my @list = $pb->get_list('SELECT COUNT(bugid) FROM db_table', 'refresh');
 
 =cut
 
 sub get_list {
 	my $self = shift;
-	my ($sql) = @_; 
+	my $sql  = shift; 
+	my $refresh = shift || '';
 
 	my $a_info = [];
-	my $a_cache = ($self->cachable) ? $CACHE_SQL{$sql} : '';
+	my $a_cache = $CACHE_SQL{$sql}; # unless $refresh;
 	# my $a_info = (ref($a_cache) eq 'ARRAY' && scalar(@{$a_cache}) >= 1) ? $a_cache : []; 
 
-	if (ref($a_cache) eq 'ARRAY') { 
+	# if (ref($a_cache) eq 'ARRAY') { 
+	if (defined($a_cache) && ref($a_cache) eq 'ARRAY' && $refresh eq '') { 
 		$a_info = $a_cache;
 		$self->debug('s', "CACHE SQL: $sql -> ".@{$a_info}." items") if $DEBUG;
 	} else {
@@ -1108,18 +1112,21 @@ sub get_list {
 
 Returns a list of hash references, from a sql query.
 
-	my @hash_refs = $pb->get_data('SELECT * FROM db_table');
+Optional second parameter overrides sql statement/result cacheing.
+
+	my @hash_refs = $pb->get_data('SELECT * FROM db_table', 'refresh');
 
 =cut
 
 sub get_data {
 	my $self = shift;
-	my ($sql) = @_;	
+	my $sql  = shift;	
+	my $refresh = shift || '';
 
 	my $a_info = [];
-	my $a_cache = $CACHE_SQL{$sql};
+	my $a_cache = $CACHE_SQL{$sql}; # unless $refresh;
 
-	if (defined($a_cache) && ref($a_cache) eq 'ARRAY') { 
+	if (defined($a_cache) && ref($a_cache) eq 'ARRAY' && $refresh eq '') { 
 		$a_info = $a_cache;
 		$self->debug('s', "CACHE SQL: $sql") if $DEBUG;
 	} else {
@@ -1200,6 +1207,7 @@ sub notify_cc {
 	my $i_ok  = 1;
 	# return $i_ok; # rjsf temp
 
+	$self->clean_cache([]);
 	my $o_bug = $self->object('bug');
 
 	if (!($self->ok($bid) and $self->exists($bid))) {
@@ -1207,8 +1215,7 @@ sub notify_cc {
 		$self->error( "notify_cc requires a valid bugid($bid)");
 	} else {
 		my $bugdb = $self->email('bugdb');
-		my $url = $self->web('hard_wired_url')."?req=bug_id&bug_id=$bid\n";
-		# my ($bug) = $self->dob([$bid]); # a bit less more data :-)
+		my $url = 'http://'.$self->web('domain').'/'.$self->web('cgi')."?req=bug_id&bug_id=$bid\n";
 		my ($bug) = $o_bug->read($bid)->format('a'); # a bit less more data :-)
 		my $status = qq|The status of bug($bid) has been updated:
 Original status:

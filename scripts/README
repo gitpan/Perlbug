@@ -1,4 +1,8 @@
-# $Id: README,v 1.2 2001/02/23 18:33:45 perlbug Exp $
+# $Id: README,v 1.4 2001/07/29 14:11:36 richardf Exp $
 # 
 # Perlbug script directory
 
+cat in | bugcgi > out.html; w3m out.html
+cat in | perl -d:DProf bugcgi > out.html
+cat in | perl -d:SmallProf bugcgi > out.html
+sort -k 2nr,2 smallprof.out | less

@@ -2,7 +2,7 @@
 # Email tests for Perlbug: get_forward, default, remap, get_header
 # context, get_header
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 76_Email.t,v 1.4 2001/04/21 20:48:48 perlbug Exp $
+# $Id: 76_Email.t,v 1.5 2001/05/29 01:10:43 robrt Exp $
 #
 BEGIN {
 	use File::Spec; 
@@ -62,7 +62,7 @@ foreach my $test (@tests) {
 			} else {						# should be empty 
 				$ok = 0 if scalar(@res) >= 1;
 			}
-			output("$test tag($tag: @lines) --> failed($ok) <-- recieved($res, @res)") if $ok != 1;
+			output("$test tag($tag: @lines) --> failed($ok) <-- received($res, @res)") if $ok != 1;
 			$err++ if $ok != 1;
 		}
 	}

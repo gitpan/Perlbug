@@ -1,7 +1,7 @@
 # Perlbug Installation instructions 
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
 # 
-# $Id: INSTALL,v 1.14 2001/04/21 20:48:48 perlbug Exp $
+# $Id: INSTALL,v 1.15 2001/07/05 13:55:45 richardf Exp $
 # 
 
 SHORT:
@@ -53,7 +53,11 @@ INSTALLATION:
 	'perlbug' for example, this is not necessary.  However all file 
 	and directory paths in these instructions will assume we are using 
 	a dedicated 'perlbug' user account, and will be relative to his/her home.
-	
+
+	In the slim chance that everything appears to be in a ~perlbug/perlbug
+	directory, stick it all in ~perlbug directly.  ie; ~perlbug/Makefile.PL, 
+	~perlbug/Perlbug, ~perlbug/Perlbug.pm, ~perlbug/sql, ~perlbug/web, etc.
+		
 	The only files you should _need_ to edit are in the ~/config directory, 
 	though, if using this application 'in anger', you will probably choose 
 	to modify the ~/site files too.
@@ -85,8 +89,8 @@ INSTALLATION:
 		all exist and are writable by the appropriate user/s. 
 		eg:
 			
-			mkdir -p ~/perlbug/spool archive 
-			mkdir -p ~/perlbug/spool logs 
+			mkdir -p ~/perlbug/spool/archive 
+			mkdir -p ~/perlbug/spool/logs 
 			# etc. 
 
 			chmod -R 777 ~/perlbug/spool
@@ -116,8 +120,8 @@ INSTALLATION:
 		or adapt the ~/sql/generic/create_admin.sql script
 
 	For the default source and database data downloads to be operational 
-	links or files will need to be installed from archive to ~/web/archive 
-	and ~/web/admin/archive
+	links or files will probably need to be installed from archive to 
+	~/web/archive and ~/web/admin/archive
 	
 	Voila! (hopefully :-)
 	

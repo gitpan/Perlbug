@@ -1,6 +1,6 @@
 # Perlbug docs and placeholder
 # (C) 1999 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Perlbug.pm,v 2.70 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Perlbug.pm,v 2.78 2001/07/29 14:15:36 richardf Exp $
 #
 # pod2text -la ~/Perlbug.pm > ~/docs/spec
 # pod2html ~/Perlbug.pm  > ~/docs/spec.html  
@@ -15,7 +15,7 @@ Perlbug - PerlBug DataBase specification
 package Perlbug;           
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 2.70 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 2.78 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 my $DEBUG = $ENV{'Perlbug_DEBUG'} || $Perlbug::DEBUG || '';
 $DEBUG = '' 				if $DEBUG =~ /^\s*$/;
 $DEBUG = '[0]'				if $DEBUG =~ /^0$/;
@@ -54,8 +54,9 @@ $|=1;
 	# 	WWW frames, javascript for selection and navigations, 
 	#  	bugfix fully functional, email(reply) fix, reintegrating tests...
 	#
-	# 2.60+ <--   we're here :-) ... prep'd for rcs->cvs and ~(richard|perlbug) -> 2.70+
-	# 
+	# 2.60+ prep'd for rcs->cvs and ~(richard|perlbug) -> 2.70+
+	# 2.70+ <--   we're here :-) migrated into perlbug.SourceForge.net
+	#  
 	# 3.00  Full test suite
 	# 3.50  Oracle support
 	# 	    ...
@@ -63,7 +64,8 @@ $|=1;
 
 =head1 DESCRIPTION
 
-Bug tracking system, written in perl, using Mysql, probably running on Linux with Apache.
+Bug tracking system, written in perl, currently using Mysql, 
+probably running on Linux with Apache.
 
 For installation instructions see the INSTALL file.
 
@@ -71,6 +73,9 @@ For installation instructions see the INSTALL file.
 
 
 =head1 SYNOPSIS
+
+Note that the given addresses are configurable for individual sites, 
+treat these examples of current usage as defaults.
 
 New bugs are created by mailing perlbug@perl.org or perlbug@perl.com
 
@@ -317,15 +322,28 @@ background is firm.
 =cut
 
 
-=head1 DEVELOPMENT 
+=head1 CODE  
 
-Anyone considering contributing (and some already have), code to this
-project would do well to (of course :-) RTFM.  I've tried to keep the 
+Anyone considering contributing code, (and some already have), to this
+project would do well (of course :-) to RTFM.  I've tried to keep the 
 docs as up to date as possible.
 
-The code is currently stored under cvs on tmtowtdi.perl.org
-The live system is on the same machine under the ~perlbug user, talk to 
+The code is currently stored under cvs on SourceForge: 
+
+	https://sourceforge.net/projects/perlbug/
+
+It can also be retrieved from the CPAN at:
+
+	http://www.cpan.org/authors/id/R/RF/RFOLEY
+
+The live system is on tmtowtdi.perl.org under the ~perlbug account, talk to 
 gnat@frii.com or ask@valueclick.com for access.
+
+Note: the output of 'make test' should be 100% succesful before commiting
+any changes to the code!
+
+
+=head1 DEVELOPMENT
 
 A developer of any part of this system, who wishes to use the existing code
 base, is encouraged to approach it in the following manner:
