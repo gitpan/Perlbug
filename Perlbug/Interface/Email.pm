@@ -1,6 +1,6 @@
 # (C) 2001 Richard Foley RFI perlbug@rfi.net
 # 
-# $Id: Email.pm,v 1.106 2001/12/01 15:24:42 richardf Exp $ 
+# $Id: Email.pm,v 1.109 2002/01/14 10:14:48 richardf Exp $ 
 # 
 
 
@@ -13,7 +13,7 @@ Perlbug::Interface::Email - Email  interface to perlbug database.
 package Perlbug::Interface::Email;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.106 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.109 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -253,6 +253,60 @@ sub process_commands {
 	}
 
 	return @res;
+}
+
+
+=item get_header
+
+Get new perlbug Mail::Header, filled with appropriate values, based on given header.
+
+	my $o_hdr = $o_email->get_header();						   # completely clean
+
+	my $o_hdr = $o_email->get_header($o_old_header, 'default');# default (coerced as from us)
+
+	my $o_hdr = $o_email->get_header($o_old_header);           # as default 
+
+	my $o_hdr = $o_email->get_header($o_old_header, 'ok'); 	   # maintain headers (nearly transparent)
+	
+	my $o_hdr = $o_email->get_header($o_old_header, 'remap');  # maintain headers (nearly transparent)
+
+=cut
+
+sub get_header {
+	my $self   = shift;
+	my $o_orig = shift || '';
+	my $context= shift || 'default'; # ...|remap|ok
+	my $o_hdr  = Mail::Header->new;
+
+	if (ref($o_orig)) { # partially fresh
+		$o_hdr = $o_orig->dup;
+		foreach my $tag ($o_orig->tags) { # to, cc?
+			my @lines = $o_orig->get($tag);
+			# $DB::single=2 if $tag =~ /^to/i;
+			my @res = $self->$context($tag, @lines); # default|remap|ok
+			$o_hdr->replace($tag, @res) if scalar(@res) >= 1;
+			$self->debug(2, "$context - tag($tag) lines(@lines) -> res(@res)") if $Perlbug::DEBUG;
+		}
+		my @xheaders = qw(Cc From Message-Id Perlbug In-Reply-To Reply-To Subject To);
+		foreach my $xheader (@xheaders) {
+			my $ref = ($xheader =~ /^Cc$/o) 
+				? join(', ', $o_orig->get('Cc')) 
+				: $o_orig->get($xheader) || '';
+			$o_hdr->replace('X-Original-'.$xheader, $ref);
+		}
+	}
+
+	if (ref($o_hdr)) {
+		# $o_hdr->replace('Message-Id', "<$$".'_'.rand(time)."\@".$self->email('domain').'>') unless $msgid 
+		$o_hdr->replace('X-Perlbug', "Perlbug(tron) v$Perlbug::VERSION"); # [ID ...]+
+		$o_hdr->replace('X-Perlbug-Test', 'test') if $self->isatest;
+		map { $o_hdr->add($_, $self->system('maintainer')) 
+			unless $o_hdr->get($_) } qw(X-Errors-To Return-Path);
+	}
+
+	$self->debug(3, 'orig: '.Dumper($o_orig)."\nret: ".Dumper($o_hdr)) if $Perlbug::DEBUG;
+		
+	return $o_hdr; 		# Mail::Header
 }
 
 
@@ -600,60 +654,6 @@ sub switches {
 }
 
 
-=item get_header
-
-Get new perlbug Mail::Header, filled with appropriate values, based on given header.
-
-	my $o_hdr = $o_email->get_header();						   # completely clean
-
-	my $o_hdr = $o_email->get_header($o_old_header, 'default');# default (coerced as from us)
-
-	my $o_hdr = $o_email->get_header($o_old_header);           # as default 
-
-	my $o_hdr = $o_email->get_header($o_old_header, 'ok'); 	   # maintain headers (nearly transparent)
-	
-	my $o_hdr = $o_email->get_header($o_old_header, 'remap');  # maintain headers (nearly transparent)
-
-=cut
-
-sub get_header {
-	my $self   = shift;
-	my $o_orig = shift || '';
-	my $context= shift || 'default'; # ...|remap|ok
-	my $o_hdr  = Mail::Header->new;
-
-	if (ref($o_orig)) { # partially fresh
-		$o_hdr = $o_orig->dup;
-		foreach my $tag ($o_orig->tags) { # to, cc?
-			my @lines = $o_orig->get($tag);
-			# $DB::single=2 if $tag =~ /^to/i;
-			my @res = $self->$context($tag, @lines); # default|remap|ok
-			$o_hdr->replace($tag, @res) if scalar(@res) >= 1;
-			$self->debug(2, "$context - tag($tag) lines(@lines) -> res(@res)") if $Perlbug::DEBUG;
-		}
-		my @xheaders = qw(Cc From Message-Id Perlbug In-Reply-To Reply-To Subject To);
-		foreach my $xheader (@xheaders) {
-			my $ref = ($xheader =~ /^Cc$/o) 
-				? join(', ', $o_orig->get('Cc')) 
-				: $o_orig->get($xheader) || '';
-			$o_hdr->replace('X-Original-'.$xheader, $ref);
-		}
-	}
-
-	if (ref($o_hdr)) {
-		# $o_hdr->replace('Message-Id', "<$$".'_'.rand(time)."\@".$self->email('domain').'>') unless $msgid 
-		$o_hdr->replace('X-Perlbug', "Perlbug(tron) v$Perlbug::VERSION"); # [ID ...]+
-		$o_hdr->replace('X-Perlbug-Test', 'test') if $self->isatest;
-		map { $o_hdr->add($_, $self->system('maintainer')) 
-			unless $o_hdr->get($_) } qw(X-Errors-To Return-Path);
-	}
-
-	$self->debug(3, 'orig: '.Dumper($o_orig)."\nret: ".Dumper($o_hdr)) if $Perlbug::DEBUG;
-		
-	return $o_hdr; 		# Mail::Header
-}
-
-
 =item default
 
 Operates on given tag, from bugdb@perl.org: we're sending this out from here.
@@ -687,6 +687,7 @@ sub default {
             push(@res, $self->email('from')); 
         } elsif ($tag =~ /^Reply-To/io) {    # 
             push(@res, $self->system('maintainer')); 
+            # push(@res, $self->forward('generic')); 
 		} elsif ($tag =~ /^(Subject|To|Cc|X\-Original\-)/io) { # OK, keep them
             push(@res, @lines);
         } else {                        	# filter as unwanted
@@ -922,7 +923,7 @@ sub addurls {
 		if ($tgt eq 'bug') {
 			my $perlbug = $self->web('cgi');
 			$url =~ s/$perlbug/admin\/$perlbug/;
-			$o_hdr->add('X-Perlbug-Admin-Url-Bug', "$url?req=bidmids&bidmids=$id");
+			$o_hdr->add('X-Perlbug-Admin-Url-Bug', "$url?req=bidmid&bidmid=$id");
 		}
 	}
 
@@ -1198,6 +1199,7 @@ sub switch {
 		# Is it addressed to perlbug? -> NEW or BOUNCE
     	if ($found != 1) {  
         	my $match = $self->email('match');
+        	my $xmatch = $self->email('antimatch');
 			my @targets = $self->get_vals('target');
         	$self->debug(2, "Looking at addresses to(@to), cc(@cc) against targets(@targets)?") if $Perlbug::DEBUG;
         	ADDR:
@@ -1208,7 +1210,7 @@ sub switch {
 				if (grep(/$addr/i, @targets)) {	# one of ours
                 	$found++;
 		    		$self->debug(2, "Address($addr->$line) match :-), have we a match($match) in the body?") if $Perlbug::DEBUG;
-            		if ($body =~ /$match/i) {    # new \bperl|perl\b
+            		if ($body =~ /$match/io && $body !~ /$xmatch/io) {    # new \bperl|perl\b
                 		$switch = 'B';
 						$msg = "NEW BUG $switch($found): Yup! perl($match) subject($subject) :-))";
 						$opts = $self->message('B');
@@ -1513,7 +1515,7 @@ sub reminder {
 
 		Further data relating to this bug($bid) may be found at:
 
-			$home/perlbug.cgi?req=bidmids&bidmids=$bid
+			$home/perlbug.cgi?req=bidmid&bidmid=$bid
 
 		The group($group) of administrators responsible for this bug is:
 

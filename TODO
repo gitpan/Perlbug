@@ -1,13 +1,13 @@
-cvs add t/34_Object.t
+
+sql/mig/288_to_290
+
+./scripts/bugtemplates -F
 
 # ============================================================================
-
-# appropriate buttons in each window (query|update|etc)
-
 # assign(), _store(), etc. => relate() ... 
 # relate() packages up small report on this modification 
 # into a trackable item against discrete objects
-
+# 
 # parse log file into relate()
 #
 # trim log file
@@ -15,26 +15,15 @@ cvs add t/34_Object.t
 # pb_log hash redo track->history
 
 # userid i_num + name + fullname
-
-# ============================================================================
-
-# CVS - diffs -> add/remove -> commit
-
-# script watches incoming mails reports if any 
-# bug, test, etc. don't land in p5p within one hour
-
-# bugid eq pb_bug::name
+# bugid bug::name pb_bug (all tables have id::name?)
 
 # absorb [PATCH]es/changeids - ask Jarkho
-
-# if you're an object, your generic name links to a search/create page
-# 	sourceaddr|patch|admin|status->search/create
+[PATCH ... -> patch (and search for bugid)
+	Re: [PATCH @13746] uninstalled build of modules broke
 
 # message->reply, etc.
 #  => -m messageid (all tables)
 #  => -r replyid 
-
-# CVS::docs - rename directories so ~perlbug/Perlbug/...
 
 # get all dependant modules into handy dist. so we can run 
 # everything without any problems, harmless no-db installation.

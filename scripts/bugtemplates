@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Insert templates
 # Richard Foley RFI perlbug@rfi.net
-# $Id: bugtemplates,v 1.4 2001/12/03 10:39:21 richardf Exp $
+# $Id: bugtemplates,v 1.6 2002/01/11 13:51:06 richardf Exp $
 #
 use Perlbug::Test;
 use strict;
@@ -158,6 +158,8 @@ For an explanation of each format see L<Perlbug::Format>
   patch    - - - - - - - - - -
   test     - - - - - - - - - -
 
+Note that B<H> is really the only place where a B<table> is necessary, see L<Perlbug::Interface::Web::start()> (and B<finish()>
+
 =cut
 
 my %TEMPLATES = (
@@ -226,7 +228,7 @@ Message ids: <{message_count}5>  <{message_ids}>
 Patch ids:   <{patch_count}  5>  <{patch_ids}>
 Test ids:    <{test_count}   5>  <{test_ids}>
 Note ids:    <{note_count}   5>  <{note_ids}>
-Change ids:  <{change_count} 5>  <{change_ids}>
+Change ids:  <{change_count} 5>  <{change_names}>
 Parent ids:  <{parent_count} 5>  <{parent_ids}>
 Child ids:   <{child_count}  5>  <{child_ids}>
 Address ids: <{address_count}5>  <{address_names}>
@@ -360,18 +362,24 @@ Bug ids:    <{bug_count}     5>
 				'repeat'	=> 1,
 				'header'		=> q#
 <tr>
-<td><b><{key}></b></td><td><b>Bug ids</b></td><td><b>Created</b></td><td><b>Modified</b></td>
+<td>&nbsp:</td><td><b><{key}> id</b></td><td><b>Bug ids</b></td>
+<td><b>Created</b></td><td><b>Modified</b></td>
 </tr>
 #,
 				'body'			=> q#
 <tr>
+<td> <{ifadmin}> <{select}> </{ifadmin}> &nbsp;</td>,
 <td><{id4key}>: <{name}></td>
-<td>Bug ids: <{bug_count}></td>
-<td>Created: <{created}></td><td>Modified: <{created}></td>
+<td>Bug ids(<{bug_count}>) <{bug_names}></td>
+<td>Created: <{created}></td>
+<td>Modified: <{created}></td>
 </tr>
 <tr>
 <{bug_ids}>
 </tr>
+<{ifadmin}>
+<tr><td colspan=4><{options}></td></tr>
+</{ifadmin}>
 #,
 			},
 			# 'item'	=>  	# H rjsf
@@ -384,13 +392,16 @@ Bug ids:    <{bug_count}     5>
 #,
 				'body'		=> q#
 <table border=1 width=100%>
-<tr><td><b><{key}> id</b></td><td><{id4key}></td>
+<tr><td><b> <{ifadmin}> <{select}> </{ifadmin}> <{key}> id</b></td><td><{id4key}></td>
 	<td><b>Created</b></td><td><{created}></td></tr>
 <tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
 	<td><b>Modified</b></td><td><{modified}></td></tr>
-<tr><td><b>Subject</b></td><td colspan=3><{subject}>)</td></tr>
-<tr><td><b>Source</b></td><td colspan=3><{sourceaddr}>)</td></tr>
+<tr><td><b>Subject</b></td><td colspan=3><{subject}></td></tr>
+<tr><td><b>Source</b></td><td colspan=3><{sourceaddr}></td></tr>
 <tr><td colspan=4><{body}></td></tr>
+<{ifadmin}>
+<tr><td colspan=4><{options}></td></tr>
+</{ifadmin}>
 </table>
 #,
 			},
@@ -407,7 +418,8 @@ Bug ids:    <{bug_count}     5>
 #,
 				'body'		=> q#
 <table border=1 width=100%>
-<tr><td colspan=2><b><{select}> Bug id</b>: <{bugid}></td>
+<tr><td colspan=2><b> <{ifadmin}> <{select}> </{ifadmin}>
+Bug id</b>: <{bugid}></td>
 	<td><b>Change ids</b></td><td><{change_names}></td></tr>
 <tr><td><b>Status</b></td><td><{status_names}></td>
 	<td><b>Severity</b></td><td><{severity_names}></td></tr>
@@ -417,21 +429,21 @@ Bug ids:    <{bug_count}     5>
 	<td><b>Osname</b></td><td><{osname_names}></td></tr>
 <tr><td><b>Version</b></td><td><{version_names}></td>
 	<td><b>Fixed in</b></td><td><{fixed_names}></td></tr>
-<tr><td><b>Subject</b></td><td colspan=3><{subject}>)</td></tr>
-<tr><td><b>Source</b></td><td colspan=3><{sourceaddr}>)</td></tr>
+<tr><td><b>Subject</b></td><td colspan=3><{subject}></td></tr>
+<tr><td><b>Source</b></td><td colspan=3><{sourceaddr}></td></tr>
 <tr><td><b>Admins</b>:</td><td colspan=3><{user_names}></td></tr>
-<tr><td><b>Messages</b>:</td><td><{message_ids}></td>
-	<td><b>Notes</b></td><td><{note_ids}></td></tr>
-<tr><td><b>Patches</b>:</td><td><{patch_ids}></td>
-	<td><b>Tests</b></td><td><{test_ids}></td></tr>
-<tr><td><b>Parents</b>:</td><td><{parent_ids}></td>
-	<td><b>Children</b></td><td><{child_ids}></td></tr>
+<tr><td><b>Message ids</b>:</td><td><{message_ids}></td>
+	<td><b>Note ids</b></td><td><{note_ids}></td></tr>
+<tr><td><b>Patch ids</b>:</td><td><{patch_ids}></td>
+	<td><b>Test ids</b></td><td><{test_ids}></td></tr>
+<tr><td><b>Parent ids</b>:</td><td><{parent_ids}></td>
+	<td><b>Child ids</b></td><td><{child_ids}></td></tr>
 <{ifadmin}>
 <tr><td colspan=4>
   <table><tr>
-    <td><b>New Note </b>:<br><{new_note}></td>
-	<td><b>New Patch</b>:<br><{new_patch}></td>
-	<td><b>New Test </b>:<br><{new_test}></td>
+    <td><b>Note </b>:<br><{new_note}></td>
+	<td><b>Patch</b>:<br><{new_patch}></td>
+	<td><b>Test </b>:<br><{new_test}></td>
     </tr></table>
   </td></tr>
 </{ifadmin}>
@@ -439,6 +451,9 @@ Bug ids:    <{bug_count}     5>
 <table border=1>
 <tr><td><{body}></td></tr>
 <tr><td>&nbsp;</td></tr>
+<{ifadmin}>
+<tr><td colspan=4><{options}></td></tr>
+</{ifadmin}>
 </table>
 #,
 			},
@@ -453,13 +468,17 @@ Bug ids:    <{bug_count}     5>
 </table>
 #,
 				'body'		=> q#
-<tr><td><b>Group id</b></td><td><{groupid}></td>
+<tr><td><b> <{ifadmin}> <{select}> </{ifadmin}>
+Group id</b></td><td><{groupid}></td>
 	<td><b>Created</b></td><td><{created}></td></tr>
 <tr><td><b>Name</b></td><td><{name}></td>
 	<td><b>Modified</b></td><td><{modified}></td></tr>
 <tr><td><b>Description</b></td><td colspan=3><{description}></td></tr>
 <tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
 	<td><b>Userids</b>(<{user_count}>)</td><td><{user_names}></td></tr>
+<{ifadmin}>
+<tr><td colspan=4><{options}></td></tr>
+</{ifadmin}>
 #,
 			},
 			'user'	=> {		# H
@@ -471,16 +490,21 @@ Bug ids:    <{bug_count}     5>
 </table>
 #,
 				'body'			=> q#
-<tr><td><b>User id</b></td><td><{userid}></td>
+<tr><td><b> 
+<{ifadmin}> <{select}> </{ifadmin}>
+User id</b></td><td><{userid}></td>
 	<td><b>Created</b></td><td><{created}></td></tr>
 <tr><td><b>Name</b></td><td><{name}></td>
 	<td><b>Modified</b></td><td><{modified}></td></tr>
 <tr><td><b>Address</b></td><td><{address}></td>
 	<td><b>Match addresss</b></td><td><{match_address}></td></tr>
+<tr><td><b>Bug ids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
+	<td><b>Groups</b>(<{group_count}>)</td><td><{group_names}></td></tr>
+<{ifadmin}>
 <tr><td><b>Password</b></td><td><{password}></td>
 	<td><b>Active</b></td><td><{active}></td></tr>
-<tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
-	<td><b>Groups</b>(<{group_count}>)</td><td><{group_names}></td></tr>
+<tr><td colspan=4><{options}></td></tr>
+</{ifadmin}>
 #, 
 			},
 		},
@@ -494,17 +518,22 @@ Bug ids:    <{bug_count}     5>
 					'<tr><td>'.join('</td><td>', (
 					'<b>&nbsp;</b>',
 					'<b><{key}>id</b>',
-					'<b>bugids</b>',
+					'<b>Bugids</b>',
 					'<b>Subject</b>',
+					'<b>Source</b>',
+					'<b>Created</b>',
+					'<b>Modified</b>',
 				))."</td></tr>\n",
 				'repeat'	=> 5,
 				'footer'		=> '',
-				'body'			=> '<tr><td>'.join('</td><td>', (
-					'<{select}>&nbsp;',
+				'body'			=> '<tr valign="top"><td>'.join('</td><td>', (
+					'<{ifadmin}><{select}></{ifadmin}>&nbsp;',
 					'<{id4key}>&nbsp;',
 					'<{bug_ids}>&nbsp;',
 					'<{subject}>&nbsp;',
-					'<{body}>&nbsp;',
+					'<{source}>&nbsp;',
+					'<{created}>&nbsp;',
+					'<{modified}>&nbsp;',
 				))."</td></tr>\n",
 			},
 			'flag'	=> {		# h
@@ -516,7 +545,7 @@ Bug ids:    <{bug_count}     5>
 </tr>
 #,
 				'body'			=> q#
-<tr>
+<tr valign="top">
 <td><{id4key}>: <{name}></td>
 <td>Bug ids: <{bug_count}></td>
 <td>Created: <{created}></td><td>Modified: <{created}></td>
@@ -527,7 +556,7 @@ Bug ids:    <{bug_count}     5>
 		'object'	=> {		# OBJECT h
 			'bug'	=> {		# h
 				'description'	=> 'html bug template', 
-				'repeat'		=> 5,
+				'repeat'		=> 15,
 				'footer'		=> '',
 				'header'		=> # '<tr><td colspan=15><hr></td></tr>',
 					'<tr><td>'.join('</td><td>', (
@@ -535,45 +564,44 @@ Bug ids:    <{bug_count}     5>
 					'<b>Bugid</b>',
 					'<b>Status</b>',
 					'<b>version</b>',
-					'<b>fixed in</b>',
-					'<b>group</b>',
-					'<b>severity</b>',
-					'<b>osname</b>',
-					'<b>messageids</b>',
-					'<b>change ids</b>',
-					'<b>note ids</b>',
-					'<b>patch ids</b>',
-					'<b>test ids</b>',
-					'<b>user ids</b>',
+					'<b>Group</b>',
+					'<b>Severity</b>',
+					'<b>Change ids</b>',
+					'<b>Note ids</b>',
+					'<b>Patch ids</b>',
+					'<b>Test ids</b>',
+					'<b>User ids</b>',
 					'<b>Subject</b>',
+					'<b>Osname</b>',
+					'<b>Fixed in</b>',
 				))."</td></tr>\n",
-				'body'			=> '<tr><td>'.join('</td><td>', (
-					'<{select}>&nbsp;',
+				'body'			=> '<tr valign="top"><td>'.join('</td><td>', (
+					'<{ifadmin}><{select}></{ifadmin}>&nbsp;',
 					'<{bugid}>&nbsp;',
 					'<{status_names}>&nbsp;', 
 					'<{version_names}>&nbsp;', 
-					'<{fixed_names}>&nbsp;', 
 					'<{group_names}>&nbsp;', 
 					'<{severity_names}>&nbsp;', 
-					'<{osname_names}>&nbsp;', 
-					'<{message_count}>&nbsp;', 
-					'<{change_names}>&nbsp;',
+					'<{change_count}>&nbsp;',
 					'<{note_count}>&nbsp;', 
 					'<{patch_count}>&nbsp;',
 					'<{test_count}>&nbsp;', 
 					'<{user_count}>&nbsp;',
 					'<{subject}>&nbsp;',
+					'<{osname_names}>&nbsp;', 
+					'<{fixed_names}>&nbsp;', 
 				))."</td></tr>\n",
 			},
 			'group' => {		# h
 				'description'	=> 'html group template', 
 				'repeat'	=> 15,
 				'header'		=> q#
-<table border=1 width=100%>
 <tr>
+	<td><b>&nbsp;</b></td>
 	<td><b>groupid</b></td>
 	<td><b>name</b></td>
 	<td><b>userids</b></td>
+	<td><b>bugids</b></td>
 	<td><b>description</b></td>
 	<td><b>created</b></td>
 	<td><b>modified</b></td>
@@ -581,22 +609,23 @@ Bug ids:    <{bug_count}     5>
 #,
 				'body'			=> q#
 <tr>
+	<td> <{ifadmin}> <{select}> </{ifadmin}> &nbsp;</td>
 	<td><{groupid}> &nbsp;</td>
 	<td><{name}> &nbsp;</td>
 	<td><{user_count}> &nbsp;</td>
+	<td><{bug_count}> &nbsp;</td>
 	<td><{description}> &nbsp;</td>
 	<td><{created}> &nbsp;</td>
 	<td><{modified}> &nbsp;</td>
 </tr>
-</table>
 #,
 			},
 			'user'	=> {		# h
 				'description'	=> 'html user template', 
 				'repeat'	=> 15,
 				'header'		=> q#
-<table border=1 width=100%>
 <tr>
+	<td><b>&nbsp;</b></td>
 	<td><b>Userid</b></td>
 	<td><b>Name</b></td>
 	<td><b>Bugids</b></td>
@@ -608,6 +637,7 @@ Bug ids:    <{bug_count}     5>
 #,
 				'body'			=> q#
 <tr>
+	<td> <{ifadmin}> <{select}> </{ifadmin}> &nbsp;</td>
 	<td><{userid}> &nbsp;</td>
 	<td><{name}> &nbsp;</td>
 	<td><{bug_count}> &nbsp;</td>
@@ -616,7 +646,7 @@ Bug ids:    <{bug_count}     5>
 	<td><{created}> &nbsp;</td>
 	<td><{modified}> &nbsp;</td>
 </tr>
-</table>
+<tr><td colspan=7>&nbsp;</td></tr>
 #, 
 			},
 		},
@@ -674,12 +704,14 @@ Bug ids:    <{bug_count}     5>
 				'description'	=> 'LIST flag template', 
 				'repeat'	=> 10,
 				'header'		=> '<tr><td>'.join('</td><td>', (
+					'<b>&nbsp;</b>',
 					'<b><{key}> ids</b>',
 					'<b>Bug ids</b>',
 					'<b>Created</b>',
-					'<b>Modified</b>',
+					'<b>modified</b>',
 				))."</td></tr>\n",
 				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{ifadmin}><{select}></{ifadmin}>',
 					'<{id4key}>',
 					'<{bug_count}>',
 					'<{created}>',
@@ -690,12 +722,14 @@ Bug ids:    <{bug_count}     5>
 				'description'	=> 'LIST item template', 
 				'repeat'	=> 10,
 				'header'		=> '<tr><td>'.join('</td><td>', (
+					'<b>&nbsp;</b>',
 					'<b><{key}> ids</b>',
 					'<b>Bug ids</b>',
-					'<b>Created</b>',
-					'<b>Modified</b>',
+					'<b>created</b>',
+					'<b>modified</b>',
 				))."</td></tr>\n",
 				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{ifadmin}><{select}></{ifadmin}>',
 					'<{id4key}>',
 					'<{bug_count}>',
 					'<{created}>',
@@ -706,11 +740,13 @@ Bug ids:    <{bug_count}     5>
 				'description'	=> 'LIST mail template', 
 				'repeat'	=> 10,
 				'header'		=> '<tr><td>'.join('</td><td>', (
+					'<b>&nbsp;</b>',
 					'<b><{key}> ids</b>',
 					'<b>Bug ids</b>',
 					'<b>Subject</b>',
 				))."</td></tr>\n",
 				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{ifadmin}><{select}></{ifadmin}>',
 					'<{id4key}>',
 					'<{bug_count}>',
 					'<{subject}>',
@@ -723,38 +759,32 @@ Bug ids:    <{bug_count}     5>
 				'header'		=> # '<tr><td colspan=15><hr></td></tr>',
 					'<tr><td>'.join('</td><td>', (
 					'<b>&nbsp;</b>',
-					'<b>Bugid</b>',
-					'<b>Status</b>',
+					'<b>bugid</b>',
+					'<b>status</b>',
 					'<b>version</b>',
 					'<b>group</b>',
 					'<b>severity</b>',
-					'<b>osname</b>',
-					'<b>fixed</b>',
-					'<b>messageids</b>',
-					'<b>changees</b>',
 					'<b>note ids</b>',
 					'<b>patch ids</b>',
 					'<b>test ids</b>',
 					'<b>user ids</b>',
-					'<b>Subject</b>',
+					'<b>subject</b>',
+					'<b>osname</b>',
 				))."</td></tr>\n",
 				'repeat'	=> 5,
 				'body'			=> '<tr><td>'.join('</td><td>', (
-					'<{select}>&nbsp;',
+					'<{ifadmin}><{select}></{ifadmin}>',
 					'<{bugid}>&nbsp;',
 					'<{status_names}>&nbsp;', 
 					'<{version_names}>&nbsp;', 
 					'<{group_names}>&nbsp;', 
 					'<{severity_names}>&nbsp;', 
-					'<{osname_names}>&nbsp;', 
-					'<{fixed_names}>&nbsp;', 
-					'<{message_count}>&nbsp;', 
-					'<{change_count}>&nbsp;',
 					'<{note_count}>&nbsp;', 
 					'<{patch_count}>&nbsp;',
 					'<{test_count}>&nbsp;', 
 					'<{user_count}>&nbsp;',
 					'<{subject}>&nbsp;',
+					'<{osname_names}>&nbsp;', 
 				))."</td></tr>\n",
 			},
 		},	

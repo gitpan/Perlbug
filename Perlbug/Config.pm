@@ -1,6 +1,6 @@
 # Perlbug configuration data
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Config.pm,v 1.51 2001/12/01 15:24:41 richardf Exp $
+# $Id: Config.pm,v 1.52 2001/12/05 20:58:37 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Config - Perlbug Configuration data handler
 package Perlbug::Config;
 use strict;
 use vars(qw($VERSION @ISA $AUTOLOAD));
-$VERSION = do { my @r = (q$Revision: 1.51 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.52 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 # print map { $_=$ENV{$_} . "\n" } grep(/Perlbug/i, keys %ENV);
 $|=1;
 
@@ -441,9 +441,9 @@ Retrieve the value:
 Note that B<current> is the only one available for modification, and 
 that it returns keys of succesful updates (note the hashref).
 
-	my $attr = $self->current('format'); 			# get
+	my $attr = $self->current('format'); 			# get one
 
-	my @keys = $self->current();					# get
+	my @keys = $self->current();					# get all
 
 	my $data = $self->current({'format' => 'h'});	# set $data = 'format'
 

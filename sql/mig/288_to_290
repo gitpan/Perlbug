@@ -1,0 +1,15 @@
+# rjsf: # mysqldump -d -p perlbug > create_database.sql
+
+# ALTER TABLE pb_template ADD footer blob;
+
+ALTER TABLE pb_group ADD UNIQUE u_group_name (name);
+ALTER table pb_range ADD name char(25)
+
+SELECT versionid FROM pb_fixed WHERE name NOT LIKE '%.%';
+DELETE FROM pb_bug_version WHERE versionid IN (...);
+DELETE FROM pb_version WHERE name NOT LIKE '%.%';
+
+SELECT fixedid FROM pb_fixed WHERE name NOT LIKE '%.%';
+DELETE FROM pb_bug_fixed WHERE fixedin IN (...);
+DELETE FROM pb_fixed WHERE name NOT LIKE '%.%';
+

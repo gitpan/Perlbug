@@ -6,25 +6,24 @@ DESCRIPTION
     fields, etc.
 
 SEARCH
-    mask
-        The search mask/fields, have no pre-selected entries, click query
-        and an indiscriminate list of all the bugs in the database will be
+    form
+        The search form has no pre-selected entries, click query and an
+        indiscriminate list of all the bugs in the database will be
         returned.
 
-        Filterering is achieved by selecting options from the popup menus,
-        or entering data in the text fields, as described below.
+        Filtering is achieved by selecting options from the popup menus, or
+        entering data in the text fields, as described below.
 
         Once an item is returned for viewing, links to it's constituent
         parts may be followed.
 
-        The following describe fields not described under the OBJECTS entry
-        elsewhere in this document below.
+        The following describe fields not described under "OBJECTS"
 
     admin
         List of active administrators who are registered against 1 or more
         bugs.
 
-    and_or
+    boolean
         Boolean switch to decide whether or not to AND or to OR the query
         fields together, in the creation of the SQL search query.
 
@@ -67,27 +66,32 @@ SEARCH
         searches are not returning expected results.
 
     wildcards
-        All text fields are searched using the SQL LIKE operator. the bugid,
-        noteid, patchid, testid, version, and change entries elsewhere in
-        this document and /fixed fields are used as seen, that is, if a
-        wildcard is not provided, one will not be used.
+        All text fields are searched using the SQL 'LIKE' operator. The LIKE
+        operator allows the symbol % to match any sequence of characters,
+        like '.*' in Perl regexes, and the symbol '_' to match any single
+        character, like '.' in Perl regexes. Perlbug also maps '*' to '%',
+        so '*' will also match any sequence of characters. All other
+        characters in text boxes are taken literally.
 
-        Conversly subject, body and source address fields have "%"
-        pre-placed around the search query by default.
+        The Subject, Body and Source address fields perform substring
+        searches. That is they are surrounded by % internally. For example,
+        entering *filehandle* in the Subject box searches for any subject
+        that contains the string *filehandle*.
 
-        What this means is that entering 20001122., in the bugid field, will
-        probably not return much, but "20001122.%"' might. Of course a
-        complete bugid could be entered on it's own eg: 20001122.003 Whereas
-        entering only strict in the subject field will still use "%strict%"
-        during the search.
+        The Bug ID, Version, Fixed in, Message-ID, Note ID, Patch ID, and
+        Test ID, fields are used exactly as entered. Entering '20001122' in
+        the Bug ID field will not match anything, because 20001122 is not
+        the ID of any bug. To find all the bugs that were submitted on date
+        20001122, use '20001122.%'.
 
-        The available SQL wildcards: any single character "_" and none or
-        more characters "%" are allowed in all fields. Note also that for
-        convenience(?), an asterisk("*") will be simply mapped to the sql
-        wildcard "%"'.
+        Note also that for convenience(?), an asterisk("*") will be simply
+        mapped to the sql wildcard "%"'.
 
-        N.B. It can be a good idea to use the the show_sql entry elsewhere
-        in this document switch to display what's being searched for.
+        It may be instructive to try a few searches with the Show SQL option
+        enabled. This will display the SQL query that the engine is using to
+        search the database.
+
+        See also "object_search"
 
     retrieval
         Bugs are initially returned in either list or block format, with an
@@ -98,7 +102,36 @@ SEARCH
         format is aimed at finding all information relating to said bug,
         without having to hop around.
 
-        the DESCRIPTION manpage
+  Searching for objects
+    object_search
+        Where searching for each object, (not using the prime bug search
+        mechanism), individually, each field is treated as searchable using
+        the wildcard mechanism described above.
+
+        The following fields are treated specially:
+
+    created
+        Date field - use a format of YYYY-MM--DD eg; 1987-05-02
+
+    modified
+        As per "created" above
+
+    optional
+        The Optional field is used by administrators to enter a command line
+        string for defining relationships, similar to a typical bugdb
+        subject or To|Cc line.
+
+        For example to assign group, status, admin info etc. to a bug:
+
+        "aix linux win98 macos closed richardf docs"
+
+        Or a bugid, or two, to a patch:
+
+        "19870502.007 19870502.091"
+
+        See mailhelp for more info
+
+        "DESCRIPTION"
 
 SUBMIT
         The submit buttons available are as follows:
@@ -110,7 +143,6 @@ SUBMIT
         reset the form to the default values
 
   administrative
-
         For admins only:
 
     Update
@@ -127,10 +159,11 @@ SUBMIT
         deselect all shown record/s
 
     Admin
-        switch from the noadmin view to the admin view
+        switch from the noadmin view to the admin view (data updates are
+        possible)
 
     Noadmin
-        switch from the admin view to the noadmin view
+        switch from the admin view to the noadmin view (less clutter)
 
     Delete
         delete the selected shown record/s
@@ -146,6 +179,13 @@ OBJECTS
 
     history
         The list of all modifications to each item, and who submitted them.
+
+    transfer
+        Certain objects may be transferred from one type to another, for
+        example where a plain "message" should be reclassified as, for
+        example, a "patch" or a "test".
+
+        Additional data may always be entered in the "optional" field
 
 BUG
     The main potato:
@@ -163,9 +203,8 @@ BUG
         The body of the original message which generated the bug report.
 
         During a web search, the bodies of all messages in the database will
-        be inspected, unless the boolean the and_or entry elsewhere in this
-        document switch AND is selected whereby the search criteria is
-        narrowed down.
+        be inspected, unless the boolean "and_or" switch AND is selected
+        whereby the search criteria is narrowed down.
 
     status
         The status of the bug, with the following options:
@@ -188,8 +227,8 @@ BUG
 
             open        -       undealt with, needing attention
 
-    category
-        The category of the bug has the following options:
+    group
+        The group (or category) of the bug has the following options:
 
             bounce      -       report had invalid format, common with spam mail
 
@@ -269,8 +308,8 @@ BUG
                 ...
 
     fixed
-        The version in which this bug was fixed, same format as the version
-        entry elsewhere in this document above.
+        The version in which this bug was fixed, same format as "version"
+        above.
 
     change
         The changeID of the target source for the fix. this is an external
@@ -288,7 +327,7 @@ BUG
 
     history
         History of administrative operations against this bug, changes of
-        status/category, etc..
+        status/group, etc..
 
     cc  List of email addresses for this bug. Will contain the source
         address, any adminitrator who has modified the bug record, and any
@@ -298,18 +337,16 @@ BUG
     messagids
         The internal-ids of messages belonging to this bug (replies).
 
-        Not to be confused with the externally supplied the message_id entry
-        elsewhere in this document's of each email.
+        Not to be confused with the externally supplied "message_id"'s of
+        each email.
 
     parent
-        The the bugid entry elsewhere in this document of any other bug to
-        which this bug may belong.
+        The "bugid" of any other bug to which this bug may belong.
 
     child
-        The the bugid entry elsewhere in this document of any other bug
-        which belongs to this bug.
+        The "bugid" of any other bug which belongs to this bug.
 
-    the DESCRIPTION manpage
+    DESCRIPTION
 
 NOTE
     An administrator can assign a note to a bug when he/she modifies it.
@@ -320,11 +357,11 @@ NOTE
     noteid
         The internally generated noteid.
 
-    the DESCRIPTION manpage
+    DESCRIPTION
 
 PATCH
-    A bug may be fixed by a patch, this can be assigned along with a the
-    changeid entry elsewhere in this document.
+    A bug may be fixed by a patch, this can be assigned along with a
+    "changeid".
 
     Bear in mind the difference between the internally generated /patchid
     and the externally offered /changeid.
@@ -335,7 +372,7 @@ PATCH
     patchid
         The internally generated patchid.
 
-    the DESCRIPTION manpage
+    DESCRIPTION
 
 TEST
     A test may be assigned to a bug, if the test succeeds the bug may be
@@ -347,8 +384,10 @@ TEST
     testid
         The internally generated testid.
 
-    the DESCRIPTION manpage
+    DESCRIPTION
 
 AUTHOR
     Richard Foley <richard@rfi.net> 2001
+
+    Amendments by Mark-Jason Dominus <mjd@plover.com>
 

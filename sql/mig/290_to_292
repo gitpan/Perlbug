@@ -1,0 +1,11 @@
+# rjsf: # mysqldump -d -p perlbug > create_database.sql
+
+# migrate user id, name, fullname
+# 
+# pb_bug_user
+# pb_group_user
+# pb_template_user
+# pb_user
+#
+# ALTER TABLE pb_user ADD UNIQUE u_user_name (name);
+

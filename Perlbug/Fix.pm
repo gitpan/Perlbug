@@ -1,4 +1,4 @@
-# $Id: Fix.pm,v 1.37 2001/12/01 15:24:42 richardf Exp $ 
+# $Id: Fix.pm,v 1.38 2001/12/05 20:58:37 richardf Exp $ 
 # 	
 
 =head1 NAME
@@ -10,7 +10,7 @@ Perlbug::Fix - Command line interface to fixing perlbug database.
 package Perlbug::Fix;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.37 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.38 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -936,6 +936,7 @@ sub scan_bugs { # s
 			if (length($body) >= 1) {
 				print '... ';
 				my $h_scan = $self->scan($body);
+				# don't modify any that have already been set?!
 				$$h_scan{'address'}{'names'} = \@cc if scalar(@cc) >= 1;
 				print 'scanned('.length($body).') '; # .(Dumper($h_scan));		
 				my $i_rels = my @rels = $o_bug->relate($h_scan);

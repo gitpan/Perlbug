@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: User.pm,v 1.32 2001/12/01 15:24:43 richardf Exp $
+# $Id: User.pm,v 1.34 2002/01/11 13:51:05 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::User - User class
 package Perlbug::Object::User;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.32 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.34 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -90,24 +90,48 @@ sub updatable {
     return @uids;
 }
 
+=item create 
 
-=item insertid
+Check if name is unique
 
-Returns newly inserted id from recently created object.
-
-	my $new_oid = $o_obj->insertid();
+    my $o_usr = $o_usr->create(\%data);
 
 =cut
 
-sub xinsertid {
-	my $self = shift;
+sub create {
+    my $self   = shift;
+	my $h_data = shift || $self->_oref('data');
 
-	my $oid = $self->data($self->attr('primary_key'));	
-	$self->debug(1, "newly inserted userid($oid)") if $Perlbug::DEBUG;
+	my $proposed = $$h_data{'userid'};
+	my ($extant) = $self->ids("userid LIKE '$proposed'");
 
-	return $oid; 
+	if ($extant) {
+		$self->debug(0, 'disallowed user data: '.Dumper($h_data));
+		$h_data = undef;
+		print "<h3>\nCan't create a non-unique userid($proposed) while extant($extant)!\n</h3><hr>\n";
+	}
+
+	$self->SUPER::create($h_data) if $h_data;
+
+    return $self;
 }
 
+
+
+=item new_id
+
+return given userid for user 
+
+=cut
+
+sub new_id {
+	my $self = shift;
+
+	my $newid = shift || 'NULL';
+	$self->debug(1, 'new '.ref($self)." objectid($newid)") if $Perlbug::DEBUG;
+	
+	return $newid;
+}
 
 
 =item htmlify 
@@ -161,6 +185,98 @@ sub htmlify {
 	# print '<pre>'.Dumper(\%usr).'</pre>';
     return \%usr;
 }
+
+=item update
+
+Ensure the password is encrypted
+
+	$o_usr->update(\%data);
+
+=cut
+
+sub update {
+	my $self = shift;
+	my $h_data = shift || $self->_oref('data');
+
+	my $pri = $self->attr('primary_key');
+	my $uid = $$h_data{$pri};
+
+	my $password = $$h_data{'password'} || '';
+	if ($password =~ /^(.+)$/) {
+		my $sql = $self->col('password', "userid = '$uid'");
+		my ($current) = $self->base->get_list($sql);
+		if ($current ne $password) { # been modified
+			$$h_data{'password'} = crypt($password, substr($password, 0, 2));
+			my $i_ok = $self->base->htpasswd($uid, $password);
+		}
+	}
+
+	my $match = $$h_data{'match_address'} || '';
+	if ($match =~ /^(.+)$/) {
+		$$h_data{'match_address'} = $self->base->db->quote($match);
+	}
+
+	return $self->SUPER::update($h_data);
+}
+
+=item webupdate
+
+Update user data via web interface, accepts relations via param('_opts')
+
+	$oid = $o_usr->webupdate(\%cgidata, $oid);
+
+=cut
+
+sub webupdate {
+	my $self   = shift;
+	my $h_data = shift;
+	my $oid    = shift;
+    my $cgi    = shift || $self->base->cgi();
+
+	if (!(ref($h_data) eq 'HASH')) {
+		$self->error("requires data hash ref($h_data) to update ".ref($self)." data via the web!");
+	} else {
+		if ($self->read($oid)->READ) {
+			$self->debug(0, "oid: ".$self->oid);
+			my $pri = $self->attr('primary_key');
+			$$h_data{$pri} = $oid;
+			my $i_updated = $self->update($h_data)->UPDATED; # internal debugging
+			if ($i_updated == 1) {
+				$self->SUPER::webupdate($h_data, $oid);
+			}
+		}
+	}
+	
+	return $oid;
+}
+
+=pod
+			if ($uid ne 'newAdmin') {
+				$o_usr->read($uid)->update(\%data);
+			} else { 
+				if ($self->isadmin eq $self->system('bugmaster')) {
+					$o_usr->create({
+						'userid'	=> $userid,
+						%data,
+					});
+					$NEWID = $uid = $o_usr->read($userid)->oid if $o_usr->CREATED;
+				}
+			}
+=cut
+
+1;
+
+=pod
+
+=back
+
+=head1 AUTHOR
+
+Richard Foley perlbug@rfi.net 2000 2001
+
+=cut
+
+__END__
 
 =pod
 
@@ -324,18 +440,4 @@ sub FORMAT_H {
 	# $format .= "<tr><td><b>Bug IDS</b></td><td>$$x{'bug_ids'}</td></tr>";
 	return ($top, $format, @args);
 }
-
-=pod
-
-=back
-
-=head1 AUTHOR
-
-Richard Foley perlbug@rfi.net 2000
-
-=cut
-
-
-# 
-1;
 

@@ -1,4 +1,4 @@
-# $Id: webhelp,v 1.4 2001/12/03 10:39:21 richardf Exp $
+# $Id: webhelp,v 1.7 2002/01/11 13:51:06 richardf Exp $
 
 =head1 NAME 
 
@@ -16,22 +16,22 @@ Help for users of the web interface, searching, objects and their fields, etc.
 
 =over 4
 
-=item mask 
+=item form 
 
-The search mask/fields, have no pre-selected entries, click B<query> and an indiscriminate 
+The search form has no pre-selected entries, click B<query> and an indiscriminate 
 list of all the bugs in the database will be returned.  
 
-Filterering is achieved by selecting options from the popup menus, or entering data in the text fields, as described below.
+Filtering is achieved by selecting options from the popup menus, or entering data in the text fields, as described below.
 
 Once an item is returned for viewing, links to it's constituent parts may be followed.
 
-The following describe fields not described under L</OBJECTS> below.
+The following describe fields not described under L</OBJECTS>
 
 =item admin
 
 List of active administrators who are registered against 1 or more bugs.
 
-=item and_or
+=item boolean
 
 Boolean switch to decide whether or not to B<AND> or to B<OR> the query fields together, in the creation of the SQL search query.
 
@@ -48,7 +48,6 @@ Note that you can also construct a query to retrieve the bugs since this Christm
 	http://bugs.perl.org/perlbug/perlbug.cgi?req=date&date=20001225
 
 Usage of a valid B<8> figure date is recommended, otherwise you're on your own :-)
-
 
 =item format
 
@@ -72,20 +71,31 @@ Display the B<SQL> executed.  This may help to pinpoint problems where searches 
 
 =item wildcards
 
-All text fields are searched using the SQL B<LIKE> operator. 
-L</bugid>, L</noteid>, L</patchid>, L</testid>, L</version>, L</change> and B</fixed> fields are used as seen, 
-that is, if a wildcard is not provided, one will not be used.
+All text fields are searched using the SQL 'LIKE' operator.  The
+B<LIKE> operator allows the symbol B<%> to match any sequence of
+characters, like '.*' in Perl regexes, and the symbol '_' to
+match any single character, like '.'  in Perl regexes.  Perlbug
+also maps '*' to '%', so '*' will also match any sequence of
+characters.  All other characters in text boxes are taken literally.
 
-Conversly B<subject>, B<body> and B<source address> fields have C<%> pre-placed around the search query by default.
+The B<Subject>, B<Body> and B<Source address> fields perform
+substring searches.  That is they are surrounded by B<%> internally.
+For example, entering I<filehandle> in the B<Subject> box searches for 
+any subject that contains the string I<filehandle>.
 
-What this means is that entering C<20001122.>, in the bugid field, will probably not return much, but C<20001122.%>' might.
-Of course a complete bugid could be entered on it's own eg: C<20001122.003>
-Whereas entering only B<strict> in the subject field will still use C<%strict%> during the search.
+The B<Bug ID>, B<Version>, B<Fixed in>, B<Message-ID>, B<Note ID>,
+B<Patch ID>, and B<Test ID>, fields are used exactly as entered.
+Entering '20001122' in the B<Bug ID> field will not match
+anything, because 20001122 is not the ID of any bug.  To find all
+the bugs that were submitted on date 20001122, use '20001122.%'.
 
-The available SQL wildcards: B<any single character> C<_> and B<none or more characters> C<%> are allowed in all fields. 
 Note also that for convenience(?), an asterisk(C<*>) will be simply mapped to the sql wildcard C<%>'.
 
-N.B. It can be a good idea to use the L</show_sql> switch to display what's being searched for. 
+It may be instructive to try a few searches with the B<Show SQL>
+option enabled.  This will display the SQL query that the engine
+is using to search the database.
+
+See also L<"object_search">
 
 =item retrieval
 
@@ -93,7 +103,37 @@ Bugs are initially returned in either B<list> or B<block> format, with an option
 At the base of the page is a list of all the other bugs found during the query, sectioned into similarly managable portions.
 The list format is designed for quickly moving around a list of bugs, while the block format is aimed at finding all information relating to said bug, without having to hop around.
 
-L<DESCRIPTION>
+=head2 Searching for objects
+
+=item object_search
+
+Where searching for each object, (not using the prime bug search mechanism), individually, each field is treated as searchable using the B<wildcard> mechanism described above.
+
+The following fields are treated specially:
+
+=item created
+
+Date field - use a format of B<YYYY-MM--DD> eg; 1987-05-02
+
+=item modified
+
+As per L<"created"> above 
+
+=item optional
+
+The Optional field is used by administrators to enter a command line string for defining relationships, similar to a typical B<bugdb> subject or To|Cc line.
+
+For example to assign B<group>, B<status>, B<admin> info etc. to a B<bug>:
+
+C<aix linux win98 macos closed richardf docs>
+
+Or a bugid, or two, to a patch:
+
+C<19870502.007 19870502.091>
+
+See B<mailhelp> for more info
+
+L<"DESCRIPTION">
 
 =back
 
@@ -137,11 +177,11 @@ deselect all shown record/s
 
 =item Admin
 
-switch from the B<noadmin> view to the B<admin> view
+switch from the B<noadmin> view to the B<admin> view (data updates are possible)
 
 =item Noadmin
 
-switch from the B<admin> view to the B<noadmin> view
+switch from the B<admin> view to the B<noadmin> view (less clutter)
 
 =item Delete
 
@@ -169,6 +209,12 @@ The date this record was in some way modified.
 =item history 
 
 The list of all modifications to each item, and who submitted them.
+
+=item transfer
+
+Certain objects may be transferred from one type to another, for example where a plain L</message> should be reclassified as, for example, a L</patch> or a L</test>.
+
+Additional data may always be entered in the L</optional> field
 
 =back
 
@@ -225,9 +271,9 @@ The status of the bug, with the following options:
 
 
 
-=item category
+=item group 
 
-The category of the bug has the following options:
+The group (or category) of the bug has the following options:
 
 
     bounce      -	report had invalid format, common with spam mail
@@ -339,7 +385,7 @@ Typically has one of the following forms:
 
 =item history
 
-History of administrative operations against this bug, changes of status/category, etc..
+History of administrative operations against this bug, changes of status/group, etc..
 
 =item cc
 
@@ -430,11 +476,11 @@ L<DESCRIPTION>
 
 =cut
 
-
-
 =head1 AUTHOR
 
 Richard Foley <richard@rfi.net> 2001
+
+Amendments by Mark-Jason Dominus <mjd@plover.com>
 
 =cut
 

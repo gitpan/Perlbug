@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Note.pm,v 1.18 2001/08/20 18:57:31 mstevens Exp $
+# $Id: Note.pm,v 1.19 2002/01/11 13:51:05 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Note - Note class
 package Perlbug::Object::Note;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.18 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.19 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -64,6 +64,7 @@ sub new {
 
 	bless($self, $class);
 }
+
 
 =pod
 

@@ -3,38 +3,58 @@
 <table width=100%>
 <!-- Functions -->
 <tr>
-    <td><a href="perlbug.cgi" target="perlbug" onClick="return go('index');">Home</a></td>
-    <td><a href="perlbug.cgi?req=search" target="perlbug" onClick="return go('search');">Search</a></td>
-    <td><a href="perlbug.cgi?req=groups" target="perlbug" onClick="return go('groups');">Groups</a></td>
-    <td><a href="perlbug.cgi?req=administrators" target="perlbug" onClick="return go('administrators');">Administrators</a></td>
-    <td><a href="perlbug.cgi?req=spec" target="perlbug" onClick="return go('spec');">Specification</a></td>
+	<td><b>Menu</b></td>
+    <td><a href="perlbug.cgi?req=index" target="perlbug" onClick="return go('index');">Home</a></td>
     <td><a href="perlbug.cgi?req=overview" target="perlbug" onClick="return go('overview');">Overview</a></td>
+    <td><a href="perlbug.cgi?req=search" target="perlbug" onClick="return go('search');">Prime search form</a></td>
     <td><a href="perlbug.cgi?req=date" target="perlbug" onClick="return go('date');">Recent (7 days)</a></td>
+	<td><a href="mailto:richard@perl.org">Maintainer</a></td>
+	<td colpan=2>&nbsp;</td>
 </tr>
-<br>
-<!-- Utilities 
-	<td><a href="archive/Perlbug.tar.gz" target="perlbug">Perlbug source</a></td> 
--->
+
+<!-- Objects -->
 <tr>
+	<td><b>Search forms</b></td>
+	<td> <!-- bug search --> </td>
+	<td> <!-- user search --> </td>
+	<td> <!-- group search --> </td>
+	<td> <!-- message search --> </td>
+	<td> <!-- note search --> </td>
+	<td> <!-- patch search --> </td>
+	<td> <!-- test search --> </td>
+	<td>&nbsp;</td>
+</tr>
+
+<!-- Documentation -->
+<tr>
+	<td><b>Documentation</b></td>
     <td><a href="perlbug.cgi?req=webhelp" target="perlbug" onClick="return go('webhelp');">Web help</a></td>
     <td><a href="perlbug.cgi?req=mailhelp" target="perlbug" onClick="return go('mailhelp');">Mail help</a></td>
-	<td><a href="http://sourceforge.net/projects/perlbug/" target="perlbug">Perlbug source</a></td> 
-	<td><a href="archive/Perlbug.sql.gz" target="perlbug">Perlbug database</a></td> 
+    <td><a href="perlbug.cgi?req=spec" target="perlbug" onClick="return go('spec');">Specification</a></td>
 <!-- FAQ -->
+	<td><a href="perlbug.cgi?req=todo" target="perlbug" onClick="return go('todo');">Todo</a></td>
+	<td>&nbsp;</td>
+</tr>
+
+<!-- External -->
+<tr>
+	<td><b>External</b></td>
+	<td> <!-- archive link --> </td>
+	<td><a href="http://sourceforge.net/projects/perlbug/" target="perlbug">Perlbug source</a></td> 
 	<td><a href="http://public.activestate.com/cgi-bin/perlbrowse"
 	       target="perlbug"
 	       >perl repository browser</a></td>
-	<td><a href="perlbug.cgi?req=todo" target="perlbug" onClick="return go('todo');">todo</a></td>
+	<td><a href="archive/Perlbug.sql.gz" target="perlbug">Perlbug database</a></td> 
+	<td>&nbsp;</td>
 </tr>
-<br>
+
 <!-- References -->
 <tr>
-	<td><a href="http://www.xray.mpe.mpg.de/mailing-lists/perl5-porters/" target="perlbug">p5p archive</a></td>
-	<td colspan=2> <!-- webserver link --> </td> 
+	<td><b>References</b></td>
+	<td> <!-- webserver link --> </td> 
 	<td> <!-- database link --> </td>
 	<td> <!-- os link --> </td>
 	<td> <!-- language link --> </td>
-	<td><a href="mailto:richard@perl.org">Maintainer</a></td>
 	<td>&nbsp;</td>
 </tr>
 </table>

@@ -1,7 +1,7 @@
 
 # Config pattern matches for Perlbug, for ck822 email tests see t/70_Email.t 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 10_Config.t,v 1.2 2001/12/01 15:24:43 richardf Exp $
+# $Id: 10_Config.t,v 1.3 2002/01/11 13:51:06 richardf Exp $
 #
 
 use strict;
@@ -145,6 +145,7 @@ sub get_matches {
 		},
 		'email'		=> {
 			'default'		=> '\w+\@\w+',			#
+			'antimatch'		=> '\w+',				#
 			'commands'		=> '\w+',				# {}
 			'deny_from'		=> '\w+',
 			'domain'		=> '[\w\.]+',			#

@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Relation.pm,v 1.35 2001/12/01 15:24:42 richardf Exp $
+# $Id: Relation.pm,v 1.37 2002/01/11 13:51:05 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Relation;
 use strict;
 use vars(qw($VERSION @ISA));
 @ISA = qw(Perlbug::Object); 
-$VERSION = do { my @r = (q$Revision: 1.35 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.37 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 =head1 DESCRIPTION
@@ -346,6 +346,7 @@ sub ids { # class
 	} # else = all 
 	
 	my @ids = $self->base->get_list($sql);
+	$self->debug(3, "input($input) extra($extra) -> ids(@ids)") if $Perlbug::DEBUG;
 
 	return @ids;
 }
@@ -534,7 +535,7 @@ sub store {
 			$self->error("has no source objectid($oid) to store against!");
 		} else {
 			if (!(scalar(@ids) >= 1)) {
-				$self->debug(0, "not trashing($oid) records unless supplied(@orig) with valid objectids(@ids)!"); # try using delete()
+				$self->debug(0, "not trashing($oid) ${s_key}_$t_key records unless supplied(@orig) with valid objectids(@ids)!"); # try using delete()
 			} else { # can't use $self->delete([target NOT IN (...)])
 				my $table = $self->attr('table');
 				my $sql = "DELETE FROM $table WHERE $s_key = '".$o_src->oid()."'";		

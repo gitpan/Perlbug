@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Version.pm,v 1.13 2001/10/19 12:40:21 richardf Exp $
+# $Id: Version.pm,v 1.14 2002/01/11 13:51:05 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Version - version handler
 package Perlbug::Object::Version;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.13 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.14 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -59,6 +59,7 @@ sub new {
 	my $self = Perlbug::Object->new( $o_base, 
 		'name'			=> 'Version',
 		'from'			=> [qw(bug patch test)],
+		'match_name'	=> '([\d+\.]+\d+)',
 		'prejudicial'	=> 1,
 		'to'			=> [],
 		@_,

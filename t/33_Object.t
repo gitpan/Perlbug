@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Object utility tests diff()
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 33_Object.t,v 1.4 2001/12/03 07:35:50 richardf Exp $
+# $Id: 33_Object.t,v 1.5 2001/12/05 20:58:38 richardf Exp $
 #
 use strict;
 use lib qw(../);
@@ -12,7 +12,7 @@ my $o_base = Perlbug::Base->new;
 my $o_test = Perlbug::Test->new($o_base);
 my $o_obj  = $o_base->object('bug');
 
-plan('tests' => 3);
+plan('tests' => 2);
 my $i_test = 0;
 my $i_err  = 0;
 

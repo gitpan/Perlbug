@@ -1,6 +1,6 @@
 # Perlbug format handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Format.pm,v 1.68 2001/12/03 10:39:20 richardf Exp $
+# $Id: Format.pm,v 1.71 2002/01/14 10:14:48 richardf Exp $
 #
 # TODO
 # formats in db
@@ -15,7 +15,7 @@ Perlbug::Format - Format class
 package Perlbug::Format;
 use strict;
 use vars qw($VERSION); 
-$VERSION = do { my @r = (q$Revision: 1.68 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.71 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Carp;
@@ -199,13 +199,13 @@ sub format_fields {
     if (ref($h_ref) ne 'HASH') {
 		$self->error("requires a hash ref($h_ref)");
 	} else {
-		$self->debug(2, "normalising...");
+		$self->debug(2, "normalising...") if $Perlbug::DEBUG;
 		my $n_ref = $self->normalize($h_ref);
 		if ($fmt !~ /[hHIL]/) { 	# ascii 
-			$self->debug(2, "asciifying...");
+			$self->debug(2, "asciifying...") if $Perlbug::DEBUG;
 			$h_ret = $self->asciify($n_ref); 
 		} else { 					# html 
-			$self->debug(2, "htmlifying...");
+			$self->debug(2, "htmlifying...") if $Perlbug::DEBUG;
 			$h_ret = $self->htmlify($n_ref); 
 			$$h_ret{'select'} = '&nbsp;' unless $$h_ret{'select'};
 			foreach my $k (sort keys %{$h_ret}) {
@@ -311,7 +311,7 @@ sub asciify {
 
 =item htmlify
 
-Returns args generically wrapped with html tags - way to convoluted.
+Returns args generically wrapped with html tags - way too convoluted.
 
 	my \%data = $o_fmt->htmlify(\%data);
 
@@ -337,7 +337,7 @@ sub htmlify { # rjsf - hopelessly long
 					$ret{$key} = '&nbsp;';
 				} else { 
 					if ($key !~ /^([a-z]+)_(ids|names)$/) { # should normally be... 
-						$ret{$key} = join(' &nbsp; ', @args);				
+						$ret{$key} = join(' &nbsp; ', sort @args);				
 					} else {								# rellies: 
 						my ($obj, $word) = ($1, $2);
 						my $o_obj = ($obj =~ /(arent|hildren)/io) ? $self->object('bug') : $self->object($obj);
@@ -374,14 +374,14 @@ sub htmlify { # rjsf - hopelessly long
 						$hdrs   = '' unless $hdrs;
 						$status = $args{'subject'}; 
 					}	
-					$ret{$key} = join('&nbsp;', $self->href("${obj}_id", [$val], $val, $status), $hdrs);
+					$ret{$key} = join('&nbsp;', $self->href("${obj}_id", [$val], $val, $status, [], qq|return go('${obj}_id&${obj}_id=$val')|, 'H'), $hdrs);
 					$self->debug(2, "obj($obj) val($val) -> ret($ret{$key})") if $Perlbug::DEBUG;
 					# print "obj($obj) key($key) val($val) -> ret($ret{$key})<hr>";
 				} elsif ($key =~ /^([a-z]+)_count$/o) {		# int
 					my $obj = $1;
 					my $pointer = "${obj}_ids";
 					my @ids = (ref($args{$pointer}) eq 'ARRAY') ? @{$args{$pointer}} : ();
-					my $ids = (scalar(@ids) >= 1) ? join("&${obj}_id=", @ids) : '';
+					my $ids = (scalar(@ids) >= 1) ? join("&${obj}_id=", sort @ids) : '';
 					my $i_ids = scalar(@ids);
 					my $stat_hdrs = "$i_ids ${obj}'s";
 					# print "obj($obj) key($key) val($val) -> ids($ids) i_ids($i_ids) stat($stat_hdrs)<hr>\n";
@@ -403,7 +403,7 @@ sub htmlify { # rjsf - hopelessly long
 		}
 	}
 
-	$self->debug(3, "$h_data => ".Dumper(\%ret)) if $Perlbug::DEBUG;
+	$self->debug(3, "$h_data => <pre>\n".Dumper(\%ret)."</pre>\n") if $Perlbug::DEBUG;
 
 	return \%ret;
 }
@@ -450,11 +450,24 @@ Return list of perlbug.cgi?req=key_id&... hyperlinks to given list).
 
 Maintains format, rng etc.
 
-    my @links = $o_fmt->href('bug_id', \@bids, 'visible element of link', [subject hint], [\@boldids]);
+    my @links = $o_fmt->href(
+		'bug_id', 
+		\@bids, 
+		'visible element of link', 
+		[subject hint], 
+		[\@boldids], 
+		$js,
+		$fmt
+	);
 
 Or 
 
-    my @links = $o_fmt->href('query&status=open', [], 'open bugs', 'Click to see open bugs', [\@boldids]);
+    my @links = $o_fmt->href(
+		'query&status=open', 
+		[], 
+		'open bugs', 
+		'Click to see open bugs', 
+	);
 
 =cut
 
@@ -465,6 +478,8 @@ sub href { #
     my $visible = shift || '';
     my $subject = shift || '';
 	my $a_bold  = shift || '';
+	my $js      = shift || ''; # "return go('$key')";
+	my $fmt     = shift || $self->base->current('format');
 
 	my @links = ();
 
@@ -473,11 +488,14 @@ sub href { #
 	} else {
 		my $cgi = $self->base->cgi;
 		my $url = $self->base->myurl;
-		my $fmt = $self->base->current('format');
+		my $target = ($self->base->isframed) ? 'perlbug' : '_top';
 		my $rid = $self->base->{'_range'};
 		my $range = ($rid =~ /\w+/o) ? "&range=$rid" : '';
-
 		my $trim = (ref($cgi) && $cgi->can('trim') && $cgi->param('trim') =~ /^(\d+)$/o) ? $1 : 25;
+		$trim = "&trim=$trim";
+		# my $commands = "&commands=read";
+		my $commands = '';
+
 		$subject =~ s/'/\\\'/gos; 	# javascript fixes...
 		$subject =~ s/"/\\\'/gos;	# 
 		$subject =~ s/\n+/ /gos;	# 
@@ -485,18 +503,20 @@ sub href { #
 
 		if ($key =~ /^\w+=\w+/o || scalar(@{$a_items}) == 0 ) { # requesting own ...
 			my ($format) = ($key =~ /format/o) ? '' : '&format='.($fmt || 'H'); #
-			my $link = qq|<a href=$url?req=${key}$format&trim=${trim}$range&target=perlbug $status>$visible</a>|;
+			my $link = qq|<a href="$url?req=${key}${format}${trim}${commands}${range}" target="$target" $status; onClick="$js">$visible</a>|;
 			push (@links, $link);
 			$self->debug(3, "singular($link)") if $Perlbug::DEBUG;
 		} else {
-			my $fmt = $fmt || 'H'; #
+			# $commands = "&commands=write";
+			$commands = ''; 
+			my $format = '&format='.($fmt || 'H');
 			ITEM:
 			foreach my $val (@{$a_items}) {
 				next ITEM unless defined($val) and $val =~ /\w+/o;
 				my $vis = ($visible =~ /\w+/o) ? $visible : $val;
-				my $link = qq|<a href=$url?req=$key&$key=$val&format=$fmt&trim=${trim}$range&target=perlbug $status>$vis</a>|;
+				my $link = qq|<a href="$url?req=$key&$key=${val}${format}${trim}${commands}${range}" target="$target" $status; onClick="$js">$vis</a>|;
 				push (@links, $link);
-				$self->debug(3, "status($status), cgi($url), key($key), val($val), format($fmt), trim($trim), status($status), vis($vis) -> link($link)") if $Perlbug::DEBUG;
+				$self->debug(3, "status($status), cgi($url), key($key), val($val), format($format), trim($trim), status($status), vis($vis) -> link($link)") if $Perlbug::DEBUG;
 			}
 		}
 	}
@@ -531,6 +551,23 @@ sub mailto {
 
     return $mailto;
 }
+
+=back
+
+=head1 AUTHOR
+
+Richard Foley perlbug@rfi.net 2000 2001
+
+=cut
+
+1;
+
+__END__
+
+# 
+# FROM HERE IS NOW REDUNDANT - SEE Perlbug::Object::Template
+# ===================================
+# 
 
 
 =item xpopup
@@ -581,11 +618,6 @@ sub xpopup {
 
     return $self->{'popup'}{$flag};     # return it
 }
-
-# 
-# FROM HERE WILL SHORTLY BE REDUNDANT - SEE Perlbug::Object::Template
-# ===================================
-# 
 
 =item FORMAT_ascii
 

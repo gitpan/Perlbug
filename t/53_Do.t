@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Do retrieval by non-id means tests for Perlbug: do (g l o q r s)
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 53_Do.t,v 1.6 2001/12/03 07:35:50 richardf Exp $
+# $Id: 53_Do.t,v 1.7 2002/01/11 13:51:06 richardf Exp $
 #
 use Perlbug::Test;
 plan('tests' => 8);
@@ -51,7 +51,7 @@ foreach my $tgt (sort keys %tgt) {
 
 my %xtgt = ( # 
 	'c'		=> ['u_n_ k_n - o n o_w [ hE-RE ]'], 
-    'q'		=> 'S_ELE -CT \* FRO M tx m_id_x blablabla',
+    'q'		=> 'S_ELE -CT \* FRO M ->this-should-fail<- tx m_id_x blablabla etc.',
 	'r'		=> 'this 41 is ext-rem_elt_tlitlty un_lik-ly 2B theirs asdl- now() ss', 
 	's'		=> 'no tVeRy-eq\ually likl ey to f_IND any upper(tnhi at all nghasd\\fvmn)',
 );

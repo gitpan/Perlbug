@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Fixed.pm,v 1.9 2001/12/01 15:24:42 richardf Exp $
+# $Id: Fixed.pm,v 1.10 2002/01/11 13:51:05 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Fixed - Fixed in Version handler
 package Perlbug::Object::Fixed;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.9 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -59,6 +59,7 @@ sub new {
 	my $self = Perlbug::Object->new( $o_base, 
 		'name'			=> 'Fixed',
 		'from'			=> [qw(bug)],
+		'match_name'	=> '([\d+\.]+\d+)',
 		'prejudicial'	=> 1,
 		@_,
 	);

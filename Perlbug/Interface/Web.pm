@@ -1,6 +1,6 @@
 # Perlbug WWW interface
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Web.pm,v 1.107 2001/12/03 10:39:20 richardf Exp $
+# $Id: Web.pm,v 1.111 2002/01/14 10:14:48 richardf Exp $
 # 
 
 =head1 NAME
@@ -17,7 +17,7 @@ package Perlbug::Interface::Web;
 use strict;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Perlbug::Base);
-$VERSION = do { my @r = (q$Revision: 1.107 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.111 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
 use lib qw(../);
@@ -66,7 +66,6 @@ sub new {
 	return $self;
 }
 
-
 =item setup
 
 Setup Perlbug::Interface::Web
@@ -89,7 +88,6 @@ sub setup {
     return $self;
 }
 
-
 =item check_user
 
 Access authentication via http, we just prime ourselves with data from the db as well.
@@ -102,14 +100,13 @@ sub check_user {
 	my $user = '';
     if (defined($ENV{'REQUEST_URI'}) && ($ENV{'REQUEST_URI'} =~ /\/admin/io)) {
 		$user = $self->SUPER::check_user($remote_user); # Base
-		$self->debug(1, "checked user($remote_user)->'$user'") if $Perlbug::DEBUG;
+		$self->debug(2, "checked user($remote_user)->'$user'") if $Perlbug::DEBUG;
 	} else {
 		$user = $self->SUPER::check_user(''); # Base
 		$self->debug(2, "Neutralising user($remote_user)->$user") if $Perlbug::DEBUG;
 	}
 	return $user; 
 }
-
 
 # SETUP 
 # ============================================================================ #
@@ -126,7 +123,7 @@ Return menu of system, designed for vertical format.  Wraps logo, title and link
 sub menus {
 	my $self = shift;
 	
-	my $ret = $self->logo.$self->get_title.$self->links();
+	my $ret = $self->logo.$self->get_title.$self->summary.$self->links;
 	# links = (menus) ? menus : links=~s/tr/br/
 
 	$ret =~ s/<(table|tr|td)[^>]*(?:>)//gsio;
@@ -137,10 +134,9 @@ sub menus {
 	return $ret;
 }
 
-
 =item logo 
 
-Return logo of system
+Return logo of system with href=hard_wired_url 
 
 	print $o_web->logo();
 
@@ -155,7 +151,6 @@ sub logo {
 
 	return $logo;
 }
-
 
 =item get_title
 
@@ -173,16 +168,42 @@ sub get_title {
 	return $title;
 }
 
+=item summary
+
+Return summary of open/closed bugs
+
+	print $o_web->summary();
+
+=cut
+
+sub summary {
+	my $self = shift;
+
+	my $o_bug  = $self->object('bug');
+	my $o_sta  = $self->object('status');
+	my $o_bs   = $o_bug->rel('status');
+
+	my ($oid)  = $o_sta->ids("name = 'open'");
+	my $i_summ = $o_bug->count;
+	my $i_open = $o_bs->count("statusid = '$oid'");
+
+	# my $href   = $self->href('query&status=open&commands=write', [], $i_open, 'open bugs', [], "newcoms('write')");
+	my $href   = $self->href('query&status=open', [], $i_open, 'open bugs', [], '');
+
+    my $sum = qq|<center>$i_summ($href) bugs</center>|;
+
+	return $sum;
+}
 
 =item links 
 
-Return links of system
+Return links of system, with adminfaq inserted if appropriate, configured links and object search forms.
 
 	print $o_web->links();
 
 =cut
 
-sub links {
+sub links { 
 	my $self = shift;
 	my $links = '&nbsp; links';
 	
@@ -190,17 +211,31 @@ sub links {
 
 	my $url = $self->myurl;
     if ($self->isadmin) {
-		$links =~ s#\Q<!-- FAQ -->\E#<td><a href="perlbug.cgi?req=adminfaq" target="perlbug" onClick="return go('adminfaq');">Admin FAQ<\/a><\/td>#;
+		my $target = ($self->isframed) ? 'perlbug' : '_top';
+		$links =~ s#\Q<!-- FAQ -->\E#<td><a href="perlbug.cgi?req=adminfaq" target="$target" onClick="return go('adminfaq');">Admin FAQ<\/a><\/td>#;
 	}
-	foreach my $target (qw(database language os webserver)) {
+
+	# Links
+	foreach my $target ($self->link()) { # qw(archive database language os webserver)) {
 		my $link = $self->link($target);
 		$links =~ s#\Q<!-- $target link -->\E#$link#;
 	}
-	$links =~ s/(perlbug\.cgi)/_$1/gi unless $self->current('framed'); # url =~ /_perlbug\.cgi/i;
+
+	# Object search forms
+	foreach my $obj ($self->objects('mail'), 'group', 'user') { 
+		my ($search) = $self->object($obj)->link('H', '', "return go('${obj}_id');");
+		if ($self->isadmin) {
+			my ($create) = $self->object($obj)->href($obj.'_initform', [], 'create', "Create a new $obj", '', "return go('${obj}_id')");
+			$search = $search.'&nbsp;-&nbsp;'.$create
+				if $self->isadmin eq $self->system('bugmaster');
+				# unless $obj eq 'user' && $self->isadmin ne $self->system('bugmaster');
+		}
+		$links =~ s#\Q<!-- $obj search -->\E#$search#;
+	}
+	# $links =~ s/(perlbug\.cgi)/_$1/gi unless $self->current('framed'); # url =~ /_perlbug\.cgi/i;
 
 	return $links;
 }
-
 
 =item index 
 
@@ -244,74 +279,102 @@ sub index {
 	return $ret;
 }
 
+=item get_request
+
+Return the B<req> value for this request
+
+	my $req = $self->get_request;
+
+=cut
+
+sub get_request {
+	my $self = shift;
+	my $cgi  = $self->cgi;
+
+	my ($req) = my @req  = grep(/\w+/, $cgi->param('req'));
+	$req = lc($req);
+
+	$self->debug(2, "req($req)") if $Perlbug::DEBUG;
+	unless ($req) {
+		$self->debug(0, "indecent req($req) ".$self->dump($cgi)); 
+		$self->error("indecent req($req) - check logs!");
+	}
+
+	return $req;
+}
+
+=item set_command
+
+Set the command type for the rest of the process, based on the input and operation
+
+	my $cmd = $o_web->set_command($req);
+
+=cut
+
+sub set_command { # start all home nix read write commands
+	my $self = shift;
+	my $swit = shift; # switched request
+	my $cgi  = $self->cgi;
+
+	my $req  = $self->get_request;
+	my $cmd  = $cgi->param('commands') || '';
+
+	if ($self->isadmin) {									# params
+		if ($req =~ /date|headers{0,1}|_query|update$/io) {	# request
+			$cmd = 'write';				# -> write
+		}
+
+		my %par = ();
+		PAR:
+		foreach my $par (sort $cgi->param) {
+			if ($par =~ /id$/io && scalar($cgi->param($par)) >= 1) {
+				$par{'_id'}++;			# -> write
+				$cmd = 'write';
+			}
+			if ($par =~ /_query$/io) {
+				$par{'_query'}++;		# -> write
+				$cmd = 'write';
+			}
+			if ($par =~ /_transfer$/io && scalar($cgi->param($par)) >= 1) {
+				$par{'transfer'}++;		# -> read
+				$cmd = 'read'; last PAR;
+			}
+		}
+		$self->debug(0, 'par: '.Dumper(\%par)) if scalar(keys %par) >= 1;
+
+		# $cmd = 'all' if $self->isbugmaster;
+	}
+
+	$self->debug(0, "given($swit) req($req) -> cmd($cmd)") if $Perlbug::DEBUG;
+	return $cmd;
+}
 
 =item commands
 
-Return command buttons applicable to current request 
+Return command menu buttons for request given
 
-	print $o_web->commands();
+	print $o_web->commands($req);
 
 =cut
 
-sub commands {
+sub commands { # -> current_buttons
 	my $self = shift;
-	my $req  = shift;
-
-	my $cgi  = $self->cgi();
+	my $cmd  = shift || $self->cgi->param('commands') || '';
 	my $ret  = '';
 
-	# Commands
-	my %com = ( # back home refresh search
-		'nix'	=> [qw()],
-		'read'	=> [qw(query reset)], 
-		'write'	=> [qw(query update nocc select unselect admin noadmin reset delete)], 
+	my %comm = ( # back home refresh search
+		'all'		=> [qw(query update select unselect admin noadmin reset create delete home search back nocc)], 
+		'nix'		=> [qw()],
+		'read'		=> [qw(query reset home search back)], 	# default
+		'write'		=> [qw(update select unselect admin noadmin reset home search back)], 
 	);
+	my $a_cmds = $comm{$cmd} || $comm{'read'}; 			# read!
 	
-	my $a_cmds = ($req =~ /^(commands|index|search)$/io) ? $com{'read'} : $com{'nix'};
-	if ($self->isadmin) {
-		my $opts = join('|', $self->editable);
-		$a_cmds = $com{'write'} if $req =~ /^($opts)$/i;
-	}
-	$ret .= '<br>'.$self->current_buttons($a_cmds).'<br>';
+	$ret = '<br>'.$self->current_buttons($a_cmds).'<br>';
 
-	# Controls
-	if (1 == 0 && $self->isadmin eq $self->system('bugmaster')) {
-		my $o_js = Perlbug::JS->new();
-		$ret .= "\n".join("&nbsp;\n", '',
-			# $o_js->frames(),
-			$o_js->control('menus'),
-			$o_js->control('perlbug'),
-			$o_js->control('commands', $self->web('domain'), $self->web('cgi')),
-		);
-	}	
-	$self->debug(2, "req($req) cmd($a_cmds) ret($ret)") if $Perlbug::DEBUG;
+	$self->debug(2, "given($cmd) -> cmds(@{$a_cmds})") if $Perlbug::DEBUG;
 
 	return $ret;
-}
-
-
-=item editable 
-
-Return list of acceptable requests 
-
-	print "administrative requests: " . $o_web->editable;
-
-=cut
-
-sub editable { # 
-	my $self = shift;
-	my @reqs = ('\w+ids{0,1}', qw(
-		 administrators
-		 commands
-		 date
-		 delete
-		 groups
-		 nocc
-		 query
-		 sql
-		 update
-	));
-	return @reqs;
 }
 
 
@@ -329,33 +392,27 @@ Return appropriate method call for request(else index), using internal CGI objec
 
 sub switch {
 	my $self = shift;
-	my $req  = shift;
-	my $ret  = '';
+    my $cgi  = $self->cgi();
+	my $req  = my $orig = $self->get_request;
 
-	$req = $req || $self->cgi()->param('req') || 'index';
+    if (defined($req)) {
+		$req = 'headers' 	if $req =~ /^(\w+)_header$/io; 	
+		$req = 'object_handler' 
+			if $req =~ /^(\w+)_(create|id|initform|query|search)$/io; # ? template
+		$req = 'object_create' 
+			if $req =~ /^(\w+)_(create)$/io; 
+		$req = 'spec' 		if $req =~ /^info$/io;
+		$req = 'update' 	if $req =~ /^nocc$/io;
+		$req = 'web_query' 	if $req =~ /^query$/io;
+    }
+	$self->debug(1, "requested($orig) -> switched($req)") if $Perlbug::DEBUG ;
 
-	my @ok = qw(
-		menus perlbug commands index
-		start header logo title links footer finish
-		headers objectsearch objectcreate objectids hist bidmids date
-		spec mailhelp webhelp overview groups administrators
-		query nocc sql delete update info search
-	); # (bug|status|user)_(ids|headers|search)
-
-    if ($req =~ /^\w+$/o) { # grep(/^$req$/i, @ok) 
-		$ret = $req;
-	} else {
-        $self->error("Invalid request($req)");
-	}
-	$self->debug(1, "requested($req) -> returning($ret)") if $Perlbug::DEBUG ;
-
-	return $ret;
+	return $req;
 }
-
 
 =item start
 
-Return appropriate start header data for web request.
+Return appropriate start header data for web request, includes start table.
 
 	print $o_web->start();
 
@@ -363,27 +420,27 @@ Return appropriate start header data for web request.
 
 sub start {
 	my $self = shift;
-	my $req  = shift;
+	my $swit = shift; # already been swapped!
 	my $ret  = '';
+
     my $cgi  = $self->cgi();
 
-	$self->debug(1, "start($req)") if $Perlbug::DEBUG;
-
-	$ret .= $self->top($req);
+	my $req = $self->get_request;
+	my $cmd = $self->set_command($req); # based loosely on request
+	$ret = $self->top($req, $cmd); # commands|update, home|read|write
 
 	unless ($self->current('framed')) {
 		$ret .= $self->logo($req);
 		$ret .= $self->get_title($req);
 	}
 
-	# $ret .= $cgi->dump if $self->isadmin eq $self->system('bugmaster');
-
-	$ret .= qq|<table border=1 width=100%>|;
 	my $target = ($req =~ /^(menus|commands)$/io) ? $1 : 'perlbug';
-	$ret .= $self->form($target);
+	$ret .= $self->form($target).qq|
+		<table border="0" valign="top"><COLGROUP cellvalign="top">\n
+	|;
 
 	unless ($self->current('framed')) {
-		$ret .= $self->commands($req);
+		$ret .= $self->commands($cmd);
 	}
 
 	return $ret;
@@ -402,8 +459,19 @@ sub form {
 	my $self = shift;
 	my $name = shift || 'undefined_form';
 
+	my $cgi  = $self->cgi;
 	my $url  = $self->myurl;
-	my $form = qq|<FORM name="$name" method="post" action="$url">|;
+	my $req  = $cgi->hidden(
+			-'name' 	=> 'req', 
+			-'default' 	=> '', 
+			-'override'	=> 1
+	); # unless $cgi->param('req') =~ /\w+/io; # has it's own
+
+	my $form = qq|
+		<FORM name="$name" method="post" action="$url">
+		$req
+	|;
+	$self->debug(0, "form($form)") if $Perlbug::DEBUG;
 
 	return $form;
 }
@@ -413,13 +481,14 @@ sub form {
 
 Return consistent top of page.
 
-	print $o_web->top;
+	print $o_web->top($req, $cmd);
 
 =cut
 
-sub top {
+sub top { # start
     my $self = shift;
 	my $req  = shift;
+	my $cmd  = shift;
 	my $ret  = '';
 
     my $cgi  = $self->cgi();
@@ -434,9 +503,11 @@ sub top {
 
 	$title = qq|$title Web Interface $version $req|; 
 	my $call = ($req =~ /(commands|menus)/o) ? $1 : 'perlbug';
-	my $functions = Perlbug::JS->new()->$call();
+	my $functions = Perlbug::JS->new($self->isframed)->$call();
 
 	$ret .= $cgi->start_html(
+		-'bgcolor'	=> $self->web('bgcolor'),
+		-'onLoad'	=> "return onPageLoad('$req', '$cmd');", # onpageload
 		-'script'	=> $functions,
 		-'title'	=> $title,
 	);
@@ -460,32 +531,16 @@ sub request {
 	my $req  = shift;
 	my $ret  = '';
 
-    my $cgi  = $self->cgi();
-	    
-	my $orig = $req;
-    if (defined($req)) {
-		$req = 'headers' 	if $req =~ /^(\w+)_header$/io; 	
-		$req = 'objectids' 	if $req =~ /^(\w+)_id$/io;
-		$req = 'objects'    if $req =~ /^(\w+)_(create|display|search|template)$/io;
-		$req = 'spec' 		if $req =~ /^info$/io;
-		$req = 'update' 	if $req =~ /^nocc$/io;
-		$req = 'web_query' 	if $req =~ /^query$/io;
-    }
-	$self->debug(1, "Web::request($orig => $req) accepted") if $Perlbug::DEBUG; 
-	# print "$orig => $req: ".$cgi->dump if $Perlbug::DEBUG; 
-		
-    if (!($self->can($req))) { # ok and can
-		$self->error("unable to do request($req)!");
+	$self->debug(1, "req($req): ".Dumper($self->cgi)) if $Perlbug::DEBUG;
+
+	if ($req =~ /^create|delete|sql|update$/i && !$self->isadmin) {
+		$self->error("User(".$self->isadmin.") not permitted for action($req)");
 	} else {
-		if ($req !~ /^delete|sql|update$/i) {
-			print $self->$req($orig);
+		unless ($self->can($req)) {
+			$self->error("Invalid request($req)");
 		} else {
 			$DB::single=2;
-			if ($self->isadmin =~ /^(\w+)$/o) {
-				print $self->$req($orig);
-			} else {
-				$self->error("User(".$self->isadmin.") not permitted for action($req)");
-			}
+			print $self->$req();
 		}	
 	}
 
@@ -524,7 +579,7 @@ sub target2file {
 
 Return appropriate finishing html
 
-Varies with framed, includes new hidden request field
+Varies with framed, includes table finish 
 
 	print $o_web->finish($req);
 
@@ -535,27 +590,20 @@ sub finish { # index/display/bottom/base - see also start
 	my $req  = shift;
 	my $ret  = '';
 
-    my $cgi  = $self->cgi();
-
+    my $cgi   = $self->cgi();
 	my $range = $self->{'_range'};
 	if ($self->current('framed')) {
-		$ret .= $cgi->hidden(
-			-'name' 	=> 'req', 
-			-'default' 	=> '',
-			-'override'	=> 1
-		) unless $req =~ /index/io; # has it's own
 		$ret .= $cgi->hidden(
 			-'name' 	=> 'range', 
 			-'default' 	=> $range,
 			-'override'	=> 1
 		);
 	}
-	# $ret .= '<tr><td colspan=?>'.$self->ranges($self->{'_range'}).'</td></tr>' if $range;
 	$ret .= '</table>';
 	$ret .= '<hr>'.$self->ranges($self->{'_range'}).'<hr>' if $range;
 
 	unless ($self->current('framed')) {
-		$ret .= $self->commands($req);
+		$ret .= $self->commands($self->set_command($req));
 		$ret .= $self->links($req);
 	}
 
@@ -569,7 +617,6 @@ sub finish { # index/display/bottom/base - see also start
 
 # REQUESTS 
 # ============================================================================ #
-
 
 =item overview
 
@@ -677,81 +724,94 @@ sub date {
     return '';
 }
 
+=item create
 
-=item objectids
+Wrapper for object creation
 
-Wrapper for object id access
-
-	$o_web->objectids($cgi);
+	$o_web->create($obj, \%data);
 
 =cut
 
-sub objectids {
-    my $self = shift;
-    my $cgi  = $self->cgi();
+sub create {
+    my $self   = shift;
+	my $obj    = shift;
+	my $h_data = shift;
+	my $id     = '';
 
-	my ($obj) = my ($req) = lc($cgi->param('req'));
-	$obj =~ s/^(\w+)_id$/$1/;
-    my @ids  = $cgi->param("${obj}_id");
-	my $trim = $cgi->param('trim') || 30;
-	my $fmt  = $cgi->param('format') || 'L';
-
-	my $objects = join('|', $self->objects('mail'), $self->objects('item'), $self->objects('flag'));
-	$self->debug(1, "req($req) obj($obj) object($objects) ids(@ids)") if $Perlbug::DEBUG;
-
-	if ($obj !~ /^($objects)$/) {
-		print "<h3>unrecognised obj($obj) id request($req)</h3>";
+	if (!$self->isadmin) {
+		$self->error("Not permitted!");
 	} else {
-		$#ids = $trim if $trim <= scalar(@ids);
 		my $o_obj = $self->object($obj);
-		foreach my $oid (@ids) {
-			$o_obj->read($oid);
-			print $o_obj->format if $o_obj->READ;
-		}
-    }
+		my $doit = 'do'.uc(substr($obj, 0, 1));
+		($id) = $self->$doit($h_data); 			# 
+	}
 
-    return '';
+	$self->debug(2, "new $obj => oid($id)") if $Perlbug::DEBUG;
+
+    return $id;
 }
 
+=item object_handler
 
-=item xobjects
+Wrapper for object access: no ids = search form
 
-Wrapper for object create|display|search|template access
-
-	print $o_web->xobjects($cgi);
+	$o_web->object_handler($me_thod, $oid); # o_cgi comes from the heavens
 
 =cut
 
-sub xobjects { # create|search|template|update
-    my $self = shift;
-    my $cgi  = $self->cgi();
+sub object_handler {
+    my $self   = shift;
+	my $passed = shift || ''; # maybe
+	my $oid    = shift || ''; # maybe
+    my $cgi    = shift || $self->cgi();
 
-	my $req = lc($cgi->param('req'));
-	my $trim = $cgi->param('trim') || 30;
-
-	if ($req !~ /^(\w+)_(create|display|search|template)$/) {
-		$self->debug(0, "unrecognised objects request($req)!");
+	my ($req) = $passed || $self->get_request;
+	if ($req !~ /^(\w+)_(\w+)$/o) {
+		print "<h3>unrecognised request($req)</h3>";
 	} else {
 		my ($obj, $call) = ($1, $2);
-		my @ids = $cgi->param("${obj}_id");
+		$self->debug(1, "req($req) -> obj($obj) call($call)") if $Perlbug::DEBUG;
 		my $objects = join('|', $self->objects('mail'), $self->objects('item'), $self->objects('flag'));
-		$self->debug(1, "req($req) obj($obj)") if $Perlbug::DEBUG;
-
-		if ($obj !~ /^($objects)$/) {
-			print "<h3>unrecognised obj($obj) call($call)</h3>";
+		if ($obj !~ /^($objects)$/o) {
+			print "<h3>unrecognised obj($obj) request($req) in $objects</h3>";
 		} else {
-			$#ids = $trim if $trim <= scalar(@ids);
+			my $trim = $cgi->param('trim') || 15;
+			my @ids  = ($oid =~ /\w+/o) ? ($oid) : $cgi->param("${obj}_id");
 			my $o_obj = $self->object($obj);
-			foreach my $oid (@ids) {
-				$o_obj->read($oid);
-				print $o_obj->format($call, 'h') if $o_obj->READ && $o_obj->exists([$oid]);
+
+			if ($call =~ /init/io && !$self->isadmin) {		# 
+				$self->error("Not permitted!");
+			} else {
+				my $h_query = $o_obj->massage($cgi, $oid);	# DOIT
+				if ($call eq 'create') {
+					@ids = $self->create($obj, $h_query);	# create
+				} else {
+					@ids = $o_obj->$call($h_query, $oid);	# id|initform|query|search|slurp|transfer|update|webupdate|etc.
+				}
 			}
+				
+			my $i_ids = scalar(@ids);
+			if ($i_ids >= 1) {								# SHOW
+				$#ids = ($i_ids > $trim) ? $trim - 1 : $i_ids - 1;
+				my $curfmt = $self->current('format');
+				my $fmt = (scalar(@ids) == 1) ? uc($curfmt) : lc($curfmt);
+				foreach my $oid (@ids) {
+					$o_obj->read($oid);
+					print $o_obj->format($fmt) if $o_obj->READ;
+				}
+			} else { # ?
+				print '<h3>',
+					$self->help_ref('object_search', 'Object search help'),
+					$self->help_ref('wildcards', 'and sql wildcards usage'),
+					$o_obj->search,
+				'</h3>' unless $call eq 'initform';
+			}
+			$self->debug(3, "$obj $call => ids(@ids)") if $Perlbug::DEBUG;
 		}
     }
 
-    return '';
+    return ();
 }
-
 
 =item hist
 
@@ -808,7 +868,7 @@ sub headers {
     my $self = shift;
     my $cgi  = $self->cgi();
 
-	my ($obj) = my ($req) = lc($cgi->param('req'));
+	my ($obj) = my ($req) = $self->get_request;
 	$obj =~ s/^(\w+)_header$/$1/;
     my ($id)  = $cgi->param("${obj}_header"); # only going to support one for the moment
 
@@ -819,7 +879,7 @@ sub headers {
 		$self->error("Can't do invalid obj($obj) id($id) header request($req)");
 	} else {
 		$obj = 'bug' if $obj =~ /parent|child/io;
-    	my ($item) = $self->href($obj.'_id', [$id], $id);
+    	my ($item) = $self->href($obj.'_id', [$id], $id, '', [], qq|return go('${obj}_id&${obj}_id=$id')|);
     	my $title = $self->system('title');
     	my $headers = qq|<table border=1>
         	<tr><td colspan=3 width=500><b>$title $obj ($item) headers</td/></tr>
@@ -836,17 +896,17 @@ sub headers {
 }
 
 
-=item bidmids
+=item bidmid
 
 Wrapper for bugid and messageid access
 
 =cut
 
-sub bidmids {
+sub bidmid {
     my $self = shift;
     my $cgi  = $self->cgi();
 
-    my @bids = $cgi->param('bidmids');
+    my @bids = $cgi->param('bidmid');
 	my $o_msg= $self->object('message');
 
 	$self->dof('H');
@@ -857,95 +917,6 @@ sub bidmids {
 	}
 
     return '';
-}
-
-
-=item administrators
-
-List of administrators
-
-=cut
-
-sub administrators {
-    my $self  = shift;
-    my $cgi   = $self->cgi();
-    my $url   = $self->myurl;
-    my $title = $self->system('title');
-	my @uids  = $cgi->param('userid');
-    print qq|<h2>$title administrators:</h2>|;
-
-	my $o_usr  = $self->object('user');
-	my $filter = ($self->isadmin eq $self->system('bugmaster'))
-		? ''
-		: "active IN ('1', '0')";
-	my @admins = $o_usr->ids($filter);
-   
-   	ADMIN:
-    foreach my $oid (@admins) {
-		if (@uids) {
-			next ADMIN unless grep(/$oid/, @uids);
-		}
-		print $o_usr->read($oid)->format;
-	}
-
-    my $ADMIN = '';
-    if ($self->isadmin eq $self->system('bugmaster')) {
-        my $hidden = qq|<input type=hidden name=newAdmin_password_update value=1>|;
-        $ADMIN = qq|</table><table><tr><td colspan=5><hr><b>New User:</b></td></tr>\n<tr><td>|.
-    join("</td></tr>\n<tr><td>",
-                                    $cgi->checkbox( -'name' => 'userids',           -'value'=> 'newAdmin',  -'label' => '',             -'checked' => '', -'override' => 1),
-    'Userid:&nbsp; </td><td>'.      $cgi->textfield(-'name' => 'newAdmin_userid',   -'value' => '',         -'label' => 'userid',       -'size' => 10,  -'maxlength' => 10, -'override' => 1),
-    'Name:&nbsp; </td><td>'.        $cgi->textfield(-'name' => 'newAdmin_name',     -'value' => '',         -'label' => 'name',         -'size' => 25,  -'maxlength' => 50, -'override' => 1),
-    'Active:&nbsp; </td><td>'.      $cgi->popup_menu(-'name'=> 'newAdmin_active',   -'values' => [1, 0],    -'labels' => {1 => 'Yes', 0 => 'No'},       -'default' => 0, -'override' => 1),
-    'Password:&nbsp; </td><td>'.    $cgi->textfield(-'name' => 'newAdmin_password', -'value' => '',         -'label' => 'password',     -'size' => 16,  -'maxlength' => 16, -'override' => 1),
-    'Address:&nbsp; </td><td>'.     $cgi->textfield(-'name' => 'newAdmin_address',  -'value' => '',         -'label' => 'address',      -'size' => 35,  -'maxlength' => 50, -'override' => 1),
-    'Match Adress:&nbsp; </td><td>'.$cgi->textfield(-'name' => 'newAdmin_match_address', -'value' => '',    -'label' => 'match_address', -'size' => 35, -'maxlength' => 50, -'override' => 1),
-        );
-        $ADMIN .= '</td></tr>';
-    }
-    print $ADMIN.'</table>';
-    return '';
-}
-
-
-=item groups 
-
-List of groups
-
-=cut
-
-sub groups {
-    my $self  = shift;
-    my $cgi   = $self->cgi();
-    my $url   = $self->myurl;
-    my $title = $self->system('title');
-    print qq|<h2>$title groups:</h2>|;
-   
-    my $o_grp = $self->object('group');
-    my $o_usr = $self->object('user');
-	my @gids = $o_grp->ids; 
-
-    foreach my $oid (@gids) {
-		print $o_grp->read($oid)->format;
-	}
-
-	if ($self->isadmin =~ /\w+/o and $self->isadmin ne 'generic') { # addgroup
-		my $add = $cgi->textfield(-'name' => 'addgroup', -'value' => '', -'size' => 20, -'maxlength' => 20, -'override' => 1);
-		my $groups = "</table><hr><table border=0>";
-
-		$groups .= "<tr><td><b>Add a new group (alphanumeric only):</b></td><td>&nbsp;$add</td></tr>";
-
-		my $desc = $cgi->textfield(-'name' => 'adddescription', -'value' => '', -'size' => 35, -'maxlength' => 99, -'override' => 1);
-		$groups .= "<tr><td><b>Description for new group:</b></td><td>&nbsp;$desc</td></tr>";
-
-		my $admins = $o_usr->choice('addusers');
-		$groups .= "<tr><td><b>New group members:</b></td><td>&nbsp;$admins</td></tr>";
-		
-		$groups .= "</table><hr>";
-		print $groups;
-	}
-
-	return '';
 }
 
 
@@ -983,7 +954,7 @@ sub spec {
 		$spec
 	|;
 	print $dynaspec;
-    return '';
+    return ();
 }
 
 
@@ -1014,7 +985,7 @@ sub webhelp {
     |;	
 	print $help;
 
-	return '';
+	return ();
 }
 
 
@@ -1058,25 +1029,30 @@ sub delete {
     my $self = shift;
     my $cgi  = $self->cgi();
 
-	my @bugids = $cgi->param('bugids');
-	if (scalar @bugids >= 1) {
-	 	my $res = $self->dox(\@bugids); # doX handled by bugfix
-		if ($res >= 1) {
-			print "bugids (@bugids) succesfully deleted<br>";
-		} else {
+	my ($objids) = grep(/^[a-z]+?id$/, $cgi->param);
+	my @ids = $cgi->param($objids);
+	my $obj = $objids;
+	$obj =~ s/^([a-z]+)?id$/$1/; 
+
+	my $admin = $self->isadmin;
+	my $o_obj = $self->object($obj);
+
+	if (!($admin)) {
+		print "<h3>Can't delete $obj ids if not an admin</h3><hr>";
+	} else {
+		if ($obj eq 'user' && $admin ne $self->system('bugmaster')) {
 			my $maintainer = $self->system('maintainer');
-			$maintainer = qq|<a href="mailto: $maintainer">$maintainer</a>|;
-			print "<hr>bugids not entirely deleted, please report this to the administrator: $maintainer";
-			print '<table border=1>', $self->dob(\@bugids), '</table>';
-		}
-    } else {
-		if ($cgi->param('userids') >= 1) {	
-			my $maintainer = $self->system('maintainer');
-			print "Cannot delete adminstrator from web interface, see maintainer($maintainer)";
+			print "Cannot delete administrator from web interface, see maintainer($maintainer)";
 		} else {
-			print "No bugids (@bugids) selected for deletion?";
+			my $i_del = $o_obj->delete(\@ids)->DELETED;
+			my $s = (scalar(@ids) == 1) ? '' : 's';
+			print '<h3>'.@ids." record$s".(
+				($i_del) ? '' : " <b>not</b>"
+				)." deleted($i_del)<h3>";
 		}
 	}
+	print $o_obj->search;
+
 	return '';
 }
 
@@ -1117,8 +1093,8 @@ sub todo { # mailto -> maintainer
 		# my $i_todo = $self->SUPER::todo($tup); # mail out
 	}
 	my $todo = join('', $self->read('todo'));
-    print "<pre>$todo</pre>";
-    return '';
+    print $todo;
+    return ();
 }
 
 
@@ -1132,8 +1108,8 @@ sub adminfaq { # ...
     my $self = shift;
 	my $cgi = $self->cgi();
 	my $adminfaq = join('', $self->read('adminfaq'));
-    print "<pre>$adminfaq</pre>";
-    return '';
+    print $adminfaq;
+    return ();
 }
 
 
@@ -1153,15 +1129,18 @@ sub web_query {
 
 	my $o_bug = $self->object('bug');
 	my $found = my @bids = $o_bug->ids($sql);
+	$self->debug(1, "sql($sql) bugids: ".@bids) if $Perlbug::DEBUG;
 	my $s = ($found == 1) ? '' : 's';
 	print "Found $found relevant bug id$s<br>";
 
 	if (@bids) {
 		my $o_rng = $self->object('range');
 		$o_rng->create({
+			'name'		=> 'bug',
 			'rangeid'	=> $o_rng->new_id,
 			'processid'	=> $$,
-			'range'		=> join(',', @bids), # $o_rng->relation('bug')->assign(\@bids); # ouch!
+			'range'		=> $o_rng->rangeify(\@bids), 
+			# $o_rng->relation('bug')->assign(\@bids); # ouch!
 		});
 		$self->{'_range'} = $o_rng->oid if $o_rng->CREATED; 
 	}
@@ -1185,7 +1164,7 @@ sub web_query {
 
 =item search
 
-Construct earch form 
+Construct search form 
 
 	with chosen params as defaults...
 
@@ -1197,7 +1176,9 @@ sub search {
 	my $o_bug = $self->object('bug');
 	my @bugs  = $o_bug->ids;
 	# my @sourceaddr = $o_bug->col('sourceaddr');
+	# $Id: Web.pm,v 1.111 2002/01/14 10:14:48 richardf Exp $
 
+# $Id: Web.pm,v 1.111 2002/01/14 10:14:48 richardf Exp $
 	# Elements
     $self->debug(3, "Setting search form elements...") if $Perlbug::DEBUG;   
 	my $body     = $cgi->textfield(-'name'  => 'body',   	-'default' => '', -'size' => 35, -'maxlength' => 45, -'override' => 1);
@@ -1225,11 +1206,8 @@ sub search {
 	my %dates    = $self->date_hash; # 'labels' => \%dates ?
 	my @dates    = keys %dates;
 	my $date     = $cgi->popup_menu(-'name' => 'dates',     -'values' => \@dates,      -'default' => 'any', -'override' => 1);
-	# no case sensitivity in mysql?
-    # my $case     = '';
-    #if ($self->isadmin eq $self->system('bugmaster')) {
-    #    $case     = 'Case: '.$cgi->popup_menu(-'name' => 'case',      -'values' => ['Sensitive', 'Insensitive'], -'default' => 'Insensitive');
-    #}
+	# no case sensitivity in mysql => indexOf($str)
+    # $case     = 'Case: '.$cgi->popup_menu(-'name' => 'case',      -'values' => ['Sensitive', 'Insensitive'], -'default' => 'Insensitive');
     my $andor_def = ($cgi->param('andor') =~ /^(AND|OR)$/o) ? $1 : 'AND';
     my $andor    = $cgi->radio_group(-'name'=> 'andor',     -'values' => ['AND', 'OR'], -'default' => $andor_def, -'override' => 1);
     my $msgs_def = ($cgi->param('msgs') =~ /^(\d+\+*)$/o) ? $1 : 'ALL';
@@ -1264,7 +1242,7 @@ sub search {
 	my $RESTRICT= $self->help_ref('restrict', 'Restrict returns to');
 	my $FMT		= $self->help_ref('format', 'Formatter');
 	my $SHOWSQL = $self->help_ref('show_sql', 'Show SQL');
-	my $ANDOR	= $self->help_ref('and_or', 'Boolean');
+	my $ANDOR	= $self->help_ref('boolean', 'Boolean');
 	my $ASCD	= $self->help_ref('asc_desc', 'Asc/Desc by bugid');
 	my $NOTE	= $self->help_ref('note', 'Note ID');	# <a href="$url?req=webhelp">help</a>	
 	my $PATCH 	= $self->help_ref('patch', 'Patch ID');
@@ -1302,235 +1280,39 @@ sub search {
 
 =item update
 
-For all application objects
+For all application objects, wraps to B<object_handler>
 
-Needs to be migrated to: 
-
-	my $i_ok = Perlbug::Object->new('patch')->read($pid)->update($h_newdata, [$h_reldata...]); 
+	$o_web->update(); # args ignored here for passing purposes
 
 =cut
 
 sub update {
     my $self = shift;
     my $req  = shift;
+    my $cgi  = $self->cgi();
+	my $i_transfer = 0;
 
-	my $orig_fmt = $self->current('format');
-	my $orig_cxt = $self->current('context');
-
-    my $cgi = $self->cgi();
-    my $newgroup = $cgi->param('addgroup');
-    my $desc = $cgi->param('adddescription');
-    my @bids = $cgi->param('bugids');
-    my @cids = $cgi->param('changeids');
-    my @gids = $cgi->param('groupids');
-    my @nids = $cgi->param('noteids');
-    my @pids = $cgi->param('patchids');
-    my @tids = $cgi->param('testids');
-	my @uids = $cgi->param('userids');
-	my $args = "bugids(@bids), changeids(@cids), groupids(@gids), newgroup($newgroup), noteids(@nids), patchids(@pids), testids(@tids), userids(@uids)";
-	my $total= (@bids.@cids.@gids.@nids.@pids.@tids.@uids.scalar($newgroup));
-    my $ok   = 1;
-	if (!(scalar($total)) >= 1) {
-		$ok = 0;
-		my $err = "Nothing($total) selected to update! -> $args";
-		$self->error($err);
-	} else {
-		$self->debug(1, "working with $args") if $Perlbug::DEBUG;
-	}
-
-=pod
-
-	foreach my $obj ($self->objects()) { # ...
+	OBJ:
+	foreach my $obj ($self->objects()) { # -> object_handler
 		my $o_obj = $self->object($obj);
-		my @ids = $cgi->param("${obj}ids");
+		my @ids = $cgi->param("${obj}id");
+		next OBJ unless scalar(@ids) >= 1;
+		OID:
 		foreach my $oid (@ids) {
-			$o_obj->read($oid)->web_update($cgi);
-			foreach my $rel ($o_obj->rels) {
-				# my $o_rel = $o_obj->rel($rel)->set_source($o_obj);
-				# if ($self->attr('type') eq 'friendly') {
-				# 
-				# }
-				# 
+			next OID unless $o_obj->ok_ids([$oid]);
+			my $transfer = $cgi->param($oid.'_transfer'); # web transfer
+			my $method = $obj.'_webupdate';
+			if ($transfer =~ /\w+/) {
+				$method = $obj.'_transfer';
+				$i_transfer++;
 			}
-			print $o_obj->format; 
+			$self->object_handler($method, $oid, $cgi);
 		}
+		$self->{'_i_transfer'} = $i_transfer;
+		last OBJ if $i_transfer >= 1;
 	}
 
-=cut
-
-	# GROUP
-	if ($ok == 1 && scalar @gids >= 1) {
-		my $o_grp = $self->object('group');
-		$self->debug(1, "groups(@gids)") if $Perlbug::DEBUG;
-    	GROUP:
-		foreach my $gid (@gids) {
-			next GROUP unless $gid =~ /\d+/o;
-            next GROUP unless $ok == 1;
-			my $o_grp = $self->object('group')->read($gid);
-			if ($o_grp->READ) {
-				my $desc = $cgi->param($gid.'_description') || '';
-				my $name = $cgi->param($gid.'_name') || '';
-				$o_grp->update({
-					'name'			=> $name,
-					'description' 	=> $desc,
-				});
-
-				my @uids = $cgi->param($gid.'_userids');
-				$o_grp->relation('user')->store(\@uids) if @uids;
-
-				my $addr = $cgi->param($gid.'_addaddress') || '';
-				$o_grp->relation('address')->_assign([$addr]) if $addr;
-
-				my @bids = $cgi->param($gid.'_addabugid');
-				$o_grp->relation('bug')->assign(\@bids) if @bids;
-			}
-    	}
-		print '<table border=1>', $self->dog(\@gids, 'h'), '</table>';
-	}	
-	
-	# NEW GROUP
-	if ($ok == 1 && $newgroup) {
-		if ($newgroup !~ /^\w\w\w+$/) {
-			$ok = 0;
-			print "Group($newgroup) notallowed: please use at least 3 alphanumerics for group names!<hr>";
-		} else {
-			my $o_grp = $self->object('group');
-			my @gindb = $o_grp->col('name');
-			my $pri = $o_grp->primary_key;
-			$o_grp->create({
-				$pri	 		=> $o_grp->new_id,
-				'name'			=> $newgroup,
-				'description'	=> $desc,
-			});
-			if ($o_grp->CREATED) {
-				push(@gids, $o_grp->oid); 
-				my @uids = $cgi->param('addusers');
-				$o_grp->relation('user')->store(\@uids) if @uids;
-			}
-		}
-        print '<table border=1>', $self->groups(\@gids), '</table>'; 
-	}
-
-	# BUG IDs
-    if ($ok == 1 && scalar @bids >= 1) {
-		my $o_bug = $self->object('bug');
-		$self->debug(1, "bugs(@bids)") if $Perlbug::DEBUG;
-		$self->current({'context', 'text'}); # notify_cc
-		$self->current({'format',  'a'});
-    	BUG:
-		foreach my $bid (@bids) {
-            next BUG unless $ok == 1;
-			my $o_bug = $self->object('bug')->read($bid);
-			next BUG unless $o_bug->READ;
-        	# my $orig = $self->current_status($bid);
-			my $orig = $o_bug->format('a');	
-        	$self->dok([$bid]);
-
-			my %update = ();
-			REL: # space separated(str2ids), store/assign(friendly/prejudicial)
-			foreach my $rel ($o_bug->rels) { 
-				next if $rel eq 'message';
-				my $o_rel = $o_bug->relation($rel);
-				my @update = ($rel =~ /(change|patch|note|test|parent|child)/io) 
-					? split(/\s+/, $cgi->param($bid.'_'.$rel))  # space seperated
-					: $cgi->param($bid."_$rel");				# plain
-				my $type = ($rel =~ /(address|change|child|fixed|parent|version)/) 
-					? 'names' : 'ids';
-				my @extant = $o_bug->rel_ids($rel);
-				$update{$rel}{$type} = [(@update, @extant)] if scalar(@update) >= 1;
-			}				
-			my $i_rel = $o_bug->relate(\%update);
-			$self->debug(1, "  called ids(".(scalar(keys %update)).") -> $i_rel");
-
-			if ($self->current('mailing') == 1) {
-				my $ix = $self->notify_cc($bid, $orig) unless $req eq 'nocc'; 
-			}
-
-			# my $i_newnoteid  = $self->doN($bid, $cgi->param($bid.'_new_note'),  '') 
-			foreach my $targ (qw(note patch test)) {
-				my $call = 'do'.uc(substr($targ, 0, 1));
-				my $i_newid  = $self->$call({
-					'opts'	=> "req($req): $bid", 
-					'body'	=> $cgi->param($bid.'_new_'.$targ),
-				}) if $cgi->param($bid.'_new_'.$targ);
-			}
-			my $ref = "<p>Bug ($bid) updated $Mysql::db_errstr<p>";
-			$self->debug(2, $ref) if $Perlbug::DEBUG;
-    	}
-
-		$self->current({'context', 'html'});
-		$self->current({'format', $orig_fmt});
-		print '<table border=1>', $self->dob(\@bids, 'h'), '</table>';
-	}	
-	# PATCH IDs
-    if ($ok == 1 && scalar @pids >= 1) {
-		my $o_pat = $self->object('patch');
-		$self->debug(1, "patches(@pids)") if $Perlbug::DEBUG;
-    	PATCH:
-		foreach my $pid (@pids) {
-			next PATCH unless $pid =~ /\d+/o;
-            next PATCH unless $ok == 1;
-			my $o_pat = $self->object('patch')->read($pid);
-			next BUG unless $o_pat->READ;
-        	my $cid = $cgi->param($pid.'_changeid') || '';
-			$o_pat->relation('change')->assign([$cid]);
-    	}
-		print '<table border=1>', $self->dop(\@pids, 'h'), '</table>';
-	}	
-	# USER IDs
-    if ($ok == 1 && scalar @uids >= 1) {
-		my $o_usr = $self->object('user');
-		$self->debug(1, "users(@uids)") if $Perlbug::DEBUG;
-		my $NEWID = '';
-        USER:
-        foreach my $uid (@uids) {
-			next USER unless $uid =~ /^\w+$/o;
-            next USER unless $ok == 1;
-			$self->debug(2, "looking at admin($uid)") if $Perlbug::DEBUG;
-            my $active   = $cgi->param($uid.'_active');
-        	my $address  = $cgi->param($uid.'_address');
-        	my @gids	 = $cgi->param($uid.'_groupids');
-            my $name     = $cgi->param($uid.'_name');
-        	my $password = $cgi->param($uid.'_password');
-            my $userid   = $cgi->param($uid.'_userid'); 
-			my $crypted  = $o_usr->read($uid)->data('password');
-			my $given    = $password;
-			my $pwdupdate = 0;
-			if ($given ne $crypted) {
-				$pwdupdate++;
-				$password = crypt($password, substr($password, 0, 2));
-			}
-	
-        	my ($match_address) = $self->db->quote($cgi->param($uid.'_match_address'));
-			my %data = (
-				'password'	=> $password, 
-				'address'	=> $address, 
-				'name'		=> $name, 
-				'match_address' => $match_address, 
-				'active'	=> $active,
-			);
-			if ($uid ne 'newAdmin') {
-				$o_usr->read($uid)->update(\%data);
-			} else { 
-				if ($self->isadmin eq $self->system('bugmaster')) {
-					$o_usr->create({
-						'userid'	=> $userid,
-						%data,
-					});
-					$NEWID = $uid = $o_usr->read($userid)->oid if $o_usr->CREATED;
-                }
-			}
-			$o_usr->relation('group')->store(\@gids) if @gids;
-            if ($ok == 1) { # track it and do htpass if required
-				$ok = $self->htpasswd($uid, $password) if $pwdupdate == 1 || $userid eq 'newAdmin';
-            }
-    	}
-		push(@uids, $NEWID) if $NEWID =~ /\w+/o;
-		print '<table border=1>', $self->dou(\@uids, 'h'), '</table>';
-	}	
-	# UPDATE DONE
-    $self->debug(1, "update? -> '$ok'") if $Perlbug::DEBUG;
-    return '';
+    return ();
 }
 
 
@@ -1545,11 +1327,11 @@ Get and set array of relevant buttons by context key
 
 =cut
 
-sub current_buttons {
+sub current_buttons { # <- commands
     my $self = shift;
 	my $akeys= shift;       # [submit query update]
 	my $cgi  = $self->cgi();
-	my $buttons = '';
+	my $buttons = ''; 
 
     my @keys = (ref($akeys) eq 'ARRAY') ? @{$akeys} : split($akeys);
 	if (scalar(@keys) >= 1 && $self->current('format') !~ /^[aAiLx]$/) { # vet
@@ -1561,52 +1343,54 @@ sub current_buttons {
 			$reset  = $cgi->submit(
 				-'name'    => 'reset', -'value' => 'reset', 
 				-'onClick' => $pointer.'reset();  return false;');
-			@submit = ('onClick' => "request(this); return newcoms('write');");
+			@submit = ('onClick' => "return request(this);");
 		}
 
 		my %map = (
-			'admin'     => $cgi->submit(@name, -'value' => 'admin', -'onClick' => 'return admin(1)'), 
-			'home'      => $cgi->submit(@name, -'value' => 'home',    -'onClick' => 'top.location.reload()'), 
-			'back'      => $cgi->submit(@name, -'value' => 'back', @submit), 
+			'admin'     => $cgi->submit(@name, -'value' => 'admin',  -'onClick' => 'return admin(1)'), 
+			'back'      => $cgi->submit(@name, -'value' => 'back',   -'onClick' => 'return goback()'), 
+	        'create'    => $cgi->submit(@name, -'value' => 'create', @submit),
 			'delete'    => $cgi->submit(@name, -'value' => 'delete', @submit), 
-			'home'      => $cgi->submit(@name, -'value' => 'home',    -'onClick' => 'top.location.reload()'), 
+			'home'      => $cgi->submit(@name, -'value' => 'home',   -'onClick' => 'top.location.reload()'), 
 			'insert'    => $cgi->submit(@name, -'value' => 'insert', @submit), 
 			'noadmin'   => $cgi->submit(@name, -'value' => 'noadmin', -'onClick' => 'return admin(0)'), 
 	        'nocc'      => $cgi->submit(@name, -'value' => 'nocc',   @submit),
-			'reset'		=> $reset,
-			'search'    => $cgi->submit(@name, -'value' => 'search',  -'onClick' => 'return search();'), 
-	        'sql' 		=> $cgi->submit(@name, -'value' => 'SQL',    @submit),
-	        'select'	=> $cgi->submit(@name, -'value' => 'select',  -'onClick' => 'return sel(1);'),
             'query'     => $cgi->submit(@name, -'value' => 'query',  @submit), # search
+			'reset'		=> $reset,
+			'search'    => $cgi->submit(@name, -'value' => 'search',  -'onClick' => "return request(this)"), 
+	        'select'	=> $cgi->submit(@name, -'value' => 'select',  -'onClick' => 'return sel(1);'),
+	        'sql' 		=> $cgi->submit(@name, -'value' => 'SQL',    @submit),
 	        'unselect'	=> $cgi->submit(@name, -'value' => 'unselect',-'onClick' => 'return sel(0);'),
 	        'update'    => $cgi->submit(@name, -'value' => 'update', @submit),
 	    );
 
-		my $help = $self->help_ref('submit', 'Help');
-
         foreach my $key (@keys) { # set
 		    $buttons .= "&nbsp; $map{$key}\n";
     	} 
-		$buttons .= "&nbsp; $help<br>\n";
+		$buttons .= '&nbsp;'.$self->help_ref('submit', 'Help')."<br>\n";
 	}   
+	$self->debug(3, "in(@keys)out(\n$buttons)") if $Perlbug::DEBUG;
 
 	return $buttons; 
 }
-
 
 sub ranges {
 	my $self = shift;
 	my $req  = shift || '';
 	my $cgi  = $self->cgi();
 
+	my $req  = $self->get_request;
 	my $rng  = $self->{'_range'};
 	my $ret  = '';
 
 	if ($rng) {
 		my $o_rng 	= $self->object('range')->read($rng);
 		my ($data) 	= $o_rng->col('range', $o_rng);
-		my @ranges 	= split(/,\s*/, $data);
-		$ret 		= $self->tenify(\@ranges);
+		my $name    = $o_rng->data('name');
+		if ($req =~ /$name/i) {
+			my $a_ranges= $o_rng->derangeify($data);
+			$ret 		= $self->tenify($a_ranges, $name);
+		}
 	}
 
 	return $ret;
@@ -1614,34 +1398,6 @@ sub ranges {
 
 
 sub file_ext { return '.html'; }
-
-
-=item help_ref
-
-creates something of the form: C<<a href="http://bugs.per.org/perlbug.cgi?req=webhelp\#item_note">Note</a>>
-
-	my $note = $self->help_ref('note');	
-
-=cut
-
-sub help_ref {
-	my $self = shift;
-	my $targ = shift || '';
-	my $title= shift || $targ; 
-    my $url  = $self->myurl;
-
-	my $sect = ($targ =~ /\w+/o) ? "\#item_$targ" : '';
-	my $with = ($targ =~ /\w+/o) ? "help with $targ parameters" : 'general help overview';
-	my $hint = "click for $with";
-	my $help = qq|<a 
-			href="$url?req=webhelp$sect"
-			onMouseOver="window.status='$hint'; return true;"
-			onMouseOut="window.status='';"
-		>$title</a>
-	|;
-	$help =~ s/\s*\n+\s*/ /go;
-	return "$help\n";
-}
 
 
 =item case
@@ -1891,8 +1647,8 @@ sub format_query {
 			my $x = $1;
 			$wnt++;
 			($x) = $o_status->name2id([$x]) if $x !~ /^\d+$/;
-			my $xtra = ($status =~ /open/i) ? "OR status = ''" : '';
-			$fnd += my @ids = $o_status->relation('bug')->ids("statusid = '$x' $xtra");
+			my $xtra = ($status =~ /open/i) ? "OR statusid = ''" : '';
+			$fnd += my @ids = $o_status->rel('bug')->ids("statusid = '$x' $xtra");
 			print "Found ".@ids." bug_status relations from statusid($x)<br>";
 			my $found = join("', '", @ids);	
 			$sql .= " $andor bugid IN ('$found') " if scalar(@ids) >= 1;
@@ -1945,7 +1701,7 @@ sub format_query {
 	$sql .= " ORDER BY bugid $order"; #?
 	print "SQL: $sql<hr>" if $sqlshow =~ /y/io;
 
-	$self->debug(2, "SQL built: '$sql'") if $Perlbug::DEBUG;
+	$self->debug(3, "SQL built: '$sql'") if $Perlbug::DEBUG;
 	return $sql;
 }
 
@@ -1961,7 +1717,9 @@ Convert '*' into '%' for sqlquery
 sub wildcard {
     my $self = shift;
     my $str  = shift;
-    $str =~ s/\*/%/go;
+
+    $str =~ s/\*+/%/go;
+
     return $str;
 }
 
@@ -1975,30 +1733,32 @@ Create range of links to split (by tens or more) bugids from web query result.
 =cut
 
 sub tenify {
-    my $self    = shift;
-    my $a_bids  = shift;
-    my $given   = shift || 25;
-    my $slice   = (($given >= 1) && ($given <= 10000)) ? $given : 25;
-	my $rng     = $self->{'_range'};
-	my $ret     = '';
+    my $self   = shift;
+    my $a_ids  = shift;
+	my $obj    = shift;
+    my $given  = shift || 25;
+    my $slice  = (($given >= 1) && ($given <= 10000)) ? $given : 25;
+	my $rng    = $self->{'_range'};
+	my $ret    = '';
 
-    if (ref($a_bids) ne 'ARRAY') {
-		$self->error("Duff bug arrayref given to tenify($a_bids)");
+    if (ref($a_ids) ne 'ARRAY') {
+		$self->error("Duff arrayref given to tenify($a_ids)");
 	} else {
 		my ($cnt, $min, $max) = (0, 1, 0);
 	    my $url = $self->current('url');
         my $fmt = $self->current('format');
 		my $range = $rng =~ /\w+/o ? "&range=$rng" : '';
-		my $bids  = '';
-		my @bids = @{$a_bids};
-		foreach my $bid (@bids) {
+		my $ids   = '';
+		my @ids   = @{$a_ids};
+		$self->debug(0, "given(@ids)");
+		foreach my $id (@ids) {
 	        $cnt++;
 	        $max++;
-	        $bids .= "&bug_id=$bid"; 
-	        if (($cnt == $slice) || ($max == $#bids + 1)) { # chunk
-	            $ret .= qq|<a href="$url?req=bug_id$bids&format=$fmt&trim=${slice}$range">$min to $max</a>&nbsp;\n|;
+	        $ids .= "&${obj}_id=$id"; 
+	        if (($cnt == $slice) || ($max == $#ids + 1)) { # chunk
+	            $ret .= qq|<a href="$url?req=${obj}_id$ids&format=$fmt&trim=${slice}$range">$min to $max</a>&nbsp;\n|;
 	            $min = $max + 1; 
-	            $bids = '';
+	            $ids = '';
 	            $cnt = 0;
 	        } 
 	    }
@@ -2017,4 +1777,95 @@ Richard Foley perlbug@rfi.net Oct 1999 2000
 =cut
 
 1;
+
+__END__
+
+=item administrators-redundant
+
+List of administrators
+
+=cut
+
+sub administrators {
+    my $self  = shift;
+    my $cgi   = $self->cgi();
+    my $url   = $self->myurl;
+    my $title = $self->system('title');
+	my @uids  = $cgi->param('userid');
+    print qq|<h2>$title administrators:</h2>|;
+
+	my $o_usr  = $self->object('user');
+	my $filter = ($self->isadmin eq $self->system('bugmaster'))
+		? ''
+		: "active IN ('1', '0')";
+	my @admins = $o_usr->ids($filter);
+   
+   	ADMIN:
+    foreach my $oid (@admins) {
+		if (@uids) {
+			next ADMIN unless grep(/$oid/, @uids);
+		}
+		print $o_usr->read($oid)->format;
+	}
+
+    my $ADMIN = '';
+    if ($self->isadmin eq $self->system('bugmaster')) {
+        my $hidden = qq|<input type=hidden name=newAdmin_password_update value=1>|;
+        $ADMIN = qq|<table><tr><td colspan=5><hr><b>New User:</b></td></tr>\n<tr><td>|.
+    join("</td></tr>\n<tr><td>",
+                                    $cgi->checkbox( -'name' => 'userid',            -'value'=> 'newAdmin',  -'label' => '',             -'checked' => '', -'override' => 1),
+    'Userid:&nbsp; </td><td>'.      $cgi->textfield(-'name' => 'newAdmin_userid',   -'value' => '',         -'label' => 'userid',       -'size' => 10,  -'maxlength' => 10, -'override' => 1),
+    'Name:&nbsp; </td><td>'.        $cgi->textfield(-'name' => 'newAdmin_name',     -'value' => '',         -'label' => 'name',         -'size' => 25,  -'maxlength' => 50, -'override' => 1),
+    'Active:&nbsp; </td><td>'.      $cgi->popup_menu(-'name'=> 'newAdmin_active',   -'values' => [1, 0],    -'labels' => {1 => 'Yes', 0 => 'No'},       -'default' => 0, -'override' => 1),
+    'Password:&nbsp; </td><td>'.    $cgi->textfield(-'name' => 'newAdmin_password', -'value' => '',         -'label' => 'password',     -'size' => 16,  -'maxlength' => 16, -'override' => 1),
+    'Address:&nbsp; </td><td>'.     $cgi->textfield(-'name' => 'newAdmin_address',  -'value' => '',         -'label' => 'address',      -'size' => 35,  -'maxlength' => 50, -'override' => 1),
+    'Match Adress:&nbsp; </td><td>'.$cgi->textfield(-'name' => 'newAdmin_match_address', -'value' => '',    -'label' => 'match_address', -'size' => 35, -'maxlength' => 50, -'override' => 1),
+        );
+        $ADMIN .= '</td></tr>';
+    }
+    print $ADMIN.'</table>';
+    return '';
+}
+
+
+=item groups-redundant 
+
+List of groups
+
+=cut
+
+sub groups {
+    my $self  = shift;
+    my $cgi   = $self->cgi();
+    my $url   = $self->myurl;
+    my $title = $self->system('title');
+    print qq|<h2>$title groups:</h2>|;
+   
+    my $o_grp = $self->object('group');
+    my $o_usr = $self->object('user');
+	my @gids = $o_grp->ids; 
+
+    foreach my $oid (@gids) {
+		print $o_grp->read($oid)->format;
+	}
+
+	if ($self->isadmin =~ /\w+/o and $self->isadmin ne 'generic') { # addgroup
+		my $add = $cgi->textfield(-'name' => 'addgroup', -'value' => '', -'size' => 20, -'maxlength' => 20, -'override' => 1);
+		my $groups = "<hr><table border=0>";
+
+		$groups .= "<tr><td><b>Add a new group (alphanumeric only):</b></td><td>&nbsp;$add</td></tr>";
+
+		my $desc = $cgi->textfield(-'name' => 'adddescription', -'value' => '', -'size' => 35, -'maxlength' => 99, -'override' => 1);
+		$groups .= "<tr><td><b>Description for new group:</b></td><td>&nbsp;$desc</td></tr>";
+
+		my $admins = $o_usr->choice('addusers');
+		$groups .= "<tr><td><b>New group members:</b></td><td>&nbsp;$admins</td></tr>";
+		
+		$groups .= "</table><hr>";
+		print $groups;
+	}
+
+	return '';
+}
+
 

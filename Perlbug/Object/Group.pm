@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Group.pm,v 1.26 2001/12/01 15:24:42 richardf Exp $
+# $Id: Group.pm,v 1.28 2002/01/11 13:51:05 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Group - Group class
 package Perlbug::Object::Group;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.26 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.28 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -66,6 +66,33 @@ sub new {
 }
 
 
+=item create 
+
+Check if name is unique
+
+    my $o_grp = $o_grp->create(\%data);
+
+=cut
+
+sub create {
+    my $self   = shift;
+	my $h_data = shift || $self->_oref('data');
+
+	my $proposed = $$h_data{'name'};
+	my ($extant) = $self->ids("name LIKE '$proposed'");
+
+	if ($extant) {
+		$self->debug(0, 'disallowed group data: '.Dumper($h_data));
+		$h_data = undef;
+		print "<h3>\nCan't create a non-unique name($proposed) while extant($extant)!\n</h3><hr>\n";
+	}
+
+	$self->SUPER::create($h_data) if $h_data;
+
+    return $self;
+}
+
+
 =item htmlify 
 
 html formatter for individual group entries for placement
@@ -104,6 +131,63 @@ sub htmlify {
 	# print '<pre>'.Dumper(\%grp).'</pre>';
 	return \%grp;
 }
+
+=item webupdate
+
+Update group data via web interface, accepts relations via param('_opts')
+
+	$oid = $o_grp->webupdate(\%cgidata, $oid);
+
+=cut
+
+sub webupdate {
+	my $self   = shift;
+	my $h_data = shift;
+	my $oid    = shift;
+    my $cgi    = shift || $self->base->cgi();
+
+	if (!(ref($h_data) eq 'HASH')) {
+		$self->error("requires data hash ref($h_data) to update ".ref($self)." data via the web!");
+	} else {
+		if ($self->read($oid)->READ) {
+			$self->debug(0, "oid: ".$self->oid);
+			my $pri = $self->attr('primary_key');
+			$$h_data{$pri} = $oid;
+			my $i_updated = $self->update($h_data)->UPDATED; # internal debugging
+			if ($i_updated == 1) {
+				$self->SUPER::webupdate($h_data, $oid);
+			}
+		}
+	}
+	
+	return $oid;
+}
+
+
+=pod
+# NEW GROUP
+		if ($ok == 1 && $newgroup) {
+			if ($newgroup !~ /^\w\w\w+$/) {
+				$ok = 0;
+				print "Group($newgroup) notallowed: please use at least 3 alphanumerics for group names!<hr>";
+			} else {
+				my $o_grp = $self->object('group');
+				my @gindb = $o_grp->col('name');
+				my $pri = $o_grp->primary_key;
+				$o_grp->create({
+					$pri	 		=> $o_grp->new_id,
+					'name'			=> $newgroup,
+					'description'	=> $desc,
+				});
+				if ($o_grp->CREATED) {
+					push(@gids, $o_grp->oid); 
+					my @uids = $cgi->param('addusers');
+					$o_grp->relation('user')->store(\@uids) if @uids;
+				}
+			}
+			print '<table border=1>', $self->groups(\@gids), '</table>'; 
+		}
+=cut
 
 # --------------------------------------------------------- #
 

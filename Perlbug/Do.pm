@@ -1,6 +1,6 @@
 # Perlbug functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Do.pm,v 1.66 2001/12/01 15:24:42 richardf Exp $
+# $Id: Do.pm,v 1.68 2002/01/11 13:51:05 richardf Exp $
 #
 # TODO 
 # see doh
@@ -16,7 +16,7 @@ package Perlbug::Do;
 use Data::Dumper;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.66 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.68 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
 
@@ -308,7 +308,7 @@ sub doa {
 	my %args   = %{$h_args};
 	my @res    = ();
 
-	my %cmds = $self->parse_str($$h_args{'opts'});
+	my %cmds = $self->parse_str($$h_args{'opts'} || $$h_args{'_opts'});
 	my @bids = ref($cmds{'bug'}{'ids'}) eq 'ARRAY' ? @{$cmds{'bug'}{'ids'}} : ();
 
 	if (!(@bids >= 1)) {
@@ -451,7 +451,7 @@ sub doB {
 			$self->error("failed to create new($newid) $target: ".Dumper($h_args));	
 		} else {
 			$id = $o_obj->oid;
-			my %cmds = $self->parse_str($args{'opts'});
+			my %cmds = $self->parse_str($args{'opts'} || $args{'_opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
 			my $i_ok = $self->notify($target, $id); 
 		}
@@ -771,7 +771,7 @@ sub doG {
 			$self->error("failed to create $target: ".Dumper($h_args)); 
 		} else {
 			$id = $o_obj->oid;
-			my %cmds  = $self->parse_str($args{'opts'});
+			my %cmds  = $self->parse_str($args{'opts'} || $args{'_opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
 			# $self->notify($target, $id); - no header :-)
 		}
@@ -1152,7 +1152,7 @@ sub doM {
 			$self->error("Failed to create $target: ".Dumper($h_args));
 		} else {
 			$id = $o_obj->oid; 
-			my %cmds = $self->parse_str($args{'opts'});
+			my %cmds = $self->parse_str($args{'opts'} || $args{'_opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
 			my $i_don = $o_obj->appropriate(\%cmds);
 			# $self->notify($target, $id); - track only
@@ -1225,7 +1225,7 @@ sub doN {
 			$self->error("failed to create $target: ".Dumper($h_args));
 		} else {
 			$id = $o_obj->oid;
-			my %cmds = $self->parse_str($args{'opts'});
+			my %cmds = $self->parse_str($args{'opts'} || $args{'_opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
 			my $i_don = $o_obj->appropriate(\%cmds);
 			# $self->notify($target, $id);
@@ -1408,9 +1408,10 @@ sub doP {
 			'email_msgid'	=> 'no-msgid-given',
 			%args,
 		});	
+		$self->debug(0, "patch created(".$o_obj->CREATED.")?");
 		if ($o_obj->CREATED) {
 			$id = $o_obj->oid;
-			my %cmds = $self->parse_str($args{'opts'});
+			my %cmds = $self->parse_str($args{'opts'} || $args{'_opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
 			my $i_don = $o_obj->appropriate(\%cmds);
 			$self->notify($target, $id);
@@ -1684,7 +1685,7 @@ sub doT {
 		});	
 		if ($o_obj->CREATED) {
 			$id = $o_obj->oid;
-			my %cmds = $self->parse_str($args{'opts'});
+			my %cmds = $self->parse_str($args{'opts'} || $args{'_opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
 			my $i_don = $o_obj->appropriate(\%cmds);
 			$self->notify($target, $id);
@@ -1743,98 +1744,44 @@ Initiate new admin entry, including htpasswd entry, (currently rf only)
 sub doU { # rjsf
     my $self   = shift;
 	my $h_args = shift;
-	my %user = %{$h_args};
-    my $i_ok = 1;
+	my $uid    = '';
 
-	my $tick = 0;
-
-    my ($userid, $password, $address, $name, $match_address, $encrypted) = ('', '', '', '', '', '');
 	my $o_usr = $self->object('user');
+	# $o_usr->create($h_args); # careful - rjsf <- !!!
+	# return $o_usr->oid if $o_usr->CREATED;
 
-	my $entry = ''; # rjsf!!!
-    if ($entry !~ /userid/) {
-    	$i_ok = 0;
-		$self->error("No userid offered in entry($entry)!");
-	} else { # GET EACH ITEM
-		ITEM:
-	    foreach my $item (split(':', $entry)) {
-			$self->debug(1, "inspecting item($item)") if $Perlbug::DEBUG;
-            next ITEM unless $item =~ /\w+/o;
-			last ITEM if $tick == 5;
-			if ($item =~ /^\s*userid=(\w+)\s*$/o) {
-                $userid = $1; 
-                $tick++;
-                $self->debug(2, "userid($userid)") if $Perlbug::DEBUG;
-            } elsif ($item =~ /^\s*password=([\w\*]+)\s*$/o) { # encrypt it here
-                $password = $1; 
-                $tick++;
-                $self->debug(2, "password($password)") if $Perlbug::DEBUG;
-                $encrypted = crypt($password, 'pb');
-            } elsif ($item =~ /^\s*address=(.+)\s*$/o) {
-                $address = $1; 
-                $tick++;
-                $self->debug(2, "address($address)") if $Perlbug::DEBUG;
-            } elsif ($item =~ /^\s*name=(.+)\s*$/o) {
-                $name = $1; 
-                $tick++;
-                $self->debug(2, "name($name)") if $Perlbug::DEBUG;
-            } elsif ($item =~ /^\s*match_address=(.+)\s*$/o) {
-                $match_address = $1; 
-                $tick++;
-                $self->debug(2, "match_address($match_address)") if $Perlbug::DEBUG;
-            }
-        }  
-        if ($tick != 5) {
-            $i_ok = 0;
-            $self->error("Not enough appropriate values ($tick) found in data($entry)");
-        } else {
-            $self->debug(2, "Sufficient($i_ok) values ($tick) found: ".qq| 
-				userid($userid)
-				name($name)
-				password($password)
-				address($address)
-				match($match_address)
-			|) if $Perlbug::DEBUG;
-		}
-  	}
-	if ($i_ok == 1) { # CHECK UNIQUE IN DB
-		my @exists = $o_usr->ids("UPPER(userid) LIKE UPPER($userid)");
+    if (ref($h_args) ne 'HASH') {
+		$self->error("No userid offered!");
+	} else { 
+		$self->debug(2, 'given: '.Dumper($h_args)) if $Perlbug::DEBUG;
+		my %user = %{$h_args};
+		my $orig_password = $user{'password'};
+		$user{'password'} = crypt($user{'password'}, 'pb'); # encrypted
+		my @exists = $o_usr->ids("UPPER(userid) LIKE UPPER('$user{'userid'}')");
+		push(@exists, $o_usr->ids("UPPER(name) LIKE UPPER('$user{'name'}')"));
         if (scalar(@exists) >= 1) {
-            $i_ok = 0;
             $self->error("User already defined in db(@exists)");
-		}
-    } 
-    if ($i_ok == 1) { # INSERT: non-active is default - don't want to upset everybody :-)
-		$o_usr->create({
-			'userid'		=> $userid, 
-			'password'		=> $encrypted, 
-			'address'		=> $address, 
-			'name'			=> $name, 
-			'match_address'	=> $match_address, 
-			'active'		=> 0,
-		});
-        if ($o_usr->CREATED) {
-            $self->debug(2, "Admin inserted into db.") if $Perlbug::DEBUG;
-        } else {
-			$i_ok = 0;
-            $self->error("Admin db insertion failure");
-        }
-    } 
-    if ($i_ok == 1) { # HTPASSWD
-    	$self->debug(2, "Admin creation: '$i_ok', going for htpasswd update.") if $Perlbug::DEBUG;
-		$i_ok = $self->htpasswd($userid, $encrypted);
-    }
-	if ($i_ok == 1) { # feedback
-	    $self->debug(2, "Returning notification") if $Perlbug::DEBUG;
-        my $title = $self->system('title');
-		my $url   = 'http://'.$self->web('domain');
-		my $new_admin = qq|
-Welcome $name as a new $title administrator:
+		} else {
+            $self->debug(0, "User not defined in db(@exists)");
+			$o_usr->create(\%user);
+			if (!($o_usr->CREATED)) {
+				$self->error("Admin db insertion failure");
+			} else {
+				$uid = $o_usr->oid;
+				$self->debug(1, "Admin($user{'name'}) inserted($uid) into db.") if $Perlbug::DEBUG;
+				$DB::single=2;
+				# my $i_ok = $self->htpasswd($user{'userid'}, $user{'password'});
+				my $i_ok = 1;
+				if ($i_ok == 1) {
+					my $title = $self->system('title');
+					my $url   = 'http://'.$self->web('domain');
+					my $new_admin = qq|
+Welcome $user{'name'} as a new $title administrator:
 
-	Address: "$name" <$address>
+	Address: "$user{'name'}" <$user{'address'}>
 
-    userid=$userid
-    passwd=$password  
+    userid=$user{'userid'}
+    passwd=$orig_password  
 	
 	N.B. please change your password at your next WWW login (below)
 
@@ -1858,18 +1805,22 @@ Welcome $name as a new $title administrator:
 
 	Mailing list      -> To: bugmongers-subscribe\@perl.org 
 
-    	|;
-		use Perlbug::Interface::Email; # yek
-		my $o_email = Perlbug::Interface::Email->new;
-		my $o_notify = $o_email->get_header;
-		$o_notify->add('To', $address);
-		$o_notify->add('Bcc', $self->system('maintainer'));
-		$o_notify->add('From', $self->email('bugdb'));
-		$o_notify->add('Subject', "$title administrator");
-		$i_ok = $o_email->send_mail($o_notify, $new_admin);
-    } 
+					|;
+					# use Perlbug::Interface::Email; # yek
+					my $o_email = Perlbug::Interface::Email->new;
+					my $o_notify = $o_email->get_header;
+					$o_notify->add('To', $user{'address'});
+					$o_notify->add('Bcc', $self->system('maintainer'));
+					$o_notify->add('From', $self->email('bugdb'));
+					$o_notify->add('Subject', "$title administrator");
+					$i_ok = $o_email->send_mail($o_notify, $new_admin);
+				}
+			}
+		}
+    }
+	$self->debug(1, "user creation($uid)");
 
-    return ($i_ok == 1) ? $userid : '';
+    return $uid;
 }  
 
 
@@ -1887,7 +1838,7 @@ sub dov { # rjsf
 	my %args   = %{$h_args};
 	my $res    = '';
 
-	my %cmds   = $self->parse_str($args{'opts'});
+	my %cmds   = $self->parse_str($args{'opts'} || $args{'_opts'});
 
 	my $i_ok = 0;
 	if (1 != 1) {

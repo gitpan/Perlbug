@@ -1,6 +1,6 @@
 # Perlbug javascript routines
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: JS.pm,v 1.10 2001/09/18 13:37:49 richardf Exp $
+# $Id: JS.pm,v 1.13 2002/01/14 10:14:48 richardf Exp $
 #   
 
 =head1 NAME
@@ -12,27 +12,20 @@ Perlbug::JS - Object handler for Javascript methods
 package Perlbug::JS;
 use strict;
 use vars qw(@ISA $VERSION);
-$VERSION  = do { my @r = (q$Revision: 1.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION  = do { my @r = (q$Revision: 1.13 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
 use CGI;
 
-
 =head1 DESCRIPTION
 
 Javascript wrapper for Perlbug modules usage
-
-=cut
-
 
 =head1 SYNOPSIS
 
 	use Perlbug::JS;
 
 	print Perlbug::JS->new()->menus;
-
-=cut
-
 
 =head1 METHODS
 
@@ -42,7 +35,7 @@ Javascript wrapper for Perlbug modules usage
 
 Create new Perlbug::JS object.
 
-	my $o_js = Perlbug::JS->new;
+	my $o_js = Perlbug::JS->new($isframed);
 
 =cut
 
@@ -50,9 +43,24 @@ sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto; 
 
-	bless({}, $class);
+	bless({
+		'_is_framed'	=> shift || '',
+	}, $class);
 }
 
+=item isframed
+
+Return whether or not this window is framed
+
+	my $i_framed = $o_js->isframed;
+
+=cut
+
+sub isframed {
+	my $self = shift;
+
+	return ($self->{'_is_framed'} =~ /\w+/) ? 1 : 0;
+}
 
 =item control
 
@@ -67,7 +75,7 @@ sub control {
 	my $tgt  = shift;
 	my $dom  = shift;
 	my $cgi  = shift;
-	print "tgt($tgt) dom($dom) cgi($cgi)<hr>\n";
+	# print "tgt($tgt) dom($dom) cgi($cgi)<hr>\n";
 
 	my %commands = (
 		'frames' => 'frames',
@@ -91,7 +99,6 @@ sub control {
 	return $control;
 }
 
-
 =item menus
 
 menu suite
@@ -103,11 +110,12 @@ sub menus {
 
 	my $func = q|// function menus|
 		. $self->go()
+		. $self->isframed()
+		. $self->onpageload()
 	;
 
 	return $func;
 }
-
 
 =item perlbug 
 
@@ -117,109 +125,17 @@ perlbug display suite
 
 sub perlbug {
 	my $self = shift;
-	my $func = q|
-		function pick (item) {
-			var nam = item.name;
-			var pre = nam.substring(0, nam.indexOf("_"));
-			elems = document.forms[0].elements;
-			for (var i = 0; i < elems.length; i++) {
-				e = elems[i];
-				if (e.name == "bugids" && e.value == pre) {
-					/* if (confirm(
-						"SELECT ? e(" + e + ")\n" + 
-						"\tname(" + e.name + ")\n" +
-						"\tval(" + e.value + ")\n" +
-						"\tpre(" + pre + ")\n" +
-						"\tchecked(" + e.checked + ")?\n"
-					)) {
-					*/
-						e.checked = true; 
-					//	confirm("SELECTED(" + e.checked + ")?\n")
-				}
-			}
-		}
-	|;
+
+	my $func = q|// function menus|
+		. $self->go()
+		. $self->isframed()
+		. $self->onpageload()
+		. $self->pick()
+		. $self->sel()
+	;
+
 	return $func;
 }
-
-
-=item back 
-
-back(n) perlbug display
-
-=cut
-
-sub back {
-	my $self = shift;
-	my $func = q|
-		function back (n) {
-			if (n == 0) { n = 1; };
-			//parent.perlbug.history.go(-1);
-			parent.perlbug.history.back();
-			return false;
-		}
-	|;
-	return $func;
-}
-
-
-=item sel 
-
-sel(1) = select all items, or sel(0) = deselect
-
-=cut
-
-sub sel {
-	my $self = shift;
-	my $func = q|
-		function sel (tf) {
-			elems = parent.perlbug.document.forms[0].elements;
-			for (var i = 0; i < elems.length; i++) {
-				e = elems[i];
-				if (e.name == "bugids") {
-					e.checked = tf;
-					// if (tf == "0") {
-					//   p.items.value = 0;
-					// } else {
-					//   p.items.value++;
-					// }
-				}
-			}
-			return false;
-		}
-	|;
-	return $func;
-}
-
-
-=item admin
-
-Switch admin view on(1) or off(0)
-
-=cut
-
-sub admin {
-	my $self = shift;
-	my $dom  = shift;
-	my $cgi  = shift;
-	my $func = qq|
-		function admin (arg) {
-			var path = parent.perlbug.document.location.pathname;
-			var p = path.split("/admin");	
-			var noadmin = p.join("");
-			var newloc = noadmin;
-			if (arg == 1) {
-				newloc = "/admin" + noadmin;
-				//newloc = "/perlbug/admin/perlbug.cgi"; // rfi 
-			}
-			// confirm ("arg(" + arg + ") path(" + path + ") => newloc(" + newloc + ")");
-			parent.perlbug.document.location.pathname = newloc;
-			return false;
-		}
-	|;
-	return $func;
-}
-
 
 =item commands 
 
@@ -233,87 +149,243 @@ sub commands {
 	my $cgi  = shift;
 	my $func .= q|// commands functions|
 		. $self->admin($dom, $cgi)	
-		. $self->back()	
-		. $self->newcoms()
+		. $self->goback()	
+		. $self->go()
+		. $self->isframed()
+		. $self->onpageload()
 		. $self->request()
 		. $self->sel()
 		. $self->show()	
+		# . $self->static_load()	
 		# . $self->parse()
 		# . $self->frames()
 	;
 	return $func;
 }
 
-sub request {
+=item pick
+
+pick an item from one of the checkboxes
+
+=cut
+
+sub pick {
 	my $self = shift;
-	my $func = q|  
-		function request (item) {
-			parent.perlbug.document.forms[0].req.value=item.value; 
-			//var rem =  parent.perlbug.document.forms[0].req.value;
-			//var val = item.value;
 
-			//if (val == "update" or val == "nocc" or val == "delete") {
-			//if (!(p.items.value >= 1)) {
-			//	alert("Please select something for the " + val + " command!");
-			//}
+	my $func = q|
+		function pick (item) {
+			var nam = item.name;
+			var pre = nam.substring(0, nam.indexOf("_")); // 19870502.007
+			elems = document.forms[0].elements;
+			// confirm("name(" + nam + ") first bit(" + pre + ")\n");
+			for (var i = 0; i < elems.length; i++) {
+				e = elems[i];  // 
+				//confirm("name(" + e.name + ") first bit(" + e.value + ")\n");
+				if (e.name.substr(e.name.length-2) == "id" && e.value == pre) {
+				// if (e.name == "bugid" && e.value == pre) {
+					e.checked = true; 
+				} else {
+					//confirm("Nope! name(" + e.name + ") value(" + e.value + ") ne pre(" + pre + ")\n");
+				}
+			}
+		}
+	|;
 
-			//if (confirm(
-			//		"Are you sure: " + item.name + "(" + val + ")=" + rem + "?\n"
-			//)) {
-				//r = parent.ranges.location.search;
-				//r = "?req=ranges&commands=go";
-				parent.perlbug.document.forms[0].submit(); // op
-			//}
+	return $func;
+}
+
+=item goback 
+
+goback(n) perlbug display
+
+=cut
+
+sub goback {
+	my $self = shift;
+
+	my $func = q|
+		function goback () {
+			if (isframed()) {
+				parent.perlbug.history.back();
+			} else {
+				top.history.back;
+			}
 			return false;
 		}
 	|;
+
 	return $func;
 }
+
+=item sel 
+
+sel(1) = select all items, or sel(0) = deselect
+
+=cut
+
+sub sel {
+	my $self = shift;
+
+	my $func = q|
+		function sel (tf) {
+			elems = parent.perlbug.document.forms[0].elements;
+			for (var i = 0; i < elems.length; i++) {
+				e = elems[i];
+				if (e.name.substr(e.name.length-2) == "id") {
+					e.checked = tf;
+				}
+			}
+			return false;
+		}
+	|;
+
+	return $func;
+}
+
+=item admin
+
+Switch admin view on(1) or off(0)
+
+=cut
+
+sub admin {
+	my $self = shift;
+	my $dom  = shift;
+	my $cgi  = shift;
+
+	my $pane = $self->isframed ? 'parent.perlbug.document' : 'top.document';
+
+	my $func = qq#
+		function admin (arg) {
+			var f = $pane.forms[0];
+			var url = '';
+
+			for (var i = 0; i < f.elements.length; i++) {
+				var e = f.elements[i];
+				if (e.type == "select-one" || e.type == "select-multiple") {
+					for (var s = 0; s < e.options.length; s++) {
+						if (e.options[s].selected) {
+							url += "&" + e.name + "=" + escape(e.options[s].value);
+						}
+					}
+				} else {
+					url += "&" + e.name + "=" + escape(e.value);
+				}
+			}
+			if (url.substring(0, 1) == "&") { 
+				url = url.substring(1); // trim it
+			}
+
+			var path = $pane.location.pathname;
+			var p = path.split("/admin");	
+			var noadmin = p.join("");
+			if (arg == 1) {
+				// url = "/admin" + noadmin + "?" + url;
+				url = "/perlbug/admin/perlbug.cgi" + "?" + url; 	// rfi
+			} else {
+				url = noadmin + "?" + url;
+			}
+			if (confirm("confirm url: " + url)) {
+				// $pane.location.pathname = url;
+				$pane.location.replace(url);
+			}
+			return false;
+		}
+	#;
+
+	return $func;
+}
+
+=item onpageload
+
+Arrange the command buttons
+
+=cut
+
+sub onpageload {
+	my $self = shift;
+
+	my $func = q|  
+		function onPageLoad (req, command) {
+			if (this.name == "perlbug") {
+				c = top.location;
+				p = top.document.forms[0];
+				if (isframed()) {
+					c = top.commands.location;
+					p = top.perlbug.document.forms[0];
+				}
+				c.search = "?req=commands&commands=" + command;
+				if (p.req.value == "") {
+					p.req.value = req;
+				}
+				return true;
+			}
+		}
+	|;
+
+	return $func;
+}
+
+=item request
+
+Call top.(perlbug?).document[0].submit() 
+
+=cut
+
+sub request {
+	my $self = shift;
+
+	my $func = q|  
+		function request (item) {
+			if (isframed()) {
+				var f = parent.perlbug.document.forms[0];
+				f.req.value = item.value;
+				f.submit();
+			} else {
+				var f = parent.document.forms[0];
+				f.req.value = item.value;
+				f.submit();
+			}
+			return false;
+		}
+	|;
+
+	return $func;
+}
+
+=item go
+
+Go directly to given search query
+
+=cut
 
 sub go {
 	my $self = shift;
+
 	my $func = q#  
-		function go (target) {
-			p = top.perlbug.location;
-			p.search = "?req=" + target;
-			c = top.commands.location;
-			if (target == "group" || target == "administrators") {
-				c.search = "?req=commands&commands=write";
+		function go (target) { // bug_id&bug_id="xxx" || search || home
+			if (isframed()) {
+				top.perlbug.location.search = "?req=" + target;
+				return false;
 			} else {
-				c.search = "?req=commands&commands=read";
+				top.location.search = "?req=" + target;
+				return true;
 			}
-			return false;
 		}
 	#;
+
 	return $func;
 }
 
-sub newcoms {
-	my $self = shift;
-	my $func = q#  
-		function newcoms (target) {
-			c = top.commands.location.search;
-			//r = top.ranges.location.search;
-			if (target == "write" || target == "query") {
-				if (target == "write") {
-					//r = "?req=ranges&commands=newcom";
-					c = "?req=commands&commands=write";
-				} else {
-					//r = "?req=ranges&commands=NEWcom";
-					c = "?req=commands&commands=query";
-				}	
-			} else {
-				//r = "?req=ranges&commands=newCOM";
-				c = "?req=commands&commands=read";
-			}
-			return false;
-		}
-	#;
-	return $func;
-}
+=item show
+
+...
+
+=cut
 
 sub show {
 	my $self = shift;
+
 	my $func = q|  
 		function show (pane, call) { /* form, call */
 			if (confirm(
@@ -336,11 +408,46 @@ sub show {
 			return 1;
 		}
 	|;
+
 	return $func;
 }
 
+=item isframed
+
+Return 1 or 0 dependent on whether we're in a framed window or not
+
+=cut
+
+{ $^W=0; eval ' 
+sub isframed {
+	my $self = shift;
+
+	my $func = q|  
+		function isframed () {
+			p = document.location.pathname;     // .../perlbug/admin/_perlbug.cgi
+			var scor = p.substr(p.length-12, 1); // not for bugcgi
+			// confirm("path(" + p + ") -> scor(" + scor + ")");
+			if (scor == "_") {
+				return 0;
+			} else {
+				return 1;
+			}
+		}    
+	|;
+
+	return $func;
+}
+'; }
+
+=item frames
+
+...
+
+=cut
+
 sub frames {
 	my $self = shift;
+
 	my $func = q|  
 		function frames () {
 			var out = "Frames: \n";
@@ -354,12 +461,19 @@ sub frames {
 			return(out);
 		}    
 	|;
+
 	return $func;
 }
 
+=item parse
+
+...
+
+=cut
 
 sub parse {
 	my $self = shift;
+
 	my $func = q|
 		function parse (pane) {
 			//alert("args: (" + arguments.length + "): " + arguments);
@@ -380,81 +494,13 @@ sub parse {
 			return(out);
 		}         
 	|;
+
 	return $func;
 }
 
 1;
 
-=pod
-
-=back
-
-=cut
-
 __END__
-
-
-=pod
-
-<form name=ws_pub_entries_list_footer>
-<table width=100% height=100% bgcolor=8FBC8F>
-<tr><td align=center valign=top>
-<input type=button value="  Start  " onClick="check_form()">
-</td>
-<td align=center valign=top>
-<select size=1 name=func >
-  <option value="NO" selected>Functions:
-  <option value="PUB_DM_ENTRIES_INSERTWS" >Insert single WS Entry
-  <option value="PUB_DM_ENTRIES_DELSELWS" >Delete selected Entries
-  <option value="PUB_DM_ENTRIES_SET" >Generate DM Set
-  <option value="PUB_DM_ENTRIES_EXPORT" >Export to SGML List File
-</select>
-</td>
-<td align=center valign=top>
-<input type=button value="  UnSel  " onClick="parent.f2.nosel_button()">
-</td>
-<td align=center valign=top>
-<input type=button value="   Sel   " onClick="parent.f2.sel_button()">
-</td>
-<td align=center valign=top>
-<input type=button value="  Help   " onClick="help_system()">
-</td>
-<td align=center valign=top>
-<input type=button value="  Back   " onClick="parent.f2.back_frames(0)">
-</td>
-</tr>
-</table>
-<input type=hidden name=set_name value="">
-<input type=hidden name=setdel value="NO">
-</form>
-
-
-<!--
-function nosel_button( ) {
-  var i = 0;
-  for (i=0; i < document.PUB_DM_ENTRIES_2_SEARCH2.length; ++i) {
-    if ( document.PUB_DM_ENTRIES_2_SEARCH2.elements[i].type == "checkbox" ) {
-      document.PUB_DM_ENTRIES_2_SEARCH2.elements[i].checked = false;
-      }
-    }
-  }
-function sel_button( ) {
-  var i = 0;
-  for (i=0; i < document.PUB_DM_ENTRIES_2_SEARCH2.length; ++i) {
-    if ( document.PUB_DM_ENTRIES_2_SEARCH2.elements[i].type == "checkbox" ) {
-      document.PUB_DM_ENTRIES_2_SEARCH2.elements[i].checked = true;
-      }
-    } 
-  }
-// -->
-function flag_on (flag) {
-    flag.value = 1;
-    return true;
-}
-function flag_off (flag) {
-    flag.value = 0;
-    return true;
-}
 
 function cur_set (e) {
     var out = parse_objects(e);

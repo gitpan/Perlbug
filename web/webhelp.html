@@ -13,6 +13,11 @@
 	<LI><A HREF="#NAME">NAME </A>
 	<LI><A HREF="#DESCRIPTION">DESCRIPTION</A>
 	<LI><A HREF="#SEARCH">SEARCH </A>
+	<UL>
+
+		<LI><A HREF="#Searching_for_objects">Searching for objects</A>
+	</UL>
+
 	<LI><A HREF="#SUBMIT">SUBMIT</A>
 	<UL>
 
@@ -45,13 +50,13 @@ etc.
 <HR>
 <H1><A NAME="SEARCH">SEARCH</A></H1>
 <DL>
-<DT><STRONG><A NAME="item_mask">mask</A></STRONG><DD>
+<DT><STRONG><A NAME="item_form">form</A></STRONG><DD>
 <P>
-The search mask/fields, have no pre-selected entries, click <STRONG>query</STRONG> and an indiscriminate list of all the bugs in the database will be
+The search form has no pre-selected entries, click <STRONG>query</STRONG> and an indiscriminate list of all the bugs in the database will be
 returned.  
 
 <P>
-Filterering is achieved by selecting options from the popup menus, or
+Filtering is achieved by selecting options from the popup menus, or
 entering data in the text fields, as described below.
 
 <P>
@@ -59,13 +64,15 @@ Once an item is returned for viewing, links to it's constituent parts may
 be followed.
 
 <P>
-The following describe fields not described under <A HREF="#OBJECTS">OBJECTS</A> below.
+The following describe fields not described under <A HREF="#OBJECTS">OBJECTS</A>
+
+
 
 <DT><STRONG><A NAME="item_admin">admin</A></STRONG><DD>
 <P>
 List of active administrators who are registered against 1 or more bugs.
 
-<DT><STRONG><A NAME="item_and_or">and_or</A></STRONG><DD>
+<DT><STRONG><A NAME="item_boolean">boolean</A></STRONG><DD>
 <P>
 Boolean switch to decide whether or not to <STRONG>AND</STRONG> or to <STRONG>OR</STRONG> the query fields together, in the creation of the SQL search query.
 
@@ -117,23 +124,33 @@ returning expected results.
 
 <DT><STRONG><A NAME="item_wildcards">wildcards</A></STRONG><DD>
 <P>
-All text fields are searched using the SQL <STRONG>LIKE</STRONG> operator. 
-<A HREF="#bugid">bugid</A>, <A HREF="#noteid">noteid</A>, <A HREF="#patchid">patchid</A>, <A HREF="#testid">testid</A>, <A HREF="#version">version</A>, <A HREF="#change">change</A> and <STRONG>/fixed</STRONG> fields are used as seen, that is, if a wildcard is not provided, one will
-not be used.
+All text fields are searched using the SQL 'LIKE' operator. The
+<STRONG>LIKE</STRONG> operator allows the symbol <STRONG>%</STRONG> to match any sequence of characters, like '.*' in Perl regexes, and the
+symbol '_' to match any single character, like '.' in Perl regexes. Perlbug
+also maps '*' to '%', so '*' will also match any sequence of characters.
+All other characters in text boxes are taken literally.
 
 <P>
-Conversly <STRONG>subject</STRONG>, <STRONG>body</STRONG> and <STRONG>source address</STRONG> fields have <CODE>%</CODE> pre-placed around the search query by default.
+The <STRONG>Subject</STRONG>, <STRONG>Body</STRONG> and <STRONG>Source address</STRONG> fields perform substring searches. That is they are surrounded by <STRONG>%</STRONG> internally. For example, entering <EM>filehandle</EM> in the <STRONG>Subject</STRONG> box searches for any subject that contains the string <EM>filehandle</EM>.
 
 <P>
-What this means is that entering <CODE>20001122.</CODE>, in the bugid field, will probably not return much, but <CODE>20001122.%</CODE>' might. Of course a complete bugid could be entered on it's own eg: <CODE>20001122.003</CODE>
-Whereas entering only <STRONG>strict</STRONG> in the subject field will still use <CODE>%strict%</CODE> during the search.
+The <STRONG>Bug ID</STRONG>, <STRONG>Version</STRONG>, <STRONG>Fixed in</STRONG>, <STRONG>Message-ID</STRONG>, <STRONG>Note ID</STRONG>,
+<STRONG>Patch ID</STRONG>, and <STRONG>Test ID</STRONG>, fields are used exactly as entered. Entering '20001122' in the <STRONG>Bug ID</STRONG> field will not match anything, because 20001122 is not the ID of any bug.
+To find all the bugs that were submitted on date 20001122, use
+'20001122.%'.
 
 <P>
-The available SQL wildcards: <STRONG>any single character</STRONG>  <CODE>_</CODE> and <STRONG>none or more characters</STRONG>  <CODE>%</CODE> are allowed in all fields. Note also that for <CODE>convenience(?),</CODE>
-an <CODE>asterisk(</CODE><CODE>*</CODE>) will be simply mapped to the sql wildcard <CODE>%</CODE>'.
+Note also that for <CODE>convenience(?),</CODE> an <CODE>asterisk(</CODE><CODE>*</CODE>) will be simply mapped to the sql wildcard <CODE>%</CODE>'.
 
 <P>
-N.B. It can be a good idea to use the <A HREF="#show_sql">show_sql</A> switch to display what's being searched for. 
+It may be instructive to try a few searches with the <STRONG>Show SQL</STRONG>
+option enabled. This will display the SQL query that the engine is using to
+search the database.
+
+<P>
+See also <A HREF="#object_search">object_search</A>
+
+
 
 <DT><STRONG><A NAME="item_retrieval">retrieval</A></STRONG><DD>
 <P>
@@ -143,6 +160,47 @@ sectioned into similarly managable portions. The list format is designed
 for quickly moving around a list of bugs, while the block format is aimed
 at finding all information relating to said bug, without having to hop
 around.
+
+<H2><A NAME="Searching_for_objects">Searching for objects</A></H2>
+<DT><STRONG><A NAME="item_object_search">object_search</A></STRONG><DD>
+<P>
+Where searching for each object, (not using the prime bug search
+mechanism), individually, each field is treated as searchable using the <STRONG>wildcard</STRONG> mechanism described above.
+
+<P>
+The following fields are treated specially:
+
+<DT><STRONG><A NAME="item_created">created</A></STRONG><DD>
+<P>
+Date field - use a format of <STRONG>YYYY-MM--DD</STRONG> eg; 1987-05-02
+
+<DT><STRONG><A NAME="item_modified">modified</A></STRONG><DD>
+<P>
+As per <A HREF="#created">created</A> above 
+
+<DT><STRONG><A NAME="item_optional">optional</A></STRONG><DD>
+<P>
+The Optional field is used by administrators to enter a command line string
+for defining relationships, similar to a typical <STRONG>bugdb</STRONG> subject or To|Cc line.
+
+<P>
+For example to assign <STRONG>group</STRONG>, <STRONG>status</STRONG>, <STRONG>admin</STRONG> info etc. to a <STRONG>bug</STRONG>:
+
+<P>
+<CODE>aix linux win98 macos closed richardf docs</CODE>
+
+
+
+<P>
+Or a bugid, or two, to a patch:
+
+<P>
+<CODE>19870502.007 19870502.091</CODE>
+
+
+
+<P>
+See <STRONG>mailhelp</STRONG> for more info
 
 <P>
 <A HREF="#DESCRIPTION">DESCRIPTION</A>
@@ -187,11 +245,11 @@ deselect all shown record/s
 
 <DT><STRONG><A NAME="item_Admin">Admin</A></STRONG><DD>
 <P>
-switch from the <STRONG>noadmin</STRONG> view to the <STRONG>admin</STRONG> view
+switch from the <STRONG>noadmin</STRONG> view to the <STRONG>admin</STRONG> view (data updates are possible)
 
 <DT><STRONG><A NAME="item_Noadmin">Noadmin</A></STRONG><DD>
 <P>
-switch from the <STRONG>admin</STRONG> view to the <STRONG>noadmin</STRONG> view
+switch from the <STRONG>admin</STRONG> view to the <STRONG>noadmin</STRONG> view (less clutter)
 
 <DT><STRONG><A NAME="item_Delete">Delete</A></STRONG><DD>
 <P>
@@ -205,17 +263,25 @@ delete the selected shown record/s
 Certain fields are common to all objects:
 
 <DL>
-<DT><STRONG><A NAME="item_created">created</A></STRONG><DD>
+<DT><STRONG>created</STRONG><DD>
 <P>
 The date this record was created in the database.
 
-<DT><STRONG><A NAME="item_modified">modified</A></STRONG><DD>
+<DT><STRONG>modified</STRONG><DD>
 <P>
 The date this record was in some way modified.
 
 <DT><STRONG><A NAME="item_history">history</A></STRONG><DD>
 <P>
 The list of all modifications to each item, and who submitted them.
+
+<DT><STRONG><A NAME="item_transfer">transfer</A></STRONG><DD>
+<P>
+Certain objects may be transferred from one type to another, for example
+where a plain <A HREF="#message">message</A> should be reclassified as, for example, a <A HREF="#patch">patch</A> or a <A HREF="#test">test</A>.
+
+<P>
+Additional data may always be entered in the <A HREF="#optional">optional</A> field
 
 </DL>
 <P>
@@ -276,9 +342,9 @@ The status of the bug, with the following options:
 <P>
 <PRE>    open        -       undealt with, needing attention
 </PRE>
-<DT><STRONG><A NAME="item_category">category</A></STRONG><DD>
+<DT><STRONG><A NAME="item_group">group</A></STRONG><DD>
 <P>
-The category of the bug has the following options:
+The group (or category) of the bug has the following options:
 
 <P>
 <PRE>    bounce      -       report had invalid format, common with spam mail
@@ -417,7 +483,7 @@ Typically has one of the following forms: 5
 <DT><STRONG>history</STRONG><DD>
 <P>
 History of administrative operations against this bug, changes of
-status/category, etc..
+status/group, etc..
 
 <DT><STRONG><A NAME="item_cc">cc</A></STRONG><DD>
 <P>
@@ -519,6 +585,10 @@ The internally generated testid.
 <P>
 Richard Foley &lt;<A HREF="mailto:richard@rfi.net">richard@rfi.net</A>&gt;
 2001
+
+<P>
+Amendments by Mark-Jason Dominus &lt;<A
+HREF="mailto:mjd@plover.com">mjd@plover.com</A>&gt;
 
 </BODY>
 

@@ -1,6 +1,6 @@
 # Perlbug base class 
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Base.pm,v 1.91 2001/12/03 10:39:20 richardf Exp $
+# $Id: Base.pm,v 1.95 2002/01/14 10:14:48 richardf Exp $
 # 
 # TODO
 # see scan
@@ -21,7 +21,7 @@ see L<Perlbug::Interface::Cmd>, L<Perlbug::Interface::Web> etc.
 package Perlbug::Base;
 use strict; 
 use vars qw($AUTOLOAD @ISA $VERSION); 
-$VERSION = do { my @r = (q$Revision: 1.91 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.95 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
 @ISA = qw(Perlbug::Do Perlbug::Utility); 
 $| = 1; 
 
@@ -36,11 +36,11 @@ use Perlbug::Utility;
 #use Perlbug::Relation;
 
 # external utilities
-# use Devel::Trace;
 use Benchmark;
 use Carp; 
 use CGI qw(:standard);
 use Data::Dumper;
+# use Devel::Trace;
 use HTML::Entities;
 use Mail::Address;
 use Email::Valid;
@@ -55,7 +55,6 @@ my $o_LOG  = undef;
 my %DB     = ();
 
 $Perlbug::i_LOG = 0;
-
 
 =head1 SYNOPSIS
 
@@ -80,7 +79,7 @@ Create new Perlbug object, (see also L<Description> above):
 
 	my $o_base = Perlbug::Base->new();
 
-Loading casualties from the log:
+Loading casualties from the log via tell_time():
 
 	[0]  INIT (18214) scr(/usr/local/httpd/htdocs/perlbug/admin/perlbug.cgi), debug(01xX) Perlbug::Log=HASH(0x860ef1c)
 	[1]  Connect host(localhost), db(perlbug), user(perlbug), pass(sqlpassword)
@@ -198,7 +197,6 @@ sub cgi {
 	return $cgi;
 }
 
-
 =item db 
 
 get database object
@@ -212,7 +210,6 @@ sub db {
 
 	return $o_DB;
 }
-
 
 =item log
 
@@ -471,10 +468,48 @@ sub isatest {
 	return $res;
 }
 
+=item summary
+
+Return summary of open/closed bugs
+
+	print $o_web->summary();
+
+=cut
+
+sub summary {
+	my $self = shift;
+
+	my $o_bug  = $self->object('bug');
+	my $o_sta  = $self->object('status');
+	my $o_bs   = $o_bug->rel('status');
+
+	my ($oid)  = $o_sta->ids("name = 'open'");
+	my $i_summ = $o_bug->count;
+	my $i_open = $o_bs->count("statusid = '$oid'");
+
+    my $sum = qq|$i_summ($i_open) bugs|;
+
+	return $sum;
+}
+
+
+=item isframed
+
+Simple wrapper
+
+	print "framed<hr>" if $o_base->isframed;
+
+=cut
+
+sub isframed {
+	my $self = shift;
+
+	return $self->current('framed');
+}
 
 =item myurl
 
-Store and return the given url.
+Store and return the given url, with appropriate underscore '_'.
 
 	my $url = $o_base->myurl( $url );
 
@@ -485,6 +520,7 @@ sub myurl { #
     my ($url) = shift || $self->cgi->url;
 
 	$url =~ s/[^_](perlbug\.cgi)/_$1/gsi unless $self->current('framed');
+	exit if $url =~ /__/;
 
     if (defined($url)) { # may be blank
         $self->current({'url', $url});
@@ -808,9 +844,29 @@ sub isadmin { # retrieve admin flag (and id)
 		? grep(!/generic/i, $self->current('admin')) 
 		: $self->current('admin');
 
+	$self->debug(2, "user($user)") if $Perlbug::DEBUG;
+
     return $user;
 }
 
+=item isbugmaster
+
+Returns current admin userid (post check_user), if base->isadmin eq base->system(bugmaster)
+
+	print 'is bugmaster: '.$pb->isbugmaster; # name | ''
+
+=cut
+
+sub isbugmaster { # retrieve bugmaster id
+    my $self = shift;
+
+	my $user = $self->isadmin;
+	my $bugm = $self->system('bugmaster');
+
+	$self->debug(2, "user($user) bugm($bugm)") if $Perlbug::DEBUG;
+
+	return ($user eq $bugm) ? $user : ();
+}
 
 =item switches
 
@@ -848,7 +904,7 @@ sub switches { # admin|user
 
 Create new file with this data:
 
-    $ok = $self->create("$dir/$file.tmp", $data);
+    $o_file = $self->create("$dir/$file.tmp", $data);
 
 =cut
 
@@ -1047,7 +1103,7 @@ sub get_data {
 
 	if (defined($a_cache) && ref($a_cache) eq 'ARRAY' && $refresh eq '') { 
 		$a_info = $a_cache;
-		$self->debug('s', "reusing CACHED SQL: $sql($a_cache)") if $Perlbug::DEBUG;
+		$self->debug('s', "reusing CACHED SQL: $sql => $a_cache") if $Perlbug::DEBUG;
 	} else {
 		$self->debug('s', "SQL: $sql") if $Perlbug::DEBUG;
 		my $sth = $self->db->query($sql);
@@ -1177,19 +1233,21 @@ sub notify {
 					chomp(@cc, $from, $orig, $replyto, $subject, $to); 
 					$subject  = ($obj =~ 'bug' ? '' : ucfirst($obj))." [ID $oid] $orig";
 
+					my $o_email = Perlbug::Interface::Email->new;
+
 					# ACKNOWLEDGE - noack
 					if (grep(/noack/io, $to, @cc) || $body =~ /(ack(knowledge)*=no)/iso) {
 						$self->debug(1, "body(to|cc) contains ack(\w+)=no -> not acknowledging!") if $Perlbug::DEBUG;
 					} else {
 						$self->debug(1, "body(to|cc) doesn't contain ack(\w+)=no -> acknowledging") if $Perlbug::DEBUG;
-						my $o_ack = $self->get_header($o_hdr);
+						my $o_ack = $o_email->get_header($o_hdr);
 						$o_ack->replace('Subject', "Ack - $subject");
-						$o_ack->replace('To', $self->from($replyto, $from)); 
-						my $response = join('', $self->read('response'));
-						my $footer   = join('', $self->read('footer'));
+						$o_ack->replace('To', $o_email->from($replyto, $from)); 
+						my $response = join('', $o_email->read('response'));
+						my $footer   = join('', $o_email->read('footer'));
 						$response =~ s/(An ID)/A $obj ID ($oid)/;	    # clunk
 						$response =~ s/(Original\ssubject:)/$1 $orig/;	# clunk
-						$i_ok = $self->send_mail($o_ack, $response.$footer);
+						$i_ok = $o_email->send_mail($o_ack, $response.$footer);
 					}
 
 					# NOTIFY - nocc
@@ -1198,14 +1256,14 @@ sub notify {
 					} else {
 						$self->debug(1, "to($to), cc(@cc) doesn't contain no(cc|notify) -> notifying") if $Perlbug::DEBUG;
 						my @ccs = ($obj eq 'bug' ) ? $self->bugid_2_addresses($oid, 'new') : ();
-						$o_hdr  = $self->addurls($o_hdr, $obj, $oid);
+						$o_hdr  = $o_email->addurls($o_hdr, $obj, $oid);
 						$o_hdr->replace('Subject', $subject);
 						my $type = ($subject =~ /^\s*OK/io) ? 'ok' : 'remap';
 	$DB::single=2;
-						my $o_notify = $self->get_header($o_hdr, $type);	
+						my $o_notify = $o_email->get_header($o_hdr, $type);	
 	$DB::single=2;
 						$o_notify->replace('Cc', join(', ', @ccs));
-						$i_ok = $self->send_mail($o_notify, $body); # auto
+						$i_ok = $o_email->send_mail($o_notify, $body); # auto
 					}
 				}
 			}
@@ -1251,7 +1309,7 @@ sub setup_int {
 		TAG:
 		foreach my $tag (keys %header) {
 			my @tags = (ref($header{$tag})) eq 'ARRAY' ? @{$header{$tag}} : ($header{$tag});
-			$tag =~ s/^\s*//; $tag =~ s/\s*$//; # stray newlines creeping in?
+			$tag =~ s/^\s*//o; $tag =~ s/\s*$//o; # stray newlines creeping in?
 			$o_hdr->add($tag, @tags);
 		}
 		$o_hdr->add('Message-Id', $self->get_rand_msgid) unless $o_hdr->get('Message-Id'); 
@@ -1381,7 +1439,7 @@ sub track {
 
 	# $o_log->create($track);
 	my $sth = $self->db->query($insert);
-  	if (!defined($sth)) {
+	if (!defined($sth)) {
 		$self->error("track failure ($insert) -> result($sth)");
 	}		
 
@@ -1428,11 +1486,18 @@ sub htpasswd { #
     my $self = shift;
     my $user = shift;
     my $pass = shift; 
+
     my $htpw = $self->directory('config').'/.htpasswd';
     $self->debug(1, "htpasswd($user, $pass) with($htpw)") if $Perlbug::DEBUG;
+
+	$self->debug(0, "htpasswd update disabled") if $Perlbug::DEBUG;
+	print "FYI: htpasswd update disabled<br>\n";
+	return (); # disabled
+
     my @data = $self->log->copy($htpw, $htpw.'.bak', '0660'); # backitup
+
     my $i_ok = 1;
-    if (!(($i_ok == 1) or (scalar(@data) >= 1))) {
+    if (!(scalar(@data) >= 1)) {
         $self->error("copy($htpw, $htpw.'.bak') must have failed?");
     } else {
 		my $htpass = join('', grep(/\w+/, @data));
@@ -1461,9 +1526,38 @@ sub htpasswd { #
             $self->debug(3, "Modified($i_ok) htpasswd file: '$htpass'") if $Perlbug::DEBUG;
     	}
     }
+    $self->debug(1, "user htpasswd update($i_ok)") if $Perlbug::DEBUG;
+
     return $i_ok; # (wantarray ? @data : $i_ok);
 }
 
+
+=item help_ref
+
+Creates something of the form: C<<a href="http://bugs.per.org/perlbug.cgi?req=webhelp\#item_note">Note</a>>
+
+	my $help = $self->help_ref('note', ['Note HELP']);	
+
+=cut
+
+sub help_ref {
+	my $self = shift;
+	my $targ = shift || '';
+	my $title= shift || $targ; 
+    my $url  = $self->myurl;
+
+	my $sect = ($targ =~ /\w+/o) ? '#item_'.$targ : '';
+	my $with = ($targ =~ /\w+/o) ? "help with $targ parameters" : 'general help overview';
+	my $hint = "click for $with";
+	my $help = qq|<a 
+			href="$url?req=webhelp$sect"
+			onMouseOver="window.status='$hint'; return true;"
+			onMouseOut="window.status='';"
+		>$title</a>
+	|;
+	$help =~ s/\s*\n+\s*/ /go;
+	return "$help\n";
+}
 
 =item clean_up
 
@@ -1480,7 +1574,7 @@ sub clean_up {
 	my $found = 0;
     my $cleaned = 0;
 
-	$self->tell_time() if $Perlbug::DEBUG;
+	# $self->tell_time() if $Perlbug::DEBUG;
 
 	my $o_range = $self->object('range');
 	my @defunct = $o_range->ids("TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10)");
@@ -1577,6 +1671,8 @@ Returns hash of data extracted from given string.
 
 Matches are 'nearest wins' after 4 places ie; clos=closed.
 
+NB. Will catch userids when i_int=userid, userid->name, name->fullname
+
 	my %cmds = $o_obj->parse_str('5.0.5_444_aix_irix_<bugid>_etc' | (qw(patchid bugid etc));
 
 	%cmds = (
@@ -1600,11 +1696,11 @@ Matches are 'nearest wins' after 4 places ie; clos=closed.
 sub parse_str {
 	my $self = shift;
 	my $str  = shift;
-	my @args = split(/(\s|_)+/, $str);
+	my @args = split(/(\s|_)+/o, $str);
 	my %cmds = (); 
 	
 	my $o_bug = $self->object('bug');
-	my @flags = grep(!/fixed/i, $self->objects('flag'), 'group');
+	my @flags = grep(!/fixed/io, $self->objects('flag'), 'group', 'user');
 	my @names = map { substr($_, 0, 4) } map { $self->object($_)->col('name') } @flags;
 	my %seen  = ();
 
@@ -1620,10 +1716,10 @@ sub parse_str {
 			foreach my $flag (@flags) {					# flag
 				my $o_obj = $self->object($flag);
 				my @types = $o_obj->col('name');
-				my ($argtype) = ($flag =~ /^(group|severity|status)$/) 
+				my ($argtype) = ($flag =~ /^(group|severity|status|userid)$/io) 
 					? grep(/^$arg/i, @types) 	# loose 
 					: grep(/^$arg$/i, @types);	# tighter (eg; osname...)
-				if ($argtype =~ /\w+/) {			    # type 
+				if ($argtype =~ /\w+/o) {			    # type 
 					my ($id) = $o_obj->name2id([$arg]);
 					push(@{$cmds{$flag}{'ids'}}, $id) if $id;
 					push(@{$cmds{$flag}{'names'}}, $argtype);

@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
 <TITLE>TODO - Perlbug TODO list</TITLE>
-<LINK REV="made" HREF="mailto:root@pc026991.otn.m.dasa.de">
+<LINK REV="made" HREF="mailto:root@blue.rfi.net">
 </HEAD>
 
 <BODY>
@@ -26,6 +26,15 @@ TODO - Perlbug TODO list
 <HR>
 <H1><A NAME="DESCRIPTION">DESCRIPTION</A></H1>
 <DL>
+<DT><STRONG><A NAME="item_speed">speed</A></STRONG><DD>
+<P>
+Speed improvements are probably the highest priority
+
+<P>
+I wonder if AUTOLOAD routines are a benefit while they're tidy and save
+lots of drossy code, they are the slowest methods and use up the most time
+(%), even when aliased into the symbol table and primed?
+
 <DT><STRONG><A NAME="item_ID">ID</A></STRONG><DD>
 <P>
 X-Perlbug: [ID ...]
@@ -59,20 +68,116 @@ v3.5 Oracle support
 
 <DT><STRONG><A NAME="item_templates">templates</A></STRONG><DD>
 <P>
-Differential template support dependent on context, object and user choice
+Configurable template support dependent on context, object and user choice
 
+<DT><STRONG><A NAME="item_web_search_by_object">web_search_by_object</A></STRONG><DD>
+<P>
+Search functions for all discrete objects (currently it's all very bug
+oriented).
+
+<DT><STRONG><A NAME="item_security">security</A></STRONG><DD>
+<P>
+Better security model.
+
+<DT><STRONG><A NAME="item_modify">modify</A></STRONG><DD>
+<P>
+check modified status of db after create/delete of new object/relation
+
+<DT><STRONG><A NAME="item_userid">userid</A></STRONG><DD>
+<P>
+migrate userid from varchar-&gt;int
+
+<DT><STRONG><A NAME="item_pod2html">pod2html</A></STRONG><DD>
+<P>
+generate link from each section base to index/name/etc.
+
+<DT><STRONG><A NAME="item_trim">trim</A></STRONG><DD>
+<P>
+trim logs and ranges of unnecessary data 
+
+<DT><STRONG><A NAME="item_Fix">Fix</A></STRONG><DD>
+<P>
+rationalise output -&gt; 
+
+<P>
+<PRE>        initial call with args...
+</PRE>
+<P>
+<PRE>        intermittent results...
+</PRE>
+<P>
+<PRE>        final results
+</PRE>
+<P>
+<PRE>        $ret = relevant
+</PRE>
+<P>
+<PRE>        -v = verbose
+        -q = quiet
+</PRE>
+<P>
+<PRE>        single wrapper to fix most things in the correct order
+        
+        a = things('mail')-&gt;check to and from's and cc's
+</PRE>
+<P>
+<PRE>        remove 5.6.0. versions -&gt; 5.6.0
+</PRE>
+<P>
+<PRE>        trim redundant log and range info
+</PRE>
+<DT><STRONG>templates</STRONG><DD>
+<P>
+done
+
+<DT><STRONG><A NAME="item_bugwatch">bugwatch</A></STRONG><DD>
+<P>
+script watches incoming mails reports if any bug, test, etc. don't land in
+p5p within one hour
+
+<P>
+done
+
+<DT><STRONG><A NAME="item_migrate">migrate</A></STRONG><DD>
+<P>
+message-&gt;reply, etc.
+
+<DT><STRONG><A NAME="item_Web">Web</A></STRONG><DD>
+<P>
+<PRE>        fixed in field is dodgy
+        
+        templates and search forms for each object
+</PRE>
+<P>
+<PRE>        'new' form for each object
+</PRE>
+<P>
+consistency:
+
+<P>
+<PRE>        bug_ids, bug_headers, bug_search...
+</PRE>
+<P>
+<PRE>        status_ids, status_search
+</PRE>
+<P>
+<PRE>        user_ids, user_search
+</PRE>
 </DL>
 <P>
 <HR>
 <H1><A NAME="SUGGESTIONS">SUGGESTIONS</A></H1>
 <P>
-<PRE>        Email suggestions to: 
+<PRE>        Email suggestions to any of the following: 
 </PRE>
 <P>
-<PRE>                &lt;a href=&quot;<A HREF="mailto:perl5-porters@perl.org&quot">mailto:perl5-porters@perl.org&quot</A>;&gt;perl5-porters@perl.org&lt;/a&gt; 
+<PRE>                &lt;a href=&quot;<A HREF="mailto:richard@perl.org&quot">mailto:richard@perl.org&quot</A>;&gt;richard@perl.org&lt;/a&gt; 
 </PRE>
 <P>
 <PRE>                &lt;a href=&quot;<A HREF="mailto:perlbug@rfi.net&quot">mailto:perlbug@rfi.net&quot</A>;&gt;perlbug@rfi.net&lt;/a&gt; 
+</PRE>
+<P>
+<PRE>                &lt;a href=&quot;<A HREF="mailto:bugmongers@perl.org&quot">mailto:bugmongers@perl.org&quot</A>;&gt;bugmongers@perl.org&lt;/a&gt; 
 </PRE>
 </BODY>
 

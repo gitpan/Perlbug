@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Message.pm,v 1.20 2001/08/20 18:57:31 mstevens Exp $
+# $Id: Message.pm,v 1.21 2002/01/11 13:51:05 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Message - Message class
 package Perlbug::Object::Message;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.20 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.21 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 =head1 DESCRIPTION
@@ -63,6 +63,7 @@ sub new {
 	
 	bless($self, $class);
 }
+
 
 =pod
 

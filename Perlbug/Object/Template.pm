@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Template.pm,v 1.9 2001/12/01 15:24:43 richardf Exp $
+# $Id: Template.pm,v 1.10 2001/12/05 20:58:38 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Object::Template;
 use strict;
 use Text::Wrap;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.9 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.10 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -164,7 +164,7 @@ sub object2id {
 		my $tmpids  = join("', '", @tmpids);
 		my $user = 'templateid', "userid = '$userid' AND templateid IN('$tmpids')";
 		my @utmpids = $self->rel('user')->col($user);
-		$self->debug(0, "user($user) => tmpids(@utmpids)") if $Perlbug::DEBUG;
+		$self->debug(3, "user($user) => tmpids(@utmpids)") if $Perlbug::DEBUG;
 		@tmpids = @utmpids if scalar(@utmpids) >= 1;
 		($tempid) = reverse sort { $a <=> $b } @tmpids; # latest in every case
 	} # else zip found
@@ -228,7 +228,7 @@ sub _merge {
 		}
 		# $^W = 1;
 
-		if ($self->base->current('context') eq 'http' || $fmt =~ /[hHIL]/) {
+		if ($self->base->current('context') eq 'http' && $fmt !~ /[hHIL]/) {
 			# encode_entities done in format_fields
 			$str = '<pre>'.$str.'</pre>'; # maintain formatting
 		} elsif ($self->data('wrap') =~ /^([1-9])/o) { # WRAP
@@ -248,7 +248,7 @@ sub _merge {
 
 Return object in template layout according to format(B<a>), relations are called from the object given.
 
-	my ($hdr, $str, $ftr) = $o_tmp->merge($o_obj, $fmt, [\%data]);
+	my ($hdr, $str, $ftr) = $o_tmp->merge($o_obj, $fmt, [\%data, \%rels]);
 
 If no template found, calls L<_merge()>
 
@@ -259,6 +259,7 @@ sub merge {
 	my $o_obj  = shift;
 	my $fmt    = shift;
 	my $h_data = shift || $o_obj->_oref('data');
+	my $h_rels = shift;
 	my ($hdr, $str, $ftr) = ('', '', '');
 
 	if (!(ref($o_obj) && $fmt =~ /^\w$/ && ref($h_data) eq 'HASH')) {
@@ -268,31 +269,36 @@ sub merge {
 		my $tempid = $self->object2id($obj, $fmt); 
 		my $i_read = ($tempid =~ /\d+/ && $self->read($tempid)->READ) ? 1 : 0;
 		my $h_attr = ($fmt =~ /[dD]/) ? $o_obj->_oref('attr') : {};
-		$self->debug(1, "temp($tempid) read($i_read)") if $Perlbug::DEBUG;
+		$self->debug(2, "temp($tempid) read($i_read)") if $Perlbug::DEBUG;
 
 		if (!($tempid && $i_read)) { 	# long way to do it
-			my $h_rels = $o_obj->refresh_relations()->_oref('relation');
+			$h_rels = $o_obj->refresh_relations()->_oref('relation');
 			$h_data = $self->xtra($h_data, $obj, $o_obj->oid, $h_attr);
 			$str = $self->_merge($h_data, $h_rels, $fmt);
 		} else {						# a bit snappier now with rr() [ except message/s ]
-			$hdr = $self->data('header') || ''; 
-			$str = $self->data('body')   || ''; 
-			$ftr = $self->data('footer') || ''; 
+			($hdr, $str, $ftr) = map { $self->data($_) || '' } qw(header body footer);
+			# $hdr = $self->data('header') || ''; 
+			# $str = $self->data('body')   || ''; 
+			# $ftr = $self->data('footer') || ''; 
+
+			#($hdr, $str, $ftr) = map { s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos } 
+			#	($hdr, $str, $ftr) unless $self->base->isadmin;
 			unless ($self->base->isadmin) {
-				$hdr =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos;
-				$str =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos;
-				$ftr =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos;
+				$hdr =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos if $hdr;
+				$str =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos if $str;
+				$ftr =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos if $ftr;
 			}
 			my $tmp = $hdr.$str.$ftr;
-			$self->debug(0, "template: \n$tmp") if $Perlbug::DEBUG;
+			$self->debug(3, "template: \n$tmp") if $Perlbug::DEBUG;
 
 			my %map = ();
 			%map = map { $_ => ++$map{$_} } ($tmp =~ 
 				/<{([a-z]+)(?:_count|id|_ids|_names)}[\s\d]*>/gi); # better _with_ ids|names?
-			my $h_rels = $o_obj->refresh_relations(keys %map)->_oref('relation');
+			$h_rels = $o_obj->refresh_relations(keys %map)->_oref('relation') unless $h_rels;
 			$self->debug(3, "rels: ".Dumper($h_rels)) if $Perlbug::DEBUG;
-			$h_data = $self->xtra($h_data, $obj, $o_obj->oid, $h_attr);
 			my $h_dat = $o_obj->format_fields({%{$h_data}, %{$h_rels}}, $fmt);
+			$$h_dat{'id4key'} = $$h_dat{$obj.'id'}; # helpful
+			$$h_dat{'key'}    = $obj;				#  
 			$self->debug(3, "data: ".Dumper($h_dat)) if $Perlbug::DEBUG;
 
 			# $^W = 0;
@@ -306,24 +312,36 @@ sub merge {
 				} elsif (ref($$h_dat{$data}) eq 'ARRAY') {
 					$replace = join(', ', @{$$h_dat{$data}});
 				}
+				# ($hdr, $str, $ftr) = map { s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie } ($hdr, $str, $ftr);
 				$hdr =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $hdr;
 				$str =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $str;
 				$ftr =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $ftr;
 			}
 			# $^W = 1;
-			$hdr =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos if $hdr;
-			$str =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos if $str;
-			$ftr =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos if $ftr;
+			my $blank = ($self->base->current('context') eq 'http') ? '&nbsp;' : ' ';
 
+			# ($hdr, $str, $ftr) = map { $_ =~ s/\<\/{0,1}\{\w+\}\>/$blank/gimos } ($hdr, $str, $ftr);
+			 $hdr =~ s/\<\/{0,1}\{\w+\}\>/$blank/gimos if $hdr;
+			 $str =~ s/\<\/{0,1}\{\w+\}\>/$blank/gimos if $str;
+			 $ftr =~ s/\<\/{0,1}\{\w+\}\>/$blank/gimos if $ftr;
+			#($hdr, $str, $ftr) = map { wrap('', '', $_) } ($hdr, $str, $ftr) 
+			#	if $self->data('wrap') =~ /^([1-9])/o; # WRAP
 			if ($self->data('wrap') =~ /^([1-9])/o) { # WRAP
 				$hdr = wrap('', '', $hdr) if $hdr; # $1
 				$str = wrap('', '', $str) if $str; #  .
 				$ftr = wrap('', '', $ftr) if $ftr; #  .
 			}
+			#($hdr, $str, $ftr) = map { '<pre>'.$_.'</pre>' } ($hdr, $str, $ftr) 
+			#	if $self->base->current('context') eq 'http' && $fmt !~ /[hHIL]/; 
+			if ($self->base->current('context') eq 'http' && $fmt !~ /[hHIL]/) {
+				$hdr = '<pre>'.$hdr.'</pre>' if $hdr; #
+				$str = '<pre>'.$str.'</pre>' if $str; # 
+				$ftr = '<pre>'.$ftr.'</pre>' if $ftr; # 
+			} 
 		}
 	}
 
-	$self->debug(2, "obj($o_obj) fmt($fmt) => str(".$hdr.$str.$ftr.")") if $Perlbug::DEBUG;
+	$self->debug(3, "obj($o_obj) fmt($fmt) => hdr($hdr) str($str) ftr($ftr)") if $Perlbug::DEBUG;
 
 	return ($hdr, $str, $ftr);
 }
@@ -351,6 +369,21 @@ sub xtra {
 	return $h_data;
 }
 
+sub xadmin { # remove <{ifadmin}>'s unless isadmin
+
+}
+
+sub strim { # remove <{\w+}>'s
+
+}
+
+sub pre { # <pre>@_</pre>
+
+}
+
+sub wrap { # wrap if i_wrap
+
+}
 
 =pod
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: decisions of switch() => do_...() 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 74_Email.t,v 1.8 2001/12/01 15:24:43 richardf Exp $
+# $Id: 74_Email.t,v 1.9 2002/01/11 13:51:06 richardf Exp $
 #
 
 use lib qw(../);
@@ -39,6 +39,24 @@ my %tests = (
 			},
 			'body'		=> qq| a per l bug	|,
 		},
+		{ # 
+			'header'	=> {
+				'To'		=> $o_test->target,
+				'Subject'	=> 'new to/body bug',
+				'From'		=> $o_test->from,
+			},
+			'body'		=> qq| Dear perlbug, a perl bug	|,
+		},
+		{ # 
+			'header'	=> {
+				'To'		=> $o_test->target,
+				'Subject'	=> 'new to/body bug',
+				'From'		=> $o_test->from,
+			},
+			'body'		=> qq|
+			dear perlbug, bla bla bla|,
+		},
+
 	],
 	'B'	=> [ # bug
 		{ # 

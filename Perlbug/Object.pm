@@ -1,6 +1,6 @@
 # Perlbug object attribute handler
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Object.pm,v 1.47 2001/12/03 07:35:49 richardf Exp $
+# $Id: Object.pm,v 1.51 2002/01/14 10:14:48 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Object;
 use strict;
 use vars(qw($VERSION @ISA $AUTOLOAD));
 @ISA = qw(Perlbug::Format); 
-$VERSION = do { my @r = (q$Revision: 1.47 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.51 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Carp;
@@ -241,7 +241,7 @@ sub reinit {
 	$self->attr( { 'objectid', $oid} ); # explicit	
 	$self->data( { $self->attr('primary_key'), $oid} );
 
-	$self->debug(3, "rjsf: object($oid) reinit(".$self->attr('key').") types(@types) rels(@rels)") if $Perlbug::DEBUG;
+	$self->debug(3, "object($oid) reinit(".$self->attr('key').") types(@types) rels(@rels)") if $Perlbug::DEBUG;
 
 	return $self;
 }
@@ -298,7 +298,7 @@ sub check {
 
 	CHECK:
 	foreach my $key (keys %{$h_ref}) {
-		unless ($key =~ /(debug|objectid)/) {
+		unless ($key =~ /(debug|objectid)/io) {
 			if ($$h_ref{$key} !~ /\w+/) {
 				$i_ok = 0;
 				$self->error(" is incomplete key($key) val($$h_ref{$key}): ".Dumper($h_ref));
@@ -392,15 +392,17 @@ sub _exists {
 }
 
 
-=item data_fields
+=item fields
 
 Returns all valid data field names for this object
 
-	my @fields = $o_obj->data_fields;
+	my @fields = $o_obj->fields;
 
 =cut
 
-sub data_fields {
+sub data_fields { my $self = shift; return $self->fields(@_); }
+
+sub fields {
 	my $self = shift;
 
 	my @fields = keys %{$self->{'_data'}};
@@ -537,6 +539,49 @@ sub oid {
 	return $oid;
 }
 
+=item id
+
+Returns any ok_ids found in given data structure under B<id> or B<${obj}_id>
+
+	my @ids = $o_obj->id({
+		'id'	  => [(23, 44, 7)], 
+		'testid'  => [(23, 44, 7)], 
+		'testids' => [(23, 44, 7)], 
+		'test_id' => [(23, 44, 7)],
+	});
+
+=cut
+
+sub id {
+	my $self  = shift;
+	my $h_ref = shift; #$o_cgi
+	my @ids   = ();
+
+	if (!(ref($h_ref))) {
+		$self->error("requires some sort of data ref($h_ref)!");
+	} else {
+		my $obj = $self->key;
+		my @vars = ('id', $obj.'id', $obj.'_id', $obj.'_ids');
+		foreach my $var (@vars) {
+			if (ref($h_ref) eq 'CGI') {
+				push(@ids, $h_ref->param($var)) if $h_ref->param($var);
+			} else {
+				if (ref($h_ref) eq 'ARRAY') {
+					push(@ids, @{$h_ref}) if scalar(@{$h_ref}) >= 1;
+				} else {
+					if (ref($$h_ref{$var}) eq 'ARRAY') {
+						push(@ids, @{$$h_ref{$var}}) if scalar(@{$$h_ref{$var}}) >= 1;
+					} else {
+						push(@ids, $$h_ref{$var}) if $$h_ref{$var} =~ /.+/o;
+					}
+				}
+			}
+		}
+		$self->debug(3, "ok id(@ids)from: ".Dumper($h_ref)) if $Perlbug::DEBUG;
+	} 
+
+	return @ids;
+}
 
 =item ids
 
@@ -561,9 +606,12 @@ sub ids {
 	my $refresh = shift || '';
 	my @ids   = ();
 	
-	my $sql = "SELECT DISTINCT ".$self->attr('primary_key')." FROM ".$self->attr('table');
+	my $prime = $self->attr('primary_key');
+	my $table = $self->attr('table');
+	my $sql   = "SELECT DISTINCT $prime FROM $table ";
+
 	if (ref($input)) {				# OBJECT with ids, etc.
-		$sql .= ' WHERE '.$input->attr('primary_key')." LIKE '".$input->oid()."'";		
+		$sql .= " WHERE $prime LIKE '".$input->oid()."'";		
 		$sql .= " AND $extra" if $extra;
 	} elsif ($input =~ /\w+/o) { 	# SQL where clause
 		$input =~ s/^\s*WHERE\s*//io;	
@@ -699,6 +747,7 @@ sub id2name {
 			}
 		}
 	}
+	$self->debug(2, "given(@{$a_input}) output(@output)") if $Perlbug::DEBUG;
 
 	return @output;
 }
@@ -822,7 +871,33 @@ sub keys_sorted_by_value {
 }
 
 
+# HTTP specific methods
 # -----------------------------------------------------------------------------
+
+=item link
+
+Return an href link to this object given optional ids, or search link if none given, (eg with a o_test object): 
+
+	my $link = $o_obj->link($fmt, \@testids, $js); # bugcgi?req=test_id&test_id=37&format=h&etc.
+
+=cut
+
+sub link {
+	my $self = shift;
+	my $fmt  = shift || $self->base->current('format');
+	my $aoid = shift || [];
+	my $js   = shift || '';
+	my $stat = (ref($aoid) eq 'ARRAY') ? join(', ', @{$aoid}) : '';
+	
+	my $targ = $self->key;
+
+    my @link = $self->href($targ.'_id', $aoid, ucfirst($targ), $stat, $aoid, $js, $fmt);
+
+	$self->debug(3, "targ($targ) oid($aoid) => link(@link)") if $Perlbug::DEBUG;
+
+	return @link;
+}
+
 
 =item choice
 
@@ -845,27 +920,29 @@ sub choice {
 
 =item popup 
 
-Create scrolling web list popup with given pre-selection (or B<any>), with (alphabetically sorted) names where possible
+Create scrolling web list popup with given pre-selection (or B<any>), with (alphabetically sorted) names where possible, and optional WHERE clause
 
-	my $popup = $o_obj->popup('unique_name', $selected); # or none('') 
+	my $popup = $o_obj->popup('unique_name', $selected, [$where]); 
 
 =cut
 
 sub popup {
 	my $self = shift;
 	my $name = shift || $self->attr('name');
-	my $sel  = shift || '';
+	my $sel  = shift || ''; # any?
+	my $where= shift || ''; # sql
 	($sel)   = @{$sel} if ref($sel) eq 'ARRAY';
 
 	my $cgi  = $self->base->cgi;
 
-	my %map = ('any' => 'any', '' => '',);
+	my %map = ('' => '',);
+	%map = (%map, 'any' => 'any') if $sel eq 'any';
 	my $pri = $self->attr('primary_key');
 	# my $col = (grep(/^name$/i, $self->data_fields)) ? 'name' : $pri;
 	my ($col) = map { ($_ =~ /^name$/o ? $_ : $pri ) } $self->data_fields ? 'name' : $pri;
 
 	if (1) { # all - better than foreach id -> SQL 
-		my @ids = $self->col("CONCAT($pri, ':', $col)"); 
+		my @ids = $self->col("CONCAT($pri, ':', $col)", $where); 
 		foreach my $id (@ids) {
 			my ($pre, $post) = split(':', $id);
 			$map{$pre} = $post;
@@ -1013,6 +1090,194 @@ sub text_field {
 	return $txt;
 }
 
+=item htmlify
+
+Returns args with select this object inserted, calls B<Format::htmlify>
+
+	my \%data = $o_obj->htmlify(\%data);
+
+=cut
+
+sub htmlify {
+	my $self   = shift;
+	my $h_data = $self->SUPER::htmlify(@_);
+
+	if (ref($h_data) ne 'HASH') {
+		$self->error("requires hashed data ref($h_data)!");
+	} else {
+		my $obj = $self->key;
+		my $oid = $self->oid;
+		$$h_data{'select'} = $self->base->cgi->checkbox(
+			-'name'		=>"${obj}id", 
+			-'checked' 	=> '', 
+			-'value'	=> $oid, 
+			-'label' 	=> '', 
+			-'override' => 1
+		);
+
+		my $OPTIONAL = $self->base->help_ref('optional', 'Optional');
+		my $TRANSFER = $self->base->help_ref('transfer', 'Transfer');
+		my $transfer = '<td>&nbsp;</td><td>&nbsp;</td>';
+		if (grep(/^$obj$/, $self->base->objects('mail')) and $obj ne 'bug') { 
+			$transfer = qq|<td><b>$TRANSFER type:</b>&nbsp;</td>|.
+				'<td>'.
+				$self->object('object')->popup("${oid}_transfer", $obj, 
+				"UPPER(type) = 'MAIL' 
+				AND name IN('message', 'note', 'patch', 'test') AND NAME NOT LIKE '$obj'", 
+				# -'onChange'	=> "pick(this); return newcoms('read');",
+			) . '</td>';
+		}
+		$$h_data{'options'} = qq|
+		<table border=0>
+			<tr>$transfer</tr>
+			<tr>
+				<td><b>$OPTIONAL information here:</b>&nbsp;</td>
+				<td><input type="text" name="${oid}_opts" value="" size="30" 
+				onChange="return pick(this);"></td>
+			</tr>
+		</table>
+		|;
+	}
+
+	$self->debug(3, "$h_data => <pre>\n".Dumper($h_data)."</pre>\n") if $Perlbug::DEBUG;
+
+	return $h_data;
+}
+
+=item form 
+
+Return a web form for this object
+
+	print $o_obj->form($fmt);
+
+=cut
+
+sub form {
+	my $self  = shift;
+	my $o_cgi = shift; # ignored
+	my $title = shift || 'form';
+	my $obj   = $self->key;
+	my $cgi   = $self->base->cgi;
+
+	my $form = qq|<table border=1>\n|.
+		q|<tr><th>&nbsp;</th><th><h3>|.ucfirst($obj).qq| $title</h3></th></tr>\n|;
+
+	$self->reinit() unless $title =~ /^initial/io;
+
+	my $h_data = $self->_oref('data');
+
+	KEY:
+	foreach my $key (sort keys %{$h_data}) {
+		my $val = $$h_data{$key} || '';
+		unless ($key eq 'userid') {
+			if ($key =~ /^(created|modified|${obj}id)$/io) { 
+				next KEY if $cgi->param('req') =~ /_initform$/io;
+			}
+		}
+		$form .= qq|<tr><td><b>$key</b></td>|;
+		if ($key =~ /body|header/io) {
+			$form .= qq|<td><textarea name="$key" rows="3" cols="40">$val</textarea></td>|;
+		} else {
+			my $size = ($key =~ /(description|email_msgid|subject|(to|source)addr)/io) ? 'size="35"' : '';
+			$form .= qq|<td><input type="text" name="$key" value="$val" $size></td>|;
+		}
+		$form .= qq|</tr>\n|;
+	}
+
+	$form .= qq|</table>\n|;
+
+	$self->debug(3, "obj($obj) form($form)") if $Perlbug::DEBUG;
+
+	return $form; 
+}
+
+
+=item search
+
+Return a web search form for this object
+
+	print $o_obj->search($fmt);
+
+=cut
+
+sub search {
+	my $self = shift;
+	my $o_cgi = shift; # ignored
+	my $obj  = $self->key;
+	my $cgi  = $self->base->cgi;
+
+	my $form = $self->form($cgi, 'search');
+
+	my $FMT		 = $self->base->help_ref('format', 'Formatter');
+	my $SHOWSQL  = $self->base->help_ref('show_sql', 'Show SQL');
+	my $RESTRICT = $self->base->help_ref('restrict', 'Restrict returns to');
+    my %format   = ( 'h' => 'Html list', 'H' => 'Html block', 'L' => 'Html lean', 'a' => 'Ascii list', 'A' => 'Ascii block', 'l' => 'Ascii lean',); 
+	my $format   = $cgi->radio_group(-'name' => 'format',  -values => \%format, -'default' => 'h', -'override' => 1);
+    my $sqlshow  = $cgi->radio_group(-'name' => 'sqlshow',	-'values' => ['Yes', 'No'], -'default' => 'No', -'override' => 1);
+    my $restrict = $cgi->popup_menu(-'name' => 'trim',      -'values' => ['All', '5', '10', '25', '50', '100'],  -'default' => 10, -'override' => 1);
+
+	$form .= qq|
+		<table border=0>
+		<tr><td>$FMT:     	</td><td>$format</td></tr> 
+		<tr><td>$SHOWSQL: 	</td><td>$sqlshow</td></tr> 
+		<tr><td>$RESTRICT:	</td><td>$restrict</td></tr> 
+		</table>\n
+		<input type=hidden name=req value="${obj}_query">\n
+	|;
+
+	$self->debug(3, "obj($obj) form($form)") if $Perlbug::DEBUG;
+
+	return $form;
+}
+
+=item initform
+
+Return an web based object initialisation form.
+
+	my $nix = $o_obj->initform(); # N.B. <-- actually prints the form!
+
+=cut
+
+sub initform {
+	my $self  = shift;
+	my $o_cgi = shift; # ignored
+	my $obj   = $self->key;
+	my $cgi   = $self->base->cgi;
+
+	$self->reinit;
+	$self->data(
+		$self->minimal_create_info({})	
+	);
+
+	my $form = $self->form($cgi, 'initialisation');
+
+	my $optional = $self->base->help_ref('optional', 'Optional');
+	$form .= qq|<hr>
+		<b>$optional information here:</b>&nbsp;<input type="text" name="opts" value="" size="30">
+	<hr>| if $self->isarel('bug'); # group (users)
+	$form .= qq|
+		<input type=hidden name=req value="${obj}_create">\n
+		<input type=hidden name=format value="H">\n
+		|;
+=pod
+	assign to rels...
+	$form .= qq|
+		<table border=0>
+		<tr><td>$FMT:     	</td><td>$format</td></tr> 
+		<tr><td>$SHOWSQL: 	</td><td>$sqlshow</td></tr> 
+		<tr><td>$RESTRICT:	</td><td>$restrict</td></tr> 
+		</table>\n
+		<input type=hidden name=req value="${obj}_query">\n
+	|;
+=cut
+	$self->debug(3, "obj($obj) form($form)") if $Perlbug::DEBUG;
+
+	print $form; # <- !!!
+
+	return (); 
+}
+
+# =============================================================================
 
 =item _gen_field_handler
 
@@ -1072,6 +1337,14 @@ sub base {
 '; }
 
 
+=item _oref
+
+Unsupported method to retrieve hash ref of requested type
+
+	my $h_ref = $o_obj->_oref('attr');
+
+=cut
+
 sub _oref { # unsupported 
 	my $self  = shift;
 	my $key   = shift;
@@ -1093,6 +1366,10 @@ sub _oref { # unsupported
 =pod
 
 =back
+
+
+# 
+# ===============================================================================
 
 =head1 RELATIONS
 
@@ -1252,7 +1529,7 @@ sub rel_ids { # object
 		} else {
 			my $o_rel = $self->relation($rel);
 			@ids = $o_rel->ids($self, $args, $refresh);
-			$self->debug(3, "rel($rel) -> o_rel($o_rel) -> ids(".@ids.')') if $Perlbug::DEBUG;
+			$self->debug(3, "rel($rel) args($args) -> ids(".@ids.')') if $Perlbug::DEBUG;
 		}
 	}	
 	return @ids;
@@ -1293,7 +1570,6 @@ sub rel_names { # object
 	# $self->debug(3, "rel($rel), args($args) -> ids(@ids), names(@names)") if $Perlbug::DEBUG;
 	return @names;
 }
-
 
 =item relate
 
@@ -1336,7 +1612,7 @@ Returns name of objects assigned to.
 		},
 	); 
 
-See also L<rtrack()>
+See also L<parse_str()> and L<rtrack()>
 
 =cut
 
@@ -1352,6 +1628,13 @@ sub relate {
 		if ($oid !~ /\w+/) {
 			$self->error("$self has no object id($oid) to relate with!");
 		} else {
+			my $obj = $self->key;
+			if ($obj eq 'bug') {
+				unless (ref($$h_ships{'status'}{'names'}) eq 'ARRAY') {
+					my $i_has_status = $self->rel_ids('status');
+					$$h_ships{'status'}{'names'} = ['open'] unless $i_has_status;
+				}
+			}
 			my %track = ();
 			$self->debug(1, 'oid: '.$self->oid.' relatable: '.Dumper($h_ships)) if $Perlbug::DEBUG;
 			$DB::single=2;
@@ -1426,6 +1709,9 @@ sub appropriate {
 
 =back
 
+
+# =============================================================================
+
 =head1 RECORDS
 
 Record handling methods for L<Perlbug::Object::\w+>'s
@@ -1455,6 +1741,7 @@ To check whether the object was succesfully read, ask:
 sub read {
 	my $self = shift;
 	my $oid = shift || $self->oid;
+
 	$self->reinit(''); # always want a fresh one
 	if ($self->ok_ids([$oid]) != 1) {
 		$self->debug(0, "$self requires a valid id($oid) to read against!");
@@ -1609,6 +1896,168 @@ sub prep {
 	return $sql;
 }
 
+=item massage
+
+Massage given o_cgi data into a form appropriate for B<query>, B<update> or B<create()> usage 
+
+Returns B<only> object data specific reference!
+
+	my $h_data = $o_obj->massage(\%query);
+
+=cut
+
+sub massage {
+	my $self  = shift;
+	my $o_cgi = shift;
+	my $oid   = shift || '';
+	my $obj   = $self->key;
+	my %ret   = ();
+
+	if (!(ref($o_cgi))) {
+		$self->error("$obj requires cgi obj($o_cgi) to massage!");
+	} else {
+		$self->debug(2, "given: ".Dumper($o_cgi)) if $Perlbug::DEBUG;
+		my $objid = $obj.'id';
+		$ret{$objid} = [$self->id($o_cgi)];
+		
+		foreach my $key ($self->fields, '_opts') {
+			my $oid_key = $oid.'_'.$key;
+			my $val = $o_cgi->param($key) || $o_cgi->param($oid_key) || '';
+			if ($val =~ /(.+)/) {
+				if ($key =~ /^(created|modified)$/) {	
+					$val = "TO_DATE($val)";
+				}
+				$ret{$key} = $val unless $ret{$val};
+			}
+		}
+		$self->debug(2, "massaged: ".Dumper(\%ret)) if $Perlbug::DEBUG;
+
+		if ($o_cgi->param('req') =~ /_create$/) {
+			%ret = %{$self->minimal_create_info(\%ret)};
+		}
+	} 
+
+	return \%ret;
+}
+
+
+=item minimal_create_info
+
+Pad out data for new object creation, only B<adds> to data if nothing found.
+
+	my $h_out = $o_obj->minimal_create_info(\%in);
+
+=cut
+
+sub minimal_create_info {
+	my $self   = shift;
+	my $h_data = shift;
+	my %ret    = ();
+
+	if (!(ref($h_data) eq 'HASH')) {
+		$self->error("requires hash ref($h_data) minimally!");
+	} else {
+		$self->debug(2, "mci given: ".Dumper($h_data));
+		my $admin = $self->base->isadmin;
+		if ($admin !~ /\w+/) {
+			$self->error("shouldn't get here?"); # web create only for admins
+		} else {
+			%ret = %{$h_data};
+			my $o_usr = $self->base->object('user')->read($admin);
+
+			my $obj = $self->key;
+			my $oid = $obj.'id';
+			$ret{$oid} = $self->new_id($self->id($h_data)); # unless $ret{$oid} =~ /\w+/o;
+
+			my $msgid	= $ret{'email_msgid'} 	|| $self->base->get_rand_msgid;
+			my $from 	= $ret{'sourceaddr'} 	|| $o_usr->data('address');
+			my ($to) 	= $ret{'toaddr'} 		|| $self->base->target('generic'); 
+			my $subject	= $ret{'subject'}		|| 'no subject given'; 
+
+			$ret{'header'} = qq|
+				From: $from
+				To: $to
+				Message-ID: $msgid
+				Subject: $subject
+
+			|; $ret{'header'} =~ s/^\s+//gmos;
+			$ret{'subject'} 	= $subject;
+			$ret{'email_msgid'}	= $msgid;
+			$ret{'sourceaddr'} 	= $from;
+			$ret{'toaddr'}	= $to;
+		}
+		$self->debug(2, "mci return: ".Dumper(\%ret));
+	}
+
+	return \%ret;
+}
+
+
+=item query
+
+Setup and execute sensible SQL, returning ids found, from given h_data for relevant object fields.
+
+	my @ids = $o_obj->query(\%query);
+
+=cut
+
+sub query {
+	my $self   = shift;
+	my $h_data = shift;
+	my $cgi    = $self->base->cgi;
+	my @ids    = ();
+
+	if (ref($h_data) ne 'HASH') {
+		$self->error("requires data hash ref($h_data) to query!");
+	} else {
+		my @sql = ();
+		foreach my $key (sort $self->fields) {
+			my $param = $$h_data{$key} || '';
+			if (ref($param) eq 'ARRAY') {
+				if (scalar(@{$param}) >= 1) {
+					my $params = join("', '", @{$param});
+					push(@sql, "$key IN ('$params')")
+				}
+			} elsif ($param =~ /(.+)/) {
+				$param = "'$param'";
+				my $cmp = 'LIKE';
+				if ($key =~ /^(created|modified)$/) {	
+					$key = "TO_DAYS($1)";
+					$cmp = '>='; 
+					$param = "TO_DAYS($param)"; # nice and open via mysql
+					# TO_DAYS(modified) >= TO_DAYS('TO_DATE(2001-01-10)')
+				}
+				push(@sql, "$key $cmp $param");
+			}
+		}
+		my $sql = join(' AND ', @sql);
+		$sql =~ s/\*/\%/g;
+		my $sqls = $cgi->param('sqlshow') || '0';
+		my $trim = $cgi->param('trim') || '25';
+		if ($sqls eq 'Yes') {
+			print "SQL(".$self->key."): $sql<hr>";
+		}
+		@ids = $self->ids($sql);
+		$self->debug(1, "sql($sql) trim($trim) ids: ".@ids) if $Perlbug::DEBUG;
+		if (!(scalar(@ids) >= 1)) {
+			print 'no '.$self->key.' ids found<hr>';
+		} else {
+			print 'found '.@ids.' '.$self->key." ids with trim factor($trim)<hr>";
+			my $o_rng = $self->object('range');
+			$o_rng->create({
+				'name'		=> $self->key,
+				'rangeid'	=> $o_rng->new_id,
+				'processid'	=> $$,
+				'range'		=> $o_rng->rangeify(\@ids),
+				# $o_rng->relation('bug')->assign(\@bids); # ouch!
+			});
+			$#ids = ($trim - 1) if $trim >= scalar(@ids);
+			$self->base->{'_range'} = $o_rng->oid if $o_rng->CREATED; 
+		}
+	} 
+
+	return @ids;
+}
 
 =item create
 
@@ -1762,6 +2211,106 @@ sub STORED {
 	return $i_flag;	
 }
 
+=item transfer 
+
+Transfer the data to another object (type)
+
+	my $new_oid = $o_obj->transfer(\%data, $oid);
+
+=cut
+
+sub transfer { # webtransfer
+	my $self   = shift;
+	my $h_data = shift;
+	my $oid    = shift;
+	my $cgi    = $self->base->cgi;
+	
+	unless ($self->read($oid)->READ) {
+		$self->error("can't read oid($oid) for transfer!");
+	} else {
+		my $transferid = $cgi->param($oid.'_transfer') || '';
+		if ($transferid !~ /\w+/) {
+			$self->error("require a transferid($transferid) for target object type!");
+		} else { 
+			my ($targ) = $self->object('object')->col('name', "objectid = '$transferid'"); 
+			my $o_tgt = $self->object($targ);
+			my $s_data = $self->_oref('data');
+			my $pri = $o_tgt->attr('primary_key'); 
+			$$s_data{$pri} = $o_tgt->new_id;
+			my $i_created = $o_tgt->create($s_data)->CREATED; 
+			if ($i_created != 1) {
+				$self->error("failed to transfer oid($oid) data from ".ref($self)." -> to($targ)"); 
+			} else {
+				my $targoid = $o_tgt->oid;
+				$self->debug(0, 'transferred '.ref($self)."($oid) -> target($targ) oid($targoid)");
+				# my $t_ref = $self->href($targ.'_id', [$targoid], $targoid, 'click ', '', "return go('${targ}_id&${targ}_id=$targoid&commands=write');");
+				my $t_ref = $self->href($targ.'_id', [$targoid], $targoid, 'click ', '', "return go('${targ}_id&${targ}_id=$targoid');");
+				print "<h3>New $targ: $t_ref</h3>\n";
+				my $opts = $cgi->param($oid.'_opts') || $cgi->param('_opts') || '';
+				my $pars = join(' ', $opts);
+				my %update = $self->base->parse_str($pars);
+
+				my @curr = ();
+				REL:
+				foreach my $rel ($self->rels) {
+					my @extant = $self->rel_ids($rel);
+					$self->rel($rel)->delete([$oid]);
+					next REL unless grep(/^$rel$/, $o_tgt->rels);
+					push(@{$update{$rel}{'ids'}}, join(' ', @extant));
+				}
+				$o_tgt->relate(\%update);
+				my $i_deleted = $self->delete([$self->oid]); # !
+			}
+		}
+	}
+
+	return ();
+}
+
+=item webupdate
+
+Update object via web interface, accepts relations via param('_opts')
+
+Generically does B<not> update object data itself.
+
+	$oid = $o_obj->webupdate(\%cgidata, $oid);
+
+=cut
+
+sub webupdate {
+	my $self   = shift;
+	my $h_data = shift;
+	my $oid    = shift;
+    my $cgi    = shift || $self->base->cgi();
+
+	if (!(ref($h_data) eq 'HASH')) {
+		$self->error("requires data hash ref($h_data) to update ".ref($self)." data via the web!");
+	} else {
+		if ($self->read($oid)->READ) {
+			$self->debug(0, "oid: ".$self->oid);
+			# my $pri = $self->attr('primary_key'); 
+			# $$h_data{$pri} = $oid;
+			# my $i_updated = $self->update($h_data)->UPDATED; # called separately
+			# if ($i_updated == 1) {
+				my $opts = $cgi->param($oid.'_opts') || $cgi->param('_opts') || '';
+				my @curr = ();
+				REL:
+				foreach my $rel ($self->rels) {
+					my @idents = ($self->object($rel)->identifier eq 'name') 
+						? $self->id2name([$self->rel_ids($rel)]) 
+						: $self->rel_ids($rel);
+					push(@curr, join(' ', @idents));
+					$self->debug(0, ref($self)."($oid) rel($rel) -> idents(@idents)");
+				}
+				my $pars = join(' ', $opts, @curr);
+				my %cmds = $self->base->parse_str($pars);
+				$self->relate(\%cmds);
+			# }
+		}
+	}
+	
+	return $oid;
+}
 
 =item update
 
@@ -1769,7 +2318,7 @@ Update the given data into the db, loaded from current object, or given data.
 
 	$o_obj->update(); 			# using object data
 
-	$o_obj->update($h_data);	# using given data, note B<only> this data is used!
+	$o_obj->update(\%data);		# using given data, note B<only> this data is used!
 
 To check whether the object was succesfully updated, ask:
 
@@ -1858,7 +2407,7 @@ sub delete {
 	} else {
 		foreach my $oid (@{$a_oids}) {
 			if (!($self->exists([$oid]))) {	# DOIT 
-				$self->error("can't delete non-existing objectid($oid)!");	
+				$self->debug(0, "Can't delete non-existing objectid($oid)!");	
 			} else { # recursion handled by application (foreach rel)
 				my $sql = "DELETE FROM ".$self->attr('table')." WHERE ".$self->primary_key." = '$oid'";
 				my $sth = $self->base->exec($sql);	# DOIT
@@ -1866,7 +2415,8 @@ sub delete {
 					$self->error("Delete($oid) failed: sql($sql)!");
 				} else {	
 					$self->DELETED(1); 
-					# $self->track($sql);
+					my $obj = $self->key;
+					$self->base->track($obj, $oid, $sql) unless $obj =~ /(log|range)/io;
 					$self->base->clean_cache('sql');
 				}	
 			}	
@@ -1935,7 +2485,7 @@ sub insertid {
 	my $newid= '';
 
 	if ($sth) {
-		if ($oid =~ /^(\s*|NULL)$/) {
+		if ($oid =~ /^(\s*|NULL)$/io) {
 			$newid = $sth->{'mysql_insertid'};
 		} else {
 			$newid = $oid;
@@ -1954,7 +2504,7 @@ Return valid new object id for given object, usually NULL, as Mysql generates ow
 
 	my $new_oid = $o_obj->new_id
 
-	# Bug expected to generate it's own
+	# Bug/User expected to generate it's own
 	# Mysql specific
 	# Oracle requires SELECT FROM SEQUENCE ...
 	# Relations map differently...
@@ -1970,8 +2520,9 @@ sub new_id {
 	return $newid;
 }
 
-
 =back
+
+# =============================================================================
 
 =head1 CONVENIENCE
 
@@ -2032,15 +2583,6 @@ sub format { # return $o_fmt->FORMAT(@_)
 	my $fmt  = shift || $self->base->current('format');
 	my $func = shift || 'display';
 
-	my %map = (
-		'a'	=> 5, 	'A'	=> 1, 
-		'h'	=> 10, 	'H'	=> 1,
-		'i'	=> 1, 	'I'	=> 15,
-		'l'	=> 250, 'L'	=> 25,
-		'x'	=> 1, 	'X'	=> 1,
-	);
-	$self->max($map{$fmt}); # !
-
 	if (0) { # too late to turn back now :-]
 		$self->refresh_relations; # ek
 		return $self->FORMAT($fmt, @_); # Perlbug::FORMAT
@@ -2052,22 +2594,23 @@ sub format { # return $o_fmt->FORMAT(@_)
 
 =item template
 
-Applies appropriate template to this object, based on optional format.  
+Applies appropriate template to this object, based on optional format, h_data, h_rels.
 
-	my $str = $o_obj->template($fmt); # [ahl...]
+	my $str = $o_obj->template($fmt, [$h_data, [$h_rels]]); # [ahl...]
 
 =cut
 
-sub template { # return $o_template->merge($self, $fmt)  
+sub template { # return $o_template->merge($self, $fmt);
 	my $self   = shift;
 	my $fmt    = shift || $self->base->current('format');
+	my $h_data = shift;
+	my $h_rels = shift;
 	my $obj    = $self->key;
 
 	my $o_template = $self->object('template');
-	my ($hdr, $str, $ftr) = $o_template->merge($self, $fmt);
+	my ($hdr, $str, $ftr) = $o_template->merge($self, $fmt, $h_data, $h_rels);
 
 	my $i_printing = $self->attr({'printed', $self->attr('printed') + 1});
-
 	my $i_rep = my $i_reporig = $o_template->data('repeat') || 0; 
 	if ($i_rep > 1) {
 		my $i_res = $i_printing % $i_rep;
@@ -2077,7 +2620,7 @@ sub template { # return $o_template->merge($self, $fmt)
 
 	$str = $hdr.$str.$ftr if $i_rep;
 
-	$self->debug(3, "!$i_printing!: fmt($fmt) obj($obj) => ".$str) if $Perlbug::DEBUG;
+	$self->debug(3, "!$i_rep!: fmt($fmt) obj($obj) => ".$str) if $Perlbug::DEBUG;
 
 	return $str;
 }
@@ -2112,8 +2655,8 @@ sub diff {
 	unless (defined($xone) and defined($xtwo)) {
 		$self->debug(0, "requires one($xone) and two($xtwo) to differentiate") if $Perlbug::DEBUG;
 	} else { 
-		$xone =~ s/^(\s*\n)+/\n/g;
-		$xtwo =~ s/^(\s*\n)+/\n/g;
+		$xone =~ s/^(\s*\n)+/\n/go;
+		$xtwo =~ s/^(\s*\n)+/\n/go;
 		my $i_one = my @one = split("\s*\n\s*", $xone);
 		my $i_two = my @two = split("\s*\n\s*", $xtwo);
 
@@ -2184,6 +2727,7 @@ sub TRACKED {
 	return $i_flag;	
 }
 
+# =============================================================================
 
 =item attr
 
@@ -2192,37 +2736,6 @@ Get and set attributes
 	my $objectid = $o_obj->attr('objectid');			# get
 
 	my $newobjid = $o_obj->attr({'objectid', $newid});	# set
-
-=cut
-
-# sub xattr { my $self = shift; return $self->xattribute(@_); } # wrapper for testing attribute()
-
-sub xattr { # test method
-	my $self = shift;
-	my $get  = shift;
-	my @ret  = ();
-
-	if (!defined($get)) {
-		@ret = keys %{$self->{'_attr'}}; 			# ref
-	} else {
-		if (ref($get) ne 'HASH') { 					# get
-			@ret = ($self->{'_attr'}{$get});
-		} else {									# set
-			my $keys = join('|', keys %{$self->{'_attr'}}); 	# ref
-			SET:
-			foreach my $key (keys %{$get}) {
-				if ($key =~ /^($keys)$/) {
-					$self->{'_attr'}->{$key} = $$get{$key}; # SET
-					push(@ret, $$get{$key});
-				} else {
-					$self->debug(2, ref($self)." has no such attribute key($key) valid($keys)") if $Perlbug::DEBUG;
-				}
-			}
-		}
-	}
-	return wantarray ? @ret : $ret[0];
-}
-
 
 =item data 
 
@@ -2239,23 +2752,13 @@ Returns data values, all if none specified.
 
 	my @vals = $o_obj->data;
 
-=cut
-
-
 =item flag 
 
 Get and set flags 
 
 	my $i_read = $o_obj->flag('read');			# get
 
-=cut
-
-
-=item attr 
-
-=item data
-
-=item flag
+=item var
 
 Note that to set any of these you have to send in a hashref!
 

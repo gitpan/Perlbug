@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: check the bugtron scan($mailbody) for category, etc.
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 72_Email.t,v 1.10 2001/12/01 15:24:43 richardf Exp $
+# $Id: 72_Email.t,v 1.12 2002/01/11 13:51:06 richardf Exp $
 #
 
 use lib qw(../);
@@ -55,17 +55,21 @@ STATUS  =  opEN
 	},
 	{ # 3 - version
 		'expected'	=> { 
-			'version'	=> [qw(5 5.0 5.005 5.005.03)],
+			'status'	=> [qw(closed)],
+			'version'	=> [qw(5.0 5.005 5.005.03)],
 		},
 		'body'		=> qq|
+	status=closed
 	version=5.005.03
 		|, 
 	},
 	{ # 4 - version
 		'expected'	=> { 
-			'version'	=> [qw(5 5.6 5.6.0 5.6.0-RC1 5.7.0 5.7.0-6849 5.7.2)],
+			'status'	=> [qw(onhold)],
+			'version'	=> [qw(5.6 5.6.0 5.6.0-RC1 5.7.0 5.7.0-6849 5.7.2)],
 		},
 		'body'		=> qq|
+	status=onhold
 	version=5.6.0-RC1
 	version=5.7.0
 	version=5.7.0-6849
@@ -74,6 +78,7 @@ STATUS  =  opEN
 	},
 	{ # 5 - project, version
 		'expected'	=> { 
+			'status'	=> [qw(open)],
 			'project'	=> [qw(perl5)],
 			'version'	=> [qw(5.053)],
 		},
@@ -83,6 +88,7 @@ STATUS  =  opEN
 	},
 	{ # 6 - project, version
 		'expected'	=> { 
+			'status'	=> [qw(open)],
 			'project'	=> [qw(perl5)],
 			'version'	=> [qw(5.05640)],
 		},
@@ -92,6 +98,7 @@ STATUS  =  opEN
 	},
 	{ # 7 - project, version
 		'expected'	=> { 
+			'status'	=> [qw(open)],
 			'project'	=> [qw(perl5)],
 			'version'	=> [qw(5.003)],
 		},
@@ -101,6 +108,7 @@ STATUS  =  opEN
 	},
 	{ # 8 - project, version
 		'expected'	=> { 
+			'status'	=> [qw(open)],
 			'project'	=> [qw(perl5)],
 			'version'	=> [qw(5.6.0)],
 		},
@@ -110,6 +118,7 @@ STATUS  =  opEN
 	},
 	{ # 9 - project, version
 		'expected'	=> { 
+			'status'	=> [qw(open)],
 			'project'	=> [qw(perl5)],
 			'version'	=> [qw(5.0503)],
 		},

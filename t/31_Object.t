@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Object retrieval, and oid recognition tests (for objects and relations) for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 32_Object.t,v 1.3 2001/12/01 15:24:43 richardf Exp $
+# $Id: 31_Object.t,v 1.9 2002/01/11 13:51:06 richardf Exp $
 #
 BEGIN {
 	use File::Spec; 
@@ -25,6 +25,7 @@ my @objects= $o_pb->objects;
 # Tests
 # -----------------------------------------------------------------------------
 
+# 1
 $test++;
 my $i_errs = 0;
 my @failed = ();
@@ -50,6 +51,7 @@ if ($i_errs == 0) {
 	output("$i_errs objects failed(@failed)");
 }
 
+# 2
 $test++;
 $i_errs = 0;
 @failed = ();
@@ -79,6 +81,7 @@ if ($i_errs == 0) {
 }
 
 # OID recognition
+# 3 
 $test++;
 $i_errs = 0;
 @failed = ();

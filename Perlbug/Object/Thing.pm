@@ -1,24 +1,26 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Patch.pm,v 1.17 2002/01/11 13:51:05 richardf Exp $
+# $Id: Thing.pm,v 1.6 2001/08/20 18:57:31 mstevens Exp $
 #
 
 =head1 NAME
 
-Perlbug::Object::Patch - Patch class
+Perlbug::Object::Thing - Thing class
 
 =cut
 
-package Perlbug::Object::Patch;
+package Perlbug::Object::Thing;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.17 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
 =head1 DESCRIPTION
 
-Perlbug patch class.
+Perlbug Thing class.
+
+id(14), name(bug), thing(object|attribute|function), description
 
 For inherited methods, see L<Perlbug::Object>
 
@@ -32,11 +34,11 @@ use Perlbug::Object;
 
 =head1 SYNOPSIS
 
-	use Perlbug::Object::Patch;
+	use Perlbug::Object::Thing;
 
-	my $o_patch = Perlbug::Object::Patch->new($o_perlbug);
+	my $o_thing = Perlbug::Object::Thing->new();
 
-	print $o_patch->read('19990127.003')->format('a');
+	print $o_thing->read('3')->format('a');
 
 
 =head1 METHODS
@@ -45,9 +47,9 @@ use Perlbug::Object;
 
 =item new
 
-Create new Patch object:
+Create new Thing object:
 
-	my $o_patch = Perlbug::Object::Patch->new();
+	my $o_thing = Perlbug::Object::Thing->new();
 
 =cut
 
@@ -57,14 +59,13 @@ sub new {
 	my $o_base = (ref($_[0])) ? shift : Perlbug::Base->new;
 
 	my $self = Perlbug::Object->new( $o_base,
-		'name'		=> 'Patch',
-		'from'		=> [qw(bug)],
-		'to'		=> [qw(change version)],
+		'name'		=> 'Thing',
+		'from'		=> [qw()],
+		'to'		=> [qw()],
 	);
 
 	bless($self, $class);
 }
-
 
 =pod
 
@@ -72,7 +73,7 @@ sub new {
 
 =head1 AUTHOR
 
-Richard Foley perlbug@rfi.net 2000
+Richard Foley perlbug@rfi.net 2001
 
 =cut
 

@@ -1,6 +1,6 @@
 # Perlbug docs and placeholder
 # (C) 1999 2000 2001 Richard Foley RFI perlbug@rfi.net
-# $Id: Perlbug.pm,v 2.89 2001/12/01 15:24:41 richardf Exp $
+# $Id: Perlbug.pm,v 2.91 2002/01/11 13:51:05 richardf Exp $
 #
 # pod2text -la ~/Perlbug.pm > ~/docs/spec
 # pod2html ~/Perlbug.pm  > ~/docs/spec.html  
@@ -16,7 +16,7 @@ package Perlbug;
 use strict;
 use vars qw($VERSION);
 push @INC, qw(/home/perlbug/locallibs);
-$VERSION = do { my @r = (q$Revision: 2.89 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 2.91 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 $Perlbug::CONFIG = $ENV{'Perlbug_CONFIG'} || $Perlbug::CONFIG || '/home/perlbug/config/Configuration';
@@ -57,7 +57,8 @@ $Perlbug::FATAl  = $ENV{'Perlbug_FATAL'}  || $Perlbug::FATAL  || '0';
 	#       bughist -E forwarding, template (layout) integration
 	#       fixed the errant cmd_<bugid>_var@domain parse, do(\w) and feedback 
 	#       indexes throughout, optimize tables, rr(rels)
-	# 2.90+ templates 
+	# 2.90+ templates, Web has individual (pro object) search forms, doc mods. 
+	#       transfer of main object types to one another (message->patch, note->test, etc.)
 	# 
 	# 3.00  Full test suite and Oracle support
 	# 	    ...

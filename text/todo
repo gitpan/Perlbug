@@ -2,6 +2,14 @@ NAME
     TODO - Perlbug TODO list
 
 DESCRIPTION
+    speed
+        Speed improvements are probably the highest priority
+
+        I wonder if AUTOLOAD routines are a benefit while they're tidy and
+        save lots of drossy code, they are the slowest methods and use up
+        the most time (%), even when aliased into the symbol table and
+        primed?
+
     ID  X-Perlbug: [ID ...]
 
         Where:
@@ -24,13 +32,83 @@ DESCRIPTION
         v3.5 Oracle support
 
     templates
-        Differential template support dependent on context, object and user
+        Configurable template support dependent on context, object and user
         choice
 
-SUGGESTIONS
-            Email suggestions to: 
+    web_search_by_object
+        Search functions for all discrete objects (currently it's all very
+        bug oriented).
 
-                    <a href="mailto:perl5-porters@perl.org">perl5-porters@perl.org</a> 
+    security
+        Better security model.
+
+    modify
+        check modified status of db after create/delete of new
+        object/relation
+
+    userid
+        migrate userid from varchar->int
+
+    pod2html
+        generate link from each section base to index/name/etc.
+
+    trim
+        trim logs and ranges of unnecessary data
+
+    Fix rationalise output ->
+
+                initial call with args...
+
+                intermittent results...
+
+                final results
+
+                $ret = relevant
+
+                -v = verbose
+                -q = quiet
+
+                single wrapper to fix most things in the correct order
+        
+                a = things('mail')->check to and from's and cc's
+
+                remove 5.6.0. versions -> 5.6.0
+
+                trim redundant log and range info
+
+    templates
+        done
+
+    bugwatch
+        script watches incoming mails reports if any bug, test, etc. don't
+        land in p5p within one hour
+
+        done
+
+    migrate
+        message->reply, etc.
+
+    Web
+                fixed in field is dodgy
+        
+                templates and search forms for each object
+
+                'new' form for each object
+
+        consistency:
+
+                bug_ids, bug_headers, bug_search...
+
+                status_ids, status_search
+
+                user_ids, user_search
+
+SUGGESTIONS
+            Email suggestions to any of the following: 
+
+                    <a href="mailto:richard@perl.org">richard@perl.org</a> 
 
                     <a href="mailto:perlbug@rfi.net">perlbug@rfi.net</a> 
+
+                    <a href="mailto:bugmongers@perl.org">bugmongers@perl.org</a> 
 

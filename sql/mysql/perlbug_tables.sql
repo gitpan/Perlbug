@@ -13,7 +13,9 @@ CREATE TABLE pb_address (
   addressid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(100) DEFAULT '' NOT NULL,
   PRIMARY KEY (addressid),
-  UNIQUE address_name_i (name)
+  UNIQUE address_name_i (name),
+  KEY addressid (addressid),
+  KEY name (name)
 );
 
 #
@@ -22,8 +24,10 @@ CREATE TABLE pb_address (
 CREATE TABLE pb_address_bug (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  addressid int(20)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  addressid int(20) DEFAULT '0' NOT NULL,
+  KEY addressid (addressid),
+  KEY bugid (bugid)
 );
 
 #
@@ -64,8 +68,10 @@ CREATE TABLE pb_bug (
 CREATE TABLE pb_bug_change (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  changeid bigint(20)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  changeid int(5) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY changeid (changeid)
 );
 
 #
@@ -74,8 +80,12 @@ CREATE TABLE pb_bug_change (
 CREATE TABLE pb_bug_child (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  childid varchar(12)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  childid varchar(12) DEFAULT '' NOT NULL,
+  KEY bugid (bugid),
+  KEY childid (childid),
+  KEY bugid_2 (bugid),
+  KEY childid_2 (childid)
 );
 
 #
@@ -84,8 +94,10 @@ CREATE TABLE pb_bug_child (
 CREATE TABLE pb_bug_fixed (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  fixedid smallint(5)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  fixedid int(5) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY fixedid (fixedid)
 );
 
 #
@@ -95,7 +107,9 @@ CREATE TABLE pb_bug_group (
   created datetime,
   modified datetime,
   groupid varchar(12) DEFAULT '' NOT NULL,
-  bugid varchar(12) DEFAULT '' NOT NULL
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  KEY bugid (bugid),
+  KEY groupid (groupid)
 );
 
 #
@@ -105,7 +119,9 @@ CREATE TABLE pb_bug_message (
   created datetime,
   modified datetime,
   bugid varchar(12) DEFAULT '' NOT NULL,
-  messageid bigint(20) unsigned DEFAULT '0' NOT NULL
+  messageid int(20) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY messageid (messageid)
 );
 
 #
@@ -123,7 +139,9 @@ CREATE TABLE pb_bug_note (
   created datetime,
   modified datetime,
   bugid varchar(12) DEFAULT '' NOT NULL,
-  noteid bigint(20) unsigned DEFAULT '0' NOT NULL
+  noteid int(20) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY noteid (noteid)
 );
 
 #
@@ -132,8 +150,12 @@ CREATE TABLE pb_bug_note (
 CREATE TABLE pb_bug_osname (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  osnameid smallint(5)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  osnameid int(5) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY osnameid (osnameid),
+  KEY bugid_2 (bugid),
+  KEY osnameid_2 (osnameid)
 );
 
 #
@@ -142,8 +164,10 @@ CREATE TABLE pb_bug_osname (
 CREATE TABLE pb_bug_parent (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  parentid varchar(12)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  parentid varchar(12) DEFAULT '' NOT NULL,
+  KEY bugid (bugid),
+  KEY parentid (parentid)
 );
 
 #
@@ -153,7 +177,9 @@ CREATE TABLE pb_bug_patch (
   created datetime,
   modified datetime,
   bugid varchar(12) DEFAULT '' NOT NULL,
-  patchid bigint(20) unsigned DEFAULT '0' NOT NULL
+  patchid int(20) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY patchid (patchid)
 );
 
 #
@@ -162,8 +188,10 @@ CREATE TABLE pb_bug_patch (
 CREATE TABLE pb_bug_project (
   created datetime,
   ts timestamp(14),
-  projectid smallint(5),
-  bugid varchar(16)
+  projectid int(5) DEFAULT '0' NOT NULL,
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  KEY bugid (bugid),
+  KEY projectid (projectid)
 );
 
 #
@@ -172,8 +200,10 @@ CREATE TABLE pb_bug_project (
 CREATE TABLE pb_bug_range (
   created datetime,
   ts timestamp(14),
-  rangeid bigint(20),
-  bugid varchar(16)
+  rangeid int(20) DEFAULT '0' NOT NULL,
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  KEY bugid (bugid),
+  KEY rangeid (rangeid)
 );
 
 #
@@ -182,8 +212,10 @@ CREATE TABLE pb_bug_range (
 CREATE TABLE pb_bug_severity (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  severityid smallint(5)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  severityid int(5) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY severityid (severityid)
 );
 
 #
@@ -192,8 +224,9 @@ CREATE TABLE pb_bug_severity (
 CREATE TABLE pb_bug_status (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  statusid smallint(5)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  statusid int(5) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid)
 );
 
 #
@@ -203,7 +236,9 @@ CREATE TABLE pb_bug_test (
   created datetime,
   modified datetime,
   bugid varchar(12) DEFAULT '' NOT NULL,
-  testid bigint(20) unsigned DEFAULT '0' NOT NULL
+  testid int(20) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY testid (testid)
 );
 
 #
@@ -213,7 +248,13 @@ CREATE TABLE pb_bug_user (
   created datetime,
   modified datetime,
   userid varchar(16) DEFAULT '' NOT NULL,
-  bugid varchar(12) DEFAULT '' NOT NULL
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  owner char(3) DEFAULT '',
+  KEY bugid (bugid),
+  KEY bugid_2 (bugid),
+  KEY userid (userid),
+  KEY bugid_3 (bugid),
+  KEY userid_2 (userid)
 );
 
 #
@@ -222,8 +263,10 @@ CREATE TABLE pb_bug_user (
 CREATE TABLE pb_bug_version (
   created datetime,
   modified datetime,
-  bugid varchar(12),
-  versionid smallint(5)
+  bugid varchar(12) DEFAULT '' NOT NULL,
+  versionid int(5) DEFAULT '0' NOT NULL,
+  KEY bugid (bugid),
+  KEY versionid (versionid)
 );
 
 #
@@ -258,6 +301,18 @@ CREATE TABLE pb_change_patch (
 );
 
 #
+# Table structure for table 'pb_fixed'
+#
+CREATE TABLE pb_fixed (
+  created datetime,
+  modified datetime,
+  fixedid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+  name varchar(16) DEFAULT '' NOT NULL,
+  PRIMARY KEY (fixedid),
+  UNIQUE fixed_name_i (name)
+);
+
+#
 # Table structure for table 'pb_group'
 #
 CREATE TABLE pb_group (
@@ -266,7 +321,8 @@ CREATE TABLE pb_group (
   groupid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(25) DEFAULT '' NOT NULL,
   description varchar(150) DEFAULT '' NOT NULL,
-  PRIMARY KEY (groupid)
+  PRIMARY KEY (groupid),
+  UNIQUE u_group_name (name)
 );
 
 #
@@ -356,7 +412,9 @@ CREATE TABLE pb_osname (
   osnameid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(16) DEFAULT '' NOT NULL,
   PRIMARY KEY (osnameid),
-  UNIQUE osname_name_i (name)
+  UNIQUE osname_name_i (name),
+  KEY osnameid (osnameid),
+  KEY name (name)
 );
 
 #
@@ -455,6 +513,7 @@ CREATE TABLE pb_template (
   description varchar(255),
   header blob,
   body blob,
+  footer blob NOT NULL,
   PRIMARY KEY (templateid)
 );
 
@@ -538,6 +597,8 @@ CREATE TABLE pb_version (
   versionid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(16) DEFAULT '' NOT NULL,
   PRIMARY KEY (versionid),
-  UNIQUE version_name_i (name)
+  UNIQUE version_name_i (name),
+  KEY versionid (versionid),
+  KEY name (name)
 );
 

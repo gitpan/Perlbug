@@ -1,16 +1,15 @@
 # Perlbug site configuration
 # (C) 2000 2001 Richard Foley RFI richard.foley@rfi.net
-# $Id: Configuration,v 1.12 2001/12/01 15:24:43 richardf Exp $
+# $Id: Configuration,v 1.15 2002/01/14 10:14:48 richardf Exp $
 #
 
 my $h_Config = {
-	#CURRENT
 	'CURRENT' 	=> {								#  
 		'cc'		=> '',                          # return addrs
 		'context' 	=> 'text',                      # /(text|html)/i
 		'debug'		=> '01x',                       # /[msx0-5]/i #!
-		'fatal'  	=> 1,                           # errors are fatal(1), or debugable(0) #!
-		'format'	=> 'l',                         # /[ahilx]/i
+		'fatal'  	=> 1,                           # errors are fatal(1), or just test/debugable(0) #!
+		'format'	=> 'a',                         # /[ahilx]/i
 		'framed'	=> 1,                           # wasn't me guv! :-)
 		'isatest'	=> 1,                           # 0=normal 1=print
 		'log_file'	=> '',                          # placeholder
@@ -20,7 +19,6 @@ my $h_Config = {
 		'url'		=> 'perlbug.cgi',               # start point 
 		'user'		=> 'generic',			  		# user
 	},
-	#DATABASE
 	'DATABASE'	=> {								# 
 		# -t(no create statements) -d(no data) -c(all create and data) -w(where...)
 		'backup_args'  	 => '-opt',      	        # default all data and create statements
@@ -38,7 +36,6 @@ my $h_Config = {
 		'tableprefix'    => 'pb_',                	# swap between data tables
 		'user'           => 'perlbug',              # username on db
 	},
-	#DIRECTORY 
 	'DIRECTORY' => {								# 
 		'arch'    		=> '/home/perlbug/spool/archive', # archival storage (/var/bak)
 		'config'		=> '/home/perlbug/config',  # config directory
@@ -48,8 +45,8 @@ my $h_Config = {
 		'text'  		=> '/home/perlbug/text',    # site specific text dir (~user/text)
 		'web'  			=> '/home/perlbug/web',     # site specific web dir (~user/web)
 	},
-	#EMAIL                             
 	'EMAIL'		=> { 
+		'antimatch'     => '\s*Dear\s+\w+',              		# spam recogniser 
 		'bugdb'        	=> 'bugdb@perl.org',             		# mail interface
 		'bugtron'       => 'perlbug@perl.org',           		# perlbug report new bugs -> target!
 		'deny_from'     => '(postmaster|MAILER\-DAEMON)',		# (regex) don't accept mail from here
@@ -83,16 +80,14 @@ my $h_Config = {
 			'^test'					=> 'T',
 		},
 	}, 
-	#FEEDBACK on tickets (active|admin|cc|maintainer|group|master|source)
-	'FEEDBACK'	=> { 
-		'auto'			=> 'maintainer',	        			# 
-		'delete'  		=> 'admin|maintainer|group', 			# 
-		'new' 			=> 'group|maintainer',					# 
-		'reminder'  	=> 'group|source',           			#
-		'update'  		=> 'admin|cc|group|source', 			# 
+	'FEEDBACK'	=> { # on tickets (active|admin|cc|maintainer|group|master|source)
+		'auto'			=> 'maintainer',	        	# 
+		'delete'  		=> 'admin|maintainer|group', 	# 
+		'new' 			=> 'group',						# maintainer (bugwatch)
+		'reminder'  	=> 'group|source',           	#
+		'update'  		=> 'admin|cc|group|source', 	# 
 	},
-	#FORWARD (transparent forwards to address, undef -> generic) - was reply
-	'FORWARD'	=> { 
+	'FORWARD'	=> { # (transparent forwards to address, undef -> generic) - was reply
 		'generic'   	=> [qw(perl5-porters@perl.org)],  
 		'macos'     	=> [qw(macperl-porters@macperl.org macperl-porters@perl.org)],        # f
 		'win32'     	=> [qw(perl-win32-porters@activestate.com)], # f
@@ -100,6 +95,7 @@ my $h_Config = {
 		'test'          => [qw(forwardtest@bugs.perl.org)],			 # f
 	},
 	'LINK'		=> {
+		'archive'		=> '<a href="http://www.xray.mpe.mpg.de/mailing-lists/perl5-porters/" target="perlbug">p5p archive</a>', # link
 		'database'      => '<a href="http://www.mysql.com/">Driven by MySQL</a>',    # link
 		'language'      => '<a href="http://www.perl.org/">Scriven in Perl</a>',     # link
 		'os'            => '<a href="http://www.linux.org/">Hosted by Linux</a>',    # link
@@ -120,7 +116,6 @@ my $h_Config = {
 		'M'				=> 'Reply to existing bug',
 		'test'			=> 'New test recieved against bug',
 	},
-	#SYSTEM
 	'SYSTEM' 	=> {								# 
 		'admin_switches'=> 'aACDGiLUxXyzZ',         # admin switches, in _opposition_ to users (B)
 		'assign'		=> 5,                  		# max tickets to assign/admin
@@ -143,8 +138,7 @@ my $h_Config = {
 		'user_switches'	=> 'bBcdeEfghHjJlmMnNopPqQrRsStTuvV', # normal user switches
 		'watch'			=> 'yes',					# enable watch script?
 	},
-	#TARGET set off a new bug, undef -> generic
-	'TARGET'	=> {							    
+	'TARGET'	=> { # set off a new bug, undef -> generic
 		'generic'     	=> [qw(perlbug@perl.com perlbug@perl.org)], # t
 		'macos'        	=> [qw(macperlbug@perl.org)],              	# t
 		'unix'     		=> [qw(perlbug@perl.com perlbug@perl.org)], # t
@@ -154,8 +148,8 @@ my $h_Config = {
 		'ok'            => [qw(ok@bugs.perl.org)],					# t
 		'test'          => [qw(perlbug-test@perl.org targettest@bugs.perl.org perlbug-test@bugs.perl.org)],		# t
 	},
-	#WEB                           
 	'WEB'	=> { 
+		'bgcolor'       => 'white',			               	   	# of all pages 
 		'cgi'           => 'perlbug.cgi',               	   	# base script
 		'domain'        => 'bugs.perl.org',                    	# top level domain
 		'home'          => 'index.html',                       	# home address page
@@ -163,9 +157,7 @@ my $h_Config = {
 		'htpasswd'      => '.htpasswd',                        	# in config dir!
 		'logo'          => '<img src="images/perl_republic.gif">', # graphic
 	},
-	#
-	# Perlbug Mail Matches for new bugs (better categorisation)
-	'DEFAULT' 	=> { 	# DEFAULT
+	'DEFAULT' 	=> { # Perlbug Mail Matches for new bugs (better categorisation)
 		'group'			=> 'unknown',		# d
 		'osname'		=> 'generic',		# d
 		'severity'		=> 'none',			# d
