@@ -1,0 +1,18 @@
+# Id: $
+#
+# update from 2.32 -> 2.34 range 
+use perlbug;
+
+CREATE TABLE tm_range (
+	created datetime,
+	ts timestamp(14),
+	rangeid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
+	processid varchar(12),
+	range blob,
+	PRIMARY KEY (rangeid)
+);
+
+#
+DELETE FROM tm_group_user WHERE groupid = 'active_admin';
+
+# 

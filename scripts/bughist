@@ -1,0 +1,237 @@
+#!/usr/bin/perl 
+# Perlbug historical data or archive processor 
+# (C) 1999 Richard Foley RFI perlbug@rfi.net 
+# $Id: bughist,v 1.3 2001/04/21 20:48:48 perlbug Exp $
+#
+
+use strict;
+use vars(qw($VERSION));
+$VERSION = do { my @r = (q$Revision: 1.3 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+
+=head1 NAME
+
+HIST - historical perlbug data processor
+
+=head1 DESCRIPTION
+
+Loops through all files in a given directory, looking for a potential mail message for entry, or otherwise in the perlbug database.
+
+=head1 USAGE
+
+	./bughist -[dehmqrvt] -i input_file_or_dir
+
+=cut
+
+my $usage = qq|Usage: $0 -[ehmqrvt] -i input_file_or_dir
+See also: 'perldoc $0'
+|;
+
+use Carp; 
+use Data::Dumper;
+use FindBin;
+use lib "$FindBin::Bin/..";
+use Getopt::Std; 
+use IO::File;
+use Mail::Internet;
+use Perlbug::Interface::Email; 
+
+my $i_fnd	= 0;
+my $i_cnt	= 0;
+my $i_nr    = 0;
+my %dir  	= ();
+
+=head1 SWITCHES
+
+=item d
+
+debug level
+
+=item e
+
+email switch (1=notify p5p, 0=don't:default)
+
+=item h
+
+help
+
+=item i
+
+input file or directory name
+
+=item m
+
+max number of files to process
+
+=item q
+
+quiet
+
+=item r
+
+recurse through deeper directories, default action is non-recurse
+
+=item t
+
+test (no mails sent, instead output echoed to STDOUT)
+
+=item v
+
+offer feedback on switch <- subject, to, x-perlbug, etc
+
+=cut
+
+# ARGs
+my %arg = (
+	'd'	=> 0,   # debug
+	'e'	=> 0,	# email(default is no email)
+	'h' => 0, 	# help
+	'i' => '',	# dir
+	'm'	=> 101, # max
+	'q'	=> 0, 	# quiet
+	'r'	=> 0,	# recurse (if dir)
+	't' => 0, 	# test 
+	'v' => 0, 	# verbose 
+);
+getopts('d:ehi:m:vqt', \%arg);
+use vars(qw($d $e $h $i $m $q $r $t $v));
+foreach my $switch (keys %arg) {
+	no strict 'refs';
+	$$switch = $arg{$switch};
+}
+
+# Process 
+# -----------------------------------------------------------------------------
+if (!($h == 0 || $i =~ /\w+/)) {
+	print $usage;
+	exit;
+} 
+
+my $i_ok = &input($i);
+if ($v) {
+	print "found($i_fnd) processed($i_cnt) <$i_nr> of max($m)\n";
+	print "output: ".Dumper(\%dir) if $d;
+}
+exit;
+
+
+=head1 FUNCTIONS
+
+Internal function calls
+
+
+=item input
+
+Act upon input data
+
+	my $i_ok = &input($input_fileordirname);
+
+=cut
+
+sub input {
+	my $input = shift;
+	my $i_ok  = 0;
+	if ($input !~ /\w+/) {
+		confess("Invalid input($input): $! \n$usage");
+	} else {
+		$i_ok = (-d $input) ? dir($input) : process($input);
+	}
+	return $i_ok;
+}
+
+
+=item dir
+
+Loop through directory calling L<dir> or L<process>
+
+	my $i_ok = &dir($input);
+
+=cut 
+
+sub dir {
+	my $dir = shift;
+	$dir{$dir} = {};
+	my $i_dircnt = 0;
+	my $i_ok = 0;
+	print "Opening dir($dir)\n" if $v;
+	if(!(opendir(DIR, $dir))) {
+		confess("Can't open dir($dir): $!");
+	} else {
+		my @items = grep{ /\w+/ && "$dir/$_" } readdir(DIR);
+		close DIR;
+		$dir{$dir} = scalar(@items); # ref
+		if (@items >= 1) { 
+			print "Found [".@items."] items in dir($dir)\n" if $v;
+			ITEM:
+			foreach my $item (@items) {
+				last ITEM if $i_cnt >= $m; # control it
+				$i_dircnt++;
+				$item = $dir.'/'.$item;
+				if (-d $item) {
+					next ITEM unless $r;
+					$i_ok = &dir($item);
+				} else {
+					$i_ok = &process($item);
+				}
+			}
+		}
+	}
+	return $i_ok;
+}
+
+
+=item process 
+
+Process each file given as an historical message with no mailing enabled.
+
+	my $i_ok = &process($file);
+
+=cut
+
+sub process {
+	my $file = shift;
+	$i_ok 	 = 0;
+	$i_cnt++;
+	if (!($file =~ /\w+/ && -f $file && -r _)) {
+		confess("FILE($file) invalid: $!");
+	} else {
+		my $star = '';
+		print "Opening file($file)\n" if $v;
+		my $FH = IO::File->new;
+		if (!(open($FH, $file))) {
+			carp("Can't open file($file): $!");
+		} else {
+			my $mail = Mail::Internet->new($FH);
+			close $FH;
+			my $o_pb = Perlbug::Interface::Email->new($mail);
+			$o_pb->current('debug', $d);
+			$o_pb->current('isatest', $t);
+			$o_pb->mailing($e); 
+			print "inspecting mail...\n";
+			my ($meth, $msg) = $o_pb->switch($mail);
+			if ($meth =~ /new|reply/i) {
+				$star = '*';
+				$i_nr++;
+			}
+			my ($o_hdr, $header, $body) = $o_pb->splice($mail);
+			my ($to, $subject, $from, $xperlbug, @cc) = (
+			    $o_hdr->get('To'), $o_hdr->get('Subject'), $o_hdr->get('From'), $o_hdr->get('X-Perlbug'), $o_hdr->get('Cc')
+			); chomp($to, $subject, $from, $xperlbug, @cc);
+			my $verbose = 'switch -> '.uc($meth).qq| <-
+    To:           $to
+    Cc:           @cc
+    Subject:      $subject
+    From:         $from
+    X-Perlbug:    $xperlbug	
+|; 
+			print $verbose if $v;
+			$i_ok = $o_pb->$meth($mail);
+			undef $mail;
+			$o_pb->clean_up("$0 meth($meth) -> ($i_ok)");
+			print "[$i_cnt] <$i_nr> -> ".substr("${meth}$star", 0, 9)." -> ok($i_ok)\n" unless $q;
+			print "$msg\n" if $v;
+		}
+	}
+	return $i_ok;
+}
+
+#

@@ -1,0 +1,346 @@
+# $Id: mailhelp,v 1.3 2001/04/21 20:48:48 perlbug Exp $
+
+=head1 NAME 
+
+Mailhelp - help for the mail interface to the Bug Database
+
+
+=head1 DESCRIPTION
+
+Help for users of the mail interfaces, searching, commands, etc.
+
+There are two mail programs, this document describes the bugmail interface.
+
+=over 4
+
+=item bugmail
+
+The user/admin interface to the db, this program is described here.
+
+=item bugtron
+
+The mailing list and email target slurper script 
+
+See L<"Perlbug"> for more details on how this little fellow operates.
+
+=back
+
+=cut
+
+
+=head1 BUGMAIL 
+
+=over 4
+
+=item target
+
+Typically, to interact with the db, an email is sent to one of the following addresses:
+
+	To: bugdb@perl.org 
+	
+or 
+	
+	To: bugdb@bugs.per.org
+
+This is configurable by the bug system administrator.
+
+=item commands
+
+Are sent on the Subject: (or B<To> see below) line of the email, for example, to retrieve the help pages;
+
+	Subject: -h
+
+=item note
+
+All switches and arguments to the email interface are expected to be separated by a space
+
+	Subject: -s define -e copy@me.too 
+
+=back
+
+=cut
+
+
+=head1 USAGE 
+
+A couple of examples which are equivalent. 
+	
+The first form uses the L<"/subject"> line approach, while the second uses the L<"/To"> header line:
+
+=over 4
+
+=item subject
+
+	To: bugdb@perl.org
+
+	Subject: -a close patch <bugid1> <bugid2>
+	
+
+=item to
+
+	To: close_patch_<bugid1>_<bugid2>@bugs.perl.org
+
+	Subject: irrelevant subject line
+
+=back
+
+=cut
+
+
+=head1 SUBJECT
+
+The subject line may be used to interact with the database, in which case
+the B<To> line is used merely to B<target> this interface.  
+
+
+=head2 SEARCH
+
+=over 4 
+
+There are several different ways of searching the db, by object id or, in
+the case of bugs, by group/category/flag/etc.
+
+=item search
+
+Return these bugs:
+
+	Subject: -b <bugid> [<bugid>]*
+
+Return bugs in this group/category, additional are 'and'ed together:
+
+	Subject: -g patch [install]*
+
+Note that a unique shortened form is acceptable (equivalent):
+
+	Subject: -g pat [ins]*
+
+Upper case letters usually expand upon or reverse the effect of the
+lowercase command in some way.  So a B<B> will return the messages with the
+particular bug, help (B<h>) may be increased (this file) with B<H>) and so
+on.
+
+Return the database structure for inspection:
+
+	Subject: -q
+
+SQL query (must start with SELECT).  Note this is the only command which
+looks in the body for it's content:
+
+	Subject: -g pat [ins]*
+	Body: 	
+		SELECT * FROM pb_group WHERE name LIKE 'pa%'
+
+
+Format the results like this, where the argument is described in
+L<Perlbug::Format>, common options are: 
+
+	a(ascii - default), A(ascii-extended), l(ascii-list), h(html), H (more data in your HTML)
+
+	Subject: -f h
+
+=back
+
+=cut
+
+
+=head2 ADMINISTRATION
+
+Administration commands are B<a> and B<A> where the latter also returns the
+admistrated object for your information (just wraps a call to B<b> <bugid>)
+
+Note the specific order of these commands are not relevant, the string is
+instead scanned for appropriate values.  This means you should be careful
+when specifying shortened versions of say 'status=closed and group=cludge',
+where you should not use '-a cl', rather use '-a clo' or as appropriate.
+
+To become an administrator see L<"/register"> below.
+
+=over 4
+
+=item example
+    
+    Subject: -a close build 19990606.002 19990606.003 
+
+which translates (more or less) to:
+
+	UPDATE db_bug
+	SET status = 'closed' 
+		AND group = 'build' 
+	WHERE bugid IN ('19990606.002', '19990606.003')
+	
+=item shortcuts
+
+are still acceptable
+
+    Subject: -A onh pa hi aix 19990606.002 19990606.003
+
+which translates (more or less) to:
+
+	UPDATE db_bug
+	SET status = 'onhold' 
+		AND group = 'patch' 
+		AND severity = 'high' 
+		AND osname = AIX
+	WHERE bugid IN ('19990606.002', '19990606.003')
+    
+=item to
+
+You may also use the (To\|Cc): addresses (described below) to similar effect:
+
+	To: clo_19990606.002_install@bugs.perl.org
+
+=item more
+
+Below is an example email which retrieves bugs: '19990606.002', having
+first closed it and assigned various other flags, and then returns the
+shorter help message, along with all open bugs and those which are still
+open and under the patch group, then returns the results with a copy to the
+extra email address:
+
+    To: bugdb@bugs.perl.org
+
+    Subject: -h -A close 19990606.003 -j op pa -e me@too.net
+
+=back
+
+=cut
+
+
+=head1 TO
+
+The B<To> line may also be used to interact with the database, in which case 
+the B<Subject> line is completely ignored. 
+
+There are B<user> and B<administrator> functions:
+
+
+=head2 USER
+
+The administration interface is only available to registered administrators 
+of the database, to become an administrator:
+
+=over 4
+
+=item register
+
+by sending an email, where B<ME> is your preferred userid:
+
+	To: register_ME@bugs.perl.org
+
+=item propose
+
+a change in a bug status without becoming an administrator with:
+
+	To: propose_close_<bugid>_macos@bugs.perl.org
+
+=item admins
+
+which are active can be mailed with this:
+
+	To: admins@bugs.perl.org
+	Subject: hello from me...
+
+=item help
+
+may be retrieved by:
+
+	To: help@bugs.perl.org
+
+=item spec
+
+The system specification may be retrieved by:
+
+	To: spec@bugs.perl.org
+
+=item overview
+
+The overview
+
+	To: overview@bugs.perl.org
+
+=back
+
+=cut
+
+
+=head2 ADMINISTRATOR
+
+The following administration functions are also supported:
+
+Note that in the cases where a (note|patch|test) is being assigned, this
+keyword should be at the beginning of the To: line, otherwise the
+formatting is largely irrelevant.
+
+That is (in a slightly contrived example); 
+
+	To: close_patch_<bugid>@... 
+
+		will close the bug and assign the bug to the patch group
+
+	To: patch_close_<bugid>@...' 
+	
+	will instead take this email as a patch and assign it to this bug
+
+=over 4
+
+=item flags 
+
+may be assigned to a bug like this:
+
+	To: close_irix_<bugid1>_<bugid2>_configure@bugs.perl.org
+
+short forms are still acceptable:
+
+	To: clo_ir_<bugid1>_<bugid2>_con@bugs.perl.org
+
+=item notes
+
+may be assigned to a bug:
+
+	To: note_<bugid>@bugs.perl.org
+
+
+=item patches
+
+may be assigned to a bug:
+
+	To: patch_<bugid>@bugs.perl.org
+
+=item tests
+
+may be assigned to a bug:
+
+	To: patch_<bugid>@bugs.perl.org
+
+Patches may be assigned to one or more bugs, and should have a changeID 
+assigned.  The bug/s (if given) will be marked as closed and the patch 
+entered into the database, with the changeid and version number if parseable:
+
+	To: patch_<bugid>_<changeid>_<versionno>@bugs.perl.org
+
+Formatting of IDs in this case B<IS> relevant:
+
+	Bugid      =~ /\d{8}\.\d{3}/   -> 19990321.007, 20130313.013 
+	Changeid   =~ /\d+/            -> 3821, 21, 9182732
+	Versionno  =~ /\d+\.[\d+\.]+/  -> 5.6.0, 5.6.0.32
+
+=item nocc
+
+if you don't want to Cc: everyone else, add 'nocc' to your commands:
+
+	To: patch_<bugid>_nocc@bugs.perl.org
+
+	To: busy_<bugid>_nocc_hpux@bugs.perl.org
+
+=back
+
+=cut
+
+
+=head1 AUTHOR
+
+Richard Foley <richard@rfi.net> 2000 2001
+
+=cut
+
+

@@ -1,0 +1,14 @@
+Subject: null conditionals should not be allowed
+To: some_irrelevant_address@perl.org
+From: perlbug_test@rfi.net
+Message-Id: <19991119161704.A11355@bugs.perl.org>
+X-Perlbug-Hint:  not addressed (to, cc) to perlbug -> do_quiet
+
+PS  This problem occurs under 5.005_03 and 5.005_62
+
+Summary of my perl5 (5.0 patchlevel 5 subversion 3) configuration:
+
+Irrelevant message body
+
+---
+sig

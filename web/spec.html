@@ -1,0 +1,599 @@
+<HTML>
+<HEAD>
+<TITLE>Perlbug - PerlBug DataBase specification</TITLE>
+<LINK REV="made" HREF="mailto:root@blue.rfi.net">
+</HEAD>
+
+<BODY>
+
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#NAME">NAME</A>
+	<LI><A HREF="#DESCRIPTION">DESCRIPTION</A>
+	<LI><A HREF="#SYNOPSIS">SYNOPSIS</A>
+	<LI><A HREF="#COMPATIBILITY">COMPATIBILITY</A>
+	<LI><A HREF="#FEATURES">FEATURES</A>
+	<LI><A HREF="#SCRIPTS">SCRIPTS</A>
+	<LI><A HREF="#CLASSES">CLASSES</A>
+	<LI><A HREF="#DEVELOPMENT">DEVELOPMENT </A>
+	<LI><A HREF="#COMMANDS">COMMANDS</A>
+	<LI><A HREF="#BUGS">BUGS</A>
+	<LI><A HREF="#TODO">TODO</A>
+	<LI><A HREF="#AUTHOR">AUTHOR</A>
+	<LI><A HREF="#CONTRIBUTORS">CONTRIBUTORS</A>
+	<LI><A HREF="#COPYRIGHT">COPYRIGHT</A>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="NAME">NAME</A></H1>
+<P>
+Perlbug - PerlBug DataBase specification 
+
+<P>
+<HR>
+<H1><A NAME="DESCRIPTION">DESCRIPTION</A></H1>
+<P>
+Bug tracking system, written in perl, using Mysql, probably running on
+Linux with Apache.
+
+<P>
+For installation instructions see the INSTALL file.
+
+<P>
+<HR>
+<H1><A NAME="SYNOPSIS">SYNOPSIS</A></H1>
+<P>
+New bugs are created by mailing <A
+HREF="mailto:perlbug@perl.org">perlbug@perl.org</A> or <A
+HREF="mailto:perlbug@perl.com">perlbug@perl.com</A>
+
+<P>
+Said bug is entered in the database, and given a new bugid, the mail is
+then forwarded to perl5-porters with the bugid in the subject line..
+
+<P>
+perl5-porters is continously tracked for relevant mails to attach to said
+bug.
+
+<P>
+There are <CODE>web(http://bugs.perl.org),</CODE>
+<CODE>email(bugdb@perl.org</CODE> and <A
+HREF="mailto:help@bugs.perl.org),">help@bugs.perl.org),</A> command
+<CODE>line(bugdb)</CODE> and Tk (bugtk) frontends to query and administrate
+the bugs.
+
+<P>
+Regular overviews are emailed to p5p, and outstanding bugs are mailed to
+active admins for their attention.
+
+<P>
+All modules have perldocs embedded, to browse at your leisure.
+
+<P>
+<PRE>        perl -e &quot;print Perlbug::Interface::Cmd-&gt;new()-&gt;object('bug')-&gt;read('19870502.007')-&gt;format('A')&quot;
+</PRE>
+<P>
+<HR>
+<H1><A NAME="COMPATIBILITY">COMPATIBILITY</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_web">web</A></STRONG><DD>
+<P>
+<PRE>        Netscape is the standard benchmark, w3m is used to ensure frame/noframe 
+        compatibility, which should cover the worst cases.  I don't have MSIE to 
+        check against, but feedback on this is welcome if there are problems.
+</PRE>
+<DT><STRONG><A NAME="item_database">database</A></STRONG><DD>
+<P>
+<PRE>        Currently only Mysql is supported on UNIX(linux), though Oracle looms 
+        continously, and will be implemented when I get round to it.
+</PRE>
+</DL>
+<P>
+<HR>
+<H1><A NAME="FEATURES">FEATURES</A></H1>
+<P>
+<PRE>        Written in perl
+</PRE>
+<P>
+<PRE>        Robust, with test suites:
+</PRE>
+<P>
+<PRE>        All tests successful.
+</PRE>
+<P>
+<PRE>                Files=28, Tests=162, 148 wallclock secs (59.27 cusr +  2.61 csys = 61.88 CPU) 
+</PRE>
+<P>
+<PRE>        Under RCS
+</PRE>
+<P>
+<PRE>        Documented (in perldoc -&gt; do what I say _and_ what I do :-)
+</PRE>
+<P>
+<PRE>        Freely available sourcecode and data.
+</PRE>
+<P>
+<PRE>        Integrated with perlbug
+</PRE>
+<P>
+<PRE>        It has a simple (single config file) installation.
+</PRE>
+<P>
+<PRE>        Site configurable email newbug recognition and forwarding.
+</PRE>
+<P>
+<PRE>        Site configurable scanning of email bodies -&gt; categorisation of reports.
+</PRE>
+<P>
+<PRE>        Standard installation*: perl Makefile.PL; make; make test; make install.
+</PRE>
+<P>
+<PRE>        Multiple interfaces (take your pick):
+</PRE>
+<P>
+<PRE>        Web             -&gt; search, browse and destroy interface
+</PRE>
+<P>
+<PRE>        Tron            -&gt; target and mailing list slurper/forwarder
+</PRE>
+<P>
+<PRE>        Email 1         -&gt; subject: oriented search, report and admin   
+</PRE>
+<P>
+<PRE>        Email 2         -&gt; to: oriented report and admin
+</PRE>
+<P>
+<PRE>        Command line    -&gt; for local db (similar to email)
+</PRE>
+<P>
+<PRE>                Tk                              -&gt; search, browse the db 
+</PRE>
+<P>
+<PRE>        More than 5 different formatting types for all discrete objects are supported 
+        across all outputs for both public and administrative, (which will become 
+        configurable), interfaces for:
+</PRE>
+<P>
+<PRE>                bugs, messages, patches, notes, tests, users, groups, etc.
+</PRE>
+<P>
+<PRE>        Differential user/admin help for all formats.
+</PRE>
+<P>
+<PRE>        Several utility scripts (see below)
+</PRE>
+<P>
+<PRE>        Accepts target mail addresses (and thereby sets category etc.) and forwards to
+</PRE>
+<P>
+<PRE>                appropriate mailing list/s.
+</PRE>
+<P>
+<PRE>        Watches various mailing list for replies to existing bugs to slurp,
+</PRE>
+<P>
+<PRE>                checking subject and reply-to, message-ids, etc.
+</PRE>
+<P>
+<PRE>        Defense mechanisms against loops, spam, and other entertaining factors.
+</PRE>
+<P>
+<PRE>        Ignores previously seen message-ids, non-relevant (spam) mail.
+</PRE>
+<P>
+<PRE>        Test targets to email interfaces (dumps header -&gt; originator)
+</PRE>
+<P>
+<PRE>        Email interface handles any of the following To lines (and more):
+</PRE>
+<P>
+<PRE>        close_&lt;bugid&gt;_@bugs.perl.org                     -&gt; bug admin 
+</PRE>
+<P>
+<PRE>        busy_win32_install_fatal_&lt;bugid&gt;@bugs.perl.org   -&gt; admin
+</PRE>
+<P>
+<PRE>        propose_close_&lt;bugid&gt;_@bugs.perl.org             -&gt; bug admin proposal
+</PRE>
+<P>
+<PRE>        note_&lt;bugid&gt;_@bugs.perl.org                      -&gt; assign note
+</PRE>
+<P>
+<PRE>        patch_&lt;version&gt;_&lt;bugid&gt;_&lt;changeid&gt;@bugs.perl.org -&gt; assign a patch
+</PRE>
+<P>
+<PRE>        register_me@bugs.perl.org                        -&gt; admin registration request
+</PRE>
+<P>
+<PRE>        admins@bugs.perl.org                             -&gt; admin mail forward
+</PRE>
+<P>
+<PRE>        help@bugs.perl.org                               -&gt; :-)
+</PRE>
+<P>
+<PRE>        And the following (not very cryptic) Subject lines:
+</PRE>
+<P>
+<PRE>        -h                      
+</PRE>
+<P>
+<PRE>        -b &lt;bugid&gt;+
+</PRE>
+<P>
+<PRE>                -s subject_search
+</PRE>
+<P>
+<PRE>        -H -d2 -l -A close &lt;bugid&gt;+ lib -g patch -e some\@one.net 
+</PRE>
+<P>
+<PRE>        -g pa cl wi -m77 812 1 21 -b &lt;bugid&gt;+ -B &lt;bugid&gt;+ -o -l -d2 -a clo inst &lt;bugid&gt;+ -fA
+</PRE>
+<P>
+<PRE>        etc... (see the email help docs for more info)
+</PRE>
+<P>
+<PRE>        Auto database dump, email of overview and bugid-&gt;admin assignation
+</PRE>
+<P>
+<PRE>        Patches can be emailed in -&gt; auto close of bug
+</PRE>
+<P>
+<PRE>        Notes can be assigned from any interface to any bug
+</PRE>
+<P>
+<PRE>        Tests can be assigned to any bug
+</PRE>
+<P>
+<PRE>        Non-admin emails -&gt; converted to proposals -&gt; mailed to active admins
+</PRE>
+<P>
+<PRE>        Cc: list (and admins) are optionally auto-notified of any status changes to bugs 
+</PRE>
+<P>
+<PRE>        Relationships between bugs (parent-child) are assignable.
+</PRE>
+<P>
+<PRE>        Retrieval of database via email.
+</PRE>
+<P>
+<PRE>        Logging of all activities, admin history tracking.
+</PRE>
+<P>
+<PRE>        Graphical display of overview (admins, categories, severity, osname, status).
+</PRE>
+<P>
+<HR>
+<H1><A NAME="SCRIPTS">SCRIPTS</A></H1>
+<P>
+The perlbugtron contains the following scripts:
+
+<DL>
+<DT><STRONG><A NAME="item_bugcgi">bugcgi</A></STRONG><DD>
+<P>
+The web interface
+
+<DT><STRONG><A NAME="item_bugcron">bugcron</A></STRONG><DD>
+<P>
+The regular cron job interface to backups, weekly notifications etc.
+
+<DT><STRONG><A NAME="item_bugdb">bugdb</A></STRONG><DD>
+<P>
+The command line interface
+
+<DT><STRONG><A NAME="item_bugfix">bugfix</A></STRONG><DD>
+<P>
+A command line utility to fix duff data in the bug database
+
+<DT><STRONG><A NAME="item_bughist">bughist</A></STRONG><DD>
+<P>
+A parser of directories of archived mail (treated as per tron.pl).
+
+<DT><STRONG><A NAME="item_bugmail">bugmail</A></STRONG><DD>
+<P>
+A query and administrative email front end, examining both Subject: and To:
+line for instructions. Accepts mail for <A
+HREF="mailto:bugdb@perl.org">bugdb@perl.org</A> and *@bugs.perl.org.
+
+<DT><STRONG><A NAME="item_bugtk">bugtk</A></STRONG><DD>
+<P>
+The Tk interface
+
+<DT><STRONG><A NAME="item_bugtron">bugtron</A></STRONG><DD>
+<P>
+Tracks mailing lists, relying on header information to identify new bugs
+and replies to existing ones. Accepts mail for <A
+HREF="mailto:perlbug@perl.org">perlbug@perl.org</A> and <A
+HREF="mailto:perlbug@perl.com">perlbug@perl.com</A> and relevant target
+mailing lists.
+
+</DL>
+<P>
+<HR>
+<H1><A NAME="CLASSES">CLASSES</A></H1>
+<P>
+For those that are interested the Perlbug application module hierarchy goes
+something like this:
+
+<P>
+<PRE>    (ISA) Config  Do  TM    (HASA) Log Format 
+          |       |   |          
+          -------------            --- ------
+                   |
+             (ISA) Base
+                                Interface
+                                   |
+                   ----------------------------------       - 
+                            |                       |       |       
+                            Cmd                     |       |
+                          -----------               |       |
+                          |         |               |       |
+                          |         Email           Web     Tk
+    -----------------------       ----------        ---     --- 
+    |       |     |       |       |        |        |       | 
+    bugcron bugdb bughist bugfix  bugtron bugmail   bugcgi  bugtk
+</PRE>
+<P>
+While the Perlbug Objects themselves hierarchy looks a bit like this:
+
+<P>
+<PRE>     (ISA) Object   (CAN) Format    and may have (HASA) Relation(s)
+          ------          ------                        --------
+                  |
+        Address  Bug  Group  Message  Note  Patch  Test  User  Status ...
+    -------  ---  -----  -------  ----  -----  ----  ----  ------
+</PRE>
+<P>
+Since moving <STRONG>status</STRONG>, <STRONG>osname</STRONG>, etc. over to being objects in their own right, and dedicated tables
+thereof, which may relate to each other in most any combination, you may
+notice we have a 'riesen menge' (a lot) of objects, some of which at first
+glimpse may seem overkill. On this point, I can only agree. However my
+defense/argument for this implementation is that I have tried to keep it as <STRONG>clean</STRONG> as possible, and that meant being somewhat (ob|sub)jectively pedantic now
+and then - so there you have it :-)
+
+<P>
+Anyone actually looking into this code will find the Objects are fairly
+clean (I hope), where the Interfaces are not. That's on the TODO list, now
+that the background is firm.
+
+<P>
+<HR>
+<H1><A NAME="DEVELOPMENT">DEVELOPMENT</A></H1>
+<P>
+Anyone considering contributing (and some already have), code to this
+project would do well to (of course :-) RTFM. I've tried to keep the docs
+as up to date as possible.
+
+<P>
+A developer of any part of this system, who wishes to use the existing code
+base, is encouraged to approach it in the following manner:
+
+<P>
+Initially get a <STRONG>Perlbug::Base</STRONG> object which holds all the configuration data for the application, and from
+here all other <STRONG>Perlbug::Object::*</STRONG>'s are accessible via the <STRONG>object()</STRONG> call: see <A HREF="/Perlbug/Base/object.html">Perlbug::Base::object</A>.
+
+<P>
+Alternatively start with a <STRONG>Perlbug::Interface::*</STRONG> which <STRONG>ISA</STRONG>  <STRONG>Perlbug::Base</STRONG> in any case.
+
+<P>
+Once the appropriate object has been retrieved, it may be used via a <STRONG>class</STRONG> 
+method, or as a particular instance, where the object has been initialised.
+
+<P>
+For example using Perlbug::Base or
+Perlbug::Interface::(Cmd|Email|Web)-&gt;new... 
+
+<P>
+<PRE>        my $o_base = Perlbug::Base-&gt;new();                              # get an interface 
+</PRE>
+<P>
+<PRE>        my $o_bug = $o_base-&gt;object('bug');                             # the appropriate object
+</PRE>
+<P>
+<PRE>        print &quot;All bugids: &quot;.join(', ', $o_bug-&gt;ids();  # class method
+</PRE>
+<P>
+<PRE>        $o_bug-&gt;read('19870502.007');                                   # instantiate
+</PRE>
+<P>
+<PRE>        print &quot;Bug data: \n&quot;.$o_bug-&gt;format('A');               # instance method       
+</PRE>
+<P>
+The object knows what relationships it has, so ask it:
+
+<P>
+<PRE>        print &quot;Relations: &quot;.join(', ', $o_bug-&gt;relations);      # address, note, user...
+</PRE>
+<P>
+And so on:
+
+<P>
+<PRE>        print map { $_-&gt;key.' ids: '.$o_bug-&gt;rel_ids } $o_bug-&gt;relations;
+</PRE>
+<P>
+There should be no need to directly query the db with hard-wired SQL,
+everything should be do-able through the supplied object interfaces, (if
+this is not the case, speak - I/we should fix it :-).  
+
+<P>
+Note that in the entire application there is only a single place where it
+has proved necessary to refer directly to a database tablename and this is
+in the configuration filename. All other data is extrapolated from the
+objects themselves in a more or less predictable manner.
+
+<P>
+The output is largely controlled via formats supplied as default in 
+<A HREF="/Perlbug/Format.html">Perlbug::Format</A>, or where this is not sufficient, in each object class itself. See <STRONG>Perlbug::Format::FORMAT_[ahlxi]</STRONG> etc. Note the trailing letter defining the type of format required. It
+would be simple, for example, to add an XML format using the supplied
+placeholder in <A HREF="/Perlbug/Format_x.html">Perlbug::Format_x</A>
+
+
+
+<P>
+The format system will at some point shortly migrate into a table of
+templates that will then be applicable to any object by any registered user
+in any context... Which will hopefully satisfy _most_ people _most_ of the
+time ;-)
+
+<P>
+If something is missing, tell me, or write the code to do it and
+contribute.
+
+<P>
+<HR>
+<H1><A NAME="COMMANDS">COMMANDS</A></H1>
+<P>
+A couple of useful commands:
+
+<P>
+Send mail into the db:
+
+<P>
+<PRE>        cat some_mail | ~/scripts/bugtron
+</PRE>
+<P>
+Slurp up to 33 archived mails, recursively, with feedback:
+
+<P>
+<PRE>        ~/scripts/bughist -v -i /path/to/email/archives -m 33 -r
+</PRE>
+<P>
+Send a query to the db via the email interface:
+
+<P>
+<PRE>        cat my_admin_email | ~/scripts/bugmail
+</PRE>
+<P>
+Or interact with it via the command line:
+
+<P>
+<PRE>        ~/scripts/bugdb
+</PRE>
+<P>
+Send active admins unclosed bugs and an overview to
+<CODE>master_list(p5p),</CODE> dump current database for reference/backup:
+
+<P>
+<PRE>    crontab -e 3 5 * * 1 ~/scripts/bugcron
+</PRE>
+<P>
+A couple of <CODE>useful(?)</CODE> command-lines:
+
+<P>
+<PRE>        perl -MPerlbug::Bug -e 'print map { &quot;$_\n&quot; } Perlbug::Bug-&gt;new-&gt;ids(&quot;subject=\&quot;bug\&quot;&quot;)'
+</PRE>
+<P>
+<PRE>        perl -MPerlbug::Group -e 'print Perlbug::Group-&gt;new-&gt;_read(&quot;configure&quot;)-&gt;format(&quot;h&quot;)'
+</PRE>
+<P>
+<HR>
+<H1><A NAME="BUGS">BUGS</A></H1>
+<P>
+What bugs ?-)
+
+<P>
+You have a few choices, (with the output of 'make test TEST_VERBOSE=1'):
+
+<P>
+<PRE>        1. Mail perlbug@perl.org which will assign a bugid.
+</PRE>
+<P>
+<PRE>        2. Mail the author (richard@perl.org or perlbug@rfi.net) directly.
+</PRE>
+<P>
+<PRE>        3. Mail admins@bugs.perl.org which will Cc: to all active admins.
+</PRE>
+<P>
+<PRE>        4. Subscribe to bugmongers@perl.org (a mailing list for those interested in perl bugs).
+</PRE>
+<P>
+<PRE>        5. Or try perl5-porters@perl.org (p5p) for a more generic solution.
+</PRE>
+<P>
+<HR>
+<H1><A NAME="TODO">TODO</A></H1>
+<P>
+Oracle support
+
+<P>
+Comprehensive test suite (though 138+ isn't that bad for a start?)
+
+<P>
+<HR>
+<H1><A NAME="AUTHOR">AUTHOR</A></H1>
+<P>
+Richard Foley <A HREF="mailto:richard@perl.org">richard@perl.org</A> <A
+HREF="mailto:perlbug@rfi.net">perlbug@rfi.net</A> (c) 1999 2000 2001
+
+<P>
+<HR>
+<H1><A NAME="CONTRIBUTORS">CONTRIBUTORS</A></H1>
+<P>
+The system was given a kick start by Christopher Masto, NetMonger
+Communications &lt;<A
+HREF="mailto:chris@netmonger.net">chris@netmonger.net</A>&gt;
+
+<P>
+It's development has been overseen originally by Chip Salzenburg &lt;<A
+HREF="mailto:chip@perlsupport.com">chip@perlsupport.com</A>&gt; and later
+by Nathan Torkington &lt;<A
+HREF="mailto:gnat@frii.com">gnat@frii.com</A>&gt; (who was also responsible
+for the original perl bug tracking system).
+
+<P>
+The current home is stolidly maintained at <A
+HREF="http://bugs.perl.org/">http://bugs.perl.org/</A> by Ask Bjoern Hansen
+&lt;<A HREF="mailto:ask@valueclick.com">ask@valueclick.com</A>&gt;
+
+<P>
+There have been numerous suggestions, feedback and even patches from
+various people, in particular (in purely alphabetical order):
+
+<P>
+<PRE>        Merijn Brand &lt;h.m.brand@hccnet.nl&gt; (Tk support)
+</PRE>
+<P>
+<PRE>        Alan Burlison &lt;Alan.Burlison@uk.sun.com&gt;
+</PRE>
+<P>
+<PRE>        Mike Guy &lt;mjtg@cam.ac.uk&gt;
+</PRE>
+<P>
+<PRE>        Jarkko Hietaniemi &lt;jhi@iki.fi&gt;
+</PRE>
+<P>
+<PRE>        Andreas Koenig &lt;andreas.koenig@anima.de&gt;
+</PRE>
+<P>
+<PRE>        Richard Soderberg &lt;rs@oregonnet.com&gt;
+</PRE>
+<P>
+<PRE>        Hugo van der Sanden &lt;hv@crypt0.demon.co.uk&gt;
+</PRE>
+<P>
+<PRE>        Robert Spier &lt;rspier@pobox.com&gt; (adminfaq)
+</PRE>
+<P>
+and many others
+
+<P>
+Special thanks to Tom Phoenix &lt;<A
+HREF="mailto:rootbeer@redcat.com">rootbeer@redcat.com</A>&gt;
+
+<P>
+<HR>
+<H1><A NAME="COPYRIGHT">COPYRIGHT</A></H1>
+<P>
+Copyright (c) 1999 2000 2001 Richard Foley <A
+HREF="mailto:richard@rfi.net.">richard@rfi.net.</A> All rights reserved.
+
+<P>
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+</BODY>
+
+</HTML>

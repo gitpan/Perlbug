@@ -1,6 +1,6 @@
 # Perlbug functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Do.pm,v 1.30 2000/09/01 11:49:08 perlbug Exp $
+# $Id: Do.pm,v 1.54 2001/04/26 13:19:48 perlbug Exp $
 #
 
 =head1 NAME
@@ -10,21 +10,22 @@ Perlbug::Do - Commands (switches) for generic interface to perlbug database.
 =cut
 
 package Perlbug::Do; 
-use Data::Dumper;
-use File::Spec; 
-use lib File::Spec->updir;
-# use Mail::Internet;
-# use Mail::Address;
-# use Mail::Send;
 use strict;
 use vars qw($VERSION);
+$VERSION = do { my @r = (q$Revision: 1.54 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
-$VERSION = 1.30;
+use Data::Dumper;
+my $DEBUG = $ENV{'Perlbug_Do_DEBUG'} || $Perlbug::Database::DEBUG || '';
+
 
 =head1 DESCRIPTION
 
 Methods for various functions against the perlbug database.  
+
+Those that have the form /do(?i:a-z)/ all return something relevant.
+
+To be printed, returned by email, etc.
 
 =cut
 
@@ -33,7 +34,12 @@ Methods for various functions against the perlbug database.
 
 Use like this:
 
-	$o_obj->dod(2); # set debug level to '2'
+	print $o_obj->dod(2); 			# "debug level set to '2'"
+
+	print $o_obj->dob(\@list_of_bugids); 	# formatted
+
+	print $o_obj->doh(); 			# help menu...
+
 	
 =head1 METHODS
 
@@ -50,7 +56,10 @@ Create new Perlbug::Do object:
 
 sub new { # 
     my $proto = shift;
-   	my $class = ref($proto) || $proto; 
+	my $class = ref($proto) || $proto; 
+
+	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
+
    	bless({}, $class);
 }
 
@@ -59,13 +68,12 @@ sub new { #
 
 Returns array of current switches, rather than string
 
-	my @switches = $o_mail->get_switches('user');
+	my @switches = $o_pb->get_switches('user');
 
 =cut
 
 sub get_switches { # current or admin|user
     my $self = shift;
-	$self->debug('IN', @_);
 	my $arg  = shift || '';
 	my @switches = ();
 	if ($arg eq 'admin') {
@@ -75,8 +83,7 @@ sub get_switches { # current or admin|user
 	} else {
 		@switches = split(//, $self->current('switches'));
 	}
-	@switches = grep(/^\w$/, @switches);
-	$self->debug('OUT', @switches);
+	@switches = ($self->isadmin =~ /^richardf$/) ? grep(/^(\w|\!)$/, @switches) : grep(/^\w$/, @switches);
     return @switches;
 }
 
@@ -87,18 +94,16 @@ Returns help message built from a hash_ref, commands may be overwritten by sendi
 
 Syntax for the hash is 'key => description (sample args)':
 
-	$o_obj->doh({
+	print $o_obj->doh({
 		'e' => 'email me a copy too (email@address.com)', 	# add
-		'H' => 'Help - more detailed info ()',				# replace
-		'z' => '', 											# unrequired
+		'H' => 'Help - more detailed info ()',			# replace
+		'z' => '', 						# unrequired 
 	});
 
 =cut
 
 sub doh { # command line help
     my $self = shift;
-	$self->debug('IN', @_);
-    $self->start('-h');
 	my $data = qq|
 Switches are sent on the subject line, dash may be omitted if only option:
 --------------------------------------------------------------------------------
@@ -112,42 +117,47 @@ Switches are sent on the subject line, dash may be omitted if only option:
 		'A' => 'Administration command and return bugs    (c build 19990606.002 [...])', 	# A
 		'b' => 'bug retrieval by bugid                    (19990606.002 [...])', 
 		'B' => 'bug retrieval including messages          (19990606.002 [...])', 
-		'c' => 'category bug retrieval, status, etc.      ([status/ctgry/sev...])', 
-		'C' => 'Category as per -B                        ([status/ctgry/sev...])', 
+      #        'INSERT a Bug' not supported here
+		'c' => 'change id retrieval, patches, bugs.       (12 777 c8123 c55)', 					
+	  # 'C' => 'INSERT a Change against a bugid           (19990606.002 changeid)',			# A
 		'd' => 'debug flag data goes in logfile           ()', 								# A
 		'D' => 'Dump database for backup                  ()',    							# A
-	  # 'e' => 'copy', 
+	  # 'e' => 'email a copy to this email address', 
 		'f' => 'format of data ascii|html|lean            ([aA|hH|l])', 
-	  # 'g' => '',
-      ##'i' => 'initiate new admin - inc. htpasswd        (-i)',							# B
+		'g' => 'group info retrieval                      (patch|install|docs|...])', 
+		'G' => 'new group                                 (another_group_name)', 			# A
 		'h' => 'help - this message                       ()', 
 		'H' => 'more detailed help                        ()',
-	  # 'j' => '', 
+      # 'i' => 'initiate new admin - inc. htpasswd        (-i)',							# B
+	  # 'j' => 'just treat as a reply - track             ()', 
 	    'k' => 'claim a bug with optional email addr      (19990606.002 me@here.net [...])',# C
 		'K' => 'unClaim this bug - remove from cc         (19990606.002 me@here.net [...])',# C
 		'l' => 'log of current process                    ()', 								# A
 		'L' => 'Logfile - todays complete retrieval       ()', 								# A
 		'm' => 'retrieval by messageid                    (13 47 23 [...])', 
+	  # 'M' => 'INSERT a Message against a bugid          (19990606.002 some_message)',		# A
 		'n' => 'note retrieval                            (76 33 1  [...])',
 	  # 'N' => 'INSERT a Note against a bugid             (19990606.002 some_note)',		# A
 		'o' => 'overview of bugs in db                    ()', 
+		'O' => 'Overview of bugs in db - more detail      ()', 
 	    'p' => 'patch retrieval                           (patchid)', # change
-	  # 'P' => 'INSERT a patch against a bugid            (19990606.002 some_patch)',		# A
-	  	'q' => 'query the db directly                     (select * from tm_flags where 1 = 0)', 
+	  # 'P' => 'INSERT a Patch against a bugid            (19990606.002 some_patch)',		# A
+	  	'q' => 'query the db directly                     (select * from db_type where 1 = 0)', 
 		'Q' => 'Query the schema for the db               ()', 
-		'r' => 'body search criteria                      (d_sigaction=define)', 
-		'R' => 'body search criteria as per -B            (d_sigaction=define)', 
+		'r' => 'retrieve body search criteria             (d_sigaction=define)', 
+		'R' => 'Retrieve body search criteria as per -B   (d_sigaction=define)', 
 		's' => 'subject search by literal                 (bug in docs)', 
 		'S' => 'Subject search as per -B                  (bug in docs)', 
 	    't' => 'test retrieval by testid                  (77 [...])', 
 	  # 'T' => 'INSERT a Test against a bugid|patch       (19990606.002 test|patch)', 		# A
 		'u' => 'user retrieval by userid                  (richardf [...])', 				# A
-	  	'v' => 'volunteer bug category etc.               (19990606.002 close)',
+	  	'v' => 'volunteer bug group etc.                  (19990606.002 close)',
 	  # 'V' => 'Volunteer as admin',  
+	  # 'w'	=> 'where group ...',
 		'x' => 'xterminate bug - remove bug               (19990606.002 [...])', 			# A
 		'X' => 'Xterminate bug - and messages             (19990606.002 [...])', 			# A
 	    'y' => 'yet another password                      ()', 								# 
-	  ##'z' => 'Disable interface or update script  		(-z)',							# B
+	    'z' => 'Configuration data                        (current)',						# A
 		@_,																					# Overwrite
 	);
 	SWITCH:
@@ -165,10 +175,7 @@ Switches are sent on the subject line, dash may be omitted if only option:
 		}
 	}
     # 
-	$self->debug(3, 'help retrieved');    
-    $self->result($data, 0);
-    $self->finish;
-	$self->debug('OUT', length($data));
+	$self->debug(3, 'help retrieved') if $DEBUG;    
 	return $data;
 }
 
@@ -180,19 +187,16 @@ Switches debugging on (1).
 =cut
 
 sub dod { # debug
-    my $self = shift;
-	$self->debug('IN', @_);
-    my ($d) = @_;
-	my $i_ok = 1;
-    my $level = (@{$d}[0] =~ /^\d$/) ? @{$d}[0] : 1;
+	my $self = shift;
+	my ($d) = @_;
+	my $ret = '';
+	my $level = (@{$d}[0] =~ /^\d$/) ? @{$d}[0] : 1;
     if ($level =~ /\d/) {
-		$Perlbug::Debug = $level;
-        $self->current('debug', $level);
-        $self->debug(2, "Debugging ($level) switched on");
-		$self->result("Debug level($level) set");
+		$Perlbug::DEBUG = $level;
+		$self->current({'debug', $level});
+		$ret = "Debug level($level) set";
     }
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $ret;
 }
 
 
@@ -204,44 +208,98 @@ Dumps database for backup and recovery.
 
 sub doD { # Dump Database (for recovery)
     my $self = shift;
-	$self->debug('IN', @_);
-    my $ok = 1;
-	my $admin = $self->isadmin;
-    $self->debug(0, "DB dump requested by '$admin'");
-	# 
+	my ($input) = @_;
+	my ($since) = (ref($input) eq 'ARRAY') ? @{$input}[0] : ($input);
+    $self->debug(0, "DB dump($since) requested by '".$self->isadmin."'") if $DEBUG;
+    my $i_ok = 1;
+	my $ret = '';
 	my $adir = $self->directory('arch');
 	my $date = $self->current('date');
 	my $tdir = $self->directory('spool').'/temp';
 	my $pdir = $self->directory('perlbug');
-	my $dump = $self->database('backup');
-	my $last = File::Spec->canonpath($tdir.'/'.$self->database('latest'));
-	$last =~ s/^(.+?\.)gz/${1}${date}\.gz/;
-	my $arch = File::Spec->canonpath($adir."/Perlbug.sql.${date}.gz");
-	my $lach = File::Spec->canonpath($adir.'/'.$self->database('latest'));
-	my $dage = $self->database('backup_age');
-	#
-	if ((-e $last) && (-M _ >= $dage)) {
-		$self->debug(1, "Recent database dump($last) found: $dage days old");
+	my $target = File::Spec->canonpath($tdir.'/'.$self->database('latest'));
+	my $tgt  = ($since =~ /\d+/) ? "from_$since" : $date;
+	$target =~ s/^(.+?\.)gz/${1}$tgt\.gz/;
+	my $dage = $self->database('backup_interval');
+	if (($since !~ /\d+/) && (-e $target) && (-M _ >= $dage)) {
+		$ret ="Recent($date) non-incremental database dump($target) found less than $dage days old";
 	} else {
-		if ($dump =~ s/^(.+)\s*latest$/$1 $last/) { # passauf!
+		my $dump = $self->database_dump_command($target, $since);
+		if (!(defined($dump))) {
+			$ret = "Failed to get database dump command($dump)";
+		} else {	
 			$dump =~ s/\s+/ /g;
-			my $res = !system($dump); 	# doit
-			$self->debug(0, "Database dump($dump) -> res($res)");
-			$self->result("Database dump res($res)");
-			if ($res == 1 && -f $last) {
-				$ok = $self->copy($last, $arch);
-				$self->debug(0, "database backup copy: $ok");
-				$ok = $self->link($arch, $lach, '-f');
-				$self->debug(0, "database backup link: $ok");
-			} else {
-				$self->debug(0, "Looks like database backup failed: $? $!");
+			$i_ok = !system($dump); 		# doit
+			my ($ts) = $self->get_list("SELECT SYSDATE() + 0");
+			if ($since !~ /\d+/) { 			# full blown backup
+				if (!($i_ok == 1 && -f $target)) {
+					$ret = "Looks like database backup failed: $? $!";
+				} else {
+					my $arch = File::Spec->canonpath($adir."/Perlbug.sql.${date}.gz");
+					my $lach = File::Spec->canonpath($adir.'/'.$self->database('latest'));
+					$i_ok = $self->copy($target, $arch);
+					$ret = "Database backup copy($i_ok)";
+					if ($i_ok == 1) {
+						$i_ok = $self->link($arch, $lach, '-f');
+						$ret .= ", database backup link($i_ok)";
+					}	
+				}
 			}
-		} else {
-			$self->debug(0, "Duff looking database dump command: '$dump'");
 		}
 	}
-	$self->debug('OUT', $ok);
-	return $ok;
+	return $ret;
+}
+
+
+=item database_dump_command 
+
+Returns database dump command (mysql/oracle) for given date (or full) and target file.
+
+else undef 
+
+    my $cmd = $do->database_dump_command($date, $file);
+
+=cut
+
+sub database_dump_command { # get database dump command
+	my $self = shift;
+	my ($target, $date) = @_;
+	($target, $date) = (ref($target) eq 'ARRAY') ? @{$target} : ($target, $date);
+	my $cmd = '';
+	my $i_ok = 1;
+	if ($target !~ /^(.+)$/) {
+		$i_ok = 0;
+		$self->error("Invalid target($target) given for database backup");
+	} else {
+		my $bakup= $self->database('backup_command');
+		my $args = $self->database('backup_args');
+		my $user = $self->database('user');
+		my $pass = $self->database('password');
+		my $db   = $self->database('database');
+		my $comp = $self->system('compress');
+		if ($date !~ /^(\d+)$/) {
+			$self->debug(0, "Null or invalid numerical date($date) given, dumping entire db.");
+		} else {
+			if (!($date =~ /^(\d{8,14})$/)) {
+				$i_ok = 0;
+				$self->error("Invalid date($date) offered, should be of the form(19990127)");
+			} else {	
+				my $filter = $1. ('0' x (14 - length($1)));
+				my $min = '19870502';
+				my ($max) = $self->get_list("SELECT SYSDATE() + 0");
+				($max, my $check) = (substr($max, 0, 8), substr($filter, 0, 8));
+				if (!($check > $min && $check <= $max)) {
+					$i_ok = 0;
+					$self->error("Out of range date($check) offered, should between min($min) and max($max)'");
+				} else {
+					$self->debug(2, "Accepting date($filter, $check) min($min) and max($max)") if $DEBUG;
+					$args .= " -w'ts>=$filter'";
+				}
+			}
+		}
+		$cmd = "$bakup $args -u$user -p$pass $db | $comp > $target" if $i_ok == 1;
+	} 
+	return $cmd;
 }
 
 
@@ -256,28 +314,19 @@ results array.
 
 sub dom { # retrieve message by id
 	my $self = shift;
-	$self->debug('IN', @_);
-	my ($input) = @_;
+	my $input = shift;
+	my $fmt  = shift || $self->current('format');
 	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	$self->start("-m @args");
+	my @res = ();
+	my $o_msg = $self->object('message');
 	my $i_ok = 0;
 	foreach my $i (@args) {
 	    next unless $i =~ /^\d+$/;
-	    $self->debug(3, "message id=$i");
-	    my $sql = "SELECT * FROM tm_message WHERE messageid = '$i'";
-	    my ($data) = $self->get_data($sql);
-	    if (ref($data) eq 'HASH') {
-			my @bids = $self->get_list("SELECT bugid FROM tm_bug_message WHERE messageid = '$i'");
-			$$data{'bugids'} = \@bids;
-			$i_ok += my $res = $self->format_data($data);
-       	 	$self->debug(2, "message($i) $i_ok");
-		} else {
-			$self->result("No message found with messageid($i)");
-		}
+	    $self->debug(3, "message id=$i") if $DEBUG;
+		my $str = $o_msg->read($i)->format($fmt);
+		push(@res, $str);
 	} 
-	$self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return @res;
 }
 
 
@@ -285,73 +334,115 @@ sub dom { # retrieve message by id
 
 Create new message
 
-    my $i_ok = $do->doM($bugid, 'message', 'etc');
-
-#       rjsf -> ($xstr, $content, $hdr, $to, $from, $subject) # reverse order
+    my $new_mid = $do->doM($bugid, 'message', 'etc');
 
 =cut
 
 sub doM { # create new message
 	my $self = shift;
-	$self->debug('IN', @_);
 	my $xstr  	= shift;
 	my $xmsg 	= shift || '';
 	my $xhdr 	= shift || '';
 	my $xsubj 	= shift || '';
-	my $xfrm 	= shift || '';
+	my $xfrom 	= shift || '';
 	my $xto 	= shift || '';
-	my ($str, $msg, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xmsg, $xhdr, $xsubj, $xfrm, $xto) : ($xstr, $xmsg, $xhdr, $xsubj, $xfrm, $xto);
+	my ($str, $msg, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xmsg, $xhdr, $xsubj, $xfrom, $xto) : ($xstr, $xmsg, $xhdr, $xsubj, $xfrom, $xto);
 	my $mid  = 0;
-	my $i_ok = 1;
+	my @res = ();
 	my %cmds = $self->parse_str($str);
+
 	if ($msg !~ /\w+/) {
-		$i_ok = 0;
-		$self->debug(0, "requires a valid message($msg) to insert");
+		$self->error("requires a valid message($msg) to insert");
 	} else {
-		my $qmsg  = $self->quote($msg);
-		my $qsubj = $self->quote($subj);
-		my $qfrom = $self->quote($frm);
-		my $qto   = $self->quote($to);
-		my $qheader = $self->quote($hdr);
-		my $insert = qq|INSERT INTO tm_message VALUES 
-			(now(), NULL, NULL, $qsubj, $qfrom, $qto, $qheader, $qmsg)
-		|;
-		my $msth = $self->exec($insert);
-		if (!defined($msth)) {
-			$i_ok = 0;
-			$self->debug(0, "failed to insert message($insert)");		
-		} else {
-			$mid = $msth->insertid;
+		my $o_msg = $self->object('message');
+		$o_msg->create({
+			'messageid'	=> $o_msg->new_id,
+			'subject'	=> $subj, 
+			'sourceaddr'=> $frm, 
+			'toaddr'	=> $to, 
+			'header'	=> $hdr, 
+			'body'		=> $msg,
+			'email_msgid'	=> '',
+		});
+		if ($o_msg->CREATED) {
+			$mid = $o_msg->insertid;
 			if ($mid !~ /\w+/) {
-				$i_ok = 0;
-				$self->debug(0, "failed to retrieve messageid($msg)");
+				$self->debug(0, "failed to retrieve messageid($msg)") if $DEBUG;
 			} else {
-				$self->result("Message($mid) generated");
-				$self->track('m', $mid, $insert);
 				if (ref($cmds{'bugids'}) eq 'ARRAY') {
-					BID:
-					foreach my $bid (@{$cmds{'bugids'}}) { 
-						next BID unless $bid =~ /\w+/;
-						if (!$self->exists($bid)) {
-							$self->result("bugid($bid) doesn't exist for message($mid)");
-						} else {
-							my $insert = qq|INSERT INTO tm_bug_message VALUES ('$bid', '$mid')|;
-							my $mtsth = $self->exec($insert);
-							if (!defined($mtsth)) {
-								$i_ok = 0;
-								$self->debug(0, "failed to insert tm_bug_message($insert)");
-							} else {
-								$self->debug(0, "assigned message($mid) to bugids($bid)");
-							}
-						}
-					}
+					$o_msg->relation('bug')->assign($cmds{'bugids'});
 				}
 			}
 		}
 	}		
-	$self->finish;
-	$self->debug('OUT', $mid);
+
 	return $mid;
+}
+
+
+=item dog
+
+Return the given group(id), places the L<Perlbug/format>ed result in to the
+results array.
+
+    my @res = $do->dog([@groupids]);
+
+=cut
+
+sub dog { # get group by name 
+	my $self = shift;
+	my $input = shift;
+	my $fmt  = shift || $self->current('format');
+	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
+	my $o_grp = $self->object('group');
+	my @res = ();
+	foreach my $i (@args) {
+	    next unless $i =~ /^\w+$/;
+		my $str = $o_grp->read($i)->format($fmt);
+		push(@res, $str);
+	} 
+	return @res;
+}
+
+
+=item doG
+
+Create new group 
+
+    my $new_gid = $do->doG($bugid, 'message', 'etc');
+
+=cut
+
+sub doG { # create new group 
+	my $self = shift;
+	my $xstr  	= shift;
+	my $xgrp 	= shift || '';
+	my $xdes 	= shift || '';
+	my ($str, $grp, $des) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xgrp, $xdes) : ($xstr, $xgrp, $xdes);
+	my $gid  = 0;
+	my %cmds = $self->parse_str($str);
+
+	if ($grp !~ /^\w+$/) {
+		$self->error("requires a valid alphanumeric group($grp) to insert");
+	} else {
+		my $o_grp = $self->object('bug');
+		$o_grp->create({
+			'groupid'	=> $o_grp->new_id,
+			'name'			=> $xgrp, 
+			'description' 	=> $xdes, 
+		});
+		if ($o_grp->CREATED) {
+			$gid = $o_grp->insertid;
+			if ($gid !~ /\w+/) {
+				$self->debug(0, "failed to retrieve groupid($xgrp)") if $DEBUG;
+				if (ref($cmds{'bugids'}) eq 'ARRAY') {
+					$o_grp->relation('bug')->assign($cmds{'bugids'});
+				}
+			}
+		}
+	}		
+
+	return $gid;
 }
 
 
@@ -360,41 +451,23 @@ sub doM { # create new message
 Return the given patch(id), places the L<Perlbug/format>ed result in to the
 results array.
 
-    my $res = $do->dop([@patchids]);
+    my @res = $do->dop([@patchids]);
 
 =cut
 
 sub dop { # get patch by id
 	my $self = shift;
-	$self->debug('IN', @_);
-	my ($input) = @_;
+	my ($input) = shift;
+	my $fmt  = shift || $self->current('format');
 	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	$self->start("-p @args");
-	my $i_ok = 0;
+	my $o_pat = $self->object('patch');
+	my @res = ();
 	foreach my $i (@args) {
 	    next unless $i =~ /^\d+$/;
-	    $self->debug(3, "patchid=$i");
-	    my $sql = "SELECT * FROM tm_patch WHERE patchid = '$i'";
-	    my ($data) = $self->get_data($sql);
-		if (ref($data) eq 'HASH') {
-			my @bids = $self->get_list("SELECT DISTINCT bugid FROM tm_bug_patch WHERE patchid = '$i'");
-			$$data{'bugids'} 	= \@bids;
-			
-			my ($cid) = $self->get_list("SELECT DISTINCT changeid FROM tm_patch_change WHERE patchid = '$i'");
-			$$data{'changeid'}	= $cid;
-			
-			my ($vid) = $self->get_list("SELECT DISTINCT version FROM tm_patch_version WHERE patchid = '$i'");
-			$$data{'version'} 	= $vid;
-			
-	    	$i_ok += my $res = $self->format_data($data);
-       		$self->debug(2, "patch($i) $i_ok");
-		} else {
-			$self->result("No patch found with patchid($i)");
-		}
+		my $str = $o_pat->read($i)->format($fmt);
+		push(@res, $str);
 	} 
-	$self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return @res;
 }
 
 
@@ -402,85 +475,50 @@ sub dop { # get patch by id
 
 Assign to given bugid, given patch, return i_ok
 
-	$i_ok = $o_obj->doP('tid_chid_versid', 'patch...here', 'hdr', 'sbj', 'frm', 'to);
+	$res = $o_obj->doP('tid_chid_versid', 'patch...here', 'hdr', 'sbj', 'frm', 'to);
 
 =cut
 
 sub doP {
 	my $self  = shift;
-    $self->debug('IN', @_);
 	my $xstr  	= shift;
 	my $xpatch 	= shift || '';
-	my $xhdr 	= shift || '';
-	my $xsubj 	= shift || '';
-	my $xfrm 	= shift || '';
-	my $xto 	= shift || '';
-	my ($str, $patch, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xpatch, $xhdr, $xsubj, $xfrm, $xto) : ($xstr, $xpatch, $xhdr, $xsubj, $xfrm, $xto);
-	my $patchid = '';
-	my $i_ok    = 1;
+	my $xhdr 	= shift || 'no header supplied';
+	my $xsubj 	= shift || 'no subject supplied';
+	my $xfrom 	= shift || 'no_from_line';
+	my $xto 	= shift || 'no_to_line';
+	my ($str, $patch, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xpatch, $xhdr, $xsubj, $xfrom, $xto) : ($xstr, $xpatch, $xhdr, $xsubj, $xfrom, $xto);
+	my $res = '';
 	my %cmds = $self->parse_str($str);
+
 	if ($patch !~ /\w+/) {
-		$i_ok = 0;
-		$self->debug(0, "requires a valid patch($patch) to insert");
+		$self->error("requires a valid patch($patch) to insert");
 	} else {
-		my $qpatch = $self->quote($patch);
-		my ($version) = @{$cmds{'versions'}};
-		my ($changeid)= @{$cmds{'changeids'}};
-		my @unknown = @{$cmds{'unknown'}};
-		my $qsubject = $self->quote($subj);
-		my $qfrom = $self->quote($frm);
-		my $qto = $self->quote($to);
-		my $qheader = $self->quote($hdr);
-		my $insert = qq|INSERT INTO tm_patch VALUES 
-			(now(), NULL, NULL, $qsubject, $qfrom, $qto, $qheader, $qpatch)
-		|;
-		my $tsth = $self->exec($insert);
-		if (!defined($tsth)) {
-			$i_ok = 0;
-			$self->debug(0, "failed to insert patch($insert)");		
-		} else {
-			$patchid = $tsth->insertid;
-			# my $getpatch = qq|SELECT MAX(patchid) FROM tm_patch WHERE msgbody = $qpatch|; # blech
-			# ($patchid) = $self->get_list($getpatch); # = $tsth->last_inserted_id;
-			if ($patchid !~ /\w+/) {
-				$i_ok = 0;
-				$self->debug(0, "failed to retrieve patchid($patch)");
-			} else {
-				$self->result("Patch($patchid) generated");
-				$self->track('p', $patchid, $insert);
-				if (ref($cmds{'bugids'}) eq 'ARRAY') {
-					my @bids = ();
-					BID:
-					foreach my $bid (@{$cmds{'bugids'}}) { 
-						next BID unless $bid =~ /\w+/;
-						if (!$self->exists($bid)) {
-							$self->result("bugid($bid) doesn't exist for patch($patchid)");
-						} else {
-							push(@bids, $bid);
-							my $insert = qq|INSERT INTO tm_bug_patch VALUES ('$bid', '$patchid')|;
-							my $ptsth = $self->exec($insert);
-							if (!defined($ptsth)) {
-								$i_ok = 0;
-								$self->debug(0, "failed to insert tm_bug_patch($insert)");
-							} else {
-								if ($changeid =~ /\w+/) {
-									my $change = qq|INSERT INTO tm_patch_change VALUES ('$patchid', '$changeid')|;
-									my $csth = $self->exec($change);
-								}
-								if ($version =~ /\w+/) {
-									my $version = qq|INSERT INTO tm_patch_version VALUES ('$patchid', '$version')|;
-									my $vsth = $self->exec($version);
-								}
-							}
-						}
-					}
-					$self->debug(1, "assigned patch($patchid) to bugids(@bids)");
-				}
+		my $o_pat = $self->object('patch');
+		$o_pat->create({
+			'patchid'	=> $o_pat->new_id,
+			'subject'	=> $subj, 
+			'sourceaddr'=> $frm, 
+			'toaddr'	=> $to, 
+			'header'	=> $hdr, 
+			'body'		=> $patch,
+			'email_msgid'	=> '',
+		});	
+		if ($o_pat->CREATED) {
+			my $patchid = $o_pat->insertid;
+			if (ref($cmds{'bugids'}) eq 'ARRAY') {
+				$o_pat->relation('bug')->assign($cmds{'bugids'});
+			}
+			if (ref($cmds{'change'}) eq 'ARRAY') {
+				$o_pat->relation('change')->assign($cmds{'change'});
+			}
+			if (ref($cmds{'version'}) eq 'ARRAY') {
+				$o_pat->relation('version')->assign($cmds{'version'});
 			}
 		}
 	}
-	$self->debug('OUT', $patchid);
-	return $patchid;
+
+	return $res;
 }
 
 
@@ -489,37 +527,23 @@ sub doP {
 Return the given test(id), places the L<Perlbug/format>ed result in to the
 results array.
 
-    my $res = $do->dot([@testids]);
+    my @res = $do->dot([@testids]);
 
 =cut
 
 sub dot { # get test by id
 	my $self = shift;
-	$self->debug('IN', @_);
-	my ($input) = @_;
+	my ($input) = shift;
+	my $fmt  = shift || $self->current('format');
 	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	$self->start("-t @args");
-	my $i_ok = 0;
+	my $o_test = $self->object('test');
+	my @res = ();
 	foreach my $i (@args) {
 	    next unless $i =~ /^\d+$/;
-	    $self->debug(3, "testid=$i");
-	    my $sql = "SELECT * FROM tm_test WHERE testid = '$i'";
-	    my ($data) = $self->get_data($sql);
-		if (ref($data) eq 'HASH') {
-			my @bids = $self->get_list("SELECT DISTINCT bugid FROM tm_bug_test WHERE testid = '$i'");
-			$$data{'bugids'} = \@bids;
-			my ($vid) = $self->get_list("SELECT DISTINCT version FROM tm_test_version WHERE testid = '$i'");
-			$$data{'version'} = $vid;
-	    	$i_ok += my $res = $self->format_data($data);
-			# print "Patch:".Dumper($data);
-	    	$self->debug(3, "test formatted($res)");
-		} else {
-			$self->result("No test found with testid($i)");
-		}
+		my $str = $o_test->read($i)->format($fmt);
+		push(@res, $str);
 	} 
-	$self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return @res;
 }
 
 
@@ -527,77 +551,45 @@ sub dot { # get test by id
 
 Assign to given bugid, given test, return i_ok
 
-	$i_ok = $o_obj->doT('tid_chid_versid', 'test...here', 'hdr', 'sbj', 'frm', 'to);
+	$new_tid = $o_obj->doT('tid_chid_versid', 'test...here', 'hdr', 'sbj', 'frm', 'to);
 
 =cut
 
 sub doT {
 	my $self  = shift;
-    $self->debug('IN', @_);
 	my $xstr  = shift;
 	my $xtest = shift;
-	my $xhdr  = shift || '';
-	my $xsubj = shift || '';
-	my $xfrm  = shift || '';
-	my $xto   = shift || '';
-	my ($str, $test, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xtest, $xhdr, $xsubj, $xfrm, $xto) : ($xstr, $xtest, $xhdr, $xsubj, $xfrm, $xto);
-	my $testid = '';
-	my $i_ok   = 1;
+	my $xhdr 	= shift || 'no header supplied';
+	my $xsubj 	= shift || 'no subject supplied';
+	my $xfrom 	= shift || 'no_from_line';
+	my $xto 	= shift || 'no_to_line';
+	my ($str, $test, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xtest, $xhdr, $xsubj, $xfrom, $xto) : ($xstr, $xtest, $xhdr, $xsubj, $xfrom, $xto);
 	my %cmds = $self->parse_str($str);
+	my $res = '';
+
 	if ($test !~ /\w+/) {
-		$i_ok = 0;
-		$self->debug(0, "requires a valid test($test) to insert");
+		$res = "requires a valid test($test) to insert";
 	} else {
-		my $qtest = $self->quote($test);
-		my ($version) = @{$cmds{'versions'}};
-		my ($changeid)= @{$cmds{'changeids'}};
-		my @unknown = @{$cmds{'unknown'}};
-		my $qsubject = $self->quote($subj);
-		my $qfrom = $self->quote($frm);
-		my $qto = $self->quote($to);
-		my $qheader = $self->quote($hdr);
-		my $insert = qq|INSERT INTO tm_test VALUES 
-			(now(), NULL, NULL, $qsubject, $qfrom, $qto, $qheader, $qtest)
-		|;
-		my $tsth = $self->exec($insert);
-		if (!defined($tsth)) {
-			$i_ok = 0;
-			$self->debug(0, "failed to insert test($insert)");		
-		} else {
-			my $gettest = qq|SELECT MAX(testid) FROM tm_test WHERE msgbody = $qtest|; # blech
-			($testid) = $self->get_list($gettest); # = $tsth->last_inserted_id;
-			if ($testid !~ /\w+/) {
-				$i_ok = 0;
-				$self->debug(0, "failed to retrieve testid($test)");
-			} else {
-				$self->result("Test($testid) generated");
-				$self->track('t', $testid, $insert);
-				if (ref($cmds{'bugids'}) eq 'ARRAY') {
-					my @bids = ();
-					BID:
-					foreach my $bid (@{$cmds{'bugids'}}) { 
-						next BID unless $bid =~ /\w+/;
-						if (!$self->exists($bid)) {
-							$self->result("bugid($bid) doesn't exist for test($testid)");
-						} else {
-							push(@bids, $bid);
-							my $insert = qq|INSERT INTO tm_bug_test VALUES ('$bid', '$testid')|;
-							my $ptsth = $self->exec($insert);
-							if (!defined($ptsth)) {
-								$i_ok = 0;
-								$self->debug(0, "failed to insert tm_bug_test($insert)");
-							} 
-						}
-					}
-					$self->debug(1, "assigned test($testid) to bugids(@bids)");
-				}
+		my $o_tst= $self->object('test');
+		$o_tst->create({
+			'testid'	=> $o_tst->new_id,
+			'subject'	=> $subj, 
+			'sourceaddr'=> $frm, 
+			'toaddr'	=> $to, 
+			'header'	=> $hdr, 
+			'body'		=> $test,
+			'email_msgid'	=> '',
+		});	
+		if ($o_tst->CREATED) {
+			$res = $o_tst->insertid;
+			if (ref($cmds{'bugids'}) eq 'ARRAY') {
+				$o_tst->relation('bug')->assign($cmds{'bugids'});
 			}
 		}
 	}
-	$self->debug('OUT', $testid);
-	return $testid;
-}
 
+	return $res;
+}
 
 
 =item dob
@@ -605,73 +597,23 @@ sub doT {
 Return the given bug(id), places the L<Perlbug/format>ed result in to the 
 result array.
 
-    my $i_bugs = $do->dob([@bugids]);
+    my @res = $do->dob([@bugids]);
     
-    # $i_bugs = num of bugs succesfully processed
-
 =cut
 
 sub dob { # get bug by id 
 	my $self = shift;
-	$self->debug('IN', @_);
-	my ($t) = @_;
-	my @tkts = (ref($t) eq 'ARRAY') ? @{$t} : ($t);
-	# $#tkts = 9; # reduce number of bugs at any one time...
+	my $t    = shift; 
+	my $fmt  = shift || $self->current('format');
+	my @bids = (ref($t) eq 'ARRAY') ? @{$t} : ($t);
+	my $o_bug = $self->object('bug');
 	my $fnd = 0;
-	foreach my $i (@tkts) {
-	    $self->start("-t $i");
-		next unless $self->ok($i);
-		# Bug
-		my $get_tkt = "SELECT * FROM tm_bug WHERE bugid = '$i'";
-		my ($h_tkt) = $self->get_data($get_tkt);
-		if (ref($h_tkt) ne 'HASH') {
-			$self->result("No bug found with bugid($i)");
-		} else {
-			# Admins
-			my @admins = $self->get_list("SELECT DISTINCT userid FROM tm_bug_user WHERE bugid = '$i'");
-			$$h_tkt{'admins'} = \@admins;
-			# Messages
-			my @mids = $self->get_list("SELECT messageid FROM tm_bug_message WHERE bugid = '$i' ORDER BY messageid");
-			$$h_tkt{'messageids'} = \@mids;
-			$$h_tkt{'i_mids'} = @mids;
-			# Message
-    		my ($mid) = sort {$a <=> $b} @mids; # lowest -> first    
-			($$h_tkt{'msgbody'}) = $self->get_list("SELECT msgbody FROM tm_message WHERE messageid = '$mid'");
-			# Ccs
-			my @ccs = $self->get_list("SELECT DISTINCT address FROM tm_cc WHERE bugid = '$i'");
-			$$h_tkt{'ccs'} = \@ccs;
-			# Parents
-			my @parents = $self->get_list("SELECT parentid FROM tm_parent_child WHERE childid = '$i' ORDER BY parentid");
-			$$h_tkt{'parents'} = \@parents;
-			# Children
-			my @children = $self->get_list("SELECT childid FROM tm_parent_child WHERE parentid = '$i' ORDER by childid");
-			$$h_tkt{'children'} = \@children;
-			# Patches
-			my @pids = $self->get_list("SELECT patchid FROM tm_bug_patch WHERE bugid = '$i' ORDER by patchid");
-			$$h_tkt{'patches'} = \@pids; 
-			$$h_tkt{'i_pids'} = @pids;
-			# Notes
-			my @nids = $self->get_list("SELECT noteid FROM tm_bug_note WHERE bugid = '$i' ORDER by noteid");
-			$$h_tkt{'notes'} = \@nids;
-			$$h_tkt{'i_nids'} = @nids;
-			my @tids = $self->get_list("SELECT testid FROM tm_bug_test WHERE bugid = '$i' ORDER BY testid");
-			$$h_tkt{'tests'} = \@tids; 
-			$$h_tkt{'i_tids'} = @tids;
-			if (scalar(@nids == 1)) {
-				($$h_tkt{'note'}) = $self->get_list("SELECT msgbody FROM tm_note WHERE noteid = '@nids'");
-			}
-			$self->debug(3, "dob($i) admins(@admins), msgids(@mids), parent(@parents), children(@children), ccs(@ccs), patches(@pids), notes(@nids)");
-			if (ref($h_tkt) eq 'HASH') { 
-	    		my $res = $self->format_data($h_tkt);
-		    	$self->debug(3, "bug($i) $fnd");
-		    	$fnd++;
-			} 
-		}
+	my @res = ();
+	foreach my $i (@bids) {
+		my $str = $o_bug->read($i)->format($fmt);
+		push(@res, $str);
 	}
-	$self->result('No bugs found') unless $fnd >= 1;
-	$self->finish;
-	$self->debug('OUT', $fnd);
-	return $fnd;
+	return @res;
 }
 
 
@@ -679,47 +621,35 @@ sub dob { # get bug by id
 
 Return the given bug(id), with all the messages assigned to it, calls dob()
 
-    my $i_bugs = $do->doB([@bugids]);
-    
-    # $i_bugs = num of bugs succesfully processed
+    my @res = $do->doB(\@bugids);
 
 =cut
 
 sub doB { # get bug by id (large format)
     my $self 	= shift;
-	$self->debug('IN', @_);
     my $input 	= shift;
     my $sep 	= shift;
     my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-    $self->start("-B @args");
-    my $fnd = 0;
+	my $o_bug = $self->object('bug');
+	my @res = ();
     foreach my $bid (@args) {
-        # one normally
-        $fnd = $self->dob($bid);
-    	$self->result($sep) if defined($sep); # kludge!
+		push(@res, $o_bug->read($bid)->format());
 		
-        my $msql = "SELECT messageid FROM tm_bug_message WHERE bugid = '$bid' ORDER BY messageid";
-        my @mids = $self->get_list($msql);
-        my $i_m = $self->dom(\@mids);
+		my @mids = $o_bug->rel_ids('message');
+		my ($mid) = sort { $a <=> $b } @mids;
+        push(@res, $self->dom(\@mids));
 		
-		my $psql = "SELECT patchid FROM tm_bug_patch WHERE bugid = '$bid' ORDER BY patchid";
-        my @pids = $self->get_list($psql);
-        my $i_p = $self->dop(\@pids);
+        my @pids = $o_bug->rel_ids('patch');
+        push(@res, $self->dop(\@pids));
 		
-		my $tsql = "SELECT testid FROM tm_bug_test WHERE bugid = '$bid' ORDER BY testid";
-        my @tids = $self->get_list($tsql);
-        my $i_t = $self->dot(\@tids);
+        my @tids = $o_bug->rel_ids('test');
+        push(@res, $self->dot(\@tids));
 		
-		my $nsql = "SELECT noteid FROM tm_bug_note WHERE bugid = '$bid' ORDER BY noteid";
-        my @nids = $self->get_list($nsql);
-        my $i_n = $self->don(\@nids);
-		
+        my @nids = $o_bug->rel_ids('note');
+        push(@res, $self->don(\@nids));
     }
 
-    $self->finish;
-	$fnd = ($fnd >= 1) ? 1 : 0;
-	$self->debug('OUT', $fnd);
-    return $fnd;
+    return @res;
 }
 
 
@@ -727,171 +657,104 @@ sub doB { # get bug by id (large format)
 
 Get the given user, checks if active
     
-    print $o_do->dou($userid);
+    my @res = $o_do->dou($userid);
 
 =cut
 
 sub dou { # get user by id
     my $self = shift;
-	$self->debug('IN', @_);
     my $args = shift;
+	my $fmt  = shift || $self->current('format');
     my @uids = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-    $self->start("-u @uids");
+	my $o_user = $self->object('user');
     my $fnd = 0;
+	my @res = ();
     foreach my $uid (@uids) {
         next unless $uid =~ /^\w+$/;
-        my $sql = "SELECT * FROM tm_user WHERE userid = '$uid' AND active = '1' OR active = '0'";
-		if ($self->isadmin eq $self->system('bugmaster')) {
-			$sql .= " OR active IS NULL";
-		}
-        #my ($h_user) = $self->get_data($sql);
-		my ($h_user) = $self->user_data($uid);
-        if ((ref($h_user) eq 'HASH') && ($$h_user{'userid'} eq $uid)) {
-            if (grep(/^$$h_user{'userid'}$/, $self->active_admins)) {
-                $$h_user{'active'} = 1;
-            }
-            my $res = $self->format_data($h_user);
-            $fnd++;
-        } else {
-			$self->result("No user found with userid($uid)");
-		}
-        $self->debug(2, "user($uid) $fnd");
+		my $str = $o_user->read($uid)->format($fmt);
+		push(@res, $str);
     }
-    $self->finish;
-	$self->debug('OUT', $fnd);
-    return $fnd;
+    return @res;
 }
 
-
-=item doc
-
-Retrieve bug based on the existing category, severity or status flags.
-
-    my $res = $do->doc('open build');
-
-=cut
-
-sub doc { # category retrieval -b
-	my $self = shift;
-	$self->debug('IN', @_);
-	my ($input, $borB) = @_;
-	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	# ($args[0] == 1) && ($args[0] = undef);
-	my $str = join(' ', @args);
-	$self->start("-r @args"); 
-	my $sql = "SELECT bugid FROM tm_bug WHERE bugid IS NOT NULL";
-	$sql .= $self->parse_flags($str, 'AND');
-    $self->debug(2, "parsed sql($sql)");
-	my @data = $self->get_list($sql);
-	my $i_ok = 0;
-	if (defined($borB) && $borB eq 'B') {
-	    $i_ok = $self->doB(\@data);
-	} else {
-    	$i_ok = $self->dob(\@data);
-	}
-	$self->finish;
-	
-	$self->debug('OUT', $i_ok);
-	return ($i_ok);
-}
-
-
-=item doC
-
-Retrieve messages, as per doB() where category, severity or status fulfills the following optional flags:
-o (open), c (closed), b (build), p (patch), u (utilities) ...
-
-Wrapper for l<doc>.
-
-=cut
-
-sub doC { # Retrieve -B
-    my $self = shift;
-	$self->debug('IN', @_);
-    my ($input) = @_;
-    my @ref = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-    $self->start("-R @ref");
-	my $i_ok = $self->doc($input, 'B');
-	$self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
 
 
 =item dos
 
-Retrieve data based on the subject line of a bug
+Retrieve bugs based on the subject line of a bug
 
-    my $res = $do->dos('open build');
+    my @res = $do->dos('build failure');
 
 =cut
 
 sub dos { # subject -b
 	my $self   = shift;
-	$self->debug('IN', @_);
 	my $input  = shift;
 	my $borB   = shift || '';
-	my $i_ok   = 0;
 	my ($crit) = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	$self->start("-s $crit $borB"); 
-	my $sql = "SELECT DISTINCT bugid FROM tm_bug WHERE bugid IS NOT NULL AND subject LIKE '%$crit%'";
-	my @bids = $self->get_list($sql);
-	# should return tids associated with query, next step should dob|B ...
+	my @bids = $self->object('bug')->ids("subject LIKE '%$crit%'");
+	my @res = ();
 	if (defined($borB) && $borB eq 'B') {
-	    $i_ok = $self->doB(\@bids);
+	    @res = $self->doB(\@bids);
 	} else {
-    	$i_ok = $self->dob(\@bids);
+    	@res = $self->dob(\@bids);
 	}
-	$self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return @res;
 }
+
+
+=item doS
+
+Wrapper for L<dos()> in 'large format'
+
+	my @RES = $do->doS('some subject');	
+
+=cut
 
 sub doS {
 	my $self  = shift;
-	$self->debug('IN', @_);
 	my $args = shift;
-	my $i_ok = $self->dos($args, 'B');
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	my @res = $self->dos($args, 'B');
+	return @res;
 }
+
 
 =item dor
 
 Retrieve data based on contents of the Body of a message
 
-    my $res = $do->dor('open build');
+    my @res = $do->dor('open build');
 
 =cut
 
 sub dor { # retrieve in body 
 	my $self   = shift;
-	$self->debug('IN', @_);
 	my $input  = shift;
 	my $borB   = shift  || '';
 	my ($crit) = (ref($input) eq 'ARRAY') ? join(' ', @{$input}) : $input;
-	$self->start("-b $crit $borB"); 
-	my $msql = "SELECT DISTINCT messageid FROM tm_message WHERE msgbody LIKE '%$crit%'";
-	my @mids = $self->get_list($msql);
-	my $i_ok = 0;
+	my $o_msg = $self->object('message');
+	my @mids = $o_msg->ids("body LIKE '%$crit%'");
+	my @res = ();
 	if (scalar(@mids) >= 1) {
 		my $mids = join("', '", @mids);
-		my $sql = "SELECT DISTINCT bugid FROM tm_bug_message WHERE bugid IS NOT NULL AND messageid IN ('$mids')";
-		my @bids = $self->get_list($sql);
-		$i_ok = $self->dob(\@bids, $borB);
+		my @bids = $o_msg->relation('bug')->ids("messageid IN ('$mids')"); 
+		push(@res, $self->dob(\@bids, $borB));
 	}
-	$self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return @res;
 }
 
+=item doR
+
+Wrapper for L<dor()>, in large format
+
+	my @res = $do->doR('open');
+
+=cut
 
 sub doR {
 	my $self  = shift;
-	$self->debug('IN', @_);
-	my $i_ok = $self->dor($_[0], 'B');
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	my @res = $self->dor($_[0], 'B');
+	return @res;
 }
 
 
@@ -899,89 +762,103 @@ sub doR {
 
 Get the note for this noteid
 
+	my @res = $do->don(\@nids);
+
 =cut
 
 sub don {
 	my $self = shift;
-	$self->debug('IN', @_);
 	my $input = shift;
+	my $fmt  = shift || $self->current('format');
 	my @nids = (ref($input) eq 'ARRAY') ? @{$input} : ($input);
-	$self->start("-n @nids"); 
+	my $o_note = $self->object('note');
 	my $fnd = 0;
+	my @res = ();
 	foreach my $nid (@nids) {
         next unless $nid =~ /^\d+$/;
-        my $sql = "SELECT * FROM tm_note WHERE noteid = '$nid'";
-	    my ($h_note) = $self->get_data($sql);
-		if ((ref($h_note) eq 'HASH') && ($$h_note{'noteid'} eq $nid)) {
-            my ($bugid) = my @bugids = $self->get_list("SELECT DISTINCT bugid FROM tm_bug_note WHERE noteid = '$nid'");
-			$$h_note{'bugids'} = \@bugids;
-			my $res = $self->format_data($h_note);
-            $fnd++;
-        } else {
-			$self->result("No note found with noteid($nid)");
-		}
-        $self->debug(2, "note($nid) $fnd");
+		my $str = $o_note->read($nid)->format($fmt);
+		push(@res, $str);
     }
-    $self->finish;
-	$self->debug('OUT', $fnd);
-	return $fnd;
+	return @res;
 }
 
 
 =item doN
 
-Assign to given bugid, given notes, return $i_nid or 0
+Creates new note (assigns to given bugid).
 
-Accepts ($bugid, $note, $header) or ([($bugid, $note, $header)])
+	my $nid = $self->doN($str, $body, $header, $subject, $from, $to);
 
 =cut
 
 sub doN {
 	my $self  = shift;
-    $self->debug('IN', @_);
 	my $xstr  = shift;
-	my $xnote = shift || '';
-	my $xhdr  = shift || '';
-	my ($str, $note, $hdr) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xnote, $xhdr) : ($xstr, $xnote, $xhdr);
+	my $xnote = shift;
+	my $xhdr 	= shift || 'no header supplied';
+	my $xsubj 	= shift || 'no subject supplied';
+	my $xfrom 	= shift || 'no_from_line';
+	my $xto 	= shift || 'no_to_line';
+	my ($str, $note, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xnote, $xhdr, $xsubj, $xfrom, $xto) : ($xstr, $xnote, $xhdr, $xsubj, $xfrom, $xto);
 	my %cmds  = $self->parse_str($str);
-	my $nid   = 0;
-	my $i_ok  = 1;
-	my $bid   = '';
-	if (ref($cmds{'bugids'}) eq 'ARRAY') {
-		($bid) = @{$cmds{'bugids'}};
-	}
-	$self->debug(0, "doN x requires a valid bugid($bid)");
-	if (!($self->ok($bid))) {
-		$i_ok = 0;
-		$self->debug(0, "doN x requires a valid bugid($bid)");
-	} else {
-		if ($note !~ /\w+/) {
-			$self->debug(0, "requires a substantial note($note) to function");
+	my $res   = '';
+
+		if ($note!~ /\w+/) {
+			$res = "requires a valid note($note) to insert";
 		} else {
-			my $qnote = $self->quote($note);
-			my $qhdr  = $self->quote($hdr);
-			if (!$self->exists($bid)) {
-				$i_ok = 0;
-				$self->result("bug($bid) doesn't exist for insert of note($note) and hdr($hdr");
-			} else {
-				if ($note =~ /\w+/) {
-					my $insert = "INSERT INTO tm_note values (now(), NULL, NULL, 'subj', 'source', 'to', $qhdr, $qnote)";
-					my $sth = $self->exec($insert);
-					if (defined($sth)) {
-						$nid = $sth->insertid;
-						$self->result("Note($nid) generated");
-						my $ref = "INSERT INTO tm_bug_note values ('$bid', '$nid')";
-						my $ref_sth = $self->exec($ref);
-						my $ok = $self->track('n', $bid, "assigned nid($nid) note($note) ($ref_sth)");
-						$self->debug(1, "Assigned($bid) <- nid($nid) note($note))");	
-						# $self->result("Note($nid) assigned($i_ok) to bid($bid) ($ref_sth)");
-					}
-				}	
+			my $o_note = $self->object('note');
+			$o_note->create({
+				'noteid'	=> $o_note->new_id,
+				'subject'	=> $subj, 
+				'sourceaddr'=> $frm, 
+				'toaddr'	=> $to, 
+				'header'	=> $hdr, 
+				'body'		=> $note,
+				'email_msgid'	=> '',
+			});	
+			if ($o_note->CREATED) {
+				$res = $o_note->insertid;
+				if (ref($cmds{'bugids'}) eq 'ARRAY') {
+					$o_note->relation('bug')->assign($cmds{'bugids'});
+				}
 			}
 		}
-	}
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+
+	return $res;
+}
+
+
+=item doc
+
+Get the patches, or bugs for this changeid 
+
+	my @res = $do->doc(\@cids);	
+
+=cut
+
+sub doc {
+	my $self = shift;
+	my $input = shift;
+	my @cids = (ref($input) eq 'ARRAY') ? @{$input} : ($input);
+	my @res = ();
+	foreach my $cid (@cids) {
+        next unless $cid =~ /^\d+$/;
+		my $o_chg = $self->object('change')->read($cid);
+		my @pids = $o_chg->relation('patch')->ids($o_chg);
+		$self->debug(2, "found pids(@pids) related to changeid($cid)") if $DEBUG;
+		if (scalar(@pids) >= 1) {
+			@res = $self->dop(\@pids);
+        } else {
+			print "No patches found with changeid($cid), trying with bugs...<br>\n"; 
+			my @bids = $o_chg->relation('bug')->ids($o_chg);
+			$self->debug(2, "found bids(@bids) related to changeid($cid)") if $DEBUG;
+			if (scalar(@bids) >= 1) {
+				@res = $self->dob(\@bids);
+			}	
+		}
+    }
+	$self->debug(2, "found ".@res." related items to cids(@cids)") if $DEBUG;
+	return @res;
 }
 
 
@@ -994,30 +871,27 @@ returns the result in the result array.
 
 sub doq { # sql
     my $self = shift;
-	$self->debug('IN', @_);
     my ($input) = @_;
 	my $i_ok = 0;
     my ($sql) = (ref($input) eq 'ARRAY') ? @{$input} : $input;
     $sql =~ tr/\n\t\r/ /; 
     $sql =~ s/^(.+)?[\;\s]*$/$1/;
-	$self->start("-q $sql");
-    my ($errs, $res) = (0, undef);
+    my ($errs, $res) = (0, '');
     if (($self->isadmin eq $self->system('bugmaster'))){# && ($sql !~ /delete|drop/i)){
         # let it through for testing purposes
     } else {
         # could be a little paranoid, but...
-	 	if ($sql =~ /\b(alter|create|delete|drop|file|grant|insert|rename|shutdown|update)\b/mi) {
-	 		$self->result("You may not execute this sql ($1) from this interface");
+	 	if ($sql =~ /\b(alter|create|delete|drop|file|grant|insert|rename|shutdown|update)\b/si) {
+	 		$res = "You may not execute this sql($1) from this interface<br>\n";
 			$errs++;
-		} elsif ($sql !~ /^\s*select\s+/i)  { 
-			$self->result("You may only execute SELECT statements ($sql) from this interface");
+		}
+		if ($sql !~ /^\b(desc|select|show)\b/si)  { 
+			$res = "You may only execute DESC|SELECT|SHOW statements from this interface - invalid sql($sql)<br>\n";
 			$errs++;
-		} else { 
-			# OK
 		}
     }
 	if ($errs == 0) {   
-		my $sth = $self->query($sql);
+		my $sth = $self->db->query($sql);
 		if (defined($sth)) {
 			$i_ok++;
 			# my $maxlen  = $self->database('maxlen') || 1500;
@@ -1025,17 +899,12 @@ sub doq { # sql
 			# my $fsep	= ",\t";
 			# my $fh 		= $self->fh('res');
 			# my $rows = $sth->dump_results($maxlen, $lsep, $fsep, $fh);
-			my $str = $sth->as_string; # better? => Oracle?
-			$self->result($str);
+			$res = $sth->as_string; # better? => Oracle?
 		} else {
-			$self->debug(1, "No results($DBI::errstr) from '$sql'");
+			$res = "No results($DBI::errstr) from '$sql'";
 		}
-	} else {
-	    $self->debug(0, "DISALLOWED QUERY! = '$sql'");
 	}
-	$self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $res;
 }
 
 
@@ -1043,67 +912,50 @@ sub doq { # sql
 
 Returns the database schema, for use with SQL statements.
 
+	my @tables_data = $do->doQ;
+
 =cut
 
 sub doQ { # Schema
     my $self = shift;
-	$self->debug('IN', @_);
-	$self->start('-Q');
 	my @tables = $self->get_list("SHOW tables FROM ".$self->database('database'));
-	my %table;
+	my $res = ();
 	foreach my $t (@tables) {
 	    next unless $t =~ /^\w+/;
-	    $self->debug(3, "Schema table ($t)");
 	    my $sql = "SHOW fields FROM $t";
-    	my @fields = $self->get_data($sql);
-    	foreach my $f (@fields) {
-    	    my %f = %{$f} if ref($f) eq 'HASH';
-			foreach my $key (qw(Field Type Null Key Default)) {
-				$f{$key} = '' unless defined($f{$key});
-			}
-        	my @list = ($f{'Field'}, $f{'Type'}, $f{'Null'}, $f{'Key'}, $f{'Default'});
-        	$self->debug(3, "Fields: @list");
-        	$table{$t}{$f{'Field'}} = $f;
-        }
+    	$res .= "$t: \n".$self->doq($sql);
 	}
-	my $i_ok = $self->format_schema(\%table); 
-	$self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $res;
 }
 
 
 =item doL
 
 Returns the current (or given later) logfile.
+
+	my $LOG = $do->doL;
 	
 =cut
 
 sub doL { # Log (all)
 	my $self = shift;
-	$self->debug('IN', @_);
 	my ($input) = @_;
     my ($given) = (ref($input) eq 'ARRAY') ? @{$input} : $input;
     ($given == 1) && ($given = 'today');
-    $self->start("L $given");
-	my $fh = $self->fh('log'); # , pb_log_\d{8}
+	my $fh = $self->fh('log'); # , db_log_\d{8}
 	my $LOG = '';
-	if (defined $fh) {
+	if (!(defined $fh)) {
+        $self->error("Can't read LOG from undefined fh ($fh)");
+	} else {
 	    $fh->seek(0,0);
 	    while (<$fh>) {
 	        $LOG .= $_;
 	    }
 	    $fh->seek(0, 2);   
 	    my $length = length($LOG);
-	    $self->debug(2, "log ($fh) length ($length) read");
-	} else {
-        $self->debug(0, "Can't read LOG from undefined fh ($fh)");
+	    $self->debug(2, "log ($fh) length ($length) read") if $DEBUG;
     } 
-	$self->result($LOG, 3);
-	$self->finish;
-	my $i_ok = (length($LOG) >= 1) ? 1 : 0;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $LOG;
 }
 
 
@@ -1111,21 +963,20 @@ sub doL { # Log (all)
 
 Just the stored log results from this process.
 
+	my $process_log = $do->dol;
+
 =cut
 
 sub dol { # log (this process)
-    my $self = shift;
-	$self->debug('IN', @_);
-    $self->start('-l');
-	my $fh = $self->fh('log');
+    my $self  = shift;
+	my $o_log = $self->log;
 	my ($line, $switch, $log, $cnt) = ('', 0, '', 0);
-	if (defined $fh) {
-        $fh->flush;
-        $fh->seek(0, 0);
-		while (<$fh>) {
-    	    $line = $_;
+	my @data = $o_log->read;
+
+		foreach my $line (@data) {
 			chomp($line);
-    		if ($line =~ /^\[0\]\s*(.+)\s*(INIT)\s*\($$\)/i) {
+    		if ($line =~ /^\[0\]\s+INIT\s+\($$\)\s/i) {
+				# $self->debug(0, "INIT ($$) debug($Perlbug::DEBUG) scr($0)"); # if $DEBUG
 				$switch++;
 				# print "MATCHED -> '$line'\n\n";
     	    } 
@@ -1134,37 +985,28 @@ sub dol { # log (this process)
     	        $cnt++;
     	    }
     	}
-    	$fh->seek(0, 2);
-    	$self->debug(2, "Retrieved $cnt lines from log");
-    } else {
-        $self->debug(0, "Can't read log from undefined fh ($fh)");
-    }
-	$self->result($log, 3);
-    $self->finish;
-	my $i_ok = (length($log) >= 1) ? 1 : 0;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+    	$self->debug(2, "Retrieved $cnt lines from log") if $DEBUG;
+
+	return $log;
 }
 
 
 =item dof
 
-Sets the appropriate format for use by L<Format> methods, overrides default 'a' set earlier.
+Sets the appropriate format for use by L<Formatter> methods, overrides default 'a' set earlier.
 
-	$o_obj->dof('h'); 
+	my @res = $o_obj->dof('h'); 
 
 =cut
 
 sub dof { # format setting
 	my $self = shift;
-	$self->debug('IN', @_);
 	my ($fmt) = @_;
 	my $format = (ref ($fmt) eq 'ARRAY') ? @{$fmt}[0] : $fmt;
-	$format = ($format =~ /^[aAlhH]$/) ? $format : 'a'; 
-	$format = $self->context($format);
-	my $i_ok = ($self->current('format') eq $format) ? 1 : 0;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	my $ok = ($format =~ /^[aAhHiIlLxX]$/) ? $format : 'a'; # supported formats
+	my $ret = $self->current({'format' => $ok});
+	my $res = "Format($format) -> ok($ok) -> ($ret) set";
+	return $res;
 }
 
 
@@ -1178,59 +1020,81 @@ Get stats from db for overview usage.
 
 sub stats {
     my $self = shift;
-	$self->debug('IN', @_);
     my %over = (); 
-    my $bugs                = "SELECT COUNT(bugid) FROM tm_bug";
-    my $datediff            = "WHERE TO_DAYS(NOW()) - TO_DAYS(created)";
-# BUGS
-($over{'messages'})     = $self->get_list('SELECT COUNT(messageid) FROM tm_message');
-($over{'bugs'})      = $self->get_list("$bugs");
-($over{'patches'})      = $self->get_list('SELECT COUNT(patchid) FROM tm_patch');
-($over{'notes'})        = $self->get_list('SELECT COUNT(noteid) FROM tm_note');
-($over{'tests'})        = $self->get_list('SELECT COUNT(testid) FROM tm_test');
-my @claimed             = $self->get_list("SELECT DISTINCT bugid FROM tm_bug_user");
-$over{'claimed'}        = scalar @claimed; 
-my $claimed             = join("', '", @claimed);
-($over{'unclaimed'})    = $self->get_list("$bugs WHERE bugid NOT IN ('$claimed')");
-my @admins = $self->get_list('SELECT DISTINCT userid FROM tm_user');
-$over{'administrators'}	= @admins;
-foreach my $admin (@admins) {
-	my ($cnt) = $self->get_list("SELECT COUNT(bugid) FROM tm_bug_user WHERE userid = '$admin'");
-	$over{'admins'}{$admin} = $cnt;
-}
+	my $o_bug = $self->object('bug');
+	my $o_usr = $self->object('user');
 
-# DATES
-($over{'days1'})        = $self->get_list("$bugs $datediff <= 1");
-($over{'days7'})        = $self->get_list("$bugs $datediff <= 7");
-($over{'days30'})       = $self->get_list("$bugs $datediff <= 30");
-($over{'days90'})       = $self->get_list("$bugs $datediff <= 90");
-($over{'90plus'})       = $self->get_list("$bugs $datediff >= 90");
+	# BUGS
+	$over{'bug'}     = $o_bug->count;
+	$over{'message'} = $self->object('message')->count;
+	$over{'patch'}   = $self->object('patch')->count;
+	$over{'note'}    = $self->object('note')->count;
+	$over{'test'}    = $self->object('test')->count;
+	my @claimed      = $o_usr->rel_ids('bug');
+	$over{'claimed'} = scalar @claimed; 
+	my $claimed      = join("', '", @claimed);
+	($over{'unclaimed'})= $o_bug->count("bugid NOT IN ('$claimed')");
 
-# FLAGS
-my %flags = $self->all_flags;
-foreach my $flag (keys %flags) { 
-    $self->debug(4, "Overview flag: '$flag'");
-    my @types = @{$flags{$flag}};
-    foreach my $type (@types) {
-		$self->debug(3, "Overview flag type: '$type'");
-		my ($res) = $self->get_list("$bugs WHERE $flag = '$type'");
-		$over{$flag}{$type} = $res || '';
-		next if $flag eq 'status';
-		my ($opres) = $self->get_list("$bugs WHERE $flag = '$type' AND status = 'open'");
-		$over{$flag}{'Open'}{$type} = $opres || '';
-    }
-    # 
-}
+	my $o_status = $self->object('status');
+	my ($openid) = $o_status->read($o_status->ids("name='open'"));
 
-# RATIOS
-# $fmt{'ratio_o2c'}, $fmt{'ratio_c2o'}, $fmt{'ratio_m2t'}, $fmt{'ratio_t2a'}
-($over{'ratio_t2a'})    = sprintf("%0.2f", ($over{'bugs'}        / scalar(keys %{$over{'admins'}}))) if scalar(keys %{$over{'admins'}}) >= 1;
-($over{'ratio_o2a'})    = sprintf("%0.2f", ($over{'status'}{'open'} / scalar(keys %{$over{'admins'}}))) if scalar(keys %{$over{'admins'}}) >= 1;
-($over{'ratio_m2t'})    = sprintf("%0.2f", ($over{'messages'}       / $over{'bugs'})) if $over{'bugs'} >= 1;
-($over{'ratio_o2c'})    = sprintf("%0.2f", ($over{'status'}{'open'} / $over{'status'}{'closed'})) if $over{'status'}{'closed'} >= 1;
-($over{'ratio_c2o'})    = sprintf("%0.2f", ($over{'status'}{'closed'}/ $over{'status'}{'open'})) if $over{'status'}{'open'} >= 1;
+	my @uids = $o_usr->ids;
+	$over{'administrators'}	= @uids;
+	foreach my $uid (@uids) {
+		my $cnt = my @bids = $o_usr->read($uid)->rel_ids('bug');
+		$over{'user'}{$uid} = $cnt;
+		my $bids = join("', '", @bids);
+		my $ocnt = my @obids = $o_status->rel_ids('bug', "bugid IN ('$bids')");
+		$over{'user'}{'Open'}{$uid} = $ocnt;
+	}
 
-	$self->debug('OUT', Dumper(\%over));
+	# rjsf: dates take a long time
+	#
+	# DATES
+	my $datediff       = "TO_DAYS(NOW()) - TO_DAYS(created)";
+	($over{'days1'})   = '1'; #$o_bug->ids("$datediff <= 1");
+	($over{'days7'})   = '2'; #$o_bug->ids("$datediff <= 7");
+	($over{'days30'})  = '3'; #$o_bug->ids("$datediff <= 30");
+	($over{'days90'})  = '4'; #$o_bug->ids("$datediff <= 90");
+	($over{'90plus'})  = '5'; #$o_bug->ids("$datediff >= 90");
+
+	# FLAGS
+	my %flags = $self->all_flags;
+	FLAG:
+	foreach my $flag (keys %flags) { # group os sev stat user version
+		$self->debug(1, "Overview flag: '$flag'") if $DEBUG;
+		my @types = @{$flags{$flag}};
+		my $o_flag = $self->object($flag); # 
+		TYPE:
+		foreach my $type (@types) {  # inst core docs | open clos busy | etc:
+			$self->debug(2, "Overview flag type: '$type'") if $DEBUG;
+			my ($fid) = $o_flag->name2id([$type]);
+			my $i_cnt = my @bids = $o_flag->read($fid)->rel_ids('bug');
+			$over{$flag}{$type} = $i_cnt || ''; 			#	
+
+			next TYPE if $flag eq 'status';
+
+			my $bids = join("', '", @bids);
+			my $ocnt = my @obids = $o_status->rel_ids('bug', "bugid IN ('$bids')");
+			$over{$flag}{'Open'}{$type} = $ocnt || ''; 	# 
+
+			if ($flag eq 'version' && $type =~ /^(\d)\.0*([1-9])([\d\.])+\s*$/) {
+				my $trim = "$1.$2.\%"; 
+				$self->debug(3, "found version type($type) -> 1($1) 2($2) 3($3) assigning to trim($trim)") if $DEBUG;
+				$over{$flag}{$trim} += $i_cnt;				#
+				$over{$flag}{'Open'}{$trim} += $ocnt;		#
+			}
+		}
+	}
+
+	# RATIOS
+	# $fmt{'ratio_o2c'}, $fmt{'ratio_c2o'}, $fmt{'ratio_m2t'}, $fmt{'ratio_t2a'}
+	($over{'ratio_t2a'})    = sprintf("%0.2f", ($over{'bug'}        / scalar(keys %{$over{'user'}}))) if scalar(keys %{$over{'user'}}) >= 1;
+	($over{'ratio_o2a'})    = sprintf("%0.2f", ($over{'status'}{'open'} / scalar(keys %{$over{'user'}}))) if scalar(keys %{$over{'user'}}) >= 1;
+	($over{'ratio_m2t'})    = sprintf("%0.2f", ($over{'message'}       / $over{'bug'})) if $over{'bug'} >= 1;
+	($over{'ratio_o2c'})    = sprintf("%0.2f", ($over{'status'}{'open'} / $over{'status'}{'closed'})) if $over{'status'}{'closed'} >= 1;
+	($over{'ratio_c2o'})    = sprintf("%0.2f", ($over{'status'}{'closed'}/ $over{'status'}{'open'})) if $over{'status'}{'open'} >= 1;
+
 	return \%over;
 }
 
@@ -1239,37 +1103,20 @@ foreach my $flag (keys %flags) {
 
 Returns a summary overview of the bugs, bugs, messages etc. in the database.
 
-	$i_ok = $o_do->doo(); # data in result via formatting...
+	my @over = $o_do->doo(); # data in result via formatting...
 
 =cut
 
 sub doo { # overview
     my $self = shift;	
-	$self->debug('IN', @_);
-    $self->start('-o');
+	my $args = shift;
+	my ($fmt) = (ref($args) eq 'ARRAY') ? @{$args} : ($args);
+ 	$fmt = $fmt || $self->current('format');
     my $h_over = $self->stats;
-    my $i_ok = $self->format_overview($h_over);
-    $self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-
-=item doO
-
-Returns a similar overview of the bugs, in GUI format using GIFgraph and/or AA-lib?
-
-	Still to do
-
-=cut
-
-sub doO { # Overview
-    my $self = shift;
-    $self->start('-O');
-    $self->result('Overview with even more detail not implemented yet.');
-    $self->finish;
-    return undef;
-    $self->doo('ids'); #flag to set ids 'on'.
+	$self->debug(0, "overview stat'd, formatting...") if $DEBUG;
+    my $res = $self->format_overview($h_over, $fmt);
+	$self->debug(0, "overview formatted...") if $DEBUG;
+	return $res;
 }
 
 
@@ -1279,102 +1126,74 @@ ONLY do this if registered as admin of bug.
 in which case dok could still dok(\@bids) these bugids...
 or should it automatically add id as admin?
 
+	my ($res) = $do->doa($command_string, $body);
+
 =cut
 
 sub doa { # admin
     my $self = shift;
-	$self->debug('IN', @_);
-    my ($args) = @_; 
+    my $args = shift; 
+	my $fmt  = shift || $self->current('format');
     my @args = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-	$self->start("-a @args");
-	my $done = 0;
-	my %cmds = $self->parse_str(join(' ', @args));
-    my $cmds = join(' ', @{$cmds{'flags'}});
-    my ($commands) = $self->parse_flags($cmds, 'SET');
-	# version -> fixed as more typical in admin update situation?
-	$commands .= ", fixed = '@{$cmds{'versions'}}'" if scalar(@{$cmds{'versions'}}) >= 1;
-	$commands .= ", ts = NULL";
-	$self->debug(2, "str(@args) -> cmds(".Dumper(\%cmds)."commands($commands)");
-	if ($commands !~ /\w+/) {
-		$self->debug(0, "parse_flags failed($cmds -> $commands)");
-		$self->result("No commands ($commands) returned for execution from parse_flags($cmds)");
+	my $o_mail = $self->_mail;
+	my ($o_hdr, $header, $body) = $self->splice($o_mail);
+	my $res = '';
+	
+	my $str = join(' ', @args);
+	my %cmds = $self->parse_str($str);
+	my @bids = @{$cmds{'bugids'}};
+	if (!(@bids >= 1)) {
+		$self->error("requires bugids(@bids) to administrate!");
 	} else {
-	    foreach my $t (@{$cmds{'bugids'}}) {
-	        next unless $self->ok($t);
-	        if (!$self->admin_of_bug($t, $self->isadmin)) {
-				my $notify = $self->administration_failure($t, $commands, $self->isadmin, 'not admin');
-			} else {
-				my $orig = $self->current_status($t);
-				my $sql = "UPDATE tm_bug SET $commands WHERE bugid = '$t'";
-                my $sth = $self->exec($sql);
-                if (defined($sth)) {
-                    $done++;
-					my $rows = $sth->rows | $sth->affected_rows | $sth->num_rows; 
-                    $self->debug(2, "Bug ($t) updated ($rows, $done).");
-                    my $i_t= $self->track('b', $t, $commands);
-					if ($rows >= 1) {
-						my $i_x = $self->notify_cc($t, $cmds, $orig);
-					}
-					# $self->doK([$tid]) unless $self->admin_of_bug($tid, $self->isadmin);
-	    		} else {
-                    $self->result("Bug ($t) update failure($sth): ($@, $Mysql::db_errstr)");
-                }
+		my $o_bug = $self->object('bug');
+		my $o_note = $self->object('note');
+
+	    foreach my $b (@{$cmds{'bugids'}}) {
+	        next unless $o_bug->ok_ids([$b]);
+			my $orig = $o_bug->read($b)->format($fmt);
+			foreach my $flag ($self->things('flag')) {
+				my $store = ($flag =~ /^(status|severity)$/) ? '_store' : '_assign';
+				$o_bug->relation($flag)->$store($cmds{$flag}) if $cmds{$flag};
 			}
-            $self->debug(2, "Bug ($t)  administration done($done).");
+			if (!$o_bug->READ) {		
+				$res .= "Bug ($b) update failure";
+			} else {
+				chomp(my $to = $o_hdr->get('To'));
+				chomp(my $from = $o_hdr->get('From'));
+				chomp(my $subject = $o_hdr->get('Subject'));
+				$o_note->create({
+					'noteid'		=> $o_note->new_id,
+					'body'	 		=> $body, 
+					'header' 		=> $header, 
+					'subject'		=> $subject, 
+					'sourceaddr'	=> $from, 
+					'toaddr'		=> $to,
+					'email_msgid'	=> '',
+				});
+				if ($o_note->CREATED) {
+					my $nid = $o_note->insertid;
+				}
+				my $i_x = $self->notify_cc($b, $orig) unless grep(/nocc/, $cmds{'unknown'});
+			}
+            $self->debug(2, "Bug ($b)  administration done") if $DEBUG;
 	    }
-	    $self->debug(2, "All administration commands done($done)");
+	    $self->debug(2, "All administration commands done") if $DEBUG;
 	} 
-    $self->finish;
-    my $i_ok = ($done >= 1) ? 1 : 0;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-
-=item admin_of_bug
-
-Checks given bugid and administrator against tm_bug_user.
-
-Returns 1 if administrator listed against bug, 0 otherwise.
-
-=cut
-
-sub admin_of_bug {
-    my $self  = shift;
-	$self->debug('IN', @_);
-    my $bid   = shift;
-    my $admin = shift || '';
-	my $i_ok  = 0;
-    my $sql   = "SELECT DISTINCT bugid FROM tm_bug_user WHERE userid = '$admin' AND bugid = '$bid'";
-    my ($res) = $self->get_list($sql);
-	if (defined($res) and $bid =~ /^$res$/) {
-		$i_ok = 1;
-		$self->debug(3, "FOUND: bugid($bid), admin($admin) -> ok($i_ok)");
-	} else {
-		$self->debug(3, "NOT found: bugid($bid), admin($admin) -> ok($i_ok)");
-	}
-	if ($self->isadmin) {
-		# $i_ok = $self->doK([($bid)]); # whoops
-	}
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $res;
 }
 
 
 =item doA
 
+Wrapper for L<doa()>
+
 =cut
 
 sub doA { # Admin 
     my $self = shift;
-	$self->debug('IN', @_);
     #setting -t taken care of in Perlbug::Email::parse_commands.
-    my ($args) = @_;
-    $self->start("-A @{$args}");
-    my $i_ok = $self->doa($args);
-    $self->finish;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+    my ($res) = $self->doa(@_);
+	return $res;
 }
 
 
@@ -1382,26 +1201,18 @@ sub doA { # Admin
 
 Klaim the bug(id) given
 
+	my $i_claimed = $do->dok(\@bids);
+
 =cut
 
 sub dok { # claim bug
     my $self = shift;
-	$self->debug('IN', @_);
-    my ($args) = @_;
-    my @bids = (ref($args) eq 'ARRAY') ? @{$args} : $args;
+    my $a_bids = shift;
     my $i_ok = 1;
-	#$self->start("-c @bids");
     my $admin = $self->isadmin;
-    my @admins = $self->get_list("SELECT DISTINCT userid FROM tm_user");
-	if (grep(/^$admin$/, @admins)) {
-		foreach my $i (@bids) {
-        	next unless $self->ok($i);
-        	$i_ok = $self->bug_claim($i, $admin);
-        	$self->debug(2, "Claimed ($i) by $admin ");
-		}
+	if (ref($a_bids) eq 'ARRAY' && $admin =~ /\w+/ && $admin ne 'generic') {
+		$self->object('user')->read($admin)->relation('bug')->assign($a_bids);
 	}
-    # $self->finish;
-	$self->debug('OUT', $i_ok);
 	return $i_ok;
 }
 
@@ -1410,102 +1221,93 @@ sub dok { # claim bug
 
 UnKlaim the bug(id) given
 
+	my $i_unclaimed = $do->doK(\@bids);
+
 =cut
 
 sub doK { # unclaim bug 
     my $self = shift;
-	$self->debug('IN', @_);
 	my ($args) = @_;
     my $i_ok = 0;
     my @bids = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-    $self->start("-C @bids");
     foreach my $i (@bids) {
-        next unless $self->ok($i);
+        next unless $self->ok_ids([$i]);
         $i_ok += my @res = $self->bug_unclaim($i, $self->isadmin);
-        $self->debug(2, "unclaimed ($i)");
+        $self->debug(2, "unclaimed ($i)") if $DEBUG;
     }
-    $self->finish;
-	$self->debug('OUT', $i_ok);
 	return $i_ok;
 }
 
 
 =item dox
 
-Delete bug from tm_bug table.
+Delete bug from db_bug table.
 
 Use C<doX> for messages associated with bugs.
+
+	my ($feedback) = $do->dox(\@bids);
 
 =cut
 
 sub dox { # xterminate bugs
-    my $self = shift;
-	$self->debug('IN', @_);
-    my ($args) = @_;
-    my @args = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-    $self->start("-x @args");
-    return undef unless $self->isadmin;
-    my $deleted = 0;
-    foreach my $arg (@args) {
-        next unless $self->ok($arg);
-        if (1) {
-            my $delete = "DELETE FROM tm_bug WHERE bugid = '$arg'";
-            $self->debug(2, "Going for it ($delete).");
-            my ($del) = $self->exec($delete);
-            if ($del->numrows >= 1) {
-                $self->debug(0, "Bug ($arg) deleted from tm_bug <br>\n");
-                $deleted += $del->numrows;
-            } else {
-                $self->result("Bug ($arg) not deleted ($del) from tm_bug: $Mysql::db_errstr\n");
-            }
-        } 
-    }
-    $self->finish;
-	$self->debug('OUT', $deleted);
-	return $deleted;
+    my $self   = shift;
+    my $a_bids = shift;
+
+	my $i_res  = 0;
+	if (ref($a_bids) ne 'ARRAY') {
+		$self->error("requires array_ref of x bugids($a_bids)");
+	} else {
+		if (!($self->isadmin)) {
+			$self->error("not x admin: ".$self->isadmin);
+		} else {
+			my $o_bug = $self->object('bug');
+			$o_bug->delete($a_bids);
+			$i_res = $o_bug->DELETED;
+		}
+	}
+
+	return $i_res;
 }
 
 
 =item doX
 
-Delete given bugid messages from tm_message.
+Delete given bugs along with messages from db_message.
+
+Also does parent/child, bug_user, etc. tables, also calls L<dox()>
+
+	my ($feedback) = $do->doX(\@bids);
 
 =cut
 
 sub doX { # Xterminate messages
-    my $self = shift;
-	$self->debug('IN', @_);
-    my ($args) = @_;
-    my @args = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-    my $i_ok = 1;
-	$self->start("-X @args");
-    return undef unless $self->isadmin;
-    my ($deleted, $m_deleted) = (0, 0);
-	foreach my $arg (@args) {
-        next unless $self->ok($arg);
-		my @children = $self->get_list("SELECT childid FROM tm_parent_child WHERE parentid = '$arg'");
-		if (scalar(@children) >= 1) {
-			$i_ok = 0;
-			$self->debug(0, "Can't delete bug which has child records(@children)");
+    my $self   = shift;
+    my $a_bids = shift;
+
+	my $i_del  = 0;
+
+	if (ref($a_bids) ne 'ARRAY') {
+		$self->error("requires array_ref of bugids($a_bids)");
+	} else {
+		if (!($self->isadmin)) {
+			$self->error("not admin: ".$self->isadmin);
 		} else {
-        	$self->debug(2, "Going for the delete ($arg)");
-        	foreach my $table (qw(tm_cc tm_bug_message tm_bug_note tm_bug_patch tm_bug_test tm_bug_user)) {
-            	my $delete = "DELETE FROM $table WHERE bugid = '$arg'";
-            	my ($del) = $self->exec($delete);
-            	if ($del->numrows >= 1) {
-                	$self->debug(0, "Bug ($arg) deleted from $table(".$del->numrows.") <br>\n");
-				} else {
-                	# $self->result("Bug ($arg) not deleted ($del) from $table: $Mysql::db_errstr<br>\n");
-            	}
-        	} 
-			my $tmpc = "DELETE FROM tm_parent_child WHERE childid = '$arg'";
-			$self->exec($tmpc);
-			$deleted += $self->dox($arg); # tm_bug if $sofarsogood
+			my $o_bug = $self->object('bug');
+			my @rels  = $o_bug->relations;
+			BUG:
+			foreach my $arg (@{$a_bids}) {
+				next BUG unless $o_bug->ok_ids([$arg]);
+				REL:
+				foreach my $rel (@rels) {
+					next REL unless $rel;
+					my $o_rel = $o_bug->relation($rel)->set_source($o_bug);
+					$o_rel->delete([$o_bug->rel_ids($rel)]);
+				}
+				$i_del += $self->dox($arg); # bug if $sofarsogood
+			}
 		}
-    }
-	$self->finish;
-	$self->debug('OUT', $deleted);
-    return $deleted;
+	}
+    return $i_del;
 }
 
 
@@ -1523,216 +1325,188 @@ or
 
 	userid=test_user:password=p*ss33*t:address=perlbugtest@rfi.net:match_address=.*\@rfi\.net:name=Richard Foley
 
+	my $i_ok = $do->doi($data);
+
 =cut
 
 sub doi { # initiate new admin
     my $self = shift;
-	$self->debug('IN', @_);
     my ($data) = @_;
     my ($entry) = (ref($data) eq 'ARRAY') ? @{$data} : ($data);
-    $self->start("-i $entry");
-    my $ok = 1;
+    my $i_ok = 1;
+	my $res = '';
 	my $tick = 0;
     my ($userid, $password, $address, $name, $match_address, $encrypted) = ('', '', '', '', '', '');
+	my $o_usr = $self->object('user');
 	$entry =~ s/[\n\t\r]+//g; 
     if ($entry !~ /userid/) {
-    	$ok = 0;
-		$self->debug(0, "No userid offered in entry($entry)!");
+    	$i_ok = 0;
+		$self->error("No userid offered in entry($entry)!");
 	} else { # GET EACH ITEM
 		ITEM:
 	    foreach my $item (split(':', $entry)) {
-			$self->debug(0, "inspecting item($item)");
+			$self->debug(0, "inspecting item($item)") if $DEBUG;
             next ITEM unless $item =~ /\w+/;
 			last ITEM if $tick == 5;
 			if ($item =~ /^\s*userid=(\w+)\s*$/) {
                 $userid = $1; 
                 $tick++;
-                $self->debug(0, "userid($userid)");
+                $self->debug(0, "userid($userid)") if $DEBUG;
             } elsif ($item =~ /^\s*password=([\w\*]+)\s*$/) { # encrypt it here
                 $password = $1; 
                 $tick++;
-                $self->debug(0, "password($password)");
+                $self->debug(0, "password($password)") if $DEBUG;
                 $encrypted = crypt($password, 'pb');
             } elsif ($item =~ /^\s*address=(.+)\s*$/) {
                 $address = $1; 
                 $tick++;
-                $self->debug(0, "address($address)");
+                $self->debug(0, "address($address)") if $DEBUG;
             } elsif ($item =~ /^\s*name=(.+)\s*$/) {
                 $name = $1; 
                 $tick++;
-                $self->debug(0, "name($name)");
+                $self->debug(0, "name($name)") if $DEBUG;
             } elsif ($item =~ /^\s*match_address=(.+)\s*$/) {
                 $match_address = $1; 
                 $tick++;
-                $self->debug(0, "match_address($match_address)");
+                $self->debug(0, "match_address($match_address)") if $DEBUG;
             }
         }  
         if ($tick != 5) {
-            $ok = 0;
-            $self->debug(0, "Not enough appropriate values ($tick) found in data($entry)");
+            $i_ok = 0;
+            $self->error("Not enough appropriate values ($tick) found in data($entry)");
         } else {
-            $self->debug(0, "Sufficient($ok) values ($tick) found: ".
+            $self->debug(0, "Sufficient($i_ok) values ($tick) found: ". # if $DEBUG
 			"userid($userid)
 			name($name)
 			password($password)
 			address($address)
 			match($match_address)
 			"
-			);
+			) if $DEBUG;
 		}
   	}
-	if ($ok == 1) { # CHECK UNIQUE IN DB
-	    my @exists = $self->get_list("SELECT userid FROM tm_user WHERE userid = '$userid'");
+	if ($i_ok == 1) { # CHECK UNIQUE IN DB
+		my @exists = $o_usr->ids("UPPER(userid) LIKE UPPER($userid)");
         if (scalar(@exists) >= 1) {
-            $ok = 0;
-            $self->debug(0, "user already defined in db(@exists)");
-            $self->result("User already defined in database (@exists)"); 
-        } else {
-            $self->debug(0, "user unique in db(@exists)");
-			$self->result("User unique in database (@exists)"); 
+            $i_ok = 0;
+            $self->error("User already defined in db(@exists)");
 		}
     } 
-    if ($ok == 1) { # INSERT: non-active is default - don't want to upset everybody :-)
-        my $insert = qq|INSERT INTO tm_user values (
-            now(), NULL, '$userid', '$encrypted', '$address', '$name', '$match_address', 0
-        )|;
-        my ($sth) = $self->exec($insert);
-        $ok = $sth->affected_rows;
-        if ($ok == 1) {
-            $self->debug(0, "Admin inserted into db.");
-            $self->result("Admin inserted into db.");
+    if ($i_ok == 1) { # INSERT: non-active is default - don't want to upset everybody :-)
+		$o_usr->create({
+			'userid'		=> $userid, 
+			'password'		=> $encrypted, 
+			'address'		=> $address, 
+			'name'			=> $name, 
+			'match_address'	=> $match_address, 
+			'active'		=> 0,
+		});
+        if ($o_usr->CREATED) {
+            $self->debug(0, "Admin inserted into db.") if $DEBUG;
         } else {
-            $self->debug(0, "Admin db insertion failure");
-            $self->result("Admin db insertion failure: $Mysql::db_errstr");
+			$i_ok = 0;
+            $self->error("Admin db insertion failure");
         }
     } 
-    if ($ok == 1) { # HTPASSWD
-    	$self->debug(0, "Admin creation: '$ok', going for htpasswd update.");
-		$ok = $self->htpasswd($userid, $encrypted);
+    if ($i_ok == 1) { # HTPASSWD
+    	$self->debug(0, "Admin creation: '$i_ok', going for htpasswd update.") if $DEBUG;
+		$i_ok = $self->htpasswd($userid, $encrypted);
     }
-	if ($ok == 1) { # feedback
-	    $self->debug(0, "Returning notification");
+	if ($i_ok == 1) { # feedback
+	    $self->debug(0, "Returning notification") if $DEBUG;
         my $title = $self->system('title');
-		my $admin_accepted = qq|
-Welcome: new administrator ($name) with the $title database:
+		my $url   = 'http://'.$self->web('domain');
+		my $new_admin = qq|
+Welcome $name as a new $title administrator:
+
+	Address: "$name" <$address>
 
     userid=$userid
-    passwd=$password
-
-    Email1 usage:     -> help\@bugs.perl.org
+    passwd=$password  
 	
-	Email2 usage:     -> To: bugdb\@perl.org 
+	N.B. please change your password at your next WWW login (below)
+
+    Normal WWW usage: -> $url/index.html
+
+    Specification:    -> $url/perlbug.cgi?req=spec
+
+    User   FAQ:       -> $url/perlbug.cgi?req=webhelp
+
+    Admin Login: ***  -> $url/admin/index.html 
+
+    Admin  FAQ:       -> $url/admin/perlbug.cgi?req=adminfaq
+
+
+    Email_1 usage:    -> To: help\@bugs.perl.org
+	
+    Email_2 usage:    -> To: bugdb\@perl.org 
                          Subject: -h
 
-    Normal WWW usage: -> http://bugs.perl.org/perlbug.cgi
+	Email all admins  -> To: admins\@bugs.perl.org
 
-    Admin. WWW usage: -> http://bugs.perl.org/admin/perlbug.cgi
+	Mailing list      -> To: bugmongers-subscribe\@perl.org 
+
     	|;
-    	$self->result("$admin_accepted");
+		use Perlbug::Interface::Email; # yek
+		my $o_email = Perlbug::Interface::Email->new;
+		$o_email->_original_mail($o_email->_duff_mail); # dummy - blek
+		my $o_notify = $o_email->get_header;
+		$o_notify->add('To', $address);
+		$o_notify->add('Bcc', $self->system('maintainer'));
+		$o_notify->add('From', $self->email('bugdb'));
+		$o_notify->add('Subject', "$title administrator");
+		$i_ok = $o_email->send_mail($o_notify, $new_admin);
     } 
-    $self->finish;
-	$self->debug('OUT', @_);
-    return $ok;
+    return $i_ok;
 }  
 
 
 =item doI
 
 Disable a user entry
+	
+	my $i_disabled = $do->doI(\@uids);
 
 =cut
 
 sub doI {
 	my $self = shift;
-	$self->debug('IN', @_);
 	my $uids = shift;
 	my $i_ok = 0;
 	my @uids = (ref($uids) eq 'ARRAY') ? @{$uids} : ($uids);
-    $self->start("-I @uids");
     my ($deleted, $m_deleted) = (0, 0);
 	if ($self->isadmin) {
 		UID:
 		foreach my $tgt (@uids) {
         	next UID unless $tgt =~ /^\s*(\w+)\s*$/;
 			my $uid = $1;
-        	$self->debug(2, "Disabling userid($uid)");
-        	my $update = "UPDATE tm_user SET active = NULL WHERE userid = '$uid'";
-            my ($sth) = $self->exec($update);
-            if (defined($sth)) {
-				$i_ok++;
-                $self->debug(0, "Userid($uid) disabled <br>\n");
-			} else {
-				$i_ok = 0;
-				$self->debug(0, "Userid($uid) not disabled!");
-                $self->result("Userid($uid) not disabled ($sth): $Mysql::db_errstr");
-            }
+        	$self->debug(2, "Disabling userid($uid)") if $DEBUG;
+			my $o_usr = $self->object('user');
+			$o_usr->update({
+				'active'	=> '',
+			});
+			$i_ok = 1 if $o_usr->UPDATED;
 		}
     }
-	$self->finish;
-	$self->debug('OUT', $i_ok);
 	return $i_ok;
 }
- # select userid, active from tm_user where active is null;     
 
 
+=item doz
 
-=item _doz
+Configuration data
 
-Update: only to be used by perlbug@rfi.net (disabled)
-
-    $ok = $o_obj->_doz($filename, $data);
+    $data = $o_obj->doz('current');
 
 =cut
 
-sub _doz { # update
+sub doz { # update
     my $self = shift;
-	$self->debug('IN', @_);
-    my ($update) = @_;
-    my ($data) = (ref($update) eq 'ARRAY') ? @{$update} : ($update);
-    $self->start("-z $data");
-    return unless $self->isadmin eq $self->system('bugmaster');       
-    return 1; # anyway for now
-    my $ok = 1;
+	my $args = shift;
+	my @args = (ref($args) eq 'ARRAY') ? @{$args} : ($args);
+	my $config = $self->get_config(@args);
     
-    # ARGS
-    if ($data =~ /\w+/) {
-        $data =~ s/\x0D\x0A?/\n/g; # network transfer fix
-    } else {    
-        $ok = 0;
-        $self->debug(0, "Duff data for update($data)");
-    }
-    
-    # TRIM + SCRIPTNAME
-    my $file = '';
-    if ($ok == 1) {
-        if ($data =~ /^\#\s\$SITE\/Perlbug\/(\w+)\.pm\s(C)\s/) {   # xxx
-            $file = "$1.pm"; # modules only
-            $self->debug(0, "Filename ($file) found");
-        } else {
-            $ok = 0;
-            $self->debug(0, "No filename found in data");
-        }
-    }
-
-    # UPDATE
-    if ($ok == 1) {
-        # my $dir = '~richard/Perlbug/temp';                	#  xxx
-        my $dir = $self->directory('temp');                
-        my ($original, $backup, $temp) = ("$dir/$file", "$dir/$file.bak", "$dir/$file.tmp");
-        $ok = $self->copy($original, $backup);
-        if ($ok == 1) {
-            $ok = $self->create($temp, $data);
-            if ($ok == 1) {
-                $self->syntax_check($temp);
-                if ($ok == 1) {
-                    $ok = $self->copy($temp, $original);
-                }
-            }
-        }
-    }
-    
-	$self->debug('OUT', $ok);
-	return $ok;
+	return $config;
 }
 
 
@@ -1740,28 +1514,27 @@ sub _doz { # update
 
 Password renewal
 
-    $i_ok = $o_obj->doy($user, $pass);
+    my ($i_ok) = $do->doy($user, $pass);
 
 =cut
 
 sub doy { # password, user
     my $self = shift;
-	$self->debug('IN', @_);
 	my $input = shift;
 	($input) = (ref($input) eq 'ARRAY') ? @{$input} : ($input);
 	my ($user, $pass) = split(/\s+/, $input);
 	$pass = 'default_password' unless $pass =~ /\w+/;
-	$self->start("-y $user $pass");
     my $i_ok = 1;
+	my $o_usr = $self->object('user');
     
 	if (!($user =~ /\w+/ && $pass =~ /\w+/)) {
 		$i_ok = 0;
-		$self->debug(0, "invalid user($user) or pass($pass)");
+		$self->error("invalid user($user) or pass($pass)");
 	} else {
-		my @users = $self->get_list("SELECT userid FROM tm_user WHERE userid = '$user' AND active IS NOT NULL");
-		if (!(grep(/^$user$/, @users))) {
+		my @uids = $o_usr->read($user)->ids("active IN ('1', '0')");
+		if (!(grep(/^$user$/, @uids))) {
 			$i_ok = 0;
-			$self->debug(0, "can't update password for non-valid user($user)");
+			$self->error("can't update password for non-valid user($user) - '@uids'");
 		}
 	}
 	
@@ -1769,30 +1542,464 @@ sub doy { # password, user
 		my $encrypted = crypt($pass, substr($pass, 0, 2));
 		$i_ok = $self->htpasswd($user, $encrypted);
 		if ($i_ok == 1) {
-			$self->debug(0, "htp: user($user) inserted new password($pass)");
+			$self->debug(0, "htp: user($user) inserted new password($pass)") if $DEBUG;
 		} else {
 			$i_ok = 0;
-			$self->debug(0, "htp: user($user) failed to insert new password($pass)");
+			$self->error("htp: user($user) failed to insert new password($pass)");
 		}
     }
 	
 	if ($i_ok == 1) { # DATABASE
-		my $newpass = "UPDATE tm_user SET password = PASSWORD('$pass') WHERE userid = '$user'";
-		my $sth = $self->exec($newpass);
-    	if (defined($sth) and $sth->num_rows == 1) {
-			$self->debug(0, "db: user($user) set new password($pass) -> $sth");
+		$o_usr->update({
+			'password'	=> "PASSWORD('$pass')",
+		});
+    	if ($o_usr->UPDATED) {
+			$self->debug(0, "db: user($user) set new password($pass)") if $DEBUG; 
 		} else {
 			$i_ok = 0;
-			$self->debug(0, "db: user($user) failed to set new password($pass) -> $sth");
+			$self->error("db: user($user) failed to set new password($pass)"); 
 		}
 	}
 	
-	if ($i_ok == 1) {
-		$self->result("user($user) set new password($pass)");
-	}
-    
-	$self->debug('OUT', $i_ok);
 	return $i_ok;
+}
+
+
+=item overview
+
+Formatting for overview.
+
+        $fmt{'bugs'} = $data{'bugs'};
+
+=cut
+
+sub overview {
+    my $self = shift; # expected to be Base/Cmd/Email/Web object!
+    my $ref  = shift;
+    my $fmt  = shift || $self->current('format') || 'a';
+
+	my $url = $self->current('url');
+	my $cgi = $self->cgi();
+    my $ret = '';
+
+    if (ref($ref) ne 'HASH') {       # duff old style.
+		$self->error("Can't format unrecognised data($ref)");
+    } else {  
+        my %fmt = %{$ref}; # short cut...
+        # no strict 'refs'; 
+        my %flags = $self->all_flags;
+		$fmt{'graph'}{'dates'} = 'Age: &nbsp;';
+		($fmt{'graph'}{'admins'}) = $self->href('graph', [qw(admins)], 'Admins').$fmt{'administrators'};
+		FLAG:
+        foreach my $flag (keys %flags) {	# bug, status, version
+	        my @types = @{$flags{$flag}};
+			($fmt{'graph'}{$flag}) = $self->href('graph', [$flag], ucfirst($flag));
+			TYPE:
+	        foreach my $type (@types) {		# aix, closed, 5.7.%
+				if ($flag eq 'version') {
+					$type = "$1.$2.%" if $type =~ /^(\d)\.0*([1-9])([\d\.\%]).*$/; # Do::stats 
+					my $v = $fmt{'version'}{$type};
+					next TYPE unless $v =~ /\%/;
+					my $o = $fmt{'version'}{'Open'}{$type};
+				}
+	            $self->debug(3, "Overview format($fmt) flag($flag), type($type)") if $DEBUG;
+                if ($fmt =~ /^[IhHL]$/) { # HTML
+					$fmt{$type} = $self->href("query&$flag=$type", [], "$fmt{$flag}{$type}", '');
+	                if (($fmt{$flag}{'Open'}{$type} =~ /^(\d+)$/) && ($flag ne 'status')) {
+						($fmt{$type}) .= '&nbsp;('.$self->href("query&$flag=$type&status=open", [], "$fmt{$flag}{'Open'}{$type}", '').')';
+	                }
+	            } else {                	 # ASCII
+	                $fmt{$type} = "$fmt{$flag}{$type}";
+	                if (($flag ne 'status') && defined($fmt{$flag}{'Open'}{$type}) && ($fmt{$flag}{'Open'}{$type} =~ /^(\d+)$/)) {
+	                    $fmt{$type} .= "($fmt{$flag}{'Open'}{$type})";
+	                } 
+				}
+	        }
+	    }
+		$fmt{'ratio_t2a'} .= " ($fmt{'ratio_o2a'})"; 
+		my $xformat = "FORMAT_O_$fmt";
+		my ($top, $_format, @args) = $self->$xformat(\%fmt); 
+		# this bit's a melange ...
+		$= = 1000;	# lines per page
+		$^A = ""; 								# set
+		if ($fmt =~ /[aAl]/) {
+			formline($_format, @args);			# 1
+		} else {
+			$^A = $_format;
+		}
+		$ret = $self->pre($fmt).
+				$top.$^A .
+			    $self->post($fmt);	
+		$^A = ""; 								# reset
+	}
+
+    return $ret;    
+}
+
+
+=item FORMAT_O_l
+
+Formating for lean overview (currently wrapper for L<FORMAT_a>
+
+	my ($top, $format, @args) = $o_fmt->FORMAT_l(\%overview);
+    
+=cut
+
+sub FORMAT_O_l { my $self = shift; return $self->FORMAT_O_a(@_); }
+
+
+=item FORMAT_O_L
+
+Formating for Lean Html overview (currently wrapper for L<FORMAT_h>
+
+	my ($top, $format, @args) = $o_fmt->FORMAT_L(\%overview);
+    
+=cut
+
+sub FORMAT_O_L { my $self = shift; return $self->FORMAT_O_h(@_); }
+
+
+=item FORMAT_O_a
+
+Formating for overview (default).
+
+	my ($top, $format, @args) = $o_fmt->FORMAT_a(\%overview);
+    
+=cut
+
+sub FORMAT_O_a {
+	my $self = shift;
+
+	my $h_fmt= shift;
+	my %fmt  = %{$h_fmt};
+	my @args = (
+		$fmt{'bug'}, $fmt{'message'}, $fmt{'patch'}, $fmt{'test'}, $fmt{'note'}, $fmt{'user'}, $fmt{'days1'}, $fmt{'days7'}, $fmt{'days30'}, $fmt{'days90'},
+		$fmt{'ratio_o2c'}, $fmt{'ratio_c2o'}, $fmt{'ratio_m2t'}, $fmt{'ratio_t2a'},
+		$fmt{'open'}, $fmt{'closed'}, $fmt{'busy'}, $fmt{'onhold'}, $fmt{'abandoned'}, $fmt{'duplicate'},
+		$fmt{'install'}, $fmt{'library'}, $fmt{'patch'}, $fmt{'core'}, $fmt{'docs'}, $fmt{'utilities'},
+		$fmt{'unknown'}, $fmt{'notabug'}, $fmt{'ok'},
+		$fmt{'fatal'}, $fmt{'high'}, $fmt{'medium'}, $fmt{'low'}, $fmt{'wishlist'},
+		$fmt{'linux'}, $fmt{'generic'}, $fmt{'solaris'}, $fmt{'freebsd'}, $fmt{'hpux'}, $fmt{'aix'}, $fmt{'mswin32'},
+		$fmt{'version'}{'Open'}{'5.3.%'},
+		$fmt{'version'}{'Open'}{'5.4.%'},
+		$fmt{'version'}{'Open'}{'5.5.%'},
+		$fmt{'version'}{'Open'}{'5.6.%'},
+		$fmt{'version'}{'Open'}{'5.7.%'},
+		$fmt{'version'}{'Open'}{'5.8.%'},
+		$fmt{'version'}{'Open'}{'5.9.%'},
+	);
+	my $top = qq|PerlBug Database overview, figures in brackets() are still open:
+-------------------------------------------------------------------------------|;
+	my $format = qq|
+Bugs     Messages Patches Tests  Notes  Admins  24hrs   7days   30days   90days   
+@<<<<<<< @<<<<<<< @<<<<<< @<<<<< @<<<<< @<<<<<< @<<<<<< @<<<<<< @<<<<<<< @<<<<<
+Ratios:     Open to Closed   Closed to Open   Msgs to Bugs     Bugs to Admins 
+            @<<<<<<<<<<<<<   @<<<<<<<<<<<<<   @<<<<<<<<<<<<<   @<<<<<<<<<<<<<<<
+Status:     Open       Closed     Busy       Onhold     Abandoned  Duplicate                                          
+            @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< 
+Group:      Install    Library    Patch      Core       Docs       Utilities     
+            @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< 
+            Unknown    Notabug    OK
+            @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< 
+Severity:   Fatal      High       Medium     Low        Wishlist
+            @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< 
+OS:         Linux      Generic    Solaris    Freebsd    Hpux       Aix       MSwin32   
+            @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<    @<<<<<<<<< @<<<<<<<< @<<<<<<<<
+Versions:   5.3.*      5.4.*      5.5.*      5.6.*      5.7.*      5.8.*     5.9.*
+            @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<< @<<<<<<<<
+		|; # 17, 33, 12, 7, 11, 14, 22, 3, 15, 20 , 40 , 26, 43, 42, 9, 34
+		   # linux solaris generic dec_osf freebsd hpux mswin32 aix irix machten
+
+	return ($top, $format, @args);
+}
+
+
+=item FORMAT_O_A
+
+Formatting for ASCII overview.
+
+	my ($top, $format, @args) = $o_fmt->FORMAT_O_A(\%overview);
+
+=cut
+
+sub FORMAT_O_A {
+	my $self = shift;
+	my $x   = shift;
+
+	my $top = qq|PerlBug Database overview, figures in brackets() are still open:
+-------------------------------------------------------------------------------
+|;
+	my $format = '';
+	my @args = ();
+	my @keys = ($self->things('mail'), $self->things('item'), $self->things('flag'));
+	my $cnt = 0;
+	KEY:
+	foreach my $key (keys %{$x}) { 					# bug, group, status, note...
+		next KEY unless grep(/^$key$/, @keys); 
+		# print "Found key($key)\n";
+		$cnt++;
+		my $h_item = $$x{$key};
+		if (ref($h_item) eq 'HASH') {
+			# print "found H_data($h_item)\n";
+			push (@args, ucfirst($key));
+			$format .= '@<<<<<<<<<<<<<<<<< '."\n";
+			ITEM:
+			foreach my $item (keys %{$h_item}) {	# open, closed, aix, etc.
+				next ITEM if $item eq 'Open';
+				push(@args,  $item, $$h_item{$item}, $$h_item{'Open'}{$item});
+				# print "found item($item), total($$h_item{$item}), open($$h_item{'Open'}{$item})\n";
+				$format .= '    @<<<<<<<<<<<  @<<<<<<<<<  @<<<<<<< '."\n";
+			}
+			$format .= "\n";
+		}
+	}
+	$format .= qq|
+-------------------------------------------------------------------------------
+	|;
+
+
+	return ($top, $format, @args);
+}
+
+
+=item FORMAT_O_h
+
+Formatting for html overview.
+
+	my ($top, $format, @args) = $o_fmt->FORMAT_O_h(\%overview);
+
+=cut
+
+sub FORMAT_O_h {
+	my $self = shift;
+	my $h_fmt= shift;
+
+	my %fmt  = %{$h_fmt};
+	my $top  = '<p>';
+	my $url = $self->url;
+	my ($full) = $self->href('overview&format=H', [], 'full overview', 'ALL bug <-> flags data (be a little patient, please :)');
+	my $format = qq|
+<table border=1><tr>
+<td colspan=9><h3>Perlbug Database overview: all bugs</h3></td>
+</tr>
+<tr>
+<td colspan=4><i>Figures in brackets() are still open</i></td>
+<td colspan=5>For full details see: <b>$full</b> <i>(be patient)</i></td></tr>
+<tr>
+	<td><b>
+	$fmt{'graph'}{'user'}
+	</b></td>
+	<td><b>Bugs:</b> &nbsp;
+	$fmt{'bug'}
+	</td>
+	<td><b>Messages:</b> &nbsp;
+	$fmt{'message'}
+	</td>
+	<td><b>Patches:</b> &nbsp;
+	$fmt{'patche'}
+	</td>
+	<td><b>Notes:</b> &nbsp;
+	$fmt{'note'}
+	</td>
+	<td><b>Tests:</b> &nbsp;
+	$fmt{'tests'}
+	</td>
+	<td><b>Bugs to Messages:</b> &nbsp;
+	$fmt{'ratio_m2t'}
+	</td>
+	<td colspan=2><b>Bugs to admins</b> &nbsp;
+	$fmt{'ratio_t2a'}
+	</td>
+</TR>
+<TR>
+	<td><b>
+	$fmt{'graph'}{'dates'}
+	</b>&nbsp;</td>
+	<td><b>24hrs:</b> &nbsp;
+	$fmt{'days1'}
+	</td><td><b>7 days:</b> &nbsp;
+	$fmt{'days7'}
+	</td><td><b>30 days:</b> &nbsp;
+	$fmt{'days30'}
+	</td><td><b>90 days:</b> &nbsp;
+	$fmt{'days90'}
+	</td><td colspan=2><b>Over 90 days:</b> &nbsp;
+	$fmt{'90plus'}
+	</td>
+	<td>&nbsp;</td>
+	</td><td>&nbsp;</td> 
+</TR>
+<TR>
+	<td><b>
+	$fmt{'graph'}{'status'}
+	</b>&nbsp;
+	</td>
+	<td><b>Open:</b> &nbsp;
+	$fmt{'open'}
+	</td>
+	<td><b>Closed:</b> &nbsp;
+	$fmt{'closed'}
+	</td><td><b>Busy:</b> &nbsp;
+	$fmt{'busy'}
+	</td>
+	<td><b>Ok:</b> &nbsp;
+	$fmt{'ok'}
+	</td>
+	<td><b>Onhold:</b> &nbsp;
+	$fmt{'onhold'}
+	</td>
+	<td><b>Abandoned:</b> &nbsp;
+	$fmt{'abandoned'}
+	</td>
+	<td><b>Duplicate:</b> &nbsp;
+	$fmt{'duplicate'}
+	</td>
+	<td>&nbsp;</td>
+</TR>
+<TR>
+	<td><b>
+	$fmt{'graph'}{'group'}
+	</b>&nbsp;</td>
+	<td><b>Install:</b> &nbsp;
+	$fmt{'install'}
+	</td><td><b>Library:</b> &nbsp;
+	$fmt{'library'}
+	</td><td><b>Patch:</b> &nbsp;
+	$fmt{'patch'}
+	</td><td><b>Core:</b> &nbsp;
+	$fmt{'core'}
+	</td><td><b>Docs:</b> &nbsp;
+	$fmt{'docs'}
+	</td><td><b>Utilities:</b> &nbsp;
+	$fmt{'utilities'}
+	<td><b>Notabug:</b> &nbsp;
+	$fmt{'notabug'}
+	</td><td><b>Unknown:</b> &nbsp;
+	$fmt{'unknown'}
+	</td>
+</TR>
+<TR>
+	<td><b>
+	$fmt{'graph'}{'severity'}
+	</b>&nbsp;
+	</td><td><b>Fatal:</b> &nbsp;
+	$fmt{'fatal'}
+	</td><td><b>High:</b> &nbsp;
+	$fmt{'high'}
+	</td><td><b>Medium:</b> &nbsp;
+	$fmt{'medium'}
+	</td><td><b>Low:</b> &nbsp;
+	$fmt{'low'}
+	</td><td><b>Wishlist:</b> &nbsp;
+	$fmt{'wishlist'}
+	</td><td><b>None:</b> &nbsp;
+	$fmt{'none'}
+	</td><td>&nbsp;</td> 
+	</td><td>&nbsp;</td> 
+	</td>
+</TR>
+<TR>
+	<td><b>
+	$fmt{'graph'}{'osname'}
+	</b>&nbsp;</td>
+	<td><b>Generic:</b> &nbsp;
+	$fmt{'generic'}
+	</td><td><b>Linux:</b> &nbsp;
+	$fmt{'linux'}
+	</td><td><b>FreeBSD:</b> &nbsp;
+	$fmt{'freebsd'}
+	</td><td><b>Solaris:</b> &nbsp;
+	$fmt{'solaris'}
+	</td><td><b>HPux:</b> &nbsp;
+	$fmt{'hpux'}
+	</td><td><b>Aix:</b> &nbsp;
+	$fmt{'aix'}}
+	</td><td><b>Win32:</b> &nbsp;
+	$fmt{'mswin32'}
+	</td><td><b>MacOS:</b> &nbsp;
+	$fmt{'macos'}
+	</td>
+</TR>>
+<TR>
+	<td><b>Versions:</b>  &nbsp;
+	</td><td><b>5.002.*:</b> &nbsp;
+	$fmt{'version'}{'5.2.%'} ($fmt{'version'}{'Open'}{'5.2.%'})
+	</td><td><b>5.003.*:</b> &nbsp;
+	$fmt{'version'}{'5.3.%'} ($fmt{'version'}{'Open'}{'5.3.%'})
+	</td><td><b>5.004.*:</b> &nbsp;
+	$fmt{'version'}{'5.4.%'} ($fmt{'version'}{'Open'}{'5.4.%'})
+	</td><td><b>5.005*</b> &nbsp;
+	$fmt{'version'}{'5.5.%'} ($fmt{'version'}{'Open'}{'5.5.%'})
+	</td><td><b>5.6.*:</b> &nbsp;
+	$fmt{'version'}{'5.6.%'} ($fmt{'version'}{'Open'}{'5.6.%'})
+	</td><td><b>5.7.*:</b> &nbsp;
+	$fmt{'version'}{'5.7.%'} ($fmt{'version'}{'Open'}{'5.7.%'})
+	</td><td><b>5.8.*:</b> &nbsp;
+	$fmt{'version'}{'5.8.%'} ($fmt{'version'}{'Open'}{'5.8.%'})
+	</td><td><b>5.9.*:</b> &nbsp;
+	$fmt{'version'}{'5.9.%'} ($fmt{'version'}{'Open'}{'5.9.%'})
+	</td>
+</TR>
+
+</table>
+|;
+
+	return ($top, $format, ());
+}
+
+
+=item FORMAT_O_H
+
+Formatting for HTML overview.
+
+	my ($top, $format, @args) = $o_fmt->FORMAT_O_H(\%overview);
+
+=cut
+
+sub FORMAT_O_H {
+	my $self = shift;
+	# return $self->FORMAT_O_h(@_); # rjsf: for now
+	my $x   = shift;
+
+	my $top = qq|<h2>PerlBug Database overview, figures in brackets() are still open:</h2> <hr> |;
+	my $format = '<table border=0><tr>';
+	my @args = ();
+	my @keys = ($self->things('mail'), $self->things('item'), $self->things('flag'));
+	my $cnt = 0;
+	KEY:
+	foreach my $key (sort keys %{$x}) {					# bug, group, status, note...
+		next KEY unless grep(/^$key$/, @keys); 
+		# print "Found key($key)\n";
+		$cnt++;
+		my $h_item = $$x{$key};
+		if (ref($h_item) eq 'HASH') {
+			# print "found H_data($h_item)\n";
+			$format .= qq|<td valign=top><table border=1><tr>
+				<td>&nbsp;</td>
+				<td><b>|.ucfirst($key).q|</b></td>
+				<td><b>Total</b></td>
+				<td><b>Open</b></td>
+			</tr>|; 
+			ITEM:
+			foreach my $item (sort keys %{$h_item}) {	# open, closed, aix, etc.
+				next ITEM if $item eq 'Open';
+				$format .= qq|<tr>
+					<td>&nbsp;</td>
+					<td>$item &nbsp;</td>
+					<td>$$h_item{$item} &nbsp;</td>
+					<td>$$h_item{'Open'}{$item} &nbsp;</td>
+				</tr>|; 
+				# print "found item($item), total($$h_item{$item}), open($$h_item{'Open'}{$item})\n";
+			}
+			$format .= qq|<tr><td colspan=4>&nbsp;</td></tr>
+				</table></td>|;
+		}
+	}
+	$format .= qq|</tr></table><hr>|; 
+	$format =~ s/\s+/ /;
+
+
+	return ($top, $format, @args);
 }
 
 
@@ -1800,7 +2007,7 @@ sub doy { # password, user
 
 =head1 AUTHOR
 
-Richard Foley perlbug@rfi.net Oct 1999
+Richard Foley perlbug@rfi.net Oct 1999 2000 2001
 
 =cut
 

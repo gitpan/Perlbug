@@ -1,21 +1,22 @@
 #!/usr/bin/perl 
 # Perlbug command line interface
 # (C) 2000 Richard Foley RFI perlbug@rfi.net 
-# $Id: bugdb,v 1.3 2000/06/27 05:49:16 perlbug Exp perlbug $
+# $Id: bugdb,v 1.5 2001/02/18 13:55:56 perlbug Exp $
 # 
 # 20.06.2000 Initial version
 # 
 
-use File::Spec; 
-use lib (File::Spec->updir, qw(/home/richard/Live /home/perlbug));
-use Mail::Header;
-use Perlbug::Cmd;
 use strict;
 use vars(qw($VERSION));
-$|=1;
-$VERSION = 1.01;
+$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
-my $pb = Perlbug::Cmd->new(@ARGV);
+use FindBin;
+use lib "$FindBin::Bin/..";
+use Mail::Header;
+use Perlbug::Interface::Cmd;
+$|=1;
+
+my $pb = Perlbug::Interface::Cmd->new(@ARGV);
 $pb->debug(1, "$0: $pb");
 
 # backup db

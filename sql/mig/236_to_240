@@ -1,0 +1,48 @@
+# Id: $
+#
+# update from 2.36 -> 2.38 Indexes 
+# 
+# CREATE [UNIQUE] INDEX index_name ON tbl_name (col_name[(length)],... )
+#
+use perlbug;
+
+# tm_bug
+CREATE UNIQUE INDEX tm_bug_id_i ON tm_bug (bugid);
+
+ALTER TABLE tm_bug MODIFY subject varchar(100) NOT NULL;
+CREATE INDEX tm_bug_subject ON tm_bug (subject(100));
+ALTER TABLE tm_bug MODIFY sourceaddr varchar(100) NOT NULL;
+CREATE INDEX tm_bug_sourceaddr_i ON tm_bug (sourceaddr(100));
+ALTER TABLE tm_bug MODIFY toaddr varchar(100) NOT NULL;
+CREATE INDEX tm_bug_toaddr_i ON tm_bug (toaddr(100));
+ 	
+# tm_message
+CREATE UNIQUE INDEX tm_message_id_i ON tm_message (messageid);
+
+ALTER TABLE tm_message MODIFY subject varchar(100) NOT NULL;
+CREATE INDEX tm_message_subject_i ON tm_message (subject(100));
+ALTER TABLE tm_message MODIFY sourceaddr varchar(100) NOT NULL;
+CREATE INDEX tm_message_sourceaddr_i ON tm_message (sourceaddr(100));
+ALTER TABLE tm_message MODIFY toaddr varchar(100) NOT NULL;
+CREATE INDEX tm_message_toaddr_i ON tm_message (toaddr(100));
+
+# tm_group
+CREATE UNIQUE INDEX tm_group_id_i ON tm_group (groupid);
+
+# tm_log
+CREATE UNIQUE INDEX tm_log_id_i ON tm_log (logid);
+
+# tm_note
+CREATE UNIQUE INDEX tm_note_id_i ON tm_note (noteid);
+
+# tm_patch
+CREATE UNIQUE INDEX tm_patch_id_i ON tm_patch (patchid);
+
+# tm_test
+CREATE UNIQUE INDEX tm_test_id_i ON tm_test (testid);
+
+# tm_user
+CREATE UNIQUE INDEX tm_user_id_i ON tm_user (userid);
+
+# .
+

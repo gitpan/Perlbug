@@ -1,0 +1,15 @@
+Subject: -h -o 
+To: "some dodgy address" perlbug@perl.org 
+From: "Richard Foley" <perlbug@perl.com>
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+
+Gruesse
+
+trim it
+
+should fail with To 
+
+Ciao
+---
+Sig here

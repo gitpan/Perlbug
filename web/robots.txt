@@ -1,0 +1,4 @@
+# basic :-)
+User-agent: *
+Disallow: / 
+

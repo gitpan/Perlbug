@@ -1,0 +1,318 @@
+# Id: $
+#
+# update from 2.38 -> 2.40 migrate tables to full relational style
+# 
+# TODO 	ts->modified
+#		existing also
+#
+
+use perlbug;
+
+# -----------------------------------------------------------------------------	
+ALTER TABLE tm_bug 
+	ADD msgheader blob,
+	ADD msgbody blob
+;
+
+# -----------------------------------------------------------------------------	
+
+# tm_bug_status
+CREATE TABLE tm_status (
+	created datetime,
+	modified datetime,
+	statusid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+	name varchar(16) NOT NULL,
+	PRIMARY KEY (statusid),
+	UNIQUE tm_status_name_u (name)
+);
+
+CREATE TABLE tm_bug_status (
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	statusid smallint(5)
+);
+
+INSERT INTO tm_status SELECT DISTINCT 
+	now(), now(), NULL, status 
+FROM tm_bug; 
+
+UPDATE tm_status SET name = 'unknown' WHERE statusid = '1' AND name = '';
+
+INSERT INTO tm_bug_status SELECT
+	now(), now(), b.bugid, s.statusid 
+FROM tm_bug b, tm_status s WHERE b.status = s.name;
+
+ALTER TABLE tm_bug DROP status;
+
+# -----------------------------------------------------------------------------	
+
+# tm_bug_severity
+CREATE TABLE tm_severity (
+	created datetime,
+	modified datetime,
+	severityid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+	name varchar(16) NOT NULL,
+	PRIMARY KEY (severityid),
+	UNIQUE tm_severity_name_u (name)
+);
+
+CREATE TABLE tm_bug_severity (
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	severityid smallint(5)
+);
+
+INSERT INTO tm_severity SELECT DISTINCT 
+	now(), now(), NULL, severity 
+FROM tm_bug; 
+
+UPDATE tm_severity SET name = 'unknown' WHERE severityid = '1' AND name = '';
+
+INSERT INTO tm_bug_severity SELECT
+	now(), now(), b.bugid, s.severityid 
+FROM tm_bug b, tm_severity s WHERE b.severity = s.name;
+
+ALTER TABLE tm_bug DROP severity;
+
+# -----------------------------------------------------------------------------	
+
+# tm_bug_osname
+CREATE TABLE tm_osname (
+	created datetime,
+	modified datetime,
+	osnameid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+	name varchar(16) NOT NULL,
+	PRIMARY KEY (osnameid),
+	UNIQUE tm_osname_name_u (name)
+);
+
+CREATE TABLE tm_bug_osname (
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	osnameid smallint(5)
+);
+
+INSERT INTO tm_osname SELECT DISTINCT 
+	now(), now(), NULL, osname 
+FROM tm_bug; 
+
+UPDATE tm_osname SET name = 'unknown' WHERE osnameid = '1' AND name = '';
+
+INSERT INTO tm_bug_osname SELECT
+	now(), now(), b.bugid, s.osnameid 
+FROM tm_bug b, tm_osname s WHERE b.osname = s.name;
+
+ALTER TABLE tm_bug DROP osname;
+
+# -----------------------------------------------------------------------------	
+
+# tm_bug_version
+CREATE TABLE tm_version (
+	created datetime,
+	modified datetime,
+	versionid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+	name varchar(16) NOT NULL,
+	PRIMARY KEY (versionid),
+	UNIQUE tm_version_name_u (name)
+);
+
+# ALTER TABLE tm_version CHANGE version name varchar(16)
+
+CREATE TABLE tm_bug_version (
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	versionid smallint(5)
+);
+
+INSERT INTO tm_version SELECT DISTINCT 
+	now(), now(), NULL, version 
+FROM tm_bug; 
+
+UPDATE tm_version SET name = 'unknown' WHERE versionid = '1' AND name = '';
+
+INSERT INTO tm_bug_version SELECT
+	now(), now(), b.bugid, s.versionid 
+FROM tm_bug b, tm_version s WHERE b.version = s.name;
+
+ALTER TABLE tm_bug DROP version;
+
+# -----------------------------------------------------------------------------	
+
+# tm_patch_version
+ALTER TABLE tm_patch_version RENAME tm_patch_version_data;
+
+CREATE TABLE tm_patch_version (
+	created datetime,
+	modified datetime,
+	patchid bigint(20),
+	versionid smallint(5)
+);
+
+INSERT INTO tm_patch_version SELECT
+	now(), now(), p.patchid, v.versionid 
+FROM tm_patch_version_data p, tm_version v WHERE p.version = v.name;
+
+# -----------------------------------------------------------------------------	
+
+# tm_test_version
+ALTER TABLE tm_test_version RENAME tm_test_version_data;
+
+CREATE TABLE tm_test_version (
+	created datetime,
+	modified datetime,
+	testid bigint(20),
+	versionid smallint(5)
+);
+
+INSERT INTO tm_test_version SELECT
+	now(), now(), p.testid, v.versionid 
+FROM tm_test_version_data p, tm_version v WHERE p.version = v.name;
+
+# -----------------------------------------------------------------------------	
+# tm_bug_fixed (version)
+CREATE TABLE tm_bug_fixed ( # version
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	fixedid smallint(5)
+);
+
+INSERT INTO tm_bug_fixed SELECT
+	now(), now(), b.bugid, i.versionid
+FROM tm_bug b, tm_version i 
+WHERE b.fixed = i.name AND i.name LIKE '5%';
+
+ALTER TABLE tm_bug DROP fixed;
+
+# -----------------------------------------------------------------------------	
+
+# tm_bug_change
+CREATE TABLE tm_change (
+	created datetime,
+	modified datetime,
+	changeid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
+	name varchar(16) NOT NULL,
+	PRIMARY KEY (changeid),
+	UNIQUE tm_change_name_u (name)
+);
+
+CREATE TABLE tm_bug_change (
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	changeid bigint(20)
+);
+
+INSERT INTO tm_change SELECT DISTINCT 
+	now(), now(), NULL, changeid 
+FROM tm_bug_changeid; 
+
+UPDATE tm_change SET name = 'unknown' WHERE changeid = '1' AND name = '';
+
+INSERT INTO tm_bug_change SELECT
+	now(), now(), b.bugid, s.changeid 
+FROM tm_bug_changeid b, tm_change s WHERE b.changeid = s.name;
+
+# -----------------------------------------------------------------------------	
+
+# tm_patch_change
+CREATE TABLE tm_patch_change (
+	created datetime,
+	modified datetime,
+	patchid varchar(20),
+	changeid bigint(20)
+);
+
+INSERT INTO tm_patch_change SELECT
+	now(), now(), b.patchid, s.changeid 
+FROM tm_patch_changeid b, tm_change s WHERE b.changeid = s.name;
+
+# -----------------------------------------------------------------------------	
+
+# tm_bug_address
+CREATE TABLE tm_address (
+	created datetime,
+	modified datetime,
+	addressid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
+	name varchar(100) NOT NULL,
+	PRIMARY KEY (addressid),
+	UNIQUE tm_address_name_u (name)
+);
+
+ALTER TABLE tm_bug_address RENAME tm_bug_address_data;
+ALTER TABLE tm_group_address RENAME tm_group_address_data;
+
+CREATE TABLE tm_bug_address (
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	addressid int(20)
+);
+
+CREATE TABLE tm_group_address (
+	created datetime,
+	modified datetime,
+	groupid varchar(20),
+	addressid int(20)
+);
+
+INSERT INTO tm_address SELECT DISTINCT 
+	now(), now(), NULL, address 
+FROM tm_bug_address_data;
+
+UPDATE tm_address SET name = 'unknown' WHERE addressid = '1' AND name NOT LIKE '%_\@_%';
+
+# tm_(bug|group)_address will be inserted via ~/scripts/bugfix
+
+# -----------------------------------------------------------------------------	
+
+# tm_bug_parent
+CREATE TABLE tm_bug_parent (
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	parentid varchar(12)
+);
+
+CREATE TABLE tm_bug_child (
+	created datetime,
+	modified datetime,
+	bugid varchar(12),
+	childid varchar(12)
+);
+
+INSERT INTO tm_bug_parent SELECT
+	now(), now(), childid, parentid
+FROM tm_parent_child; 
+
+INSERT INTO tm_bug_child SELECT
+	now(), now(), parentid, childid
+FROM tm_parent_child; 
+
+# -----------------------------------------------------------------------------	
+
+ALTER TABLE tm_bug DROP category;
+ALTER TABLE tm_bug CHANGE ts modified datetime;
+ALTER TABLE tm_bug_message CHANGE ts modified datetime;
+ALTER TABLE tm_bug_note CHANGE ts modified datetime;
+ALTER TABLE tm_bug_patch CHANGE ts modified datetime;
+ALTER TABLE tm_bug_test CHANGE ts modified datetime;
+ALTER TABLE tm_bugid CHANGE ts modified datetime;
+ALTER TABLE tm_group CHANGE ts modified datetime;
+ALTER TABLE tm_group_bug CHANGE ts modified datetime;
+ALTER TABLE tm_group_user CHANGE ts modified datetime;
+ALTER TABLE tm_log CHANGE ts modified datetime;
+ALTER TABLE tm_message CHANGE ts modified datetime;
+ALTER TABLE tm_note CHANGE ts modified datetime;
+ALTER TABLE tm_patch CHANGE ts modified datetime;
+ALTER TABLE tm_range CHANGE ts modified datetime;
+ALTER TABLE tm_test CHANGE ts modified datetime;
+ALTER TABLE tm_user CHANGE ts modified datetime;
+ALTER TABLE tm_user_bug CHANGE ts modified datetime;
+
+# -----------------------------------------------------------------------------	
+

@@ -1,0 +1,18 @@
+Subject: -h -o 
+To: perlbug@perl.com
+Cc: perlbug@perl.com
+Cc: perlbug@perl.com
+Cc: perlbug@perl.com
+Cc: perlbug@perl.com
+From: "Richard Foley" <perlbug@rfi.net>
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+
+Gruesse
+
+trim_to 
+
+should fail with To and Cc's
+
+Ciao
+---
+Sig here

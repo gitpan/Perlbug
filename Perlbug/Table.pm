@@ -1,6 +1,6 @@
 # Perlbug Table access  
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id$ 
+# $Id: Table.pm,v 1.1 2000/11/27 08:00:48 perlbug Exp $ 
 #
 
 package Perlbug::Table;

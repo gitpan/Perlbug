@@ -1,0 +1,144 @@
+# rjsf: fixes for duff data and mods to db.
+
+UPDATE tm_user set userid = 'alanb', password='pbrBauttBz1Ls' WHERE userid = 'alanb';
+DELETE FROM tm_user where userid = 'MYUSERID';
+
+INSERT INTO tm_group SET created=SYSDATE(), modified=SYSDATE(), groupid=NULL, name='dailybuild', description='perl daily builds';
+INSERT INTO tm_group SET created=SYSDATE(), modified=SYSDATE(), groupid=NULL, name='configure', description='configure issues';
+
+INSERT INTO tm_status SET created=SYSDATE(), modified=SYSDATE(), statusid=NULL, name='incapable';
+
+# tm_log
+ALTER TABLE tm_log CHANGE objecttype objecttype varchar(16);
+UPDATE tm_log set userid = 'richadf', objectid = 'b' WHERE userid = '' AND objectid = 't';	
+UPDATE tm_log set objecttype = 'bug' where objecttype = 'b';
+UPDATE tm_log set objecttype = 'change' where objecttype = 'c';
+UPDATE tm_log set objecttype = 'fixed' where objecttype = 'f';
+UPDATE tm_log set objecttype = 'group' where objecttype = 'g';
+UPDATE tm_log set objecttype = 'message' where objecttype = 'm';
+UPDATE tm_log set objecttype = 'note' where objecttype = 'n';
+UPDATE tm_log set objecttype = 'patch' where objecttype = 'p';
+UPDATE tm_log set objecttype = 'relation' where objecttype = 'r';
+UPDATE tm_log set objecttype = 'test' where objecttype = 't';
+UPDATE tm_log set objecttype = 'user' where objecttype = 'u';
+UPDATE tm_log set objecttype = 'relation' where objecttype = 'x';
+
+
+# msg(header|body)->(header|body)
+ALTER TABLE tm_bug CHANGE msgheader header blob;
+ALTER TABLE tm_bug CHANGE msgbody body blob;
+
+ALTER TABLE tm_patch CHANGE msgheader header blob;
+ALTER TABLE tm_patch CHANGE msgbody body blob;
+
+ALTER TABLE tm_note CHANGE msgheader header blob;
+ALTER TABLE tm_note CHANGE msgbody body blob;
+
+ALTER TABLE tm_test CHANGE msgheader header blob;
+ALTER TABLE tm_test CHANGE msgbody body blob;
+
+ALTER TABLE tm_message CHANGE msgheader header blob;
+ALTER TABLE tm_message CHANGE msgbody body blob;
+
+# Thing
+CREATE TABLE tm_thing ( # application hints 
+	created datetime,
+	ts timestamp(14),
+	thingid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+	type varchar(16),
+	name varchar(25) DEFAULT '' NOT NULL,
+	description varchar(150),
+	PRIMARY KEY (thingid)
+);
+
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='bug', type='object', description='Bug... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='note', type='object', description='Note... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='patch', type='object', description='Patch... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='test', type='object', description='Test... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='user', type='object', description='User... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='group', type='object', description='Group... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='message', type='object', description='Message... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='parent', type='object', description='Parent is a Bug ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='child', type='object', description='Child is a Bug ';
+
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='status', type='attribute', description='Status... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='project', type='attribute', description='Project... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='severity', type='attribute', description='Severity... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='osname', type='attribute', description='Osname... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='change', type='attribute', description='Change ... ';
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='version', type='attribute', description='Version... ';
+
+INSERT INTO tm_thing SET created=SYSDATE(), thingid=NULL, name='template', type='format', description='Template... ';
+
+# Product 
+CREATE TABLE tm_project (
+	created datetime,
+	ts timestamp(14),
+	projectid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+	name varchar(25) DEFAULT '' NOT NULL,
+	description varchar(150),
+	PRIMARY KEY (projectid)
+);
+
+INSERT INTO tm_project SET created=SYSDATE(), projectid=NULL, name='perl4', description='Perl 4';
+INSERT INTO tm_project SET created=SYSDATE(), projectid=NULL, name='perl5', description='Perl 5'; # 2
+INSERT INTO tm_project SET created=SYSDATE(), projectid=NULL, name='perl6', description='Perl 6';
+
+CREATE TABLE tm_project_bug (
+	created datetime,
+	ts timestamp(14),
+	projectid smallint(5),
+	bugid varchar(16)
+);
+
+INSERT INTO tm_project_bug SELECT SYSDATE(), SYSDATE(), 2, bugid FROM tm_bug; 
+
+
+# Format 
+CREATE table tm_template (
+	created datetime,
+	ts timestamp(14),
+	templateid bigint(20) unsigned NOT NULL auto_increment,
+	name varchar(16), 
+	description varchar(150), 
+	subject varchar(100),		
+	sourceaddr varchar(100),	
+	toaddr varchar(100),
+	header blob,		
+	body blob,
+	PRIMARY KEY (templateid)
+); 
+
+ALTER TABLE tm_address DROP INDEX tm_address_name_u;
+ALTER TABLE tm_change DROP INDEX tm_change_name_u;
+ALTER TABLE tm_bug DROP INDEX tm_bug_subject;
+ALTER TABLE tm_bug DROP INDEX tm_bug_sourceaddr_i;
+ALTER TABLE tm_bug DROP INDEX tm_bug_toaddr_i;
+ALTER TABLE tm_bugid DROP INDEX tm_bug_id_i;
+ALTER TABLE tm_group DROP INDEX tm_group_id_i; 
+ALTER TABLE tm_log DROP INDEX tm_log_id_i; 
+ALTER TABLE tm_message DROP INDEX tm_message_id_i; 
+ALTER TABLE tm_message DROP INDEX tm_subject_i; 
+ALTER TABLE tm_message DROP INDEX tm_message_sourceaddr_i; 
+ALTER TABLE tm_message DROP INDEX tm_message_toaddr_i; 
+ALTER TABLE tm_note DROP INDEX tm_note_id_i; 
+ALTER TABLE tm_osname DROP INDEX tm_osname_name_u; 
+ALTER TABLE tm_patch DROP INDEX tm_path_id_i; 
+ALTER TABLE tm_severity DROP INDEX tm_severity_name_u; 
+ALTER TABLE tm_status DROP INDEX tm_status_name_u;
+ALTER TABLE tm_test DROP INDEX tm_test_id_i;
+ALTER TABLE tm_user DROP INDEX tm_user_id_i;
+ALTER TABLE tm_version DROP INDEX tm_version_name_u;
+
+# yek... template_user|user_template && type_template|template_type etc..? 
+# the application can do this for now, as before, will sort it out sometime
+#CREATE_TABLE tm_template_user_type (
+#	created datetime,
+#	ts timestamp(14),
+#	templateid smallint(5),
+#	userid varchar(16),
+#	thingid smallint(5)
+#);
+
+
+

@@ -1,0 +1,311 @@
+NAME
+    Webhelp - help for the web interface
+
+DESCRIPTION
+    Help for users of the web interface, searching, objects and their
+    fields, etc.
+
+SEARCH
+    mask
+        The search mask has no pre-selected entries, click query and an
+        indiscriminate list of all the bugs in the database will be
+        returned.
+
+        Filterering is achieved by selecting options from the popup menus,
+        or entering data in the text fields, as described below.
+
+        Once an item is returned for viewing, links to it's constituent
+        parts may be followed.
+
+        The following describe fields not described under the OBJECTS entry
+        elsewhere in this document below.
+
+    admin
+        List of active administrators who are registered against 1 or more
+        bugs.
+
+    and_or
+        Boolean switch to decide whether or not to AND or to OR the query
+        fields together, in the creation of the SQL search query.
+
+    asc_desc
+        Determine whether to return records found in ASCENDING or DESCENDING
+        order.
+
+    dates
+        Restrict records created on or after the selected date.
+
+        Note that you can also construct a query to retrieve the bugs since
+        this Christmas by using something of the form:
+
+                http://bugs.perl.org/perlbug/perlbug.cgi?req=date&date=20001225
+
+        Usage of a valid 8 figure date is recommended, otherwise you're on
+        your own :-)
+
+    format
+        Determine the display format of the records found. This for example,
+        means you can still get an ascii list (for applying a script
+        against, perhaps), even while using the web frontend which naturally
+        has the default return format in HTML form.
+
+    message_id
+        The contents of the actual Message-Id: field belonging to each bug
+        or reply.
+
+    restrict
+        Restrict the number of found records to the given number. Also
+        divides the remainder up into similarly sized chunks for convenient
+        browsing thereafter.
+
+    show_sql
+        Display the SQL executed. This may help to pinpoint problems where
+        searches are not returning expected results.
+
+    wildcards
+        All text fields are searched using the SQL LIKE operator. the bugid,
+        noteid, patchid, testid, version, and change entries elsewhere in
+        this document and /fixed fields are used as seen, that is, if a
+        wildcard is not provided, one will not be used.
+
+        Conversly subject, body and source address fields have '%'
+        pre-placed around the search query by default.
+
+        What this means is that entering '20001122.', in the bugid field,
+        will probably not return much, but '20001122.%'' might. Of course a
+        complete bugid could be entered on it's own eg: '20001122.003'
+        Whereas entering only strict in the subject field will still use
+        '%strict%' during the search.
+
+        The available SQL wildcards: any single character '_' and none or
+        more characters '%' are allowed in all fields. Note also that for
+        convenience(?), an asterisk('*') will be simply mapped to the sql
+        wildcard '%''.
+
+        N.B. It can be a good idea to use the the show_sql entry elsewhere
+        in this document switch to display what's being searched for.
+
+    retrieval
+        Bugs are initially returned in either list or block format, with an
+        optional trimming mechanism which defaults to 25. At the base of the
+        page is a list of all the other bugs found during the query,
+        sectioned into similarly managable portions. The list format is
+        designed for quickly moving around a list of bugs, while the block
+        format is aimed at finding all information relating to said bug,
+        without having to hop around.
+
+        the DESCRIPTION manpage
+
+OBJECTS
+    Certain fields are common to all objects:
+
+    created
+        The date this record was created in the database.
+
+    modified
+        The date this record was in some way modified.
+
+    history
+        The list of all modifications to each item, and who submitted them.
+
+BUG
+    The main potato:
+
+    bugid
+        The internally generated bugid.
+
+    subject
+        The subject line of the original report.
+
+    source_addr
+        Usually the From: address of the original report.
+
+    body
+        The body of the original message which generated the bug report.
+
+        During a web search, the bodies of all messages in the database will
+        be inspected, unless the boolean the and_or entry elsewhere in this
+        document switch AND is selected whereby the search criteria is
+        narrowed down.
+
+    status
+        The status of the bug, with the following options:
+
+            abandoned   -       no longer worked on
+
+            busy        -       currently being looked at by an administrator
+
+            closed      -       considered fixed
+
+            duplicate   -       a report erroneously filed a second time
+
+            ok          -       a 'build reported OK:' report, (not the same as closed)
+
+            onhold      -       undecided as to whether this is a bug or not
+
+            open        -       undealt with, needing attention
+
+    category
+        The category of the bug has the following options:
+
+            bounce      -       report had invalid format, common with spam mail
+
+            core        -       central functionality affected
+
+            docs        -       not a code bug, a docs bug (or typo)
+
+            install     -       bug in the installation procedure
+
+            library     -       not a central routine, rather a library or module bug
+
+            notabug     -       at all, could be misread instructions or even spam
+
+            patch       -       this fixed another bug
+
+            unknown     -       first port of call, bug usually assigned to another valid group 
+
+            utilities   -       a utility function misbehaved
+
+    severity
+        The severity of the bug has the following options, in descending
+        order or severity:
+
+            fatal       -       top priority!
+
+            high        -       non-fatal, but has to be fixed quickly
+
+            medium      -       should be fixed soon
+
+            low         -       would be good to fix when time permits
+
+            wishlist    -       would be nice to have someone look at this sometime
+
+            none        -       a bit like 'wishlist' but more so
+
+    osname
+        The name of the operating system this report was generated on:
+
+        Many differing values possible.
+
+                aix, dec, hpux, irix, linux, macos, next, os2, solaris, vms, winnt, etc.
+
+                ...     
+        
+    project
+        The Project, which currently uses the
+
+                perl4           - once 
+
+                perl5           - and [now]
+
+                perl6           - future
+
+                ...
+
+    VERSIONING
+        There are several field relating to versions, patches, changes which
+        may at first be somewhat inter-related.
+
+    version
+        The version against which this report was first noticed/generated.
+
+        Typically has one of the following forms:
+
+                5
+
+                5.0053
+
+                5.00.5.3
+
+                5.6
+
+                5.6.0
+
+                5.7.1
+
+                ...
+
+    fixed
+        The version in which this bug was fixed, same format as the version
+        entry elsewhere in this document above.
+
+    change
+        The changeID of the target source for the fix. this is an external
+        reference about which we know very little.
+
+        Typically has one of the following forms:
+
+                5
+
+                5810
+
+                0053
+
+                ...
+
+    history
+        History of administrative operations against this bug, changes of
+        status/category, etc..
+
+    cc  List of email addresses for this bug. Will contain the source
+        address, any adminitrator who has modified the bug record, and any
+        people who have been on the Cc: list of any of the messages assigned
+        to this bug.
+
+    messagids
+        The internal-ids of messages belonging to this bug (replies).
+
+        Not to be confused with the externally supplied the message_id entry
+        elsewhere in this document's of each email.
+
+    parent
+        The the bugid entry elsewhere in this document of any other bug to
+        which this bug may belong.
+
+    child
+        The the bugid entry elsewhere in this document of any other bug
+        which belongs to this bug.
+
+    the DESCRIPTION manpage
+
+NOTE
+    An administrator can assign a note to a bug when he/she modifies it.
+
+    note
+        The body of the note.
+
+    noteid
+        The internally generated noteid.
+
+    the DESCRIPTION manpage
+
+PATCH
+    A bug may be fixed by a patch, this can be assigned along with a the
+    changeid entry elsewhere in this document.
+
+    Bear in mind the difference between the internally generated /patchid
+    and the externally offered /changeid.
+
+    patch
+        The body of the patch.
+
+    patchid
+        The internally generated patchid.
+
+    the DESCRIPTION manpage
+
+TEST
+    A test may be assigned to a bug, if the test succeeds the bug may be
+    regarded as fixed.
+
+    test
+        The body of the test.
+
+    testid
+        The internally generated testid.
+
+    the DESCRIPTION manpage
+
+AUTHOR
+    Richard Foley <richard@rfi.net> 2001
+

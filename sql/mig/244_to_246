@@ -1,0 +1,44 @@
+# rjsf: tm -> pb 
+
+ALTER TABLE tm_address RENAME pb_address;
+ALTER TABLE tm_bug RENAME pb_bug;                
+ALTER TABLE tm_bug_address RENAME pb_bug_address;        
+ALTER TABLE tm_bug_change RENAME pb_bug_change;         
+ALTER TABLE tm_bug_child RENAME pb_bug_child;          
+ALTER TABLE tm_bug_fixed RENAME pb_bug_fixed; 
+ALTER TABLE tm_bug_message RENAME pb_bug_message;                 
+ALTER TABLE tm_bug_note RENAME pb_bug_note;           
+ALTER TABLE tm_bug_osname RENAME pb_bug_osname;         
+ALTER TABLE tm_bug_parent RENAME pb_bug_parent;         
+ALTER TABLE tm_bug_patch RENAME pb_bug_patch;          
+ALTER TABLE tm_bug_severity RENAME pb_bug_severity;        
+ALTER TABLE tm_bug_status RENAME pb_bug_status;          
+ALTER TABLE tm_bug_test RENAME pb_bug_test;             
+ALTER TABLE tm_bug_version RENAME pb_bug_version;        
+ALTER TABLE tm_bugid RENAME pb_bugid;               
+ALTER TABLE tm_change RENAME pb_change;              
+ALTER TABLE tm_format RENAME pb_format;           
+ALTER TABLE tm_group RENAME pb_group;              
+ALTER TABLE tm_group_address RENAME pb_group_address;      
+ALTER TABLE tm_group_bug RENAME pb_group_bug;          
+ALTER TABLE tm_group_user RENAME pb_group_user;         
+ALTER TABLE tm_log RENAME pb_log;                
+ALTER TABLE tm_message RENAME pb_message;            
+ALTER TABLE tm_note RENAME pb_note;                
+ALTER TABLE tm_osname RENAME pb_osname;             
+ALTER TABLE tm_patch RENAME pb_patch;              
+ALTER TABLE tm_patch_change RENAME pb_patch_change;       
+ALTER TABLE tm_patch_version RENAME pb_patch_version;      
+ALTER TABLE tm_project RENAME pb_project;             
+ALTER TABLE tm_project_bug RENAME pb_project_bug;        
+ALTER TABLE tm_range RENAME pb_range;              
+ALTER TABLE tm_severity RENAME pb_severity;           
+ALTER TABLE tm_status RENAME pb_status;             
+ALTER TABLE tm_test RENAME pb_test;                
+ALTER TABLE tm_test_version RENAME pb_test_version;       
+ALTER TABLE tm_thing RENAME pb_thing;             
+ALTER TABLE tm_user RENAME pb_user;              
+ALTER TABLE tm_user_bug RENAME pb_user_bug;           
+ALTER TABLE tm_version RENAME pb_version;            
+
+

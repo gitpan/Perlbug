@@ -1,0 +1,36 @@
+# Don't include these files in standard Perlbug distribution
+# $Id: MANIFEST.SKIP,v 1.9 2001/03/03 14:54:40 perlbug Exp $
+
+^\.\w+
+~$
+
+blib
+Desktop
+Makefile$
+mbox
+misc
+Perlbug\-\d+
+RCS
+tags
+ute
+
+\w+\.SKIP
+\w+\.(gz|tar|tgz)\.\w+
+\w+\.bak$
+\w+\.dat$
+\w+\.dis$
+\w+\.frk$
+\w+\.gz$
+\w+\.log$
+\w+\.old$
+\w+\.orig$
+\w+\.tar$
+\w+\.tgz$
+\w+\.res$
+\w+\.rng$
+\w+\.swp$
+\w+\.sql\.\d+$
+\w+\.tmp$
+\w+\.TOC$
+
+# .

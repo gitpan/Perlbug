@@ -1,0 +1,7 @@
+ 
+Perlbug SQL migration files
+
+version to version
+
+drop_duff_tables may be used against any latest installation
+

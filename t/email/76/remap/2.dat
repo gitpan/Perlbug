@@ -1,0 +1,12 @@
+To: fictitious_perlbug@perl.org
+Cc: "not seen before" <fictitious_perlbug@perl.org>
+Cc: "never seen" fictitious_perlbug@perl.org
+
+Gruesse
+
+Should not remap to perl5-porters@perl.org duff address
+
+Ciao
+--
+sig
+

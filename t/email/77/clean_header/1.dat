@@ -1,0 +1,8 @@
+Subject: -h -o 
+To: someplace@else.com
+From: "Richard Foley" <perlbug@rfi.net>
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+
+some stuff
+---
+sig

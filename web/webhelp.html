@@ -1,0 +1,460 @@
+<HTML>
+<HEAD>
+<TITLE>Webhelp - help for the web interface</TITLE>
+<LINK REV="made" HREF="mailto:root@pc026991.otn.m.dasa.de">
+</HEAD>
+
+<BODY>
+
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#NAME">NAME </A>
+	<LI><A HREF="#DESCRIPTION">DESCRIPTION</A>
+	<LI><A HREF="#SEARCH">SEARCH </A>
+	<LI><A HREF="#OBJECTS">OBJECTS</A>
+	<LI><A HREF="#BUG">BUG</A>
+	<LI><A HREF="#NOTE">NOTE</A>
+	<LI><A HREF="#PATCH">PATCH</A>
+	<LI><A HREF="#TEST">TEST</A>
+	<LI><A HREF="#AUTHOR">AUTHOR</A>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="NAME">NAME</A></H1>
+<P>
+Webhelp - help for the web interface
+
+<P>
+<HR>
+<H1><A NAME="DESCRIPTION">DESCRIPTION</A></H1>
+<P>
+Help for users of the web interface, searching, objects and their fields,
+etc.
+
+<P>
+<HR>
+<H1><A NAME="SEARCH">SEARCH</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_mask">mask</A></STRONG><DD>
+<P>
+The search mask has no pre-selected entries, click <STRONG>query</STRONG> and an indiscriminate list of all the bugs in the database will be
+returned.  
+
+<P>
+Filterering is achieved by selecting options from the popup menus, or
+entering data in the text fields, as described below.
+
+<P>
+Once an item is returned for viewing, links to it's constituent parts may
+be followed.
+
+<P>
+The following describe fields not described under <A HREF="#OBJECTS">OBJECTS</A> below.
+
+<DT><STRONG><A NAME="item_admin">admin</A></STRONG><DD>
+<P>
+List of active administrators who are registered against 1 or more bugs.
+
+<DT><STRONG><A NAME="item_and_or">and_or</A></STRONG><DD>
+<P>
+Boolean switch to decide whether or not to <STRONG>AND</STRONG> or to <STRONG>OR</STRONG> the query fields together, in the creation of the SQL search query.
+
+<DT><STRONG><A NAME="item_asc_desc">asc_desc</A></STRONG><DD>
+<P>
+Determine whether to return records found in <STRONG>ASCENDING</STRONG> or <STRONG>DESCENDING</STRONG> order.
+
+<DT><STRONG><A NAME="item_dates">dates</A></STRONG><DD>
+<P>
+Restrict records created on or after the selected date.
+
+<P>
+Note that you can also construct a query to retrieve the bugs since this
+Christmas by using something of the form:
+
+<P>
+<PRE>        <A HREF="http://bugs.perl.org/perlbug/perlbug.cgi?req=date&amp">http://bugs.perl.org/perlbug/perlbug.cgi?req=date&amp</A>;date=20001225
+</PRE>
+<P>
+Usage of a valid <STRONG>8</STRONG> figure date is recommended, otherwise you're on your own :-)
+
+<DT><STRONG><A NAME="item_format">format</A></STRONG><DD>
+<P>
+Determine the display format of the records found. This for example, means
+you can still get an ascii list (for applying a script against, perhaps),
+even while using the web frontend which naturally has the default return
+format in <STRONG>HTML</STRONG> form.
+
+<DT><STRONG><A NAME="item_message_id">message_id</A></STRONG><DD>
+<P>
+The contents of the actual Message-Id: field belonging to each bug or
+reply.
+
+<DT><STRONG><A NAME="item_restrict">restrict</A></STRONG><DD>
+<P>
+Restrict the number of found records to the given number. Also divides the
+remainder up into similarly sized chunks for convenient browsing
+thereafter.
+
+<DT><STRONG><A NAME="item_show_sql">show_sql</A></STRONG><DD>
+<P>
+Display the <STRONG>SQL</STRONG> executed. This may help to pinpoint problems where searches are not
+returning expected results.
+
+<DT><STRONG><A NAME="item_wildcards">wildcards</A></STRONG><DD>
+<P>
+All text fields are searched using the SQL <STRONG>LIKE</STRONG> operator. 
+<A HREF="#bugid">bugid</A>, <A HREF="#noteid">noteid</A>, <A HREF="#patchid">patchid</A>, <A HREF="#testid">testid</A>, <A HREF="#version">version</A>, <A HREF="#change">change</A> and <STRONG>/fixed</STRONG> fields are used as seen, that is, if a wildcard is not provided, one will
+not be used.
+
+<P>
+Conversly <STRONG>subject</STRONG>, <STRONG>body</STRONG> and <STRONG>source address</STRONG> fields have <CODE>%</CODE> pre-placed around the search query by default.
+
+<P>
+What this means is that entering <CODE>20001122.</CODE>, in the bugid field, will probably not return much, but <CODE>20001122.%</CODE>' might. Of course a complete bugid could be entered on it's own eg: <CODE>20001122.003</CODE>
+Whereas entering only <STRONG>strict</STRONG> in the subject field will still use <CODE>%strict%</CODE> during the search.
+
+<P>
+The available SQL wildcards: <STRONG>any single character</STRONG>  <CODE>_</CODE> and <STRONG>none or more characters</STRONG>  <CODE>%</CODE> are allowed in all fields. Note also that for <CODE>convenience(?),</CODE>
+an <CODE>asterisk(</CODE><CODE>*</CODE>) will be simply mapped to the sql wildcard <CODE>%</CODE>'.
+
+<P>
+N.B. It can be a good idea to use the <A HREF="#show_sql">show_sql</A> switch to display what's being searched for. 
+
+<DT><STRONG><A NAME="item_retrieval">retrieval</A></STRONG><DD>
+<P>
+Bugs are initially returned in either <STRONG>list</STRONG> or <STRONG>block</STRONG> format, with an optional trimming mechanism which defaults to 25. At the
+base of the page is a list of all the other bugs found during the query,
+sectioned into similarly managable portions. The list format is designed
+for quickly moving around a list of bugs, while the block format is aimed
+at finding all information relating to said bug, without having to hop
+around.
+
+<P>
+<A HREF="#DESCRIPTION">DESCRIPTION</A>
+
+
+
+</DL>
+<P>
+<HR>
+<H1><A NAME="OBJECTS">OBJECTS</A></H1>
+<P>
+Certain fields are common to all objects:
+
+<DL>
+<DT><STRONG><A NAME="item_created">created</A></STRONG><DD>
+<P>
+The date this record was created in the database.
+
+<DT><STRONG><A NAME="item_modified">modified</A></STRONG><DD>
+<P>
+The date this record was in some way modified.
+
+<DT><STRONG><A NAME="item_history">history</A></STRONG><DD>
+<P>
+The list of all modifications to each item, and who submitted them.
+
+</DL>
+<P>
+<HR>
+<H1><A NAME="BUG">BUG</A></H1>
+<P>
+The main potato:
+
+<DL>
+<DT><STRONG><A NAME="item_bugid">bugid</A></STRONG><DD>
+<P>
+The internally generated bugid.
+
+<DT><STRONG><A NAME="item_subject">subject</A></STRONG><DD>
+<P>
+The subject line of the original report.
+
+<DT><STRONG><A NAME="item_source_addr">source_addr</A></STRONG><DD>
+<P>
+Usually the <STRONG>From:</STRONG> address of the original report.
+
+<DT><STRONG><A NAME="item_body">body</A></STRONG><DD>
+<P>
+The body of the original message which generated the bug report.
+
+<P>
+During a web search, the bodies of all messages in the database will be
+inspected, unless the boolean <A HREF="#and_or">and_or</A> switch <STRONG>AND</STRONG> is selected whereby the search criteria is narrowed down.
+
+<DT><STRONG><A NAME="item_status">status</A></STRONG><DD>
+<P>
+The status of the bug, with the following options:
+
+<P>
+<PRE>    abandoned   -       no longer worked on
+</PRE>
+<P>
+<PRE>    busy        -       currently being looked at by an administrator
+</PRE>
+<P>
+<PRE>    closed      -       considered fixed
+</PRE>
+<P>
+<PRE>    duplicate   -       a report erroneously filed a second time
+</PRE>
+<P>
+<PRE>    ok          -       a 'build reported OK:' report, (not the same as closed)
+</PRE>
+<P>
+<PRE>    onhold      -       undecided as to whether this is a bug or not
+</PRE>
+<P>
+<PRE>    open        -       undealt with, needing attention
+</PRE>
+<DT><STRONG><A NAME="item_category">category</A></STRONG><DD>
+<P>
+The category of the bug has the following options:
+
+<P>
+<PRE>    bounce      -       report had invalid format, common with spam mail
+</PRE>
+<P>
+<PRE>    core        -       central functionality affected
+</PRE>
+<P>
+<PRE>    docs        -       not a code bug, a docs bug (or typo)
+</PRE>
+<P>
+<PRE>    install     -       bug in the installation procedure
+</PRE>
+<P>
+<PRE>    library     -       not a central routine, rather a library or module bug
+</PRE>
+<P>
+<PRE>    notabug     -       at all, could be misread instructions or even spam
+</PRE>
+<P>
+<PRE>    patch       -       this fixed another bug
+</PRE>
+<P>
+<PRE>    unknown     -       first port of call, bug usually assigned to another valid group 
+</PRE>
+<P>
+<PRE>    utilities   -       a utility function misbehaved
+</PRE>
+<DT><STRONG><A NAME="item_severity">severity</A></STRONG><DD>
+<P>
+The severity of the bug has the following options, in descending order or <STRONG>severity</STRONG>:
+
+<P>
+<PRE>    fatal       -       top priority!
+</PRE>
+<P>
+<PRE>    high        -       non-fatal, but has to be fixed quickly
+</PRE>
+<P>
+<PRE>    medium      -       should be fixed soon
+</PRE>
+<P>
+<PRE>    low         -       would be good to fix when time permits
+</PRE>
+<P>
+<PRE>    wishlist    -       would be nice to have someone look at this sometime
+</PRE>
+<P>
+<PRE>    none        -       a bit like 'wishlist' but more so
+</PRE>
+<DT><STRONG><A NAME="item_osname">osname</A></STRONG><DD>
+<P>
+The name of the operating system this report was generated on:
+
+<P>
+Many differing values possible.
+
+<P>
+<PRE>        
+        aix, dec, hpux, irix, linux, macos, next, os2, solaris, vms, winnt, etc.
+</PRE>
+<P>
+<PRE>        ...     
+        
+</PRE>
+<DT><STRONG><A NAME="item_project">project</A></STRONG><DD>
+<P>
+The Project, which currently uses the
+
+<P>
+<PRE>        perl4           - once 
+</PRE>
+<P>
+<PRE>        perl5           - and [now]
+</PRE>
+<P>
+<PRE>        perl6           - future
+</PRE>
+<P>
+<PRE>        ...
+</PRE>
+<DT><STRONG><A NAME="item_VERSIONING">VERSIONING</A></STRONG><DD>
+<P>
+There are several field relating to versions, patches, changes which may at
+first be somewhat inter-related.
+
+<DT><STRONG><A NAME="item_version">version</A></STRONG><DD>
+<P>
+The version against which this report was first noticed/generated.
+
+<P>
+Typically has one of the following forms:
+
+<P>
+<PRE>        5
+</PRE>
+<P>
+<PRE>        5.0053
+</PRE>
+<P>
+<PRE>        5.00.5.3
+</PRE>
+<P>
+<PRE>        5.6
+</PRE>
+<P>
+<PRE>        5.6.0
+</PRE>
+<P>
+<PRE>        5.7.1
+</PRE>
+<P>
+<PRE>        ...
+</PRE>
+<DT><STRONG><A NAME="item_fixed">fixed</A></STRONG><DD>
+<P>
+The version in which this bug was fixed, same format as <A HREF="#version">version</A> above.
+
+<DT><STRONG><A NAME="item_change">change</A></STRONG><DD>
+<P>
+The changeID of the target source for the fix. this is an external
+reference about which we know very little.
+
+<P>
+Typically has one of the following forms: 5
+
+<P>
+<PRE>        5810
+</PRE>
+<P>
+<PRE>        0053
+</PRE>
+<P>
+<PRE>        ...
+</PRE>
+<DT><STRONG>history</STRONG><DD>
+<P>
+History of administrative operations against this bug, changes of
+status/category, etc..
+
+<DT><STRONG><A NAME="item_cc">cc</A></STRONG><DD>
+<P>
+List of email addresses for this bug. Will contain the source address, any
+adminitrator who has modified the bug record, and any people who have been
+on the <STRONG>Cc:</STRONG> list of any of the messages assigned to this bug.
+
+<DT><STRONG><A NAME="item_messagids">messagids</A></STRONG><DD>
+<P>
+The internal-ids of messages belonging to this bug (replies).
+
+<P>
+Not to be confused with the externally supplied <A HREF="#message_id">message_id</A>'s of each email.
+
+<DT><STRONG><A NAME="item_parent">parent</A></STRONG><DD>
+<P>
+The <A HREF="#bugid">bugid</A> of any other bug to which this bug may <STRONG>belong</STRONG>.
+
+<DT><STRONG><A NAME="item_child">child</A></STRONG><DD>
+<P>
+The <A HREF="#bugid">bugid</A> of any other bug which belongs to this bug.
+
+</DL>
+<P>
+<A HREF="#DESCRIPTION">DESCRIPTION</A>
+
+
+
+<P>
+<HR>
+<H1><A NAME="NOTE">NOTE</A></H1>
+<P>
+An administrator can assign a note to a bug when he/she modifies it.
+
+<DL>
+<DT><STRONG><A NAME="item_note">note</A></STRONG><DD>
+<P>
+The body of the note.
+
+<DT><STRONG><A NAME="item_noteid">noteid</A></STRONG><DD>
+<P>
+The internally generated noteid.
+
+</DL>
+<P>
+<A HREF="#DESCRIPTION">DESCRIPTION</A>
+
+
+
+<P>
+<HR>
+<H1><A NAME="PATCH">PATCH</A></H1>
+<P>
+A bug may be fixed by a <STRONG>patch</STRONG>, this can be assigned along with a <A HREF="#changeid">changeid</A>.
+
+<P>
+Bear in mind the difference between the internally generated <STRONG>/patchid</STRONG> and the externally offered <STRONG>/changeid</STRONG>.
+
+<DL>
+<DT><STRONG><A NAME="item_patch">patch</A></STRONG><DD>
+<P>
+The body of the patch.
+
+<DT><STRONG><A NAME="item_patchid">patchid</A></STRONG><DD>
+<P>
+The internally generated patchid.
+
+</DL>
+<P>
+<A HREF="#DESCRIPTION">DESCRIPTION</A>
+
+
+
+<P>
+<HR>
+<H1><A NAME="TEST">TEST</A></H1>
+<P>
+A test may be assigned to a bug, if the test succeeds the bug may be
+regarded as fixed.
+
+<DL>
+<DT><STRONG><A NAME="item_test">test</A></STRONG><DD>
+<P>
+The body of the test.
+
+<DT><STRONG><A NAME="item_testid">testid</A></STRONG><DD>
+<P>
+The internally generated testid.
+
+</DL>
+<P>
+<A HREF="#DESCRIPTION">DESCRIPTION</A>
+
+
+
+<P>
+<HR>
+<H1><A NAME="AUTHOR">AUTHOR</A></H1>
+<P>
+Richard Foley &lt;<A HREF="mailto:richard@rfi.net">richard@rfi.net</A>&gt;
+2001
+
+</BODY>
+
+</HTML>

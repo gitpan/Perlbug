@@ -1,6 +1,6 @@
 # Perlbug configuration data
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Config.pm,v 1.23 2000/09/01 11:50:02 perlbug Exp perlbug $
+# $Id: Config.pm,v 1.40 2001/04/21 20:48:48 perlbug Exp $
 #
 
 =head1 NAME
@@ -10,38 +10,37 @@ Perlbug::Config - Perlbug Configuration data handler
 =cut
 
 package Perlbug::Config;
-# use AutoLoader;
+use strict;
+use vars(qw($VERSION @ISA $AUTOLOAD));
+$VERSION = do { my @r = (q$Revision: 1.40 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+my $DEBUG = $ENV{'Perlbug_Config_DEBUG'} || $Perlbug::Config::DEBUG || '';
+$|=1;
+
 use Carp;
 use Data::Dumper;
 use FileHandle;
-use File::Spec; 
-use lib File::Spec->updir;
-use vars qw($AUTOLOAD $VERSION);
-$VERSION = 1.22;
-use strict;
-$|=1;
+use Perlbug; # for DEBUG
 
-my $CONFIG = $ENV{'Perlbug_Config'} || '/home/perlbug/config/Configuration';
+my $CONFIG = $ENV{'Perlbug_Config'} = $ENV{'Perlbug_Config'} || $Perlbug::Config || 
+	'/home/perlbug/config/Configuration'; # <-- !!! CHANGE THIS !!!
 
 
 =head1 DESCRIPTION
 
 Configuration data for the Perlbug bug tracking system.
 
-Be sure to set the 'Perlbug_SiteConfig' environment variable to the correct site configuration file, and/or fix the line above.
+Be sure to set the 'Perlbug_SiteConfig' environment variable to the correct site configuration file, and/or fix the line at the top of this module.
 
-Set methods are provided only for L<current()> parameters, the rest are all gettable only, and settable from the configuration file.
+Set methods are provided only for L<current()> parameters, the rest are all gettable only, and settable only from the configuration file.
 
 =head1 SYNOPSIS
 
 	my $o_conf = Perlbug::Config->new;
-	
-	my $debug = $o_conf->current('debug');				# 0 or as set in Configuration file
-	
-	my $new_debug = $o_conf->current('debug', 2);		# 2 !
 
-	my @current_data = $o_conf->get_keys('current'); 	# have a look
-
+	my $format = $o_conf->current('format');
+	
+	my $debug = $o_conf->current('debug');	
+	
 
 =head1 METHODS
 
@@ -57,19 +56,19 @@ Create new Config object with all prefs set.
 
 sub new {
     my $ref 	= shift;
-	my $class 	= ref($ref) || $ref;
-    my $self 	= undef;
-    my ($ok, $prefs) = get_config_data($CONFIG);
-    if ($ok == 1) {
-		($ok, $prefs) = update_data(\%{$prefs});
-		if ($ok == 1) {
-			($ok, $self) = check_data(\%{$prefs});
-		}
-	}
-	if (!$ok) {
-		croak("suspect Perlbug::Config data: ".Dumper($self));
-    }
+    my $class 	= ref($ref) || $ref;
+	my $self = { '_config' => '' };
     bless($self, $class);
+
+    my $h_data = $self->get_config_data($CONFIG);
+    $self->{'_config'} = $h_data = $self->update_data($h_data);
+    $self->prime_data($h_data);
+    $self->set_alarm($h_data);
+	croak("suspect Perlbug::Config data: ".Dumper($self->{'_config'})) 
+		unless keys %{$self->{'_config'}} >= 7; # ?
+
+	$DEBUG = $Perlbug::DEBUG || $DEBUG;
+	return $self;
 }
 
 
@@ -81,61 +80,20 @@ Retrieve data from site configuration file
 
 =cut
 
-sub get_config_data ($) {
-	my $file = (ref($_[0])) ? $_[1] : $_[0];
-	# check \w+ read, ...
-    my $fh 		= new FileHandle;
-    my %data 	= ();
-	my $ok 		= 1;
-    if (defined($fh)) {
-        if ($fh->open("< $file")) {
-			my @data = $fh->getlines;
-			foreach my $line (@data) {
-				next if $line =~ /^\#/;
-				next unless $line =~ /^\w+/; # 
-				if ($line =~ /^
-					(\w+)				# section 
-					\s+
-					([\w-]+)			# key
-					\s+
-					([\<\w_\.\@\=\/\'\"\%-\>]+)	# val
-					\s+\#\s*
-					(.*)				# comment
-				$/x) {	# 3 space separated
-	 				my ($sect, $key, $val, $comment) = ($1, $2, $3, $4);
-					chomp($comment);
-					$val =~ tr/%/ /;
-					carp("sect($sect), key($key), val($val), comments($comment)\n");
-					$data{uc($sect)}{$key} = $val;
-					# $data{uc($sect)}{$key.'_comment'} = $comment; 
-				} elsif ($line =~ /\,/) {
-					# space? and comma space? separated
-					my @bit = my ($sect, $key, $val, $comment) = split(/\s*,\s*/, $line, 4);
-					chomp($comment);
-					# carp("sect($sect), key($key), val($val), comments($comment)");
-					$data{uc($sect)}{$key} = $val;
-					# $data{uc($sect)}{$key.'_comment'} = $comment;
-				} else {
-					# $ok = 0;
-					carp("Perlbug::Config found funny looking line ($line)?");	
-				}
-			}
-	        	$fh->close;
-			if (keys %data >= 1) { 
-				# ok
-        	} else {
-			$ok = 0;
-            		croak("Failed to retrieve config data from open file($file)");
-        	}
-        } else {
-		$ok = 0;
-		croak("Can't open file($file) with fh($fh): $!");
-		}
-    } else {
-	$ok = 0;
-	croak("Can't get filehandle($fh) for config data file($file)");
+sub get_config_data {
+	my $self = shift;
+    my $file = shift;
+
+	my $h_data = {};
+
+    if (!(-e $file && -r _)) {
+		croak("Can't read file($file) for config data: $!");
+	} else {
+		$h_data = do $file;
+		croak("Duff data($h_data) from file($file)!") unless ref($h_data) eq 'HASH';
 	}
-	return ($ok, \%data);
+	
+	return $h_data;
 }
 
 
@@ -148,67 +106,106 @@ Update config data structure for current/local environment
 =cut
 
 sub update_data (\%) {
+	my $self = shift;
 	my $prefs = shift;
-	my $ok = 1;
-	my $TYPE    = 'cmd';
-	my %TYPE    = ( 'cmd' => 'cmd', 'cgi' => 'www', 'pl' => 'email' );
-	if ($0 =~ /\.(pl|cgi)$/) {
-    	$TYPE = $TYPE{$1};
+
+	if (ref($prefs) ne 'HASH') {
+		croak("Duff prefs($prefs) given to update_data");
+	} else {
+		my $TYPE  = ($0 =~ /\W_{0,1}(?:perl)*bug\.{0,1}(cgi|cron|db|fix|graph|hist|mail|obj|tk|tron)$/)
+			? $1 : 'xxx';	
+
+		my $DATE = &get_date;
+		my $spooldir = $$prefs{'DIRECTORY'}{'spool'};
+
+		$$prefs{'CURRENT'}{'log_file'} = $spooldir.'/logs/'   .$TYPE.'_'.$DATE.'.log';  # guess :-) 
+		$$prefs{'CURRENT'}{'tmp_file'} = $spooldir.'/temp/'   .$TYPE.'_'.$DATE.'_'.$$.'.tmp';    
+
+		$$prefs{'CURRENT'}{'admin'}    =  '';    
+		my $current = $ENV{'Perlbug_DEBUG'} || $Perlbug::DEBUG || $$prefs{'CURRENT'}{'debug'};
+		$$prefs{'CURRENT'}{'debug'}    = $Perlbug::DEBUG = $ENV{'Perlbug_DEBUG'} = $current;
+		$ENV{'PATH'}                   = $$prefs{'SYSTEM'}{'path'};
 	}
-	my $DATE = &get_date;
-	$$prefs{'CURRENT'}{'log_file'}  =  $TYPE.'_'.$DATE.'.log';  # guess :-) 
-    $$prefs{'CURRENT'}{'res_file'}  =  $TYPE.'_'.$DATE.'_'.$$.'.res';   
-    $$prefs{'CURRENT'}{'rng_file'}  =  $$.'.rng'; # www only    
-    $$prefs{'CURRENT'}{'tmp_file'}  =  $TYPE.'_'.$DATE.'_'.$$.'.tmp';    
-    $$prefs{'CURRENT'}{'rc_file'}   =  '.bugdb'; 
-	$$prefs{'CURRENT'}{'date'}      =  $DATE;                          
-	$$prefs{'CURRENT'}{'admin'}     =  '';    
-	#$$prefs{'CURRENT'}{'pwd'}		= $ENV{'PWD'}; 
-	#  
-	$Perlbug::Debug = $ENV{'Perlbug_Debug'} = $$prefs{'CURRENT'}{'debug'} = 
-		$Perlbug::Debug || $ENV{'Perlbug_Debug'} || $$prefs{'CURRENT'}{'debug'};                      
-	# 
-	(defined($$prefs{'SYSTEM'}{'path'})) && ($ENV{'PATH'} = $$prefs{'SYSTEM'}{'path'});
-	if ($$prefs{'CURRENT'}{'debug'} >= 2) {
-        # print STDERR Dumper($prefs);
-    }
-	return ($ok, $prefs);
+
+	return $prefs;
 }
 
 
-=item check_data
+=item prime_data
 
-Check config data structure
+Prime config data structure
 
-    my ($ok, $h_data) = check_data(\%data);
+    my ($ok, $h_data) = prime_data(\%data);
 
 =cut
 
-sub check_data (\%) {
+sub prime_data (\%) {
+	my $self = shift;
     my $data = shift;
-    my $ok = 1;
-	#
-	# placeholder
-	#
-	# carp("data given: ".Dumper($data));
-    # return undef unless ref($data) eq 'HASH';
-	# my %data = %{$data};
-	#
-    # check data structure
-    #
-    return ($ok, $data);
+	
+	foreach my $key (keys %{$data}) {
+		my $call = lc($key);
+		$call =~ s/^_(\w+)$/$1/;
+		$self->$call(); # prime
+	}
+	
+    return $data;
 }
+
+
+=item set_alarm
+
+Sets Perlbug alarm process so we don't go on for ever :-)
+
+=cut
+
+sub set_alarm (\%) {
+	my $self = shift;
+    my $h_ref = shift; 
+    my $set = ($0 =~ /.+?bug(db|fix|obj|tk)$/) # hist? 
+		? ($$h_ref{'SYSTEM'}{'timeout_interactive'} || 30)
+		: ($$h_ref{'SYSTEM'}{'timeout_auto'} || 13); 	  
+    eval { alarm($set) }; 
+    $SIG{'ALRM'} = sub { 
+        my $title = $$h_ref{'SYSTEM'}{'title'} || 'Perlbug(tron)';
+        my $addr  = $$h_ref{'SYSTEM'}{'maintainer'} || 'perlbug@rfi.net';
+        my $from  = $$h_ref{'EMAIL'}{'from'} || 'perlbugtron@bugs.perl.org'; 
+        my $alert = "$title ($$) timing out($set) (@_) $!";
+		carp($alert);
+        my $mail = qq|From: $title <$from>
+To: "$title maintainer" <$addr>
+Subject: $title timing out!
+
+$0 timed out for some reason:
+	$alert
+	ARGV(@ARGV)
+Ciao
+|;
+        open(SENDMAIL, "|/usr/lib/sendmail -t") or croak("Timeout can't fork a sendmail: $!\n");
+        print SENDMAIL $mail;
+        close(SENDMAIL) or croak("Timeout sendmail didn't close nicely :-(");      
+		print $alert;
+        kill('HUP', -$$);
+    };
+    return 1;
+}
+
+
+=head2 UTILITIES
+
+Certain utility methods are available against the configuration object
 
 
 =item get_date
 
 Returns common date for use throughout Perlbug.
 
-	my $date = get_date;     # -> 19980815
+	my $date = get_date;     # -> 19980815 - 20010728
 
 =cut
 
 sub get_date { 
+	my $self = shift;
     my @time  = localtime(time);
     my $year  = $time[5] + 1900; 
     my $month = sprintf('%02d', $time[4] + 1); 
@@ -219,192 +216,210 @@ sub get_date {
 
 =item get_keys
 
-Return list of keys of given key, ignoring comment fields.
+Return list of Config keys of given key
+
+	my @keys = $o_conf->get_keys('current'); 	# have a look
 
 =cut
 
 sub get_keys {
 	my $self = shift;
-	my %data = %{$self->{uc($_[0])}};
-	my @data = ();
-	foreach my $key (keys %data) {
-		next if $key =~ /_comment$/;
-		push(@data, $key);
-	}
+	my $tgt  = shift;
+
+	my @data = keys %{$self->{'_config'}{uc($tgt)}};
 	return @data;
-	return values %{$self->{uc($_[0])}};
 }
 
 
 =item get_vals
 
-Return list of values of given key, ignoring comment fields.
+Return list of Config values of given key
+
+	my @vals = $o_conf->get_vals('current'); 	# have a look
 
 =cut
 
 sub get_vals {
     my $self = shift;
-	my %data = %{$self->{uc($_[0])}};
-	my @data = ();
-	foreach my $key (keys %data) {
-		next if $key =~ /_comment$/;
-		push(@data, $data{$key});
-	}
+	my $tgt  = shift;
+
+	my @data = map { (ref($_) eq 'ARRAY') ? @{$_} : ($_) } values %{$self->{'_config'}{uc($tgt)}};
+
 	return @data;
-	return values %{$self->{uc($_[0])}};
 }
 
 
-=item dump
+=item get_all
 
-Returns prefs, via Data::Dumper for debugging, all if no argument given.
+Return mapping of each Config key=val
 
-Be sure to call it in a list context:
-
-    print $Conf->dump('system');
+	print $o_conf->get_all('current'); # -> context=ascii ...
 
 =cut
 
-sub dump {
+sub get_all {
     my $self = shift;
-    my @prefs = map { $self->{$_[0]} } grep(/uc($_[0])/, keys %{$self});
-    return Dumper(\@prefs);
-}
+	my $tgt  = shift;
 
-sub system {
-    my $self = shift;
-    return $self->{'SYSTEM'}{$_[0]};
-}
+	my %conf = %{$self->{'_config'}{uc($tgt)}};
 
-sub directory {
-    my $self = shift;
-    return $self->{'DIRECTORY'}{$_[0]};
-}
+	my @data = map { "$_=$conf{$_}" } keys %conf; 
 
-sub database {
-    my $self = shift;
-    return $self->{'DATABASE'}{$_[0]};
+	return @data;
 }
 
 
-=item current
+=item get_config
 
-Current modifiable environment.
+Return textual representation of config data
 
-Get
-    my $debuglevel = $o_obj->current('debug');
-
-Set
-    my $incremented = $o_obj->current('debug', $self->current('debug') + 1);
+	print $o_conf->get_config('system');
 
 =cut
 
-sub current {
+sub get_config {
     my $self = shift;
-	# print "called current(@_)\n";
-    my $args = shift;
-    my $val  = shift;
-    if (defined($val)) { # can set leer
-        # other checks?
-        if ($args =~ /^(\w{3})_file$/) { # setting new file?
-			undef $self->{'CURRENT'}{$1.'_fh'};
+	my $tgt  = shift;
+
+	my @keys = map { lc($_) } keys %{$self->{'_config'}};
+	my $ret  = $self->system('title')." $tgt configuration data: \n"; 
+
+	if (!($tgt =~ /\w+/ && grep(/^$tgt$/, @keys))) {
+		$ret .= "Unrecognised($tgt) - use one of the following criteria: \n\t@keys\n";
+	} else {
+		my %conf = %{$self->{'_config'}{uc($tgt)}};
+		my ($length) = reverse sort { $a <=> $b } map { length($_) } keys %conf; 
+		foreach my $key (keys %conf) {
+			$ret .= $key.(' ' x ($length - length($key))).' = '.(
+				(ref($conf{$key}) eq 'ARRAY') 
+					? join(', ', @{$conf{$key}})
+					: $conf{$key}
+			)."\n";
 		}
-		$self->{'CURRENT'}{$args} = $val;
-		# warn "setting current key($args) and val($val): (".$self->{'CURRENT'}{$args}.")";
-    } 
-	# warn "returning(".$self->{'CURRENT'}{$args}.")\n";
-    return $self->{'CURRENT'}{$args};
+	}
+	# print "given($tgt) returning($ret)\n";
+
+	return $ret;
 }
 
-=item methods
 
-Access methods to data, non are directly modifiable, see the Configuration file.
+=head1 ACCESSORS
 
-	my $target_address = $o_obj->target('generic');
+Accessor methods are provided for the following configuration data structures:
+
+		CURRENT SYSTEM DATABASE DIRECTORY 
+		TARGET FORWARD FEEDBACK
+		EMAIL WEB
+		DEFAULT GROUP SEVERITY STATUS VERSION
+
+Retrieve the value:
+
+	my $user = $o_config->system('user');
+
+	my $target = $o_config->target('generic');
+
+Note that B<current> is the only one available for modification, and 
+that it returns keys of succesful updates (note the hashref).
+
+	my $attr = $self->current('format'); 			# get
+
+	my @keys = $self->current();					# get
+
+	my $data = $self->current({'format' => 'h'});	# set $data = 'format'
+
+	my @data = $self->current(						# set @data = qw(format context)
+		{'format' => 'a', 'context'	=> 'html'}
+	); 	
 
 =cut
 
 sub target {
     my $self = shift;
-    return $self->{'TARGET'}{$_[0]} || $self->{'TARGET'}{'generic'};
+	my $tgt  = shift || '';
+	my @ret  = @{$self->{'_config'}{'FORWARD'}{'generic'}};
+    @ret = @{$self->{'_config'}{'TARGET'}{$tgt}} if $self->{'_config'}{'TARGET'}{$tgt};
+	return @ret;
 }
 
 sub forward {
     my $self = shift;
-    return $self->{'FORWARD'}{$_[0]} || $self->{'FORWARD'}{'generic'};
+	my $fwd  = shift || '';
+	my @ret  = @{$self->{'_config'}{'FORWARD'}{'generic'}};
+    @ret = @{$self->{'_config'}{'FORWARD'}{$fwd}} if $self->{'_config'}{'FORWARD'}{$fwd};
+	return @ret;
 }
 
-sub email {
-    my $self = shift;
-    return $self->{'EMAIL'}{$_[0]};
-}
+sub AUTOLOAD { # operational
+	my $self = shift;
+	my $get  = shift;	# get || { set => 'this' }
 
-sub web {
-    my $self = shift;
-    return $self->{'WEB'}{$_[0]};
-}
+	my $meth = $AutoLoader::AUTOLOAD = $AUTOLOAD;
 
-sub default {
-    my $self = shift;
-    return $self->{'DEFAULT'}{$_[0]};
-}
-
-sub category {
-    my $self = shift;
-    return $self->{'CATEGORY'}{$_[0]};
-}
-
-sub osname {
-    my $self = shift;
-    return $self->{'OSNAME'}{$_[0]};
-}
-
-sub severity {
-    my $self = shift;
-    return $self->{'SEVERITY'}{$_[0]};
-}
-
-sub status {
-    my $self = shift;
-    return $self->{'STATUS'}{$_[0]};
-}
-
-sub version {
-    my $self = shift;
-    return $self->{'VERSION'}{$_[0]};
-}
-
-sub _AUTOLOAD { # my $host = $self->database('sqlhost');
-    my $self = shift;
-    my $meth = $AUTOLOAD;
-	$AutoLoader::AUTOLOAD = $AUTOLOAD;
     return if $meth =~ /::DESTROY$/; 
+	$meth = uc($meth);
     $meth =~ s/^(.*):://;
-    my $key  = shift;
-    my @valid = qw(current system database target email web category osname severity status version commands keys vals);
-    if (!grep(/$meth/, @valid)) { # not one of ours :-)
-        confess "Perlbug::Config->$meth(@_) called with a duff method($AUTOLOAD)!  Try: 'perldoc Perlbug::Config'";
-    } 
-    my $val = shift;                
-    if ((defined $key) && (defined $val)) { # want to change
-        if ($meth =~ /^current$/) {         # access control - OK
-            $self->{uc($meth)}{$key} = $val;
-        } else {							# not OK
-            croak "Perlbug::Config->$meth(@_) not allowed to assign val($val) to key($key) ($<, $>)";
-        }
+	my $pkg = ref($self);
+	my @ret = ();
+
+	# TARGET FORWARD taken care of above
+	my $valid = join('|', qw( 
+		CURRENT SYSTEM DATABASE DIRECTORY 
+		FEEDBACK EMAIL WEB
+		DEFAULT GROUP SEVERITY STATUS VERSION
+	));
+
+	if ($meth !~ /^($valid)$/) { # not one of ours :-)
+		confess("$pkg->$meth(@_) called with a duff method($AUTOLOAD)!  \nTry: 'perldoc $pkg'");
+	} else { 
+		no strict 'refs';
+		*{$AUTOLOAD} = sub {
+			my $self = shift;
+			my $get  = shift;	# get || { set => 'this' }
+			my @ret = ();
+
+			if (ref($self->{'_config'}{$meth}) ne 'HASH') {
+				confess("invalid config($pkg) structure($meth): ".Dumper($self));
+			} else {	
+				my @keys = @ret = keys %{$self->{'_config'}{$meth}}; 			# all 
+				if (defined($get)) {			 					#
+					if (ref($get) ne 'HASH') { 						# get ...
+						@ret = ($self->{'_config'}{$meth}{$get});	#  
+					} else {										# set ...
+						if ($meth !~ /^current$/i) { 				# current 
+							confess("structure($meth) not settable: ".Dumper($get));
+						} else {
+							my $keys = join('|', @keys);
+							@ret = ();
+							SET:
+							foreach my $key (keys %{$get}) {
+								if ($key !~ /^($keys)$/) {
+									confess("unrecognised key($key) in $meth structure($keys)!");
+								} else {
+									if ($key =~ /^(\w{3})_file$/) { # setting new file?
+										undef $self->{'_config'}{$meth}{$1.'_fh'};
+									}
+									$self->{'_config'}{$meth}{$key} = $$get{$key}; # 
+									push(@ret, $$get{$key});		# 
+								}
+							}
+						}
+					}
+				}
+			}
+			return wantarray ? @ret : $ret[0];
+		}			
     }
-    return (defined $key) ? ($self->{uc($meth)}{$key}) : ($self->{uc($meth)});
+	return wantarray ? @ret : $ret[0];
 }
+
 
 =back
 
-
 =head1 AUTHOR
 
-Richard Foley perlbug@rfi.net 21.Oct.1999
+Richard Foley perlbug@rfi.net 1999 2000 2001
 
 =cut
 
 1;
 
-__END__

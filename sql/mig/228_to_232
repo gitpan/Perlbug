@@ -1,0 +1,93 @@
+# $Id: 228_to_232,v 1.1 2001/02/23 18:34:14 perlbug Exp $
+#
+# update from 2.28 -> 2.32 groups
+use perlbug;
+
+# TM_GROUP
+ALTER TABLE tm_group RENAME tm_group_data;
+CREATE TABLE tm_group (
+	created datetime,
+	ts timestamp(14),
+	groupid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
+	name varchar(25) DEFAULT '' NOT NULL,
+	description varchar(150) DEFAULT '' NOT NULL,
+	PRIMARY KEY (groupid)
+);
+INSERT INTO tm_group SELECT DISTINCT 
+	now(), now(), NULL, flag, UPPER(flag) 
+FROM tm_flag WHERE type='category';
+
+# TM_GROUP_USER
+ALTER TABLE tm_user_group RENAME tm_user_group_data;
+CREATE TABLE tm_group_user (
+	created datetime,
+	ts timestamp(14),
+	groupid varchar(12) DEFAULT '' NOT NULL,
+  	userid varchar(16) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_group_user SELECT  
+	created, ts, groupid, userid
+FROM tm_user_group_data;
+
+# FLOATs...
+# theory going something along the lines of:
+#   bugid+changeid, patchid+changeid
+#   groupid+address, bugid+address, etc.
+#
+ALTER TABLE tm_bug_change RENAME tm_bug_changeid;
+ALTER TABLE tm_patch_change RENAME tm_patch_changeid;
+
+CREATE TABLE tm_group_address (
+	created datetime,
+	ts timestamp(14),
+	groupid varchar(12) DEFAULT '' NOT NULL,
+  	address varchar(100) DEFAULT '' NOT NULL
+);
+
+CREATE TABLE tm_group_bug (
+	created datetime,
+	ts timestamp(14),
+	groupid varchar(12) DEFAULT '' NOT NULL,
+	bugid varchar(12) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 1, bugid 
+FROM tm_bug WHERE category = 'bounce';
+
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 2, bugid 
+FROM tm_bug WHERE category = 'core';
+
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 3, bugid 
+FROM tm_bug WHERE category = 'docs';
+
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 4, bugid 
+FROM tm_bug WHERE category = 'install';
+
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 5, bugid 
+FROM tm_bug WHERE category = 'library';
+
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 6, bugid 
+FROM tm_bug WHERE category = 'notabug';
+
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 7, bugid 
+FROM tm_bug WHERE category = 'patch';
+
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 8, bugid 
+FROM tm_bug WHERE category = 'unknown';
+
+INSERT INTO tm_group_bug SELECT
+	now(), now(), 9, bugid 
+FROM tm_bug WHERE category = 'utilities';
+
+INSERT INTO tm_group SELECT DISTINCT 
+	now(), now(), NULL, flag, UPPER(flag) 
+FROM tm_flag WHERE type='category';
+
+

@@ -1,0 +1,24 @@
+# rjsf: clean up 
+
+DELETE FROM pb_version WHERE name NOT LIKE '5.%';
+
+ALTER TABLE pb_log CHANGE objecttype  objectkey varchar(16);  
+
+# CREATE [UNIQUE] INDEX index_name ON tbl_name (col_name[(length)],... )
+CREATE UNIQUE INDEX address_name_i ON pb_address (name);
+CREATE UNIQUE INDEX bug_id ON pb_bug (bugid);
+CREATE UNIQUE INDEX bug_subject ON pb_bug (subject);
+CREATE UNIQUE INDEX bug_sourceaddr ON pb_bug (sourceaddr);
+CREATE UNIQUE INDEX bug_toaddr ON pb_bug (toaddr);
+CREATE UNIQUE INDEX change_name_i ON pb_change (name);
+CREATE UNIQUE INDEX group_name_i ON pb_group (name);
+CREATE UNIQUE INDEX message_id ON pb_message (messageid);
+CREATE UNIQUE INDEX osname_name_i ON pb_osname (name);
+CREATE UNIQUE INDEX project_name_i ON pb_project (name);
+CREATE UNIQUE INDEX severity_name_i ON pb_severity (name);
+CREATE UNIQUE INDEX status_name_i ON pb_status (name);
+CREATE UNIQUE INDEX version_name_i ON pb_version (name);
+
+CREATE UNIQUE INDEX thing_name_i ON pb_thing (name);
+CREATE UNIQUE INDEX format_name_i ON pb_format (name);
+

@@ -1,0 +1,7 @@
+update tm_bug set status = 'fatal' where status = 'critical';
+delete from tm_flag where flag = 'critical';
+
+insert into tm_flag set created=now(), type='category', flag='utf8';
+insert into tm_flag set created=now(), type='category', flag='regex';
+insert into tm_flag set created=now(), type='category', flag='compiler';
+

@@ -1,0 +1,167 @@
+#!/usr/bin/perl 
+# Perlbug object runner
+# (C) 2000 Richard Foley RFI perlbug@rfi.net 
+# 
+# $Id: bugobj,v 1.4 2001/04/21 20:48:48 perlbug Exp $
+ 
+
+# LIBs
+use strict;
+use vars(qw($VERSION));
+$VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+
+use Data::Dumper;
+use FindBin;
+use lib "$FindBin::Bin/..";
+use Perlbug::Base;
+$|=1;
+
+my %obj = (
+		'Bug'		=> '19870502.007',
+		'Group'		=> '2',
+		'Message'	=> '4444',
+		'Note'		=> '3',
+		'Patch'		=> '6',
+		'Test'		=> '2',
+		'User'		=> 'richardf',
+	);
+
+# ARGs
+my $obj = $ARGV[0] || '';
+if ($obj =~ /\-h/) {
+	print "Usage: $0 object [oid [format]]\n";
+	exit;
+}
+my $oid = $ARGV[1] || $obj{$obj};
+my $fmt = $ARGV[2] || 'a';
+print "given obj($obj), oid($oid), format($fmt)\n";
+
+my $o_pb = Perlbug::Base->new(@ARGV);
+
+TGT:
+foreach my $tgt ($obj, sort keys %obj) {
+	next TGT unless $tgt;
+	$tgt = ucfirst($tgt);
+	$oid = ($obj) ? $oid : $obj{$tgt};
+	my $class = 'Perlbug::Object::'.$tgt;
+	print "TGT($tgt) class($class) base($o_pb) read($oid)\n";
+	my $o_obj = $o_pb->object($tgt);
+	print "$oid obj($o_obj)\n";
+	$o_obj = $o_obj->read($oid);
+	# $class->new($o_pb)->read($oid);
+	print (('-' x 80), "\n");
+	# print 'READ: '.Dumper($o_obj->_oref('data'));
+	my $noid   = $o_obj->attr('objectid');
+	my $name  = $o_obj->attr('name');
+	print " relations for named($name), id($noid)\n";
+	foreach my $type (qw(float from to)) {			# 
+		# print "\n";
+		my $i_rels = my @rellies = $o_obj->rels($type);
+		print "  Rel type($type) has $i_rels relations(@rellies)\n";
+		foreach my $rel (@rellies) { 			# bug note test user...
+			# print "\n";
+			my $i_ids = my @ids = $o_obj->rel_ids($rel);
+			@ids = (@ids[0..3], '...') if scalar(@ids) >= 4; 
+			print "\tRel($rel) has $i_ids rel_ids(@ids)\n";
+
+			my $o_rel = $o_obj->rel($rel);
+			my $key   = $o_rel->attr('key');
+			my $table = $o_rel->attr('table');
+			my $type  = $o_rel->attr('type');
+			# print "\tRelation handler (".ref($o_rel).") has key($key) and table($table) of type($type)\n";
+
+			my $i_rids = my @rids = $o_rel->ids($o_obj);
+			@rids = (@rids[0..3], '...') if scalar(@rids) >= 4; 
+			# print "\t".ref($o_rel)."->ids(".ref($o_obj).") returns $i_rids ids(@rids)\n";
+		}	
+	}
+
+	print (('-' x 80), "\nORIGINAL($oid): \n");
+	print $o_obj->read($oid)->format($fmt);
+	
+	my @bugids = $o_obj->object('bug')->ids("WHERE bugid LIKE '200%'");
+
+my %new = (
+	'default'	=> { # objects
+		$o_obj->attr('primary_key') => $oid, 
+		'sourceaddr'=> 'src@addr.net',
+		'toaddr'	=> 'to@addr.net',
+		'subject'	=> ($o_obj->data('subject') =~ /other/) ? 'this subject' : 'that other subject',
+		'header'	=> 'message header',
+		'body'		=> 'message body',
+	},
+	'status'	=> {
+		$o_obj->attr('primary_key') => $oid, 
+		'name'	=> ($o_obj->data('name') =~ /unknown/) ? 'unrecognised' : 'unknown',
+	},
+	'user'	=> {
+		$o_obj->attr('primary_key') => $oid, 
+		'address'	=> ($o_obj->data('address') =~ /other/) ? '"R F" <modified@this.addr>' : 'some@other.address',
+	},
+);
+	print (('-' x 80), "\nMODIFIED($oid): \n");
+	my $h_data = $new{lc($obj)} || $new{'default'};
+	print $o_obj->store($h_data)->format($fmt);
+
+# Relations
+# -----------------------------------------------------------------------------
+	my %rel = (
+		'Bug'		=> 'patch',
+		'Change'	=> 'patch',
+		'Group'		=> 'address',
+		'Message'	=> 'bug',
+		'Note'		=> 'bug',
+		'Osname'	=> 'bug',
+		'Patch'		=> 'bug',
+		'Severity'	=> 'bug',
+		'Status'	=> 'bug',
+		'Test'		=> 'version',
+		'User'		=> 'bug',
+		'Version'	=> 'bug',
+	); 
+	my $key = ucfirst($o_obj->attr('name'));
+	my $rel = $rel{$key} || 'bug'; #
+	my $o_rel = $o_obj->relation($rel);
+	if (!ref($o_rel)) {
+		print " obj(".ref($o_obj).") has no such($key) relation($rel)->rel_obj($o_rel)!\n";
+	} else {
+		print "obj($obj) relation($rel) -> rel_obj($o_rel)...\n\n";
+		my $rand = int(rand($#bugids));
+		my @randids = (@bugids[ $rand .. $rand + rand(9) ]);
+		my @ass = ($rel eq 'bug') ? @randids : qw(1 2 3 4 22 55 23 24 66);
+		# @ass = $o_obj->get_list("SELECT bugid FROM tm_bug WHERE bugid LIKE '2000%'");
+		$o_rel->assign(\@ass);
+		print (('-' x 80), "\nASSIGNED($oid): '@ass'\n");
+		print $o_obj->read($oid)->format($fmt);
+
+		$rand = int(rand($#bugids));
+		@randids = (@bugids[ $rand .. $rand + rand(7) ]);
+		my @rem = ($rel eq 'bug') ? @randids : qw(31 7 9 21 23 24 66);
+		$o_rel->delete(\@rem);
+
+		print (('-' x 80), "\nDELETED($oid): '@rem'\n");
+		print $o_obj->read($oid)->format($fmt);
+
+		$rand = int(rand($#bugids));
+		@randids = (@bugids[ $rand .. $rand + rand(15) ]);
+		my @sto = ($rel eq 'bug') ? @randids : qw(1 2 3 4 9 22 31 55);
+		$o_rel->store(\@sto);
+		print (('-' x 80), "\nSTORED($oid): '@sto'\n");
+		print $o_obj->read($oid)->format($fmt);
+
+		if ($obj =~ /bug/i) {
+			my $type = 'osname';
+			my ($orig) = my ($id) = $o_obj->rel_ids($type);
+			$o_rel = $o_obj->relation($type);
+			my $new = ($orig eq '3') ? 7 : 3;
+			print (('-' x 80), "\nobj($obj) rel_type($type) rel_oid($oid): orig($orig) -> new($new)\n");
+			$o_rel->store([$new]);
+			print $o_obj->read($oid)->format($fmt);
+		}
+	}
+	last TGT if $obj;
+}
+
+$o_pb->clean_up;
+exit 0;
+

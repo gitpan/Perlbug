@@ -1,0 +1,11 @@
+To: perlbug@perl.org
+From: perlbug_test@rfi.net
+Subject: some subject
+Message-Id: <19991119161704.unknown_id@bugs.perl.org>
+X-Matches: addressed to perlbug, no perl in body -> do_bounce
+
+some mail
+
+---
+sig
+

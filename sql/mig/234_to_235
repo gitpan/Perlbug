@@ -1,0 +1,7 @@
+# Id: $
+#
+# update from 2.34 -> 2.35 bugfix 
+use perlbug;
+
+ALTER TABLE tm_bug_id rename tm_bugid;
+

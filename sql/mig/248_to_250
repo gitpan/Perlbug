@@ -1,0 +1,35 @@
+# rjsf: clean up 
+
+# UNIQUE's across all tables...
+# CREATE UNIQUE INDEX bug_id ON pb_bug (bugid);
+
+DROP TABLE IF EXISTS pb_format;
+CREATE TABLE pb_template (
+	created datetime,
+	ts timestamp(14),
+	templateid bigint(20) unsigned NOT NULL auto_increment,
+	name varchar(16),
+	description varchar(150),
+	subject varchar(100),		
+	sourceaddr varchar(100),	
+	toaddr varchar(100),
+	header blob,		
+	body blob,
+	PRIMARY KEY (templateid)
+);
+
+INSERT INTO pb_thing SET created=SYSDATE(), thingid=NULL, name='fixed', type='attribute', description='Fixed is a Version... ';
+INSERT INTO pb_thing SET created=SYSDATE(), thingid=NULL, name='address', type='item', description='Address... ';
+INSERT INTO pb_thing SET created=SYSDATE(), thingid=NULL, name='log', type='item', description='Log... ';
+INSERT INTO pb_thing SET created=SYSDATE(), thingid=NULL, name='range', type='item', description='Range... ';
+INSERT INTO pb_thing SET created=SYSDATE(), thingid=NULL, name='thing', type='item', description='Thing... ';
+
+UPDATE pb_thing SET type = 'item' WHERE name = 'group';
+UPDATE pb_thing SET type = 'item' WHERE name = 'user';
+
+CREATE TABLE pb_range_bug (
+	created datetime,
+	ts timestamp(14),
+	rangeid bigint(20),
+	bugid varchar(16)
+);

@@ -1,0 +1,16 @@
+/Changes/1.8/Wed Nov 22 09:31:35 2000//
+/INSTALL/1.14/Sat Apr 21 20:48:48 2001//
+/MANIFEST/1.9/Thu Apr 26 13:23:21 2001//
+/MANIFEST.SKIP/1.9/Sat Mar  3 14:54:40 2001//
+/Makefile.PL/1.7/Sat Apr 21 20:48:48 2001//
+/Perlbug.pm/2.70/Sat Apr 21 20:48:48 2001//
+/README/1.6/Sat Apr 21 20:48:48 2001//
+D/Perlbug////
+D/config////
+D/docs////
+D/scripts////
+D/spool////
+D/sql////
+D/t////
+D/text////
+D/web////

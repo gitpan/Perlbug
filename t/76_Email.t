@@ -2,12 +2,12 @@
 # Email tests for Perlbug: get_forward, default, remap, get_header
 # context, get_header
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 76_Email.t,v 1.2 2000/08/02 08:25:13 perlbug Exp perlbug $
+# $Id: 76_Email.t,v 1.4 2001/04/21 20:48:48 perlbug Exp $
 #
 BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::Testing;
+	use Perlbug::TestBed;
 	plan('tests' => 5);
 }
 use strict;
@@ -17,48 +17,50 @@ my $test = 0;
 
 # Libs
 # -----------------------------------------------------------------------------
-use Perlbug::Email;
+use Perlbug::Interface::Email;
 use FileHandle;
 use Data::Dumper;
 use Mail::Internet;
 use Sys::Hostname;
-my $o_mail = Perlbug::Email->new;
+my $o_mail = Perlbug::Interface::Email->new;
+my $o_test = Perlbug::TestBed->new($o_mail);
 $o_mail->check_user('richardf');
 $o_mail->current('admin', 'richardf');
-$o_mail->current('isatest', 1);
 $Data::Dumper::Indent=1;
 
 # Setup
 # -----------------------------------------------------------------------------
 my $err			= 0;
-my $dir			= './t/testmails/get_headers';
-my @expected	= (qw(default get_forward remap get_header_remap get_header_default)); 
+my $dir			= './t/email/76';
+my @orig		= (qw(default get_forward remap get_header_remap get_header_default)); 
+my @expected    = (defined($ARGV[0]) && $ARGV[0] =~ /^(\w+)$/ ? ($1) : @orig);
 my %installed	= ();
 my $context		= '';
+my @tests		= ();
 
 # Tests
 # -----------------------------------------------------------------------------
-my @tests = get_tests($dir, @expected);
 
 # 1 DEFAULT 
 $err = 0;
 $test++; 
 $context = 'default';
-foreach my $test (grep(/^$context/, @tests)) {
-	my ($ok, $o_hdr) = &get_data($test);
+if (grep(/^$context$/, @expected)) {
+@tests = $o_test->get_tests("$dir/$context");
+foreach my $test (@tests) {
+	my ($ok, $o_hdr) = &get_data("$dir/$context/$test");
 	my @res = ();
 	if ($ok == 1) {
 		TAG:
 		foreach my $tag ($o_hdr->tags) { 
 			last TAG unless $ok == 1;
 			my @lines = $o_hdr->get($tag);
-			my @res = $o_mail->$context($tag, @lines); # default
+			my $res = my @res = $o_mail->$context($tag, @lines); # default
 			chomp(@lines, @res);
-			my $res = (scalar(@res) >= 1) ? 1 : 0;
-			if (iseven($test)) { 	# should have result
-				$ok = $res;
-			} else {					# should be empty 
-				$ok = 1 if $res == 0;
+			if ($o_test->isodd($test)) { 	# should have result
+				$ok = 0 unless scalar(@res) >= 1;
+			} else {						# should be empty 
+				$ok = 0 if scalar(@res) >= 1;
 			}
 			output("$test tag($tag: @lines) --> failed($ok) <-- recieved($res, @res)") if $ok != 1;
 			$err++ if $ok != 1;
@@ -69,115 +71,105 @@ foreach my $test (grep(/^$context/, @tests)) {
 		output(uc($context)." test ($test) failed -> '@res'");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	notok($test);
 }
+output("$dir/$context -> err($err)") if $err;
+($err == 0) ? ok($test) : ok(0);
 
 
-# 2 GET_FORWARD
-$err = 0;
 # perl line mapping
 $test++; 
+$err = 0;
 $context = 'get_forward';
-foreach my $test (grep(/^$context/, @tests)) {
-	my ($ok, $o_hdr) = &get_data($test);
+if (grep(/^$context$/, @expected)) {
+@tests = $o_test->get_tests("$dir/$context");
+TEST:
+foreach my $test (@tests) {
+	last TEST unless $err == 0;
+	my ($isok, $o_hdr) = &get_data("$dir/$context/$test");
 	my @res = ();
-	if ($ok == 1) {
+	if ($isok == 1) {
+		my $i_errs= 0;
 		TAG:
 		foreach my $tag ($o_hdr->tags) { 
-			last TAG unless $ok == 1;
 			next TAG unless $tag =~ /^(To|Cc)$/i;
 			my @lines = $o_hdr->get($tag);
 			LINE:
 			foreach my $line(@lines) {
 				chomp($line);
-				last TAG unless $ok == 1;
-				my $res = $o_mail->get_forward($line); # get_forward
-				if ($tag =~ /^To|Cc/i) {	
-					if (iseven($test)) { # should remap
-						$ok = (grep(/^$res$/, $o_mail->get_vals('forward'))) ? 1 : 0;
-					} else {			 # should NOT remap
-						$ok = ($res eq $o_mail->forward('generic')) ? 1 : 0;
-					}
-					output("$test tag($tag), line($line) failed -> $res -> ok($ok)") if $ok != 1;
-				} else { # always keep it
-					$ok = 1;
-					# 
+				my ($res) = $o_mail->$context($tag, $line); # get_forward
+				my $remap = grep(/^$res$/i, $o_mail->get_vals('forward'));
+				my $i_isok = $o_test->okbyfilearg($test, $remap);
+				if ($i_isok != 1) {
+					output("$test($context) tag($tag) line($line) res($res) remap($remap) i_isok($i_isok)"); 
+					$i_errs++; 
 				}
-				$err++ if $ok != 1;
 			}
-			output("$test tag($tag) failure: ok($ok)") if $ok != 1;
 		}
+		$isok = 0 if $i_errs >= 1;
 	}
-	if ($ok != 1) {
+	if ($isok != 1) {
 		$err++;
-		output(uc($context)." test ($test) failed -> '@res'");
+		output(uc($context)." test ($test) failed($isok)");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	notok($test);
 }
+output("$dir/$context -> err($err)") if $err;
+($err == 0) ? ok($test) : ok(0);
 
 
 # 3 REMAP
-$err = 0;
-# perl line mapping
+# per line forwarding 
 $test++; 
+$err = 0;
 $context = 'remap';
-foreach my $test (grep(/^$context/, @tests)) {
-	my ($ok, $o_hdr) = &get_data($test);
-	my @res = ();
-	if ($ok == 1) {
+if (grep(/^$context$/, @expected)) {
+@tests = $o_test->get_tests("$dir/$context");
+TEST:
+foreach my $test (@tests) {
+	last TEST unless $err == 0;
+	my ($isok, $o_hdr) = &get_data("$dir/$context/$test");
+	if ($isok == 1) {
+		my $i_errs= 0;
 		TAG:
 		foreach my $tag ($o_hdr->tags) { 
-			last TAG unless $ok == 1;
+			next TAG unless $tag =~ /^(To|Cc)$/i;
 			my @lines = $o_hdr->get($tag);
-			my @res = $o_mail->$context($tag, @lines); # remap
-			chomp(@lines, @res);
-			my $res = (scalar(@res) >= 1) ? 1 : 0;
-			if ($tag =~ /^To|Cc/i) {	
-				RES:
-				foreach my $res (@res) {
-					last RES unless $ok == 1;
-					if (iseven($test)) { # should remap
-						$ok = (grep(/^$res$/, $o_mail->get_vals('forward'))) ? 1 : 0;
-					} else {			 # should NOT remap
-						$ok = (grep(/^$res$/, @lines)) ? 1 : 0;
-					}
-					output("$test($tag: @lines -> $res, @res) -> ok($ok)") if $ok != 1;
+			LINE:
+			foreach my $line(@lines) {
+				chomp($line);
+				my ($res) = $o_mail->$context($tag, $line); # get_forward
+				my $remap = grep(/^$res$/i, $o_mail->get_vals('forward'));
+				my $i_isok = $o_test->okbyfilearg($test, $remap);
+				if ($i_isok != 1) {
+					output("$test($context) tag($tag) line($line) res($res) remap($remap) i_isok($i_isok)"); 
+					$i_errs++; 
 				}
-			} else { # always keep it
-				$ok = $res;
 			}
-			output("$test tag($tag: @lines) --> failed($ok) <-- recieved($res, @res)") if $ok != 1;
-			$err++ if $ok != 1;
 		}
+		$isok = 0 if $i_errs >= 1;
 	}
-	if ($ok != 1) {
+	if ($isok != 1) {
 		$err++;
-		output(uc($context)." test ($test) failed -> '@res'");
+		output(uc($context)." test ($test) failed($isok)");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	notok($test);
 }
+output("$dir/$context -> err($err)") if $err;
+($err == 0) ? ok($test) : ok(0);
+
+
 
 # 4
 # GET_HEADER_DEFAULT
 $err = 0;
 $test++; 
 $context = 'get_header_default';
-foreach my $test (grep(/^$context/, @tests)) {
-	my ($ok, $o_orig) = &get_data($test);
+if (grep(/^$context$/, @expected)) {
+@tests = $o_test->get_tests("$dir/$context");
+TEST:
+foreach my $test (@tests) {
+	last TEST unless $err == 0;
+	my ($ok, $o_orig) = &get_data("$dir/$context/$test");
 	my $o_hdr = $o_mail->get_header($o_orig, 'default');
 	$ok = 0 unless ref($o_hdr);
 	if ($ok == 1) {
@@ -222,12 +214,9 @@ foreach my $test (grep(/^$context/, @tests)) {
 		output("$context($test) failed -> '$o_hdr'");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	notok($test);
 }
+output("$dir/$context -> err($err)") if $err;
+($err == 0) ? ok($test) : ok(0);
 
 
 # 5
@@ -235,8 +224,12 @@ if ($err == 0) {
 $err = 0;
 $test++; 
 $context = 'get_header_remap';
-foreach my $test (grep(/^$context/, @tests)) {
-	my ($ok, $o_orig) = &get_data($test);
+if (grep(/^$context$/, @expected)) {
+@tests = $o_test->get_tests("$dir/$context");
+TEST:
+foreach my $test (@tests) {
+	last TEST unless $err == 0;
+	my ($ok, $o_orig) = &get_data("$dir/$context/$test");
 	my $o_hdr = $o_mail->get_header($o_orig, 'remap');
 	$ok = 0 unless ref($o_hdr);
 	if ($ok == 1) {
@@ -250,7 +243,7 @@ foreach my $test (grep(/^$context/, @tests)) {
 				if (defined($new)) {					# must appear
 					chomp(@old, $new);
 					if ($tag =~ /^(To|Cc)$/i) { 	# one of ours
-						if (iseven($test)) { # should remap
+						if ($o_test->isodd($test)) { # should remap
 							$ok = (grep(/^$new$/, $o_mail->get_vals('forward'))) ? 1 : 0;
 							output("$test($tag: @old) should remap($new) -> ok($ok)") if $ok != 1;
 						} else {			 # should NOT remap
@@ -275,12 +268,10 @@ foreach my $test (grep(/^$context/, @tests)) {
 		output("$context($test) failed -> '$o_hdr'");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	notok($test);
 }
+output("$dir/$context -> err($err)") if $err;
+($err == 0) ? ok($test) : ok(0);
+
 
 # Done
 # -----------------------------------------------------------------------------
@@ -291,22 +282,13 @@ sub get_data { # get mail, data, scan, return data
 	my $context = shift;
 	my $meth = $file;
 	$meth =~ s/^(.+)_\d+$/$1/;
-	my $data = '';
-	my $ok = 1;
-	my $FH = FileHandle->new("< $dir/$file");
-    if (defined($FH)) {
-        my $o_int = Mail::Internet->new($FH);
-        close $FH;
-    	if (defined($o_int)) {
-			my ($o_hdr, $header, $body) = $o_mail->splice($o_int);
-			$ok = 0 unless ref($o_hdr) and $header =~ /\w+/ and $body =~ /\w+/;
-			$data = $o_hdr;
-		} else {
-			output("Mail($o_int) not retrieved");		
-		}
-	} else {
-        output("FileHandle($FH) not defined for file ($file): $!");
-    }
+	my ($ok, $data) = (0, '');
+	my $o_int = $o_test->file2minet($file);
+	if (defined($o_int)) {
+		my ($o_hdr, $header, $body) = $o_mail->splice($o_int);
+		$ok++ if ref($o_hdr) and $header =~ /\w+/ and $body =~ /\w+/;
+		$data = $o_hdr;
+	}
 	return ($ok, $data);
 }
 

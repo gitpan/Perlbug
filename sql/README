@@ -1,0 +1,16 @@
+# l
+# $Id: README,v 1.4 2001/04/21 19:49:49 perlbug Exp $
+# 
+
+If running under mysql, run the commands in ~/sql/mysql dir:
+
+	cd ~/sql/mysql	
+	mysql -p < database.sql
+	mysql -p perlbug < database_user.sql
+	mysql -p perlbug < database_tables.sql
+	mysql -p perlbug < perlbug_admin.sql
+	     
+If running under Oracle (if supported yet), run the equivalent commands in ~/sql/oracle dir instead.
+
+Finally have a look at ~/sql/mig/* to see if you've missed anything.
+

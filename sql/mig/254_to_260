@@ -1,0 +1,12 @@
+# rjsf: ordered relation tables bug_change, address_bug, etc.
+
+# UNIQUE's across all tables...
+# CREATE UNIQUE INDEX bug_id ON pb_bug (bugid);
+ALTER TABLE pb_bug_address RENAME pb_address_bug;
+ALTER TABLE pb_group_address RENAME pb_address_group;
+ALTER TABLE pb_group_bug RENAME pb_bug_group;
+ALTER TABLE pb_patch_change RENAME pb_change_patch;
+ALTER TABLE pb_project_bug RENAME pb_bug_project;
+ALTER TABLE pb_range_bug RENAME pb_bug_range;
+ALTER TABLE pb_user_bug RENAME pb_bug_user;
+

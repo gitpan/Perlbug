@@ -1,7 +1,11 @@
 # Perlbug Logging and file accessor
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Log.pm,v 1.31 2000/08/21 05:32:28 perlbug Exp $
+# $Id: Log.pm,v 1.49 2001/03/22 08:33:51 perlbug Exp $
 # 
+# TODO: 
+# 
+# debug(0, ...) -> error();
+#
 
 =head1 NAME
 
@@ -10,30 +14,39 @@ Perlbug::Log - Module for generic logging/debugging functions to all Perlbug.
 =cut
 
 package Perlbug::Log;
-use Carp;
-use Data::Dumper;
-use FileHandle;
-use Shell qw(chmod);
-use File::Spec; 
-use lib File::Spec->updir;
 use strict;
 use vars qw($VERSION);
+$VERSION = do { my @r = (q$Revision: 1.49 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1;
 
-$VERSION    	= 1.28;
+use Carp;
+use Data::Dumper;
+# use Devel::Trace;
+use FindBin;
+use lib "$FindBin::Bin/..";
+use FileHandle;
+use Shell qw(chmod);
+
+# $Devel::Trace::TRACE = 0;
+
 my $LOG_COUNTER = 0;
 my $FILE_OPEN   = 0;
 my $LOG 		= '';
 my $FATAL		= 0;
-my $INDENT  	= 0;
 my $VERBOSE     = 0;
-my $INIT        = '^((?:msi)\\[0\\].+?(INIT)\\s*'."($$))";
-$Perlbug::Debug = $Perlbug::Debug || 2;
+my $CARP		= 0;
+my $carp		= 0;
+my $i_ERRS		= 0;
+my $i_MAX		= 1;
+$Perlbug::Debug = 0;
+
 
 =head1 DESCRIPTION
 
 Expected to be called from sub-classes, this needs some more work to cater 
 comfortably for non-method calls.
+
+Debug level can be modified via the environment variable: B<Perlbug_Debug> 
 
 =head1 SYNOPSIS
 
@@ -58,98 +71,202 @@ comfortably for non-method calls.
 
 Create new Perlbug::Log object
 
-    my $obj = Perlbug::Log->new('log' => $log, 'res' => $res, 'rng' => $rng, 'debug' => 2);
+    my $obj = Perlbug::Log->new('log' => $log, 'tmp => $tmp, 'debug' => 2);
 
 =cut
 
 sub new {
     my $proto = shift;
-	warn "Perlbug::Log::new(@_)" if $Perlbug::Debug >= 4;
     my $class = ref($proto) || $proto; 
-    my $self  = { @_ }; 
-	my $tgt = '';
-    # should open and lock them here, and close them by DESTROY
-    foreach $tgt (qw(log res rng tmp)) { # hst
-        my $targ = $tgt.'_file';
-    	my $target = $self->{$targ}; 
-		my $rex = '^(.+)\/([\w_]+)\.(\w+)';
-		if ($target =~ /$rex$/) { # only looking for those with an extension!
-			my ($dir, $file) = ($1, $2.'.'.$3);
-	    	if ($dir =~ /\w+/ && -d $dir && -w _) {
-			    # OK
-	    	} else {
-       			croak("Can't log to $tgt dir($dir): $!");
-	    	}
+    my $o_conf= shift; 
+	if (!ref($o_conf)) {
+		croak("Log requires Perlbug::Config object($o_conf)!");	
+	}
+	my $sep = $o_conf->system('separator');
+	my $self = bless({
+		'_file' 	=> {
+			'handle' => '',
+			'status' => '',
+			'target' => '',
+		}
+		'_regex'	=> '^(.+)'.$sep.'?([\w_]*)\.(\w+)', 	# ext
+	}, $class);
+
+	my $rex = $self->{'_regex'};
+	TGT:
+    foreach my $tgt ($self->files) {
+    	my $target = $o_conf->current("${tgt}_file"); 
+		if ($target !~ /$rex$/) { 
+	    	croak("Log tgt($tgt) doesn't match($rex) -> target($target)");
      	} else {
-			# print Dumper($self);
-	    	croak("Log '$targ' target doesn't look right ($rex) -> '$target'");
+			my ($dir, $file) = ($1, $2.'.'.$3);
+	    	if (!($dir =~ /\w+/ && -d $dir && -w _)) {
+       			croak("Log can't log to $tgt dir($dir): $!");
+	    	} else {
+				$self->open($tgt, $target);
+			}
         }
     }  
-    $LOG = $self->{'log_file'};
-	$Perlbug::Debug = $self->{'debug'} || $Perlbug::Debug;
-	bless($self, $class);
-    $self->set_user($self->{'user'}); # ...
+	$i_ERRS = 0;
+	$i_MAX  = $o_conf->system('max_errors') || $i_MAX;
+    $LOG 	= $o_conf->current('log_file');
+
+	$Perlbug::Debug = $ENV{'Perlbug_Debug'} || $o_conf->current('debug') || $Perlbug::Debug;
+	$Perlbug::Debug = '01x' if $Perlbug::Debug =~ /^1$/;
+	$Perlbug::Debug = '012sX' if $Perlbug::Debug =~ /^2$/;
+	$Perlbug::Debug = '0123csSX' if $Perlbug::Debug =~ /^3$/;
+	$Perlbug::Debug = '01234cCsSxXtT' if $Perlbug::Debug =~ /^4$/;
+	# $Devel::Trace::TRACE = 1 if $Perlbug::Debug =~ /T/;
+
+	$CARP++ if $Perlbug::Debug =~ /C/;
+	$carp++ if $Perlbug::Debug =~ /c/;
+    $self->set_user($o_conf->system('user')); # ...
+	$self->debug(0, "INIT ($$) scr($0), debug($Perlbug::Debug) $self");
     return $self;
+}
+
+
+=item files
+
+Return files based on key (or all)
+
+	my @files = $o_log->files();
+
+=cut
+
+sub files {
+	my $self = shift;
+	my $pat  = shift || '.+';
+
+	my @files = grep(/^$pat$/, @{$self->{'_files'}});
+
+	return @files;
+}
+
+
+=item handle 
+
+Return handle based on key 
+
+	my $fh = $o_log->handle('log');
+
+=cut
+
+sub handle {
+	my $self = shift;
+	my $tgt  = shift || 'log';
+
+	my $fh = $self->{'_handle'}{$tgt};
+
+	return $fh;
+}
+
+
+=item DESTROY
+
+Cleanup log and tmp files.
+
+=cut
+
+sub DESTROY {
+    my $self = shift;
+	foreach my $tgt ($self->files()) {
+		undef $self->handle($tgt) if $tgt;
+	}
 }
 
 
 =item debug
 
-Debug method, logs to L</log_file>, with different levels of tracking:
+This is in B<flux> at the moment, please be warned!
 
-    $pb->debug('duff usage');                # undefined second arg (treated as level 0)
-    $pb->debug(0, 'always tracked'));        # $Perlbug::Debug >= 0
-    $pb->debug(1, 'tracked if debug >= 1');  # key calls 
-	$pb->debug(2, 'tracked if debug >= 2');  # key calls plus data
-	$pb->debug(3, 'tracked if debug >= 3');  # includes caller info etc.
-	
-	$pb->debug('in', 'args');    	# in|out 		(2++, (data 4++))
-    $pb->debug('out', 'result');    # in|out,		(2++, (data 4++))
-	
+Debug method, logs to L</log_file>, with configurable levels of tracking:
+
+Controlled by C<$ENV{'Perlbug_Debug'} || $Perlbug::Debug
+
+	0 = login, object, function (basic)		
+	1 = decisions							(sets x) 
+	2 = data feedback from within methods 	(sets i, x, X)
+	3 = more than you want					(sets C, I, s, S, O, X)
+
+	# a = AUTOLOAD methods
+	# c = print to STDOUT as it goes (good for command-line debugging)
+	# C = Carp to STDERR as it goes (with caller) 
+	m = method names
+	M = Method names with package data 
+	s = sql statements (num rows affected)
+	S = SQL returns values (dump)
+	x = execute statements (ignore SELECTs)
+
+	Where a capital letter is given:
+		the data is Dumper'd if it's a reference, the result of a sql query, or an object
+
+    $pb->debug("duff usage");                			# undefined second arg (treated as level 0)
+    $pb->debug(0, 		"always tracked");        		# debug off
+    $pb->debug(1, 		"tracked if $debug =~ /[01]/");	# debug on = decisions
+    $pb->debug(2, 		"tracked if $debug =~ /[012]/");# debug on = talkative  
+
+	$pb-, 	"tracked if $debug =~ /[oO]/'); # output from methods 	> data out
+
+	A useful combination for the command line may be to set C<$ENV{'Perlbug_Debug'}> 'cs'
 
 =cut
 
 sub debug { 
     my $self = shift;
-	warn "Perlbug::Log::debug(@_)" if $Perlbug::Debug >= 4;
     my $flag = shift;
-    my @data = @_; 
-	my @caller = ($Perlbug::Debug >= 1) ? caller(2) : ();  
-	# caller(1)(main ../t/20_Log.t 110 Perlbug::Log::read 1 0)     
-    if (defined($flag)) {
-		# ----------------------------------------------------------------------
-		my $pack = $caller[3] || '';
-		my $func = $pack; $func =~ s/.+?::([\w_]+)$/$1/; # read
-		my $indent = '  ' x $INDENT;		# so we can see it
-        if ($flag =~ /^\d+$/) {				# DEBUG
-	        if ($Perlbug::Debug >= $flag) { 		
-		        if ($Perlbug::Debug >= 4) { 
-					$self->logg($indent."$pack: @data"); 
-		        } else {
-					$self->logg($indent."$func: @data"); 
+	my $debug = $Perlbug::Debug || '';
+
+    if (!defined($flag)) {
+        $self->logg("XXX: debug called with DUFF args($self, $flag, data(@_)");
+	} else {
+		my $DATA = '';
+        if ($flag =~ /^([aAsS0123xX])$/) {
+			if (($flag =~ /^(\d)$/i && $debug >= $flag) || ($debug =~ /$flag/)) {
+				if ($debug =~ /[mM]/) {
+					my @caller = ();
+					CALLER:
+					foreach my $i (0..4) {
+						@caller = caller($i);
+						last CALLER if $caller[3] !~ /debug/i;
+					}
+					my $caller = (($debug =~ /M/) ? "$caller[0]::$caller[3]" : "$caller[3]");
+					$caller =~ s/^(?:\w+::)+(\w+)$/$1/; # Perlbug::Base::get_list
+					$DATA .= "$caller: "; 
 				}
-		    }   									
-        } elsif ($flag =~ /^(in|out)/i) { 	# IN|OUT
-			--$INDENT if $flag =~ /out/i;
-			if ($Perlbug::Debug >= 3) {			# 	
-				my $arr = ($flag =~ /in/i) ? '->' : '<-';
-				my $inout = ($Perlbug::Debug >= 4) ? "$arr $pack: @data" : "$arr $func";
-				$indent = ' ' x $INDENT;
-		        $self->logg($indent.$inout);
-			} 			
-			$INDENT++ if $flag =~ /in/i;
-        } else {
-			carp "XXX: debug($self, $flag) confused by flag($flag) from -> @caller";
-		}         
-    	# ----------------------------------------------------------------------
-    } else {
-        $self->logg( "XXX: debug($self, $flag) called with duff args from -> @caller");
+			}
+			if ($flag =~ /^(\d)$/i && $debug >= $flag) {
+					$DATA .= "@_".(($flag >= 2) ? "<- flag($flag)" : '');
+			} elsif ($debug =~ /$flag/) {
+					$DATA .= "@_";
+			}     
+		}
+		$self->logg($DATA) if $DATA;
     }
+}
+ 
+
+sub _debug { # quiet
+	my $self = shift;
+	return $self->logg(@_);
 }
 
 
-sub get_init {
-	return $INIT;
+=item error
+
+Handles error messages
+
+	print $o_log->error($msg);
+
+=cut
+
+sub error {
+	my $self = shift;
+	$i_ERRS++;
+	my $errs = "Error [$i_ERRS]: ".join(' ', @_)."<br>\n";
+	$self->debug(0, $errs);
+	carp($errs) if $CARP; 
+	confess("Max($i_MAX) errors exceeded: ".$errs) if $i_ERRS >= $i_MAX;
 }
 
 
@@ -157,52 +274,46 @@ sub get_init {
 
 Deals with a fatal condition by logging and dieing, traps dies to come out here:
 
-	&do_this or $pb->fatal($message);
+	&do_this or $o_log->fatal($message);
 
 =cut
 
-sub fatal { 
-	my $msg = "Dieing (fatal(@_)\n";
-	carp($msg);
-	$FATAL++;
-	&logg(bless({},'Perlbug::Log'), $msg);
-	die($msg);
+sub fatal { #
+	my $self = shift;
+	$self->error(@_);
+	confess(@_);
+	exit(1); # :-)
 }
 
 
 =item logg
 
-Logs args to log file, which is either 'pb_19980822', or pb_backup_log.
-Expected to be used via L</debug>.
+Logs args to log file
 
-	&do_this($self, 'x') and $pb->logg('Done that');
+	$o_log->logg('Done something');
 
 =cut
 
 sub logg { #
     my $self = shift;
-    warn "Perlbug::Log::logg(@_)" if $Perlbug::Debug >= 4;
+    # warn "Perlbug::Log::logg(@_)" if $Perlbug::Debug =~ /4/;
     my @args = @_;
 	unshift(@args, (ref($self)) ? '' : $self); # trim obj and position left side
-    my $data = "[$LOG_COUNTER] ".join(' ', @args);  # uninitialised value???
+    my $data = substr("[$LOG_COUNTER] ", 0, 15).join(' ', @args, "\n");  # uninitialised value???
     if (length($data) >= 25600) {
-        # unsupported excessive data tracking
-        my @caller = caller(1);
-        $data = "Excessive data length(".length($data).") called from: @caller"; 
+        $data = "Excessive data length(".length($data).") called!\n"; 
     }
-	# if ($Perlbug::Test::Verbose == 1) { # ?
-	#  	print STDOUT "$data\n";
-	# } else {
-	    my $fh = $self->fh('log', '+>>', 0766);
-    	if (defined $fh) {
-			flock($fh, 2);
-        	$fh->seek(0, 2); # just in case it's been moved by someone else
-        	print $fh "$data\n";
-			flock($fh, 8); 
-    	} else {
-        	carp("logg couldn't log($data) to undefined fh($fh)");
-    	}
-	# }
+	my $fh = $self->fh('log', '+>>', 0766);
+	if (defined $fh) {
+		flock($fh, 2);
+		$fh->seek(0, 2); # just in case it's been moved by someone else
+		print $fh $data;
+		flock($fh, 8); 
+		print $data if $carp;
+		carp($data) if $CARP;
+	} else {
+		carp("logg couldn't log($data) to undefined fh($fh)");
+	}
     $LOG_COUNTER++;
 }
 
@@ -217,18 +328,13 @@ Define and return filehandles, keyed by 3 character string for our own purposes,
 
 sub fh { 
     my $self = shift;
-	warn "Perlbug::Log::fh(@_)" if $Perlbug::Debug >= 4;
     my $arg  = shift;
     my $ctl  = shift || '+>>' || '<'; 
     if ($arg =~ /^[\w_]+$/) {   
-        my $FH = $self->{$arg.'_fh'};               # <-
-		if ((defined($FH)) && (ref($FH)) && ($FH->isa('FileHandle'))) { # OK
-	    	#
- 		} else {
-        	my $file = $self->{$arg.'_file'}; 
-	    	if ($file =~ /\w+/) { # OK - used before...
-				# 
-            } else { # looks like it may be a site-specific file or a fatal log?
+        my $FH = $self->{"_${arg}_fh"};               # <-
+		if (!((defined($FH)) && (ref($FH)) && ($FH->isa('FileHandle')))) { # OK
+        	my $file = $self->{"_${arg}_file"}; 
+	    	if ($file !~ /\w+/) { # 
 	        	my $tgt = ($FATAL >= 1) ? $LOG : $arg;
 				if (-e $tgt && -f _) { 	# OK - site spec ?
 	       	    	$self->{$arg.'_file'} = $tgt;   
@@ -239,7 +345,7 @@ sub fh {
             my $fh = new FileHandle($file, $ctl);
             if (defined $fh) {      # OK
                 $fh->autoflush(1);  # 
-                $self->{$arg.'_fh'} = $fh;          # <-
+                $self->{"_${arg}_fh"} = $fh;          # <-
                 $FILE_OPEN++;
             } else {                # not OK
                 croak("Log::fh($arg) -> can't define filehandle($fh) for file($file) with ctl($ctl) $!");
@@ -248,31 +354,7 @@ sub fh {
     } else {
 		return new FileHandle($arg, $ctl);  
     }	 
-	# carp "fh($arg) -> ".$self->{$arg.'_fh'}; # rjsf
-    return $self->{$arg.'_fh'}; 
-}
-
-sub setresult {
-    my $self  = shift;
-    $self->debug('IN', @_);
-	my $targ = shift || '';
-	my $i_ok = 1;
-	# $self->truncate('res'); # get results should do this?
-	if ($targ =~ /\w+/) { # -> temp?
-		$self->debug(0, "setting fh to temp");
-	    $self->{'orig_res_fh'} = $self->{'res_fh'};
-	    $self->{'orig_res_file'} = $self->{'res_file'};
-	    $self->{'res_fh'} = ''; 
-		$self->{'res_file'} = $targ; 								# <-
-		$self->debug(1, "setting fh for targ($targ)");
-	} else { # eq '' -> res
-	    $self->debug(0, "reseting fh to results");
-	    $self->{'res_fh'} = $self->{'orig_res_fh'};
-	    my $targ = $self->{'res_file'} = $self->{'orig_res_file'};	# <-
-		$self->debug(1, "resetting fh for results ($targ)");
-	} 
-	$self->debug('OUT', $i_ok);
-	return $i_ok
+    return $self->{"_${arg}_fh"}; 
 }
 
 
@@ -288,7 +370,6 @@ Storage area (file) for results from queries, returns the FH.
 
 sub append { 
     my $self = shift;
-	warn "Perlbug::Log::append(@_)" if $Perlbug::Debug >= 4;
     my $file = shift;
     my $data = shift;
     my $perm = shift || '0766';
@@ -299,11 +380,11 @@ sub append {
 	    $self->debug(4, 'result storing '.$data); 
 	    my $fh = $self->fh($file, '+>>', $perm);
 	    if (defined $fh) {
-			flock($fh, 2);
+			flock($fh, 2); # lock
 	        $fh->seek(0, 2);
 	        print $fh $data;
 	        $pos = $fh->tell;
-			flock($fh, 8);
+			flock($fh, 8); # unlock
 	        # unless (chmod(0766, $file)) {
 			# 	$self->debug(2, "Can't modify file($file) permissions: $!");
 			# }
@@ -320,13 +401,14 @@ sub append {
 
 Return the results of the queries from this session.
 
+First we look in site, then we look in docs.
+
     my $a_data = $log->read('res');
 
 =cut
 
 sub read {
     my $self = shift;
-	warn "Perlbug::Log::read(@_)" if $Perlbug::Debug >= 4;
     my $file = shift;
     my @data = ();      
     if ($file !~ /\w+/) {
@@ -359,7 +441,6 @@ Truncate this file
 
 sub truncate {
     my $self = shift;
-	warn "Perlbug::Log::truncate(@_)" if $Perlbug::Debug >= 4;
     my $file = shift;
     my $i_ok = 1;      
     if ($file !~ /^\w+$/) {
@@ -391,14 +472,14 @@ Set priority nicer by given integer, or by 12.
 
 sub prioritise {
     my $self = shift;
-	warn "Perlbug::Log::prioritise(@_)" if $Perlbug::Debug >= 4;
     # return "";  # disable
     my ($priority) = ($_[0] =~ /^\d+$/) ? $_[0] : 12;
 	$self->debug(2, "priority'ing ($priority)");
 	my $pre = getpriority(0, 0);
 	setpriority(0, 0, $priority);
 	my $post = getpriority(0, 0);
-	$self->debug(0, "Priority: pre ($pre), post ($post)");
+	$self->debug(2, "Priority: pre ($pre), post ($post)");
+	return $self;
 }
 
 
@@ -410,7 +491,6 @@ Sets the given user to the runner of this script.
     
 sub set_user {
     my $self = shift; # ignored
-	warn "Perlbug::Log::set_user(@_)" if $Perlbug::Debug >= 4;
     my $user = shift;
     my $oname  = getpwuid($<); 
     my $original = qq|orig($oname, $<, [$(])|;
@@ -418,7 +498,8 @@ sub set_user {
     ($>, $), $<, $() = ($data[2], $data[3], $data[2], $data[3]);
     my $pname  = getpwuid($>); 
     my $post = qq|curr($pname, $<, [$(])|;
-	$self->debug(0, "INIT ($$) scr($0), debug($Perlbug::Debug):, user($user)"); # -> $original, $post");
+	$self->debug(2, "user($user) original($original) post($post)");
+	return $self;
 }
 
 
@@ -434,7 +515,6 @@ Copy this to there
 
 sub copy {
     my $self = shift;
-	warn "Perlbug::Log::copy(@_)" if $Perlbug::Debug >= 4;
     my $orig = shift;
     my $targ = shift;
 	my $perm = shift || '0766';
@@ -492,7 +572,6 @@ link this to there
 
 sub link {
     my $self = shift;
-	warn "Perlbug::Log::link(@_)" if $Perlbug::Debug >= 4;
     my $orig = shift;
     my $targ = shift;
 	my $mod  = shift || ''; # -f?
@@ -535,7 +614,6 @@ Create new file with this data:
 
 sub create {
     my $self = shift;
-	warn "Perlbug::Log::create(@_)" if $Perlbug::Debug >= 4;
     my $file = shift;
     my $data = shift;
 	my $perm = shift || '0766';
@@ -576,7 +654,6 @@ Check syntax on given file
 
 sub _syntax_check {
     my $self = shift;
-	warn "Perlbug::Log::syntax_check(@_)" if $Perlbug::Debug >= 4;
     my $file = shift;
     my $ok = 1;
     
@@ -607,17 +684,6 @@ sub _syntax_check {
     return $ok;
 }
 
-
-=item DESTROY
-
-Cleanup log and result files.
-
-=cut
-
-sub DESTROY {
-    my $self = shift;
-    my $i_ok = map { undef $self->{"${_}_fh"} } qw(log hst res rng tmp);
-}
 
 =back
 

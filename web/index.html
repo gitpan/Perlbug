@@ -1,42 +1,51 @@
-<html><head>
-<title>Perlbug Database WWW Interface</title>
-</head>
-<body>
 <center>
-<a href="perlbug.cgi">
-<img src="images/perl_republic.gif" alt="Perlbug Database"></a>
+
+<a href="perlbug.cgi"><img src="images/perl_republic.gif" alt="Perlbug Database"></a>
+
 <hr>
-<p>
+
+<h4>
 Anyone may search the database via either the <a href="mailto:help@bugs.perl.org">email</a> 
 or the <a href="perlbug.cgi">web</a> interface.
-<p>
+</h4>
+
 <hr>
-<a href="perlbug.cgi"><h3>Enter BUG squashing arena!</h3></a>
+
+<a href="perlbug.cgi?req=search"><h3>Enter BUG squashing arena!</h3></a>
+<a href="_perlbug.cgi?req=search&frames=no"><h5>No Frames version!</h5></a>
+
+<h4>Or enter a quick search on just the subject line of submitted bugs which are still open:</h4>
+<form name=perlbug action=perlbug.cgi method=post>
+<input type=hidden name=req value=query>
+<input type=hidden name=status value=open>
+<input type=hidden name=trim value=25>
+<input type=text name=subject value="">
+<input type=submit name=req value=query>
+</form>
+
 <hr>
-    <table>
+<table>
 <tr>
-    <td><a href="perlbug.cgi">Search</a></td>
+    <td><a href="perlbug.cgi?req=search">Search</a></td>
     <td><a href="perlbug.cgi?req=help">Help</a></td>
-    <td><a href="perlbug.cgi?req=specification">Spec</a></td>
+    <td><a href="perlbug.cgi?req=spec">Spec</a></td>
     <td><a href="perlbug.cgi?req=overview">Overview</a></td>
     <td><a href="perlbug.cgi?req=administrators">Administrators</a></td>
+    <td><a href="perlbug.cgi?req=groups">Groups</a></td>
 </tr>
- 
 <tr>
     <td><a href="http://www.perl.com">Perl ref</a></td>
     <td><a href="archive/Perlbug.tar.gz">Perlbug source</a></td>
     <td><a href="archive/Perlbug.sql.gz">Perlbug data</a></td>
     <td><a href="mailto:help@bugs.perl.org">Email interface</a></td>
-    <td><a href="mailto:richard@perl.org">Maintainer</a> (<a href="perlbug.cgi?req=todo">TODO</a>)</td>
+    <td><a href="mailto:richard@perl.org">Maintainer</a></td>
+    <td><a href="perlbug.cgi?req=todo">Todo</a>)</td>
 </tr>
-<hr>
 <tr>
-    <td>&nbsp;</td><td><a href="http://www.apache.org/">Powered by Apache</a></td>
+    <td colspan=2><a href="http://www.apache.org/">Powered by Apache</a></td>
     <td><a href="http://www.tcx.se/">Driven by MySQL</a></td>
     <td><a href="http://www.linux.org/">Hosted by Linux</a></td>
-    <td><a href="http://www.perl.org/">Scriven in Perl</a></td><td>&nbsp;</td>
+    <td colspan=2><a href="http://www.perl.org/">Scriven in Perl</a></td>
 </tr>          
-   </table>
+</table>
 </center>
-</body>
-</html>

@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: check email functions against config data
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 70_Email.t,v 1.9 2000/08/02 08:15:37 perlbug Exp $
+# $Id: 70_Email.t,v 1.11 2001/03/31 16:15:01 perlbug Exp $
 #
 BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::Testing;
+	use Perlbug::TestBed;
 	plan('tests' => 6);
 }
 use strict;
@@ -16,11 +16,12 @@ my $test = 0;
 
 # Libs
 # -----------------------------------------------------------------------------
-use Perlbug::Email;
+use Perlbug::Interface::Email;
 use FileHandle;
 use Mail::Internet;
 use Sys::Hostname;
-my $o_mail = Perlbug::Email->new;
+my $o_mail = Perlbug::Interface::Email->new;
+my $o_test = Perlbug::TestBed->new;
 $o_mail->current('isatest', 1);
 
 $o_mail->current('admin', 'richardf');
@@ -35,7 +36,7 @@ my $context		= '';
 # -----------------------------------------------------------------------------
 # 
 # SYSTEM
-$test++; 
+$test++; # 1
 $err = 0;
 $context = 'system';
 foreach my $tgt (qw(maintainer)) {
@@ -50,11 +51,11 @@ output("$context -> err($err)") if $err;
 if ($err == 0) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 }
 
 # EMAIL
-$test++; 
+$test++; # 2
 $err = 0;
 $context = 'email';
 foreach my $tgt (qw(bugdb bugtron from help test)) {
@@ -69,53 +70,35 @@ output("$context -> err($err)") if $err;
 if ($err == 0) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 }
 
-# TARGET
-$test++; 
-$err = 0;
-$context = 'target';
-foreach my $tgt ($o_mail->get_keys($context)) {
-	my $addrs = $o_mail->$context($tgt);
-	foreach my $addr (split(/\s+/, $addrs)) {
-		my $checked = $o_mail->ck822($addr); 
-		if ($checked != 1) {
-			$err++;
-			output("$context $tgt address check 822 ($test) failed -> '$addr'");
-		}
-	}	
-}
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	notok($test);
+
+# TARGET/FORWARD
+foreach my $context (qw(target forward)) {
+	$test++; # 3, 4
+	$err = 0;
+	foreach my $tgt ($o_mail->get_keys($context)) {
+		my @addrs = $o_mail->$context($tgt);
+		foreach my $addr (@addrs) {
+			my $checked = $o_mail->ck822($addr); 
+			if ($checked != 1) {
+				$err++;
+				output("$context $tgt address check822 ($test) failed($addr)");
+			}
+		}	
+	}
+	output("$context -> err($err)") if $err;
+	if ($err == 0) {	
+		ok($test);
+	} else {
+		ok(0);
+	}
 }
 
-# FORWARD
-$test++; 
-$err = 0;
-$context = 'forward';
-foreach my $tgt ($o_mail->get_keys($context)) {
-	my $addrs = $o_mail->$context($tgt);
-	foreach my $addr (split(/\s+/, $addrs)) {
-		my $checked = $o_mail->ck822($addr); 
-		if ($checked != 1) {
-			$err++;
-			output("$context $tgt address check 822 ($test) failed -> '$addr'");
-		}
-	}	
-}
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	notok($test);
-}
 
 # DUMMY
-$test++; 
+$test++; # 5
 $err = 0;
 $context = 'all_duff';
 my %map = (
@@ -136,11 +119,11 @@ output("$context -> err($err)") if $err;
 if ($err == 0) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 }
 
 # ALL_OK
-$test++; 
+$test++; # 6
 $err = 0;
 $context = 'all_ok';
 %map = (
@@ -161,7 +144,7 @@ output("$context -> err($err)") if $err;
 if ($err == 0) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 }
 
 # CLEAN_HEADER_CK822

@@ -1,0 +1,25 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Mailing-List: contact perl5-porters-help@perl.org; run by ezmlm
+Delivered-To: mailing list perl5-porters@perl.org
+Received: (qmail 9800 invoked by uid 511); 19 Nov 1999 21:17:10 -0000
+Subject: 19870502.007 with some reply_2_insert subject
+Sender: schwern@athens.arena-i.com
+To: perl5-porters@perl.org
+From: perlbug_test@rfi.net
+Received: (qmail 9792 invoked by uid 508); 19 Nov 1999 21:17:09 -0000
+Content-Type: text/plain; charset=us-ascii
+User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <199_eep_911b_19161704.bid_in_subject@bugs.perl.org>
+X-Matches:  reply to initial install via volatile ticketid -> do_reply
+
+For some reason, Perl accepts a while loop with an empty conditional.
+	while ( ) { print "TRUE";  sleep 1;  }
+    .
+
+-- 
+
+Michael G Schwern                                           schwern@pobox.com
+                    http://www.pobox.com/~schwern
+     /(?:(?:(1)[.-]?)?\(?(\d{3})\)?[.-]?)?(\d{3})[.-]?(\d{4})(x\d+)?/i

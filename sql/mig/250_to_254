@@ -1,0 +1,33 @@
+# rjsf: things
+
+# UNIQUE's across all tables...
+# CREATE UNIQUE INDEX bug_id ON pb_bug (bugid);
+
+ALTER TABLE pb_bug     ADD email_msgid varchar(100);
+ALTER TABLE pb_message ADD email_msgid varchar(100);
+ALTER TABLE pb_note    ADD email_msgid varchar(100);
+ALTER TABLE pb_patch   ADD email_msgid varchar(100);
+ALTER TABLE pb_test    ADD email_msgid varchar(100);
+
+ALTER TABLE pb_bug MODIFY email_msgid varchar(100) DEFAULT '' NOT NULL;
+CREATE INDEX pb_bug_emailmsgid_i ON pb_bug (email_msgid(100));
+
+ALTER TABLE pb_message MODIFY email_msgid varchar(100) DEFAULT '' NOT NULL;
+CREATE INDEX pb_message_emailmsgid_i ON pb_message (email_msgid(100));
+
+ALTER TABLE pb_note MODIFY email_msgid varchar(100) DEFAULT '' NOT NULL;
+CREATE INDEX pb_note_emailmsgid_i ON pb_note (email_msgid(100));
+
+ALTER TABLE pb_patch MODIFY email_msgid varchar(100) DEFAULT '' NOT NULL;
+CREATE INDEX pb_patch_emailmsgid_i ON pb_patch (email_msgid(100));
+
+ALTER TABLE pb_test MODIFY email_msgid varchar(100) DEFAULT '' NOT NULL;
+CREATE INDEX pb_test_emailmsgid_i ON pb_test (email_msgid(100));
+
+UPDATE pb_thing SET type = 'mail' WHERE name IN ('bug', 'child', 'message', 'note', 'parent', 'patch', 'test');
+UPDATE pb_thing SET type = 'flag' WHERE name IN ('change', 'fixed', 'osname', 'project', 'severity', 'status', 'version');
+UPDATE pb_thing SET type = 'item' WHERE name IN ('address', 'group', 'user');
+UPDATE pb_thing SET type = 'application' WHERE name IN ('log', 'range', 'template', 'thing');
+
+# SELECT * FROM pb_thing ORDER BY type;
+

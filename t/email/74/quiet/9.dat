@@ -1,0 +1,15 @@
+Subject: null conditionals should not be allowed
+To: perl5-porters@perl.org
+Cc: perl5-porters@perl.org
+Cc: richard@perl.org 
+From: perlbug@perl.org
+Message-Id: <19991119161704.A11355@bugs.perl.org>
+X-Perlbug-Hint:  addressed From one of our addresses -> do_quiet
+
+should die quietly
+
+perl
+
+--
+
+sig

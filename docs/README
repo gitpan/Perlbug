@@ -1,0 +1,21 @@
+# $Id: README,v 1.4 2001/03/23 14:36:43 perlbug Exp $
+
+Docs in this dir expect to be transformed with a pod2* translator into:
+
+	~/text/*.txt
+	
+	~/web/*.html
+	
+
+When the Perlbug looks for them, it will look in the appropriate interface dir.
+
+cd ~/docs
+
+pod2text mailhelp > ~/text/mailhelp
+
+pod2html webhelp > ~/web/webhelp.html
+
+etc.
+
+perlbug pod docs
+

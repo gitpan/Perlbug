@@ -1,0 +1,12 @@
+Subject: register request
+Sender: schwern@athens.arena-i.com
+To: close_this_19870502.007@bugs.perl.org
+Cc: close_this_19870502.007@bugs.perl.org
+From: "The man in the moon" <perlbug_test@rfi.net>
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+
+Should be found in Cc
+
+---
+x@y.z
+

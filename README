@@ -1,29 +1,33 @@
+# $Id: README,v 1.6 2001/04/21 20:48:48 perlbug Exp $
+# 
+
 Perlbug README
 
 Short instructions:
 
-    unpack Perlbug_2.26.tar.gz
+    unpack Perlbug.tar.gz
     
-    cd ./Perlbug_2.26
+    cd ./Perlbug
     
-	modify ./config/Configuration
+    modify ./config/Configuration
 	
-    perl Makefile.PL PREFIX=Perlbug_installation
+    perl Makefile.PL
 
     make 
- 
-    make test
-    
+
+    make test 
+
     make install
     
 
 Long instructions:
 
-    See INSTALL and 'perldoc Perlbug'
- 
-	More docs under construction
+    See INSTALL and 'perldoc Perlbug'.
 
-Copyright (c) 1999 2000 Richard Foley. All rights reserved.
+    See also the various help pages/FAQs in the ./text dir.
+
+
+Copyright (c) 1999 2000 2001 Richard Foley. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
                           

@@ -1,0 +1,14 @@
+Subject: -h -o 
+Sender: schwern@athens.arena-i.com
+To: funny+looking+address%%line-here.@perl.org 
+From: "Richard Foley" <richard@perl.org>
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+
+Gruesse
+
+Should be ok with 'From' line
+
+Ciao
+---
+Sig here

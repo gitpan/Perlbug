@@ -1,6 +1,0 @@
-AuthType Basic
-AuthName Perlbug
-AuthUserFile /home/perlbug/config/.htpasswd 
-<Limit GET POST>
-require valid-user
-</Limit>

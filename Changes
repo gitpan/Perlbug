@@ -1,8 +1,10 @@
 # Perlbug Changes 
-# $id$
-			This file no longer maintained:
+#
+# $Id: Changes,v 1.8 2000/11/22 09:31:35 perlbug Exp $
+#
+            This file no longer maintained, see 'rcsdiff Perlbug.pm'
 
-Apr 2000:   See RCS files (this kind of applies to everything in 2000++
+Apr 2000:   See RCS files (this applies to everything > 20000401)
 
 Mar 2000:   Perlbug created from PbDb
 

@@ -30,7 +30,7 @@ my @prepex_sql = ();
 $SIG{__DIE__} = sub {
     $dbh && ($dbh->err || $dbh->state) or return;
 
-    print STDERR "DBI:DBD Failure\n";
+    printf STDERR "DBI:DBD Failure from line %d in %s\n", (caller (1))[2, 1];
     $dbh->err    and print STDERR "    err:\t",    $dbh->err,    "\n";
     $dbh->errstr and print STDERR "    errstr:\t", $dbh->errstr, "\n";
     $dbh->state  and print STDERR "    state:\t",  $dbh->state,  "\n";
@@ -39,6 +39,7 @@ $SIG{__DIE__} = sub {
 	"--------",
 	grep (m/\S/ => @prepex_sql),
 	"--------"), "\n";
+    print caller (1), "\n";
     }; # __DIE__
 
 ### SQL utils #################################################################
@@ -48,7 +49,7 @@ sub DBDlogon (;$)	# Default Read-Only
     my $wr = shift || 0;
     $dbh and return $dbh;
     my $db = exists $ENV{MYSQLDB} ? $ENV{MYSQLDB} : "test";
-    $dbh = DBI->connect ("DBI:mysql:database=$db", $ENV{LOGNAME}, undef, {
+    $dbh = DBI->connect ("DBI:mysql:database=$db", $ENV{LOGNAME}, 'm0use1', {
 	RaiseError => 1,
 	PrintError => 1,
 	ChopBlanks => 1,

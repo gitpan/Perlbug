@@ -1,6 +1,6 @@
 # Perlbug admin record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Admin.pm,v 1.1 2000/01/18 08:33:17 richard Exp $
+# $Id: Admin.pm,v 1.2 2000/11/27 08:00:11 perlbug Exp $
 #
 
 package Perlbug::Admin;

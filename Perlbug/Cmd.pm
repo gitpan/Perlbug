@@ -1,4 +1,4 @@
-# $Id: Cmd.pm,v 1.16 2000/09/01 11:50:02 perlbug Exp perlbug $ 
+#i_ok $Id: Cmd.pm,v 1.19 2001/01/19 16:17:40 perlbug Exp $ 
 
 =head1 NAME
 
@@ -104,7 +104,7 @@ $help
 		if ($in =~ /^\!\s*(\d+)\s*$/) {	# HIST
 			my $ref = $1;
 			($in) = $self->history($ref);
-		} elsif ($in =~ /\w+/) { 		# COMMAND 
+		} elsif ($in =~ /.+/) { 		# COMMAND 
 			# $in = $in; 
 		} else {						# ZIP
 			print "Please input a command: \n$cnt $prompt";
@@ -139,16 +139,17 @@ sub process {
 	if (ref($h_cmds) ne 'HASH') {
 		$res[0] = "Command line($line) parse failure($h_cmds) - try 'h'\n";
 	} else {
-		$i_ok = $self->process_commands($h_cmds);
-		if ($i_ok != 1) {
-			$res[0] = "Command($line) process failure($i_ok) - try 'h'\n";
-		} else {
-			@res = $self->get_results;
+		# $i_ok = $self->process_commands($h_cmds);
+		@res = $self->process_commands($h_cmds);
+		# if (@res >= 1) {
+		#		$res[0] = "Command($line) process failure($i_ok) - try 'h'\n";
+		# } else {
+			# @res = $self->get_results;
 			if (!((scalar(@res) >= 1) && (length(join('', @res)) >= 1))) {
 				$res[0] = "Command($line) failed to produce any results(@res) - try 'h'\n";
 			} 
-			$self->truncate('res') || print "failed to truncate res file\n";
-		}
+			# $self->truncate('res') || print "failed to truncate res file\n";
+		# }
 	}
 	$i_ok = $self->scroll(@res);
 	$self->debug('OUT', $i_ok);
@@ -228,9 +229,10 @@ sub _notify_cc {
 	# $self->debug(1, "Not notifying (@_)... ".$self->isadmin); 
 }
 
+
 =item doh
 
-Wraps help message
+Wraps and extends help message
 
 =cut
 
@@ -238,10 +240,12 @@ sub doh {
 	my $self = shift;
 	$self->debug('IN', @_);
 	my $res = $self->SUPER::doh(
-		'H' => 'History mechanism - repeats third cmd (!3)',
+        '!' => 'shell escape - repeat third command			(!3)',     # A
+		'H' => 'History listing, use exclamation mark to repeat cmd: (!3)',
 		@_,
 	);
 	$self->debug('OUT', length($res));
+	return $res;
 }
 
 
@@ -254,8 +258,6 @@ History of commands
 sub doH {
 	my $self = shift;
 	$self->debug('IN', @_);
-	my $i_ok = 1;
-	# return $self->result($self->help);
 	my $history = '';
 	my @keys = $self->history('keys');
 	foreach my $key (sort { $a <=> $b } @keys) { 
@@ -263,9 +265,8 @@ sub doH {
 		my ($cmd) = $self->history($key);
 		$history .= sprintf('%-6d', $key)."$cmd\n";
 	}
-	$self->result($history);
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	$self->debug('OUT', $history);
+	return $history;
 }
 
 
@@ -297,7 +298,7 @@ sub parse_commands { # migrate -> Do
 		$self->debug(3, "cmds(@cmds)=>coms(@coms)");
 		SWITCH: 
     	foreach my $i (@coms) { 
-        	next unless $i =~ /\w/;
+        	next unless $i =~ /\w|!/;
 			my ($com, $mand) = ('', ''); 
         	if ($i =~ /^\s*([@cmds])\s*(.*)$/) { # current
 	        	($com, $mand) = ($1, $2);
@@ -308,7 +309,7 @@ sub parse_commands { # migrate -> Do
 			$mand =~ s/^\s*(.*)$/$1/g; 		# front
         	$mand =~ s/^(.*)\s*$/$1/g; 		# back
         	$mand =~ s/[\s\n]+/ /g;    		# inbetween
-       		$mand =~ s/^(.*?)-+.*$/$1/s; 	# sig ?
+       		$mand =~ s/^(.*?)---+.*$/$1/s; 	# sig ?
 			$self->debug(3, "i='$i' -> com($com) and mand($mand)");
         	next unless grep(/$com/, @cmds); 			# bit pedantic
         	if ($com =~ /^[@adminable]$/) {       			# CHECK admin status 
@@ -320,24 +321,16 @@ sub parse_commands { # migrate -> Do
         	}
 			# -> MAND <-
         	my @mand;
-			# rjsf: should trash this 'body' bit!
-			# 		and rationalise parse_commands with scan_header or somesuch
 			if ($com =~ /^[wVi]$/) {                   		# BODY instructions 
-				# $bdy =~ s/[\s\n]+/ /g;
-       			# $bdy =~ s/^\s*(.*?)\s*-+.*$/$1/s;
 				@mand = ($bdy);
         	} elsif ($com =~ /^[dDfhHlLoQZ]$/) {     		# MAY have parameter or just flagged.
          		if ($mand =~ /\w/) {
-                	# @mand = split('\s+', $mand);
                 	@mand = ($mand);
             	} else {
                 	@mand = (1);
             	}
-        	} elsif ($com =~ /^[q]$/) {						# MUST have a parameter.
+        	} elsif ($com =~ /^[!aAbBcCegGIjJmnNpPqrRsStTuvxXy]$/) {	# MUST have a parameter.
             	@mand = ($mand);
-        	} elsif ($com =~ /^[aAbBcCeImnNpPrRsStTuvxXy]$/) {	# MUST have a parameter.
-            	@mand = ($mand);
-            	# @mand = split('\s', $mand);
         	} else {
             	$self->debug(0, "What's this ($com) and how did it get this far?");
         	}
@@ -366,7 +359,7 @@ Steps through hash created by L<parse_commands>, and executes each outstanding
 command, so long as the command has been allowed via L<switches>.
 Returns valid == 1 or error message.
 
-    my $outcome = $pb->process_commands($ref_to_hashed_commands);
+    my @outcome = $pb->process_commands($ref_to_hashed_commands);
 
 =cut
 
@@ -374,23 +367,24 @@ sub process_commands {
     my $self   = shift;
 	$self->debug('IN', @_);
     my $h_cmds = shift;
-    my $i_ok = 1;
-	$self->debug(2, "process_commands($h_cmds)");
-    $self->fatal("No commands($h_cmds) given to process_commands!") unless ref($h_cmds) eq 'HASH';
+	my $body = shift || '';
+    my @res = ();
+    $self->fatal("No commands($h_cmds) given to process!") unless ref($h_cmds) eq 'HASH';
+	$self->debug(2, "processing($h_cmds): ".Dumper($h_cmds));
     my %cmd = %{$h_cmds}; 
 	SWTCH:
     foreach my $swtch (keys %cmd) { 
         last SWTCH unless $swtch =~ /^\w$/;
         next SWTCH unless grep(/$swtch/, $self->get_switches);
 		if ($self->can("do$swtch")) {
-	        $self->do($swtch, $cmd{$swtch}); 
+	        push(@res, $self->do($swtch, $cmd{$swtch}, $body)); 
     	    $self->debug(2, "Process ($swtch, $cmd{$swtch}) completed, next...");
     	} else {
     	    $self->debug(0, "Unknown switch ($swtch) next...");
 		}
 	}
-	$self->debug('OUT', $i_ok);
-    return $i_ok;
+	$self->debug('OUT', @res);
+    return @res;
 }
 
 

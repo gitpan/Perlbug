@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: check mailability (both command line and module based - not finished 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 71_Email.t,v 1.11 2000/08/02 08:22:21 perlbug Exp $
+# $Id: 71_Email.t,v 1.14 2001/04/21 20:48:48 perlbug Exp $
 #
 BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::Testing;
+	use Perlbug::TestBed;
 	plan('tests' => 8);
 }
 use strict;
@@ -15,10 +15,10 @@ my $test = 0;
 
 # Libs
 # -----------------------------------------------------------------------------
-use Perlbug::Email;
+use Perlbug::Interface::Email;
 use Sys::Hostname;
-my $o_mail = Perlbug::Email->new;
-$o_mail->current('isatest', 1);
+my $o_mail = Perlbug::Interface::Email->new;
+my $o_test = Perlbug::TestBed->new($o_mail);
 
 # Tests
 # -----------------------------------------------------------------------------
@@ -41,7 +41,7 @@ $test++;
 if (ref($o_mail)) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("Can't retrieve Email($o_mail) object");
 }
 
@@ -53,7 +53,7 @@ my $o_Msg = Mail::Send->new;
 if (ref($o_Msg)) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("Mail::Send->new failed($o_Msg)");	
 }
 
@@ -66,7 +66,7 @@ $o_Msg->set('Subject', 'Perlbug installation obj test message') || $err++;
 if ($err == 0) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("print to '$o_Msg' failed");
 }
 
@@ -79,7 +79,7 @@ my $o_Mail = $o_Msg->open('test') || $err++;
 if ($err == 0) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("$o_Msg->open('test') failed: '$o_Mail')");	
 }
 
@@ -91,7 +91,7 @@ print $o_Mail $body || $err++;
 if ($err == 0) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("Can't print to $o_Mail");	
 }
 
@@ -102,10 +102,11 @@ $err = 0;
 if ($o_Mail->close) {
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("Couldn't close Mail object($o_Mail)");
 }
 
+$^W = 0;
 # 7
 # can send another (plain) mail?
 $test++; 
@@ -122,7 +123,7 @@ if (1 == 1) {
 if (ref($o_hdr1)) {
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("Couldn't get the first o_hdr($o_hdr1)");
 }
 
@@ -134,18 +135,21 @@ my $o_hdr2 = '';
 my $i_sent = 2;
 if (1 == 1) {
 	$o_hdr2 = $o_mail->get_header($o_hdr1);
+	# $o_hdr2 = $o_hdr1->dup();
 	$o_hdr2->replace('To', $maintainer);
 	$o_hdr2->replace('Subject', 'some other subject');
 	$o_hdr2->replace('From', 'perlbug_test@rfi.net');
-	$o_hdr2->add('Message-Id', 'abc');
+	my $now = $o_mail->get_date;
+	$o_hdr2->replace('Message-Id', "<${now}_$$\@rfi.net>");
 	$i_sent = $o_mail->send_mail($o_hdr2, $body);
 }
 if (ref($o_hdr2) and $i_sent == 1) {
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("Couldn't send($i_sent) the second header ($o_hdr2)");
 }
+$^W = 1;
 
 # Done
 # -----------------------------------------------------------------------------

@@ -1,0 +1,13 @@
+Subject: null conditionals should not be allowed
+To: perlbug@perl.com
+From: perlbug_test@rfi.net
+Message-Id: <3.dat_do_new@rfi.net>
+X-Perlbug-Hint:  addressed to perlbug, perl in body -> do_new
+
+For some reason, Perl accepts a while loop with an empty conditional.
+	while ( ) { print "TRUE";  sleep 1;  }
+results in a big list of TRUEs.  This is odd in several ways:
+ 
+---
+sig
+

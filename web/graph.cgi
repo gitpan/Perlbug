@@ -1,15 +1,17 @@
 #!/usr/bin/perl 
 # Perlbug graph interface to database (bugdb)
 # (C) 2000 Richard Foley RFI perlbug@rfi.net 
-# $Id$
+# $Id: graph.cgi,v 1.1 2001/03/23 14:38:08 perlbug Exp $
 #
 use strict;
-use lib (File::Spec->updir, qw(/home/richard/Live /home/perlbug));
+use vars(qw($VERSION));
+$VERSION = do { my @r = (q$Revision: 1.1 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+
+use FindBin;
+use lib "$FindBin::Bin/..";
 use Perlbug::Base;
 use GD::Graph::pie; 				# mixed
 use CGI;
-use vars qw($VERSION);
-$VERSION = 1.00;
 $|=1;
 
 # OBJs

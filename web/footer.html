@@ -1,26 +1,34 @@
 </table>
 <hr>
 <table width=100%>
+<!-- Functions -->
 <tr>
-    <td><a href="perlbug.cgi?req=search">Search</a></td>
-    <td><a href="perlbug.cgi?req=help">Help</a></td>
-    <td><a href="perlbug.cgi?req=specification">Spec</a></td>
-    <td><a href="perlbug.cgi?req=overview">Overview</a></td>
-    <td><a href="perlbug.cgi?req=administrators">Administrators</a></td>
+    <td><a href="index.html" target="perlbug" onClick="return go('index');">Home</a></td>
+    <td><a href="perlbug.cgi?req=search" target="perlbug" onClick="return go('search');">Search</a></td>
+    <td><a href="perlbug.cgi?req=groups" target="perlbug" onClick="return go('groups');">Groups</a></td>
+    <td><a href="perlbug.cgi?req=administrators" target="perlbug" onClick="return go('administrators');">Administrators</a></td>
+    <td><a href="perlbug.cgi?req=spec" target="perlbug" onClick="return go('spec');">Specification</a></td>
+    <td><a href="perlbug.cgi?req=overview" target="perlbug" onClick="return go('overview');">Overview</a></td>
 </tr>
-
+<br>
+<!-- Utilities -->
 <tr>
-    <td><a href="http://www.perl.com">Perl ref</a></td>	
-    <td><a href="Perlbug.tar.gz">Perlbug source</a></td> 
-    <td><a href="Perlbug.dump.gz">Perlbug data</a></td> 
-    <td><a href="mailto:bugs@perl.org">Email interface</a></td>
-    <td><a href="mailto:perlbug@rfi.net">Maintainer</a> (<a href="perlbug.cgi?req=todo">TODO</a>)</td>
+    <td><a href="perlbug.cgi?req=webhelp" target="perlbug" onClick="return go('webhelp');">Web help</a></td>
+    <td><a href="perlbug.cgi?req=mailhelp" target="perlbug" onClick="return go('mailhelp');">Mail help</a></td>
+	<td><a href="archive/Perlbug.tar.gz" target="perlbug">Perlbug source</a></td> 
+	<td><a href="archive/Perlbug.sql.gz" target="perlbug">Perlbug database</a></td> 
+	<td><a href="perlbug.cgi?req=todo" target="perlbug" onClick="return go('todo');">ToDo</a></td>
+<!-- FAQ -->
+	<td>&nbsp;</td>
 </tr>
-<hr>
+<br>
+<!-- References -->
 <tr>
-    <td>&nbsp;</td><td><a href="http://www.apache.org/">Powered by Apache</a></td>
-    <td><a href="http://www.tcx.se/">Driven by MySQL</a></td>
-    <td><a href="http://www.linux.org/">Hosted by Linux</a></td>
-    <td><a href="http://www.perl.org/">Scriven in Perl</a></td><td>&nbsp;</td>
+	<td colspan=2><a href="http://www.apache.org/">Powered by Apache</a></td>
+	<td><a href="http://www.tcx.se/">Driven by MySQL</a></td>
+	<td><a href="http://www.linux.org/">Hosted by Linux</a></td>
+	<td><a href="http://www.perl.org/">Scriven in Perl</a></td>
+	<td><a href="mailto:richard@perl.org">Maintainer</a></td>
+	<td>&nbsp;</td>
 </tr>
 </table>

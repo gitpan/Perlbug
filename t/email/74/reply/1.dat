@@ -1,0 +1,11 @@
+Subject: some subject
+To: perl5-porters@perl.org
+From: perlbug_test@rfi.net
+Message-Id: <some_msgid@rfi.net>
+In-Reply-To: <19870502@rfi.net>
+X-Perlbug-Hint:  in-reply-to initial install via in-reply-to
+
+some mail message 
+---
+sig
+

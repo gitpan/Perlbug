@@ -1,0 +1,185 @@
+# $Id: 226_to_227,v 1.1 2001/04/21 20:48:48 perlbug Exp $
+#
+# update from 2.26 -> 2.28 (include created, ts in ALL tables) -> incremental db download
+
+# TM_FLAG
+CREATE TABLE tm_flag (
+	created datetime,
+	ts timestamp(14),
+	flagid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
+	type varchar(10) DEFAULT '' NOT NULL,
+	flag varchar(15) DEFAULT '' NOT NULL,
+	PRIMARY KEY (flagid)
+);
+INSERT INTO tm_flag SELECT  
+	now(), now(), NULL, type, flag
+FROM tm_flags;
+
+# TM_BUG_MESSAGE
+ALTER TABLE tm_bug_message RENAME tm_bug_message_data;
+CREATE TABLE tm_bug_message (
+	created datetime,
+	ts timestamp(14),
+	bugid varchar(12) DEFAULT '' NOT NULL,
+  	messageid bigint(20) unsigned NOT NULL
+);
+INSERT INTO tm_bug_message SELECT  
+	now(), now(), bugid, messageid
+FROM tm_bug_message_data;
+
+# TM_BUG_NOTE
+ALTER TABLE tm_bug_note RENAME tm_bug_note_data;
+CREATE TABLE tm_bug_note (
+	created datetime,
+	ts timestamp(14),
+	bugid varchar(12) DEFAULT '' NOT NULL,
+  	noteid bigint(20) unsigned NOT NULL
+);
+INSERT INTO tm_bug_note SELECT  
+	now(), now(), bugid, noteid
+FROM tm_bug_note_data;
+
+# TM_BUG_PATCH
+ALTER TABLE tm_bug_patch RENAME tm_bug_patch_data;
+CREATE TABLE tm_bug_patch (
+	created datetime,
+	ts timestamp(14),
+	bugid varchar(12) DEFAULT '' NOT NULL,
+  	patchid bigint(20) unsigned NOT NULL
+);
+INSERT INTO tm_bug_patch SELECT  
+	now(), now(), bugid, patchid
+FROM tm_bug_patch_data;
+
+# TM_BUG_test
+ALTER TABLE tm_bug_test RENAME tm_bug_test_data;
+CREATE TABLE tm_bug_test (
+	created datetime,
+	ts timestamp(14),
+	bugid varchar(12) DEFAULT '' NOT NULL,
+  	testid bigint(20) unsigned NOT NULL
+);
+INSERT INTO tm_bug_test SELECT  
+	now(), now(), bugid, testid
+FROM tm_bug_test_data;
+
+# TM_BUG_user
+ALTER TABLE tm_bug_user RENAME tm_bug_user_data;
+CREATE TABLE tm_user_bug (
+	created datetime,
+	ts timestamp(14),
+  	userid varchar(16) DEFAULT '' NOT NULL,
+	bugid varchar(12) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_user_bug SELECT  
+	now(), now(), userid, bugid 
+FROM tm_bug_user_data;
+
+# TM_BUG_CC
+ALTER TABLE tm_bug_address RENAME tm_bug_address_data;
+CREATE TABLE tm_bug_address (
+	created datetime,
+	ts timestamp(14),
+	bugid varchar(12) DEFAULT '' NOT NULL,
+  	address varchar(100) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_bug_address SELECT  
+	now(), now(), bugid, address
+FROM tm_bug_address_data;
+
+# TM_GROUP_USER
+ALTER TABLE tm_groups RENAME tm_group_user_data;
+CREATE TABLE tm_user_group (
+	created datetime,
+	ts timestamp(14),
+  	userid varchar(16) DEFAULT '' NOT NULL,
+	groupid varchar(12) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_user_group SELECT  
+	now(), now(), userid, groupid
+FROM tm_group_user_data;
+
+# TM_ID
+ALTER TABLE tm_bugid RENAME tm_bugid_data;
+CREATE TABLE tm_bugid (
+	created datetime,
+	ts timestamp(14),
+	bugid varchar(12) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_bugid SELECT  
+	now(), now(), bugid 
+FROM tm_bugid_data;
+
+# TM_LOG
+ALTER TABLE tm_log RENAME tm_old_log_data;
+CREATE TABLE tm_log (
+	created datetime,
+	ts timestamp(14),
+	logid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
+	entry blob,
+	userid varchar(16),
+	objectid varchar(16),
+	objecttype char(1),
+	PRIMARY KEY (logid)
+);
+INSERT INTO tm_log SELECT  
+	now(), ts, logid, entry, userid, objectid, objecttype
+FROM tm_old_log_data;
+
+# TM_parent_child
+ALTER TABLE tm_parent_child RENAME tm_parent_child_data;
+CREATE TABLE tm_parent_child (
+	created datetime,
+	ts timestamp(14),
+	parentid varchar(12) DEFAULT '' NOT NULL,
+	childid varchar(12) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_parent_child SELECT  
+	now(), now(), parentid, childid
+FROM tm_parent_child_data;
+
+# TM_BUG_CHANGE
+CREATE TABLE tm_bug_change (
+	created datetime,
+	ts timestamp(14),
+	bugid varchar(12) DEFAULT '' NOT NULL,
+	changeid varchar(12) DEFAULT '' NOT NULL
+);
+
+# TM_patch_change
+ALTER TABLE tm_patch_change RENAME tm_patch_change_data;
+CREATE TABLE tm_patch_change (
+	created datetime,
+	ts timestamp(14),
+	patchid varchar(12) DEFAULT '' NOT NULL,
+	changeid varchar(12) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_patch_change SELECT  
+	now(), now(), patchid, changeid
+FROM tm_patch_change_data;
+
+# TM_patch_version
+ALTER TABLE tm_patch_version RENAME tm_patch_version_data;
+CREATE TABLE tm_patch_version (
+	created datetime,
+	ts timestamp(14),
+	patchid varchar(12) DEFAULT '' NOT NULL,
+	version varchar(12) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_patch_version SELECT  
+	now(), now(), patchid, '' 
+FROM tm_patch_version_data;
+
+# TM_test_version
+ALTER TABLE tm_test_version RENAME tm_test_version_data;
+CREATE TABLE tm_test_version (
+	created datetime,
+	ts timestamp(14),
+	testid varchar(12) DEFAULT '' NOT NULL,
+	version varchar(12) DEFAULT '' NOT NULL
+);
+INSERT INTO tm_test_version SELECT  
+	now(), now(), testid, ''
+FROM tm_test_version_data;
+
+# done

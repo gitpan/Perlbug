@@ -1,4 +1,5 @@
-# $Id: Fix.pm,v 1.10 2000/09/14 11:09:24 perlbug Exp perlbug $ 
+# $Id: Fix.pm,v 1.28 2001/04/21 20:48:48 perlbug Exp $ 
+# 	
 
 =head1 NAME
 
@@ -7,30 +8,37 @@ Perlbug::Fix - Command line interface to fixing perlbug database.
 =cut
 
 package Perlbug::Fix;
-use File::Spec; 
-use lib File::Spec->updir;
-# use Getopt::Std;
-use Data::Dumper;
-use Perlbug::Cmd;
-@ISA = qw(Perlbug::Cmd);
 use strict;
-use vars qw($VERSION);
-$VERSION = 1.11;
+use vars qw($VERSION @ISA);
+$VERSION = do { my @r = (q$Revision: 1.28 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+my $DEBUG  = $ENV{'Perlbug_Database_DEBUG'} || $Perlbug::Database::DEBUG || '';
 $|=1;
 
-my %ARG = (
-    "h" => '', "t" => 0, 'd' => 0, 'p' => '', 'u' => '',
-);
-# getopts('htdpu:', \%ARG);      
+use Data::Dumper;
+use Perlbug::Interface::Cmd;
+@ISA = qw(Perlbug::Interface::Cmd);
 
+my %ARG = (
+    "h" => '', "t" => 0, 'd' => 0, 'p' => '', 'u' => '', 'v' => 0,
+);
 
 =head1 DESCRIPTION
 
 Command line interface to fixing incorrect perlbug data.
 
-Note: L<mig()> will migrate from pre-2.26 database structure to current usage.
+Most calls take an integer as the maximimum number of records to process, or default to a relatively low value.
 
-=head1 USAGE
+
+=head1 SYNOPSIS
+
+	use Perlbug::Fix;
+
+	my $o_fix = Perlbug::Fix->new();
+
+	$o_fix->cmd; # loop
+
+
+=head1 USAGE 
 
   	lowercase is indicator/report 
 	
@@ -43,10 +51,10 @@ Note: L<mig()> will migrate from pre-2.26 database structure to current usage.
 	> f		# view erroneous flags
 	
 	> F		# Fix erroneous flags
-	
-	> mig	# check stuff
-	
-	> MIG 	# Fix stuff (migrate...)
+
+	> bv	# see how many dodgy bug_version records exist
+
+	> BV 57 # Attempt to fix up to 57 of them
 	
 	> 		# etc.
 
@@ -64,64 +72,75 @@ Create new Perlbug::Fix object:
 =cut
 
 sub new {
-    my $class = shift;
+    my $proto = shift;
+    my $class = ref($proto) || $proto; 
     my $arg   = shift;
-    my $self = Perlbug::Cmd->new(@_);
+    my $self = Perlbug::Interface::Cmd->new(@_);
+
+	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
     bless($self, $class);
 }
 
 my $FIX = 0;
+my $MAX = $ENV{'Perlbug_Max'} || 33;
 my %MAP = (
-	'b' => 'bugs',	    'bh' => 'deletes non-valid bugid bugs',
-    'c' => 'claimants',	'ch' => 'deletes non-existent userid claimants',
-	'cc'=> 'cc', 		'cch'=> 'deletes non-existent bugid references, AND inserts each Cc: from tm_messages::msgheader',
-	'f' => 'flags',		'fh' => 'set tm_bugs::flags(blank) where unknown in tm_flags',
-	'f1' => 'flags_status',		'f1h'=> 'resolve status, also updates tm_flags!',
-	'f2' => 'flags_osname',		'f2h'=> 'resolve osnames, also updates tm_flags!',
-	'f3' => 'flags_category',	'f3h'=> 'resolve category, also updates tm_flags!',
-	'f4' => 'flags_severity',  	'f4h'=> 'resolve severity, also updates tm_flags!',
-	'h' => 'help',		'hh' => 'more detailed help',
-  # 'l' => 'log', 		'lh' => 'loooooo  oogs',
-	'm' => 'messages',	'mh' => 'deletes non-existent bugid messages',
-	'n' => 'notes',		'nh' => 'deletes non-existent bugid notes',
-	'p' => 'patches',	'ph' => 'trashes ticket_patch relationship where no (bugid|patchid)',
-	'q' => 'doq',	    'qh' => 'query the database (Q for the schema)',
-  # 't' => 'tests',	    'th' => 'deletes non-valid tests',
-    'u' => 'user',
-  	'x' => 'xspecial',  'xh' => 'xtra-special runs -> ?',
-  #                            -> MIGRATE <-
-    'mig'=> 'mig',      'migh'=> 'MIGRATE from 2.23 to 2.26: patches->patchid/bugid, ticketid->bugid, etc.',
-    # 'x0' => 'x0',		'x0h' => 'MIGRATE logs',
-    # 'x1' => 'x1',		'x1h' => 'MIGRATE notes',
-    # 'x2' => 'x2',		'x2h' => 'MIGRATE patches',
-    # 'x3' => 'x3',		'x3h' => 'MIGRATE tests',
-    # 'x4' => 'x4',		'x4h' => 'MIGRATE claimants',
-    # 'x5' => 'x5',		'x5h' => 'MIGRATE cc',
-    # 'x6' => 'x6',		'x6h' => 'MIGRATE messages',
-    # 'x7' => 'x7',		'x7h' => 'MIGRATE bugs',
-   	# 'x8' => 'x8',		'x8h' => 'MIGRATE users',
-	# 'x9' => 'x9',     'x9h' => 'MIGRATE id',
-	# 'x99'=> 'x99',    'x99h'=> 'MIGRATE clean up',
-   #'x31'=> 'x31',      'x31h'=> 'update tm_claimants from tm_logs by userid',
-   #'x32'=> 'x32',      'x32h'=> 'mails that were new but did not make it out to p5p',
+	'a' 	=> 'address      [bugid%]',		'ah' 	=> 'trawls for in/valid addresses - see also "r (bug|group) address"',
+	'c'		=> 'change       [filename',  	'ch'	=> 'trawls given file for bugid=>patchid=>changid relations',
+	'd'		=> 'discard      [bugid%]',		'dh'	=> 'discard duplicates or redundant data, see also r=relations',
+#	'e' 	=> 'forward      [bugid%]',		'wh' 	=> 'forward non-forwarded mails',
+	'f'		=> 'trim_flags   [flag%]',		'fh'	=> 'trim flags where dupes',
+	'h' 	=> 'help         []',			'hh' 	=> 'more detailed help',
+	'i' 	=> 'scan_ids     [bugid%]',		'ih' 	=> 'trawls for email Message-Ids', 
+	'k' 	=> 'kick         [Perlbug_Max]','kh' 	=> 'kick Perlbug_Max value to n',
+    'l' 	=> 'ubl          [userid%]',	'lh'	=> 'updates user_bug table via log entries',
+	'm'		=> 'message      [messageid%]',	'mh'	=> 'message fix for subject lines',
+	'q' 	=> 'doq          [sql]',    	'qh' 	=> 'query the database (Q for the schema)',
+	'r'		=> 'references   [bugid%]',		'rh'	=> 'deletes non-existent pb_\w_\w references, see also d=discard',
+	's' 	=> 'scan_bugs    [bugid%]',    	'sh' 	=> 'scan all bugs for group, osname, version, etc.',
+#	't' 	=> 'tables       [primaryid%]',	'th' 	=> 'tidy all tables created=SYSDATE(), etc.',
+	'u' 	=> 'users        [userid%]',	'uh' 	=> 'de-activate non-valid users',
+	'x'		=> 'execute      [sql]',		'xh'	=> 'xecute sql on db!', # only if bugmaster
+	'w'		=> 'wrapper      [Perlbug_Max]','wh'	=> 'wrap all calls - takes quite a long time...',
+	'z'		=> 'header_body  [bugid%]',	 	'zh'	=> 'migrate headers and body across to bug from original mail',
 );
+
+sub wrapper { # w 
+	my $self = shift;
+	my @wrap = qw(z i d m f s a c u l); 
+	foreach my $w (@wrap) {
+		my $W = uc($w);
+		print "Wrapping $w($W) of wrap(@wrap) -> \n";
+		$self->process($w, @_);
+		print "... done wrapping $w($W)       <-\n";
+	}
+	# return "Unsupported: try calling(@wrap)\n";
+}
+
+sub output { print @_; }
 	
 sub quit { print "Bye bye!\n"; exit; }
 
-sub help {
+sub help { # h 
 	my $self = shift;
 	my $i_ok = 1;
-	my $help = "Fix help:\nlowercase reports, UPPERCASE does it!\n";
+	my $help = qq|Fix help:\nlowercase reports, UPPERCASE eFFects it!
+ENV{Perlbug_Max} (currently $MAX) may be set for loop control.
+Most commands accept an argument, a bugid or something, as indicated.
+Modification feedback takes the form of, where object_type is uppercase
+where the database was actually changed:
+
+	[i_seen] <i_fixed> object_type(object_id): modification_feedback
+
+|;
 	foreach my $k (sort keys %MAP) {
 		next if $k =~ /^\w+h$/;
 		my $hint = "${k}h";
 		$help .= ($FIX == 1) ? "$k = $MAP{$hint}\n" : "$k = $MAP{$k}\n";
 	}
-	$self->result($help);
-	return $i_ok;
+	return $help;
 }
 
-sub doq { # rewrapper :-\
+sub doq { # q rewrapper :-\
 	my $self = shift;
 	my @args = @_;
 	my $sql = join(' ', @args);
@@ -130,1279 +149,1011 @@ sub doq { # rewrapper :-\
 }
 
 
+=item kick
+
+Kick Perlbug_Max value ...
+
+=cut
+
+sub kick { # k 
+	my $self = shift;
+	my $newval = shift;
+	
+	my $ret = "Perlbug_Max($newval) must be a digit!\n";	
+
+	if ($newval =~ /^\d+$/) {
+		$MAX = $newval;
+		$ret = "set Perlbug_Max($MAX)\n";	
+	}
+
+	return $ret;
+}
+
+
 =item process
 
 Processes the command given, gets and truncates the results, calls scroll
 
+This could be redundant ? -> Cmd::process()
+
 =cut
 
-sub process {
+sub process { 
 	my $self = shift;
-	$self->debug('IN', @_);
 	my $orig = shift;
+
 	my @res  = ();
-	my $i_ok = 1;
 	my $targ = lc($orig);
 	my ($call, @args) = split(/\s+/, $orig);
-	
-	if ($call =~ /^\w+$/ && $MAP{lc($call)} =~ /^[\w_]+$/) {
-		$FIX++ if $call =~ /^[A-Z]+\d*$/;
-		my $meth = $MAP{lc($call)};
-		$i_ok = $self->$meth(@args);
-		$FIX=0;
-	} else {
-		$i_ok = 0;
+
+    # print "fix: $orig -> call($call) args(@args)\n";	
+	if ($call !~ /^\w+$/) {
 		print "didn't understand orig($orig), call($call), args(@args)\n";
+	} else { 
+		$FIX++ if $call =~ /^[A-Z]+$/;
+		my $meth = $MAP{lc($call)};
+		$meth =~ s/^(\w+)\s+.+$/$1/;
+		if (!$self->can($meth)) {
+			$self->error("unsupported call($call) meth($meth) - please contact the maintainer: ".$self->system('maintainer'));
+		} else {
+			# print "fix($FIX) max($MAX) call($meth) args(@args)\n";
+			@res = $self->$meth(@args);
+		}
+		$FIX=0;
 	}
-	if ($i_ok != 1) {
-		$res[0] = "Command($orig) process failure($i_ok) - try 'h'\n";
-	} else {
-		@res = $self->get_results;
-		if (!((scalar(@res) >= 1) && (length(join('', @res)) >= 1))) {
-			$res[0] = "Command($orig) failed to produce any results(@res) - try 'h'\n";
-		} 
-		$self->truncate('res') || print "failed to truncate res file\n";
-	}
-	$i_ok = $self->scroll(@res);
-	$self->debug('OUT', $i_ok);
+	if (!(scalar(@res) >= 1)) { 
+		@res = ("Command($orig) failed to produce any results(@res) - try 'h'\n");
+	} 
+	my $i_ok = $self->scroll(@res);
+
 	return $i_ok;
 }
 
 
-=item flags
+sub address { # a
+	my $self = shift;
+	my $addr = shift || '';
+	return $self->references('bug', 'address', $addr);
+}
 
-Set flags to '' in tm_tickets where flag is unknown in tm_flags
+
+=item references
+
+Delete duff references in bug_\w+_\w+ tables by given arg
+
+Or, if two args given appropriate relationship:
+
+	r patch # bug->patch understood
+
+	r patch version # patch->version
 
 =cut
 
-sub flags {
+sub references { # r 
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) flags");
-	my $cnt = 0;
+	my $src  = shift;
+	my $tgt  = shift || '';
+	my $attr = shift || '_%';
 
-	if ($line =~ /^(\w+)$/) {
-		return $self->map_flags($line);	
+	($src, $tgt) = ('bug', $src) unless $tgt =~ /\w+/;
+
+	my $ret = '';
+
+	if (!($src =~ /^\w+$/ && $tgt =~ /^\w+$/)) {
+		print "references requires a source($src) and target($tgt) attr($attr)"; 
 	} else {
-		my @types = $self->get_list("SELECT DISTINCT type FROM tm_flags");
-		foreach my $type (@types) {
-			my @ok = $self->get_list("SELECT DISTINCT flag FROM tm_flags WHERE type = '$type'");
-			my $ok = join("', '", @ok);
-			my @notok = $self->get_list("SELECT ticketid FROM tm_tickets WHERE $type LIKE '_%' AND $type NOT IN ('$ok')");
+		print "fixing($FIX) src($src) tgt($tgt) attr($attr)\n";
+		my $o_src = $self->object($src);
+		my $o_tgt = $self->object($tgt);
+		my $o_rel = $o_src->rel($tgt);
+		my $srcpkey  = $o_src->attr('primary_key');
+		my $srctable = $o_src->attr('table');
+		my $reftable = $o_rel->attr('table');
+
+		if ($src eq 'bug' && $tgt eq 'address') {
+			$ret = $self->src_address($src, $tgt, $o_rel, $attr);	
+		} else {
+			print "fixing($FIX) src($src) tgt($tgt) with $srcpkey($srctable) and ref($reftable)\n";
+			my @ok = $self->get_list("SELECT $srcpkey FROM $srctable");
+			my $ok = join('|', @ok);
+			my @targs = $self->get_list("SELECT DISTINCT $srcpkey FROM $reftable WHERE $srcpkey LIKE '$attr'");
+			my @notok = ();
+			foreach my $targ (sort @targs) {
+				push(@notok) unless grep(/^$targ$/, @ok);
+			}
+			print "ok(".@ok."), notok(".@notok.")\n";
+
+			$#notok = $MAX - 1 if @notok > $MAX;
 			my $notok = join("', '", @notok);
-
-			$self->debug(1, "$type: ok($ok), notok($notok)");
-			$self->result("$type: ok(".@ok."), notok(".@notok.")");
-
+			print "ok($ok), notok($notok)\n";
+			
 			my $rows = 0;
-			if (scalar(@notok) >= 1) {
-				if ($FIX == 1) {
-					my $sql = "UPDATE tm_tickets SET $type = '' WHERE ticketid IN ('$notok')";
-					my $sth = $self->exec($sql);
-					$cnt += $rows = $sth->rows;
-					$self->result("$type fixed($rows)");
-					$self->track('f', $type, $sql);
-				} else {
-					$self->result("$type: has ".@notok." flags(@notok)");
-				}
+			if (!(scalar(@notok) >= 1)) {
+				print "nothing to do (@notok)\n";
 			} else {
-				$self->result("nothing to do (@notok)");
+				if (!$FIX) {
+					print "$reftable has ".@notok." non-existent $src -> $tgt references($notok)\n";
+				} else {
+					my $sql = "DELETE FROM $reftable WHERE $srcpkey IN ('$notok')";
+					my $sth = $self->exec($sql);
+					$rows = $sth->rows;
+					print "deleted $rows from $reftable\n";
+				}		
 			}
 		}
-		$self->result("flags fixed($cnt)");
 	}
-	
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+
+	return $ret;
 }
 
 
-=item map_flags
+=item src_address 
 
-Adjust bug flags, note, this also updates the flags table with missing values!
+Correct db_SRC_table where SRC may be<bug>|group
 
 =cut
 
-sub map_flags { # duff flags
+sub src_address { # address
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $type = shift;
-	my @res  = ();
-	my %seen = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) flag($type)");
-	
-	my @targs = $self->get_list("SELECT DISTINCT ticketid FROM tm_tickets");
-	my $targs = join("', '", @targs);
-	
-	my $i_fix = 0;
-	my @flags = $self->SUPER::flags($type);
-	TID:
-	foreach my $tid (@targs) {
-		next TID unless $self->ok($tid);
-		my ($db) = $self->get_list("SELECT $type FROM tm_tickets WHERE ticketid = '$tid'");
-		my ($mid) = $self->get_list("SELECT MIN(messageid) FROM tm_messages WHERE ticketid = '$tid'");
-		my ($msgbody) = $self->get_list("SELECT msgbody FROM tm_messages WHERE messageid = '$mid'");
-		print '.'; # :-)
-		if ($msgbody =~ /\b$type=(\w+)\b.*/msi) { 
-			my $targ = lc($1);
-			# fixes...
-			next TID if (($targ =~ /^\d+$/) || ($targ =~ /\s+/));
-			$targ = 'none' if $targ eq 'zero';
-			$targ = $1 if $targ =~ /^3d(.+)$/i;
-			if ($targ =~ /$db/i) {
-				print '-'; # :-)
-				# $self->result("tid($tid) was correctly marked($targ) in the db($db)");
+	my $src 	= shift;
+	my $tgt 	= shift; 
+	my $o_rel 	= shift;
+	my $attr    = shift || '_%';
+
+	my $reftable= $o_rel->attr('table');
+
+	my $ret = '';
+
+	my $o_bug = $self->object('bug');
+	my $o_msg = $self->object('message');
+	my $o_addr = $self->object('address');
+	my $a_table = $o_addr->attr('table');
+	my $m_table = $o_msg->attr('table');
+	my $ba_table = $o_bug->rel('address')->attr('table');
+	my $bm_table = $o_bug->rel('message')->attr('table');
+
+	my @ok = $o_rel->source->ids($o_rel->source->primary_key." LIKE '$attr'");
+	print "fixing($FIX) src($src) tgt($tgt) via rel($reftable) ".@ok." attr($attr) potentials...\n";
+
+	my $cnt = 0;
+	my $i_t = 0;
+	my $fnd = 0;
+	my $dodgy = $self->dodgy_addresses('from');
+	BID:
+	foreach my $id (@ok) { 				# EACH
+		next BID if $o_rel->source->key eq 'bug' && $id eq '19870502.007';
+		$i_t++;
+		$o_rel->source->read($id);
+		my @exists = $self->get_list("SELECT DISTINCT a.name FROM $a_table a, $ba_table b WHERE b.bugid = '$id' AND a.addressid = b.addressid");
+		my $exists = join('|', @exists, $dodgy);
+		my @mids   = $self->get_list("SELECT messageid FROM $bm_table WHERE bugid = '$id'"); 
+		MID:
+		foreach my $mid (@mids) { 		# AND EVERY
+			my ($header) = $self->get_list("SELECT header FROM $m_table WHERE messageid = '$mid' AND header LIKE '%Cc:%'");
+			next MID unless $header =~ /\w+/;
+			# my $o_hdr = $o_email->header2hdr($header);
+			my @lines = split("\n", $header);
+			my @cc = map { /^Cc:\s*(.+)\s*$/ } grep(/^Cc:/, @lines);
+			my @o_ccs = Mail::Address->parse(@cc);
+			my @addrs = ();
+			CC: 
+			foreach my $o_cc (@o_ccs) {
+				next CC unless ref($o_cc);
+				# my ($addr) = $o_cc->address;
+				my ($addr) = $o_cc->format;
+				push (@addrs, $addr) if ($addr =~ /\w+/ and $addr !~ /$exists/i and $addr =~ /\@/);
+			}
+			if (!(scalar(@addrs) >= 1)) {	# ONE
+				print "$i_t($id->$mid) looks ok missing(".@addrs.")\n";
 			} else {
-				$seen{$targ}++;
-				if ($FIX) {
-					print '+'; # :-)
-					my $i_ok = $self->bug_set($tid, { $type    => $targ });
-					my $msg = ($i_ok == 1) ? "Corrected($tid) db($db) -> '$targ'" : "Failed($i_ok) to correct db($db) -> '$targ'";             
-        			$self->result($msg);
-					$i_fix += $i_ok;
-					if (!(grep(/^$targ$/i, @flags))) {
-						print "inserting targ($targ) into flags($type)\n";
-						my $insert = "INSERT INTO tm_flags values ('$type', '$targ')"; 
-						my $i_x = $self->exec($insert);
-						push(@flags, $targ);
-					}
+				$fnd++;
+				my $s = (@addrs > 1) ? 's' : '';
+				if (!$FIX) {
+					print "$i_t($id->$mid) missing(".@addrs.") reference$s(@addrs)\n";
 				} else {
-					print '!'; # :-)
-					$self->result("tid($tid) needs updating db($db) -> '$targ'");
+					$o_rel->_assign(\@addrs);
+					$cnt += 1 if $o_rel->ASSIGNED;
+					print "$i_t($id->$mid <$cnt> fixed(".@addrs.") reference$s(@addrs)\n";
+					last BID if $fnd >= $MAX;
 				}
 			} 
-		} else {
-			# $self->result("no $type found in msgbody (nothing to do)");
 		}
-	}
-	
-	print Dumper(\%seen);
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+		last BID if $fnd >= $MAX;
+	} 
+	print ($fnd >= 1) ? "fixed $cnt $reftable records\n" : ".\n";
+
+	return $ret;
 }
 
 
-=item cc
+=item change
 
-Correct tm_cc table
+Correct bug_patch, bug_change, bug_patch, patch_change tables via given file
+
+Example file contents:
+
+	____________________________________________________________________________
+	[  7012] By: nick                                  on 2000/09/02  17:25:20
+			Log: More %{} and other deref special casing - do not pass to 'nomethod'.
+		 Branch: perl
+			   ! gv.c lib/overload.pm    
+	____________________________________________________________________________
+	[  7001] By: jhi                                   on 2000/09/01  23:00:13
+			Log: Subject: [PATCH: 6996] minimal removal of 8 bit chrs from perlebcdic.pod
+				 From: Peter Prymmer <pvhp@forte.com>
+				 Date: Fri, 1 Sep 2000 15:50:57 -0700 (PDT)
+				 Message-ID: <Pine.OSF.4.10.10009011542550.147696-100000@aspara.forte.com>
+	 
+				 plus rework the http: spots as suggested by Tom Christiansen,
+				 plus regen perltoc.
+		 Branch: perl
+			   ! README.os2 pod/perl56delta.pod pod/perlebcdic.pod
+			   ! pod/perlguts.pod pod/perltoc.pod pod/perlxs.pod
+	____________________________________________________________________________  
+
+	[  6921] By: jhi                                   on 2000/08/30  19:40:16
+			Log: Subject: [ID 20000830.036] [DOC] chom?p %hash not documented
+				 From: Rick Delaney <rick@consumercontact.com>
+				 Date: Wed, 30 Aug 2000 15:36:55 -0400 (EDT)
+				 Message-Id: <Pine.UW2.4.10.10008301535210.1949-100000@consumer>
+		 Branch: perl
+			   ! pod/perlfunc.pod
+	____________________________________________________________________________ 
 
 =cut
 
-sub cc {
+sub change { # c 
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) cc");
-	# 
-	my @ok = $self->get_list("SELECT ticketid FROM tm_tickets");
-	my $ok = join('|', @ok);
+	my $file 	= shift || './Changes';
+
+	my $i_max	= $MAX;
+	my $ret     = '';
+
+	my $o_bug = $self->object('bug');
+	my $bc_table = $o_bug->rel('change')->attr('table');
+	print "fixing($FIX) $bc_table file($file) max($i_max)\n";
+
+	my ($i_cnt, $i_fnd, $i_nindb, $i_rec) = (0, 0, 0, 0);
+	my $o_bug = $self->object('bug');
+	my @bids = $o_bug->ids;
 	
-	my @targs = $self->get_list("SELECT ticketid FROM tm_cc");
-	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
-
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
-
-	if (scalar(@notok) >= 1) {
-		my $rows = 0;
-		if ($FIX) {
-			my $sql = "DELETE FROM tm_cc WHERE ticketid IN ('$notok')";
-			my $sth = $self->exec($sql);
-			$rows = $sth->rows;
-			$self->result("tm_cc fixed non-existent bugids($rows)");
-			$self->track('f', 'cc', $sql);
-		} else {
-			$self->result("tm_cc has ".@notok." non-existent bug references");
-		}
+	if (!(-f $file && -r _)) {
+		print "no file($file) given or not readable: $!\n";
 	} else {
-		$self->result("nothing to remove (@notok)");
-	}
-	
-	if (1 == 1) { 
-		my $cnt = 0;
-		my $i_t = 0;
-		my $dodgy = $self->dodgy_addresses('from');
-		foreach my $tid (@ok) { 			# EACH
-			$i_t++;
-			my @exists = $self->get_list("SELECT DISTINCT address FROM tm_cc WHERE ticketid = '$tid'");
-			my $exists = join('|', @exists, $dodgy);
-			my @mids   = $self->get_list("SELECT messageid FROM tm_messages WHERE ticketid = '$tid' AND msgheader LIKE '%Cc:%'");
-			foreach my $mid (@mids) { 		# AND EVERY
-				my ($msgheader) = $self->get_list("SELECT msgheader FROM tm_messages WHERE messageid = '$mid'");
-				my @lines = split("\n", $msgheader);
-				my @cc = map { /^Cc:\s*(.+)\s*$/ } grep(/^Cc:/, @lines);
-				my @o_ccs = Mail::Address->parse(@cc);
-				my @addrs = ();
-				CC: 
-				foreach my $o_cc (@o_ccs) {
-					next CC unless ref($o_cc);
-					my ($addr) = $o_cc->address;
-					push (@addrs, $addr) if ($addr =~ /\w+/ and $addr !~ /$exists/i and $addr =~ /\@/);
+		my $FH = FileHandle->new($file);
+		if (!defined($FH)) {
+			print "Can't open file($file): $!\n";
+		} else {
+			my ($bid, $body, $cid, $hdr, $msgid) = ('', '', '', '', '', '');
+			my ($inarec, $inalog, $inabranch) = (0, 0, 0);
+			my ($brnch, $notarec, $rec) = ('', '', '');
+			LINE:
+			foreach my $line (<$FH>) {
+				chomp($line);
+				# print "looking at line($line)\n" if $line =~ /subject/i;
+				last LINE if $i_rec >= $i_max;
+				next LINE unless $line =~ /\w+/;
+				if ($line =~ /^\[\s*(\d+)\]/) {
+					$cid = $1;
+					$inarec++;
+					$i_rec++;
+					# print "found start: cid($cid), inarec($inarec), i_rec($i_rec)\n";
 				}
-				if (scalar(@addrs) >= 1) {	# ONE
-					if ($FIX) {
-						my ($i_res, @ccs) = $self->tm_cc($tid, @addrs);
-						$self->result("$i_t($tid->$mid fixed($i_res=".@addrs.") references(@addrs)");
-						$cnt += $i_res;
+				$inalog++    if $line =~ /Log: /;
+				$inabranch++ if $line =~ /Branch: /;
+				if (!$inarec) {
+					$notarec  .= $line;
+					# print "notarec($inarec)\n";
+				} else {
+					if ($inalog) {
+						# $bid   = $1 if $line =~ /Subject:.*?\D*(\d{8}\.\d{3})\D*/;
+						$bid   = $1 if $line =~ /Subject:.+?(\d{8}\.\d{3})/;
+						$msgid = $1 if $line =~ /Message-Id:\s*(\S+)\s*$/;
+						$hdr  .= $line if $line =~ /^\s+[\w-]+:\s*/;
+						$body .= $line if $line !~ /^\s+[\w-]+:\s*/;
+						# print "inalog: cid($cid) bid($bid) at current line($line)\n" if $line =~ /subject/i;
+					} elsif ($inabranch) {
+						$brnch.= $line;
+						# print "inabranch($inabranch)\n";
 					} else {
-						$self->result("$i_t($tid->$mid) has ".@addrs." missing reference/s(@addrs)");
+						$rec  .= $line;
+						# print "undecided\n";
 					}
-					print $self->get_results;
-					$self->truncate('res');
+				}	
+				if ($line =~ /^__+\s*$/) { # end of rec
+					# print "end of rec\n";
+					if (!($bid =~ /\w+/ && $cid =~ /\w+/)) {
+						# print "failed to find bid($bid) and cid($cid)\n";
+					} else {
+						# print "found bid($bid), cid($cid)\n";
+						if (!(grep(/^$bid$/, @bids))) {
+							# print "bid($bid) not in db, nothing to tag against\n";
+						} else {
+							$i_fnd++;
+							# print "bid($bid) IN db, tagging($i_fnd) cid($cid)\n";
+							my $check = "SELECT COUNT(*) FROM $bc_table WHERE bugid='$bid' AND changeid='$cid'";
+							my ($in_db) = $self->get_list($check);
+							if (!$in_db) {
+								$i_nindb++;
+								if ($FIX) {
+									my $insert = "INSERT INTO $bc_table SET created=SYSDATE(), modified=SYSDATE(), bugid='$bid', changeid='$cid'";
+									my $sth = $self->exec($insert);
+									$i_cnt += $sth->rows if defined($sth);
+									print "[$i_cnt]: inserted bid($bid), cid($cid)\n";
+									last LINE if $i_nindb >= $MAX;
+								}
+							} else {
+								# print "combo already in db($in_db)\n";
+							}
+						}
+					} 
+					($bid, $body, $cid, $hdr, $msgid) = ('', '', '', '', '', '');
+					($inarec, $inalog, $inabranch) = (0, 0, 0);
+					($brnch, $notarec, $rec) = ('', '');
 				}
 			}
+			$FH->close;
 		}
-		$self->result("fixed $cnt tm_cc records");
-	} 
+	}
+	print "Looked at($i_rec) records, found($i_fnd) notindb($i_nindb) and inserted($i_cnt)\n";
 
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $ret;
 }
 
 
-=item bugs
+=item message 
 
-Correct tm_tickets table
+Fix message subject lines where empty
 
 =cut
 
-sub bugs {
+sub message { # m 
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) bugs");
-	# 
-	my @ok = $self->get_list("SELECT ticketid FROM tm_tickets");
-	my $ok = join('|', @ok);
-	my @targs = $self->get_list("SELECT ticketid FROM tm_tickets WHERE ticketid NOT LIKE '________.___'");
-	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
+	my $msgid = shift || '';
+	my $ret = '';
 
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
+	my $o_bug = $self->object('bug');
+	my $o_msg = $self->object('message');
+	my $table = $o_msg->attr('table');
 
-	my $rows = 0;
-	if (scalar(@notok) >= 1) {
-		if ($FIX) {
-			my $sql = "DELETE FROM tm_tickets WHERE ticketid IN ('$notok')";
-			my $sth = $self->exec($sql);
-			$rows = $sth->rows;
-			$self->result("tm_tickets removed($rows) strange looking bugids");
-			$self->track('f', 'tids?', $sql);
-		} else {
-			$self->result("tm_tickets has ".@notok." strange looking bugids");
-		}
+	my $where = ($msgid =~ /\w+/) ? "messageid LIKE '$msgid'" : '';
+	print "fixing($FIX) $table($where)\n";
+
+	my $i_mids = my @mids = $o_msg->ids($where);
+	if (@mids == 0) {
+		print "no mids found(@mids)\n";
 	} else {
-		$self->result("nothing to do (@notok)");
-	}
+		my ($i_cnt, $i_req, $i_fnd, $i_fxd) = (0, 0, 0, 0);
+		my @fixable = ();
+		MID:
+		foreach my $mid (@mids) {
+			last MID if $i_fnd >= $MAX;
+			$i_cnt++;
+			print "[$i_cnt] $mid ";
+			my $subject = $o_msg->read($mid)->data('subject');
+			if ($subject !~ /\w+/) {
+				$i_req++;
+				print "! ";
+				my $header = $o_msg->data('header');
+				if ($header =~ /Subject:\s*([^\n]+)\n/msi) {
+					$subject = $1;
+					$i_fnd++;
+					print "$i_fnd ($subject)";
+					if ($FIX) {
+						my $qsubj = $o_msg->base->quote($subject);
+						$o_msg->update({'subject' => $subject});
+						$i_fxd++;
+						print ':-) ';
+					}
+				}
+			}
+			print "\n";
+		}
+		print "mids($i_mids), seen($i_cnt), fixable($i_req), found($i_fnd), fixed($i_fxd)\n";
+	}	
 
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $ret;
 }
 
 
-=item messages
+=item header_body 
 
-Correct messages table
+Migrate headers and body from original bug
 
 =cut
 
-sub messages {
+sub header_body { # z
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) messages");
-	
-	my @ok = $self->get_list("SELECT ticketid FROM tm_tickets");
-	my $ok = join('|', @ok);
-	my @targs = $self->get_list("SELECT DISTINCT ticketid FROM tm_messages");
-	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
-	
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
-	
-	my $rows = 0;
-	if (scalar(@notok) >= 1) {
-		if ($FIX) {
-			my $sql = "DELETE FROM tm_messages WHERE ticketid IN ('$notok')";
-			# my $sql = "UPDATE tm_messages SET ticketid = 'unknown' WHERE ticketid IN ('$notok')";
-			my $sth = $self->exec($sql);
-			$rows = $sth->rows;
-			$self->result("tm_messages set to blank($rows) non-existent bug references -> t(T)?");
-			$self->track('f', 'msg2tids', $sql);
-		} else {
-			$self->result("tm_messages has ".@notok." non-existent bug references(@notok)");
+	my $bugid= shift || '';
+	my $and  = ($bugid =~ /\w+/) ? "AND bugid LIKE '$bugid'" : '';
+	my $ret  = ();
+
+	my $fix = 'header_body';
+	my $sql = "(header = '' OR body = '') $and";
+	print "fixing($FIX) $fix($sql)\n";
+
+	my $o_bug = $self->object('bug');
+	my $o_msg = $self->object('message');
+
+	my $i_bids = my @bids = $o_bug->ids($sql);
+	if (@bids == 0) {
+		print "no bids found(@bids)\n";
+	} else {
+		my $fix_bugid = '19870502.007';
+		my ($i_cnt, $i_req, $i_fnd, $i_fxd) = (0, 0, 0, 0);
+		my @fixable = ();
+		BID:
+		foreach my $bid (@bids) {
+			last BID if $i_fnd >= $MAX;
+			next BID unless $o_bug->ok_ids([$bid]); 
+			$i_cnt++;
+			print "[$i_cnt] $bid ";
+			my ($header, $body) = ($o_bug->read($bid)->data('header'), $o_bug->data('body'));
+			print "header(".length($header).") body(".length($body).") ";
+			if ($header !~ /\w+/ && $body !~ /\w+/) { # ferret...
+				my @mids = $o_bug->rel_ids('message');
+				my ($mid) = my @sorted = sort { $a <=> $b } @mids; # the first one
+				print "-> mid($mid) of ".@mids." from($sorted[0]) to($sorted[$#sorted])\n" ;
+				if ($mid =~ /^\d+$/) {
+					$i_req++;
+					print "\t* ";
+					$o_msg->read($mid);
+					my ($hdr, $bdy) = ($o_msg->data('header'), $o_msg->data('body'));
+					if ($hdr.$bdy !~ /\w+/) {
+						print "no info found header($header) or body($body)\n";
+					} else {
+						if (length($bdy) >= 35000) {
+							print "body length(".length($bdy).") excessive!\n";
+							next BID;
+						} else {
+							$i_fnd++;
+							print "-> fnd($i_fnd) lengths: header(".length($hdr)."), body(".length($bdy).") ";
+							if ($FIX) {
+								$o_bug->data({ 'header' => $hdr, 'body'	=> $bdy, });
+								$o_bug->update($o_bug->_oref('data'));
+								my $o_msg = $o_bug->rel('message');
+								$o_msg->set_source($o_bug);
+								$o_msg->delete([$mid]);
+								$o_msg->assign([$fix_bugid]);
+								# $o_msg->delete([$mid]);
+								$i_fxd++;
+								print ':-) ';
+							}
+						}
+					}
+				}
+			}
+			print "\n";
 		}
-	} else {
-		$self->result("nothing to do (@notok)");
-	}
-	
-	my @feedback = $self->get_list("SELECT DISTINCT messageid FROM tm_messages WHERE ticketid = ''");
-	if (scalar(@feedback) >= 1) {
-		$self->result("The following messages appear to be headless: @feedback");
-	}
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
+		print "bids($i_bids), seen($i_cnt), fixable($i_req), found($i_fnd), fixed($i_fxd)\n";
+	}	
 
-
-=item notes
-
-Correct notes table
-
-=cut
-
-sub notes {
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) notes");
-	
-	my @ok = $self->get_list("SELECT ticketid FROM tm_tickets");
-	my $ok = join('|', @ok);
-	my @targs = $self->get_list("SELECT DISTINCT ticketid FROM tm_note");
-	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
-	
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
-	
-	my $rows = 0;
-	if (scalar(@notok) >= 1) {
-		if ($FIX) {
-			my $sql = "DELETE FROM tm_note WHERE ticketid IN ('$notok')";
-			my $sth = $self->exec($sql);
-			$rows = $sth->rows;
-			$self->result("tm_note removed($rows) non-existent bug references");
-			$self->track('f', 'tid2notes?', $sql);
-		} else {
-			$self->result("tm_note have ".@notok." non-existent bug references");
-		}
-	} else {
-		$self->result("nothing to do (@notok)");
-	}
-	
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-
-=item claimants
-
-Correct claimants table
-
-=cut
-
-sub claimants {
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) claimants");
-	
-	my @ok = $self->get_list("SELECT userid FROM tm_users");
-	my $ok = join('|', @ok);
-	my @targs = $self->get_list("SELECT DISTINCT userid FROM tm_claimants");
-	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
-	
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
-	
-	my $rows = 0;
-	if (scalar(@notok) >= 1) {
-		if ($FIX) {
-			my $sql = "DELETE FROM tm_claimants WHERE userid IN ('$notok')";
-			my $sth = $self->exec($sql);
-			$rows = $sth->rows; 
-			$self->result("tm_claimants removed($rows) non-existent userid references");
-			$self->track('f', 'claim2user?', $sql);
-		} else {
-			$self->result("tm_claimants have ".@notok." non-existent userid references");
-		}
-	} else {
-		$self->result("nothing to do (@notok)");
-	}
-	
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-
-=item patches
-
-Correct patch relations table
-
-=cut
-
-sub patches {
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) patches");
-	
-	my @ok = $self->get_list("SELECT patchid FROM tm_patch");
-	my $ok = join('|', @ok);
-	my @targs = $self->get_list("SELECT DISTINCT patchid FROM tm_ticket_patch");
-	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
-	
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
-	
-	my $rows = 0;
-	if (scalar(@notok) >= 1) {
-		if ($FIX) {
-			my $sql = "DELETE FROM tm_ticket_patch WHERE patchid IN ('$notok')";
-			my $sth = $self->exec($sql);
-			$rows= $sth->rows;
-			$self->result("tm_ticket_patch removed($rows) non-existent patchid references");
-			$self->track('f', 'patch2tid?', $sql);
-		} else {
-			$self->result("tm_ticket_patch has ".@notok." non-existent patchid references");
-		} 
-	} else {
-		$self->result("nothing to do (@notok)");
-	}
-	
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $ret;
 }
 
 
 =item users
 
-Correct users table
+Correct users table, currently only looks for blank passwords
 
 =cut
 
-sub _users {
+sub users { # u 
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) users");
+	my $user = shift || '';
+	my $and  = ($user =~ /\w+/) ? "AND userid LIKE '$user'" : '';
+
+	my $ret  = '';
+
+	my $o_usr = $self->object('user');
+	my $table = $o_usr->attr('table');
+	print "fixing($FIX) $table($and)\n";
 	
-	my @ok = $self->get_list("SELECT DISTINCT userid FROM tm_user");
+	my @ok = $self->get_list("SELECT DISTINCT userid FROM $table WHERE userid IS NOT NULL $and");
 	my $ok = join('|', @ok);
-	my @targs = $self->get_list("SELECT DISTINCT userid FROM tm_user");
+	my @targs = $self->get_list("SELECT DISTINCT userid FROM $table WHERE password = '' $and");
 	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
 	
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
+	print "ok(".@ok."), notok(".@notok.")\n";
+
+	$#notok = $MAX - 1 if @notok > $MAX;
+	my $notok = join("', '", @notok);
 	
 	my $rows = 0;
 	if (scalar(@notok) >= 1) {
-		my $sql = "UPDATE tm_user SET active = NULL WHERE userid IN ('$notok')";
-		my $sth = $self->exec($sql);
-		$rows = $sth->rows;
-		$self->result("disabled($rows) invalid userids");
+		if ($FIX) {
+			my $sql = "UPDATE $table SET active = NULL WHERE userid IN ('$notok')";
+			my $sth = $self->exec($sql);
+			$rows = $sth->rows;
+			print "disabled($rows) invalid userids\n";
+		}
 	} else {
-		$self->result("nothing to do (@notok)");
+		print "nothing to do (@notok)\n";
 	}
 	
-	
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $ret;
 }
 
 
-=item action
+=item execute 
 
-Process action on behalf of caller
+Process action on behalf user 
 
-	my $i_ok = $self->action('tm_table', 'UPDATE x SET y WHERE z etc...');
+	my $i_ok = $self->execute('UPDATE x SET y WHERE z etc...');
 
 =cut
 
-sub action {
+sub execute { # x 
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $call = shift;
-	my @actions = @_;
-	my $i_ok = 1;
+	my $action = join(' ', @_); # sql
+
+	my $ret  = '';
 	my $ROWS = 0;
 		
-	if (!(@actions >= 1)) {
-		$i_ok = 0;
-		$self->result("No actions supplied(@actions)");
+	if ($action !~ /\w+/) {
+		print "No actions supplied($action)\n";
 	} else {
-		ACTION:
-		foreach my $action (@actions) {
-			last ACTION unless $i_ok == 1;
+		$FIX = 0 unless $self->isadmin eq $self->system('bugmaster'); # rjsf hardwired
+		if (!$FIX) {
+			# my $sth = $self->dbh->prepare($action);
+			print "Not bugmaster!\n";
+		} else {
 			my $sth = $self->exec($action);
-			if (defined($sth)) {
+			if (!defined($sth)) {
+				print "Action failed($sth) -> for action($action)\n";
+			} else {
 				my $rows = 0;
 				$ROWS += $rows = $sth->rows;
 				# $i_ok = ($rows >= 1) ? 1 : 0;
-				$self->result("Action affected($rows) -> ok($i_ok)");
-				$self->track('f', 'fix_action', $action) unless $call eq 'tm_log';
-			} else {
-				$i_ok = 0;
-				$self->result("Action failed($sth) -> for action($action)");
+				my $str = $sth->as_string;
+				print "Action affected($rows)... \n$str\n";
 			}
 		}
 	}
 		
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $ret;
 }
 
 
-=item mig
+=item ubl 
 
-Migrate whole database
+Update db_user_bug from db_log by userid
 
 =cut
 
-sub mig {
+sub ubl { # ubl user_bug_log 
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	my ($sub, $tables) = ('mig', 'whole database');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-	my $rows = 0;
-	
-	my $targs = 9;
-	
-	if ($targs >= 0) {
-		if ($FIX) {
-			MIG:
-			foreach my $num (0..$targs, 99) { # and clean up
-				last MIG unless $i_ok == 1;
-				my $action = "x$num";
-				$i_fix += $i_ok = $self->$action();
-			}
-		} else {
-			$self->result("$tables has ".(++$targs)." tables to migrate");
+	my $user = shift || '';
+	my $sql  = ($user =~ /\w+/) ? "userid LIKE '$user'" : "userid LIKE '_%'";
+
+	my $ret   = '';
+	my $i_cnt = 0;
+	my $i_seen= 0;
+
+	my $o_bug = $self->object('bug');
+	my $o_usr = $self->object('user');
+	my $o_log = $self->object('log');
+
+	print "fixing($FIX) ubl sql($sql)... ";
+	my @users = $o_usr->ids($sql);
+	print "users(@users)\n";
+
+	USER:
+	foreach my $usr (sort @users) {
+		$o_usr->read($usr);
+		my $o_rel = $o_usr->rel('bug');
+		$o_rel->set_source($o_usr);
+		my %known = ();
+		%known = map { $_ => ++$known{$_} } $o_rel->ids($o_usr);
+		my $i_known = keys %known;
+		my $known = join("', '", keys %known);
+		print "user($usr) knows($i_known)...";
+		my $sql   = "objectkey = 'bug' AND userid = '$usr' AND objectid NOT IN ('$known')";
+		my $i_tgt = my @notok = $o_log->col('objectid', $sql);
+		print " and misses($i_tgt)\n";
+		$#notok = $MAX - 1 if @notok > $MAX;
+		BUG:
+		foreach my $bid (@notok) {
+			$i_seen++;
+			$o_rel->assign([$bid]) if $FIX;
+			$i_cnt += my $assigned = 1 if $o_rel->ASSIGNED;
+			print "[$i_seen] <$i_cnt> $usr: assigned($bid)\n";
+			last BUG if $i_cnt >= $MAX;
 		} 
-	} else {
-		$self->result("nothing to migrate ($targs)");
 	}
+	print "fixed($FIX) fixable($i_cnt) of seen($i_seen)\n";
 	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-# start migration
-# ------------------------------------------------------------------------------
-
-=item x0
-
-Migrate log
-
-=cut
-
-sub x0 {
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	my ($sub, $tables) = ('x0', 'tm_log');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-	my $rows = 0;
-	
-	my @targs = $self->get_list("SELECT DISTINCT logid FROM $tables ");
-	
-	my $store   = qq|ALTER TABLE $tables RENAME ${tables}_data|;
-	my $create	= qq|CREATE table tm_log (
-		ts timestamp(14),
-		logid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
-		entry blob,
-		userid varchar(16),
-		objectid varchar(16),
-		objecttype char(1),
-		PRIMARY KEY (logid)
-);|;
-	my $transfer = qq|INSERT INTO tm_log SELECT ts, logid, entry, userid, objectid, objecttype FROM ${tables}_data|;
-	 
-	my $update = qq|UPDATE tm_log set objecttype = 'b' WHERE objecttype = 't' AND objectid LIKE '%.%'|;
-	
-	if (scalar(@targs) >= 0) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, $store, $create, $transfer, $update);
-		} else {
-			$self->result("$tables has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	return $ret;
 }
 
 
-=item x1
-
-Migrate notes
-
-=cut
-
-sub x1 {
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	my ($sub, $tables) = ('x1', 'tm_notes');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-		
-	my @targs = $self->get_list("SELECT DISTINCT ticketid FROM tm_notes");
-	my $targs = join("', '", @targs);		
-	my $rows = 0;
-	
-	my $store   = qq|ALTER TABLE tm_notes RENAME tm_notes_data|;
-	my $create1	= qq|CREATE table tm_note (
-	  created datetime,
-	  ts timestamp(14),
-	  noteid bigint(20) unsigned NOT NULL auto_increment,
-	  subject varchar(100),		
-	  sourceaddr varchar(100),	
-	  toaddr varchar(100),
-	  msgheader blob,		
-	  msgbody blob,
-	  PRIMARY KEY (noteid)
-);|;
-	my $create2	= qq|CREATE TABLE tm_bug_note ( 
-	  bugid varchar(12) DEFAULT '' NOT NULL,
-	  noteid bigint(20) DEFAULT '' NOT NULL
-);|;
-	my $transfer= qq|INSERT INTO tm_note SELECT created, ts, noteid, '', '', '', msgheader, msgbody FROM tm_notes_data|;
-	my $links	= qq|INSERT INTO tm_bug_note SELECT ticketid, noteid FROM tm_notes_data|;
-	
-	if (scalar(@targs) >= 1) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, $store, $create1, $create2, $transfer, $links);
-		} else {
-			$self->result("tm_notes has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-
-=item x2
-
-Migrate patches
-
-=cut
-
-sub x2 {
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	my ($sub, $tables) = ('x2', 'tm_patches');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-		
-	my @targs = $self->get_list("SELECT DISTINCT patchid FROM tm_patches");
-	my $targs = join("', '", @targs);		
-	my $rows = 0;
-	
-	my $store   = qq|ALTER TABLE tm_patches RENAME tm_patches_data|;
-	my $create1	= qq|CREATE table tm_patch (
-	  created datetime,
-	  ts timestamp(14),
-	  patchid bigint(20) unsigned NOT NULL auto_increment,
-	  subject varchar(100),		
-	  sourceaddr varchar(100),	
-	  toaddr varchar(100),		
-	  msgheader blob,
-	  msgbody blob,
-	  PRIMARY KEY (patchid)
-);|;
-	my $create2 = qq|CREATE TABLE tm_bug_patch ( 
-	  bugid varchar(12) DEFAULT '' NOT NULL,
-	  patchid bigint(20) DEFAULT '' NOT NULL
-);|;	
-	my $create3 = qq|CREATE TABLE tm_patch_change ( 
-	  patchid bigint(20) DEFAULT '' NOT NULL,
-	  changeid varchar(12) DEFAULT '' NOT NULL
-);|;	
-	my $create4 = qq|CREATE TABLE tm_patch_version ( 
-	  patchid bigint(20) DEFAULT '' NOT NULL,
-	  version varchar(12) DEFAULT '' NOT NULL
-);|;
-	my $transfer= qq|INSERT INTO tm_patch SELECT created, ts, patchid, subject, sourceaddr, toaddr, msgheader, msgbody FROM tm_patches_data|;
-	my $refs	= qq|INSERT INTO tm_bug_patch SELECT ticketid, patchid FROM tm_patch_ticket|;
-	my $change  = qq|INSERT INTO tm_patch_change SELECT patchid, changeid FROM tm_patches_data|;
-	
-	if (scalar(@targs) >= 1) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, $store, $create1, $create2, $create3, $create4, $transfer, $refs, $change);
-		} else {
-			$self->result("tm_patches has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-
-=item x3
-
-Migrate tests
-
-=cut
-
-sub x3 {
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	my ($sub, $tables) = ('x3', 'tm_tests');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-		
-	my @targs = $self->get_list("SELECT DISTINCT testid FROM tm_tests");
-	my $targs = join("', '", @targs);		
-	my $rows = 0;
-	
-	my $store   = qq|ALTER TABLE tm_tests RENAME tm_tests_data|;
-	my $create1	= qq|CREATE table tm_test (
-	  created datetime,
-	  ts timestamp(14),
-	  testid bigint(20) unsigned NOT NULL auto_increment,
-	  subject varchar(100),		
-	  sourceaddr varchar(100),	
-	  toaddr varchar(100),		
-	  msgheader blob,
-	  msgbody blob,
-	  PRIMARY KEY (testid)
-);|;
-	my $create2 = qq|CREATE TABLE tm_bug_test (
-	  bugid varchar(12) DEFAULT '' NOT NULL,
-	  testid bigint(20) DEFAULT '' NOT NULL
-);|;
-	my $create3 = qq|CREATE TABLE tm_test_version ( 
-	  testid bigint(20) DEFAULT '' NOT NULL,
-	  version varchar(12) DEFAULT '' NOT NULL
-);|;
-	my $transfer = qq|INSERT INTO tm_test select created, ts, testid, subject, sourceaddr, toaddr, msgheader, msgbody FROM tm_tests_data|;
-	my $refs	 = qq|INSERT INTO tm_bug_test SELECT ticketid, testid FROM tm_test_ticket|;
-	
-	if (scalar(@targs) >= 0) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, $store, $create1, $create2, $create3, $transfer, $refs);
-		} else {
-			$self->result("tm_tests has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-sub x4 { # claimants
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	my ($sub, $tables) = ('x4', 'tm_claimants');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-	my $rows = 0;
-	
-	my @targs = $self->get_list("SELECT DISTINCT ticketid FROM tm_claimants");
-	
-	my $store   = qq|ALTER TABLE tm_claimants RENAME tm_claimants_data|;
-	my $create	= qq|CREATE table tm_bug_user (
-  		bugid varchar(12) DEFAULT '' NOT NULL,
-  		userid varchar(16)
-);|;
-	my $transfer = qq|INSERT INTO tm_bug_user SELECT ticketid, userid FROM tm_claimants_data|;
-	
-	if (scalar(@targs) >= 0) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, $store, $create, $transfer);
-		} else {
-			$self->result("$tables has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-	
-} 
-
-
-sub x5 { # cc
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	
-	my ($sub, $tables) = ('x5', 'tm_cc');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-	my $rows = 0;
-	
-	my @targs = $self->get_list("SELECT DISTINCT ticketid FROM tm_cc");
-	
-	my $store   = qq|ALTER TABLE tm_cc RENAME tm_cc_data|;
-	my $create	= qq|CREATE table tm_cc (
-  		bugid varchar(12) DEFAULT '' NOT NULL,
-  		address varchar(100)
-);|;
-	my $transfer = qq|INSERT INTO tm_cc SELECT ticketid, address FROM tm_cc_data|;
-	
-	if (scalar(@targs) >= 0) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, $store, $create, $transfer);
-		} else {
-			$self->result("$tables has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-	
-} 
-
-sub x6 { # tm_messages
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	
-	my ($sub, $tables) = ('x6', 'tm_messages');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-	my $rows = 0;
-	
-	my @targs = $self->get_list("SELECT DISTINCT messageid FROM $tables");
-	
-	my $store   = qq|ALTER TABLE $tables RENAME ${tables}_data|;
-	my $create1	= qq|CREATE table tm_message (
- 		created datetime,
-		ts timestamp(14),
-  		messageid bigint(20) unsigned NOT NULL auto_increment,
-  		subject varchar(100),		
-		sourceaddr varchar(100),	
-		toaddr varchar(100),	
-		msgheader blob,
-		msgbody blob,
-		PRIMARY KEY (messageid)
-);|;
-	my $create2	= qq|CREATE table tm_bug_message (
-  		bugid varchar(12) DEFAULT '' NOT NULL,
-		messageid bigint(20) unsigned NOT NULL
-);|;
-
-	my $transfer1 = qq|INSERT INTO tm_message SELECT created, ts, messageid, '', author, '', msgheader, msgbody FROM ${tables}_data|;
-	my $transfer2 = qq|INSERT INTO tm_bug_message SELECT ticketid, messageid FROM ${tables}_data|;
-	
-	if (scalar(@targs) >= 0) {
-		if ($FIX) {
-			$i_fix += $i_ok = $self->action($tables, $store, $create1, $create2, $transfer1, $transfer2);
-		} else {
-			$self->result("$tables has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-} 
-
-sub x7 { # tm_tickets -> tm_bug
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	
-	my ($sub, $tables) = ('x7', 'tm_tickets');
-	$self->result("fixing($FIX) $sub $tables");
-	my $i_fix = 0;
-	my $rows = 0;
-	
-	my @targs = $self->get_list("SELECT DISTINCT ticketid FROM $tables");
-	
-	my $store   = qq|ALTER TABLE $tables RENAME ${tables}_data|;
-	my $create	= qq|CREATE table tm_bug (
-		created datetime,
-		ts timestamp(14),
-		bugid varchar(12) DEFAULT '' NOT NULL,
-		subject varchar(100),
-		sourceaddr varchar(100),
-		toaddr varchar(100),
-		status varchar(16) DEFAULT '' NOT NULL,
-		severity varchar(16),
-		category varchar(16),
-		fixed varchar(16),
-		version varchar(16),
-		osname varchar(16),  	# use instead
-		PRIMARY KEY (bugid)
-);|;
-	my $transfer = qq|INSERT INTO tm_bug 
-		SELECT created, ts, ticketid, subject, sourceaddr, destaddr, status, severity, category, fixed, version, osname 
-		FROM ${tables}_data|;
-	
-	if (scalar(@targs) >= 0) {
-		if ($FIX) {
-			$i_fix += $i_ok = $self->action($tables, $store, $create, $transfer);
-		} else {
-			$self->result("$tables has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-sub x8 { # users
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	my ($sub, $tables) = ('x8', 'tm_users');
-	$self->result("fixing($FIX) $sub $tables");
-	
-	my $i_fix = 0;
-	my $rows = 0;
-	
-	my @targs = $self->get_list("SELECT DISTINCT userid FROM tm_users");
-	my $store   = qq|ALTER TABLE $tables RENAME ${tables}_data|;
-	my $create	= qq|CREATE table tm_user (
-		created datetime,
-		ts timestamp(14),
-		userid varchar(16) DEFAULT '' NOT NULL,
-		password varchar(16),
-		address varchar(100),
-		name varchar(50),
-		match_address varchar(150),
-		active char(1),
-		PRIMARY KEY userid (userid)
-);|;
-	my $transfer = qq|INSERT INTO tm_user
-		SELECT now(), NULL, userid, password, address, name, match_address, active 
-		FROM ${tables}_data|;
-	 
-	if (scalar(@targs) >= 0) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, $store, $create, $transfer);
-		} else {
-			$self->result("$tables has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-} 
-
-sub x9 { # id
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	my ($sub, $tables) = ('x9', 'tm_id');
-	$self->result("fixing($FIX) $sub $tables");
-	
-	my $i_fix = 0;
-	my $rows = 0;
-	
-	my @targs = $self->get_list("SELECT * FROM $tables");
-	my $store   = qq|ALTER TABLE $tables RENAME ${tables}_data|;
-	my $create	= qq|CREATE table tm_id (
-		bugid varchar(12) DEFAULT '' NOT NULL,
-		PRIMARY KEY (bugid)
-);|;
-	my $transfer = qq|INSERT INTO tm_id SELECT ticketid FROM ${tables}_data|;
-	 
-	if (scalar(@targs) >= 0) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, $store, $create, $transfer);
-		} else {
-			$self->result("$tables has ".@targs." references");
-		} 
-	} else {
-		$self->result("nothing to do (@targs)");
-	}
-	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-} 
-
-=item x99
-
-Remove MIGRATE deadwood if everythings is OK
-
-=cut
-
-sub x99 { # x99
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @args = @_;
-	my @res  = ();
-	my $i_ok = 1;
-	my $rows = 0;
-	my ($sub, $tables) = ('x99', 'drop tables');
-	$self->result("fixing($FIX) $sub $tables");
-	
-	my @drops = (
-		'DROP TABLE admingroups',
-		'DROP table tm_cc_data',
-		'DROP table tm_claimants_data',
-		'DROP table tm_id_data',
-		'DROP table tm_log_data',
-		'DROP table tm_messages_data',
-		'DROP table tm_notes_data',
-		'DROP table tm_patches_data',
-		'DROP TABLE tm_patch_ticket',
-		'DROP table tm_spam',
-		'DROP TABLE tm_tests_data',
-		'DROP TABLE tm_test_ticket',
-		'DROP table tm_tickets_data',
-		'DROP table tm_users_data',
-	);
-	
-	if (@drops >= 1) {
-		if ($FIX) {
-			$i_ok = $self->action($tables, @drops);
-			$self->result("Remember to fix Base::check_user->tm_user(s)");
-		} else {
-			$self->result("$sub has ".@drops." tables to fix(@args)");
-		} 
-	} else {
-		$self->result("nothing to do (".@drops.")");
-	}
-	
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-# end migration
-# ------------------------------------------------------------------------------
-
-=item x31
-
-Update tm_claimants from tm_logs by userid
-
-=cut
-
-sub x31 { # tm_claimants
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @args = @_;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) tm_claimants from tm_logs(@args)");
-	my $target = 'tm_claimants';
-	
-	my @ok = $self->get_list("SELECT ticketid FROM $target WHERE userid = '$_[0]'");
-	my $ok = join('|', @ok);
-	my @targs = $self->get_list("SELECT DISTINCT objectid FROM tm_log WHERE userid = '$[0]' AND objecttype = 't'");
-	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
-	
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
-	
-	my $ROWS = 0;
-	if (scalar(@notok) >= 1) {
-		if ($FIX) {
-			foreach my $tid (@notok) {
-				my $sql = "INSERT INTO $target values (now(), '$tid', '$_[0]')";
-				my $sth = $self->exec($sql);
-				$ROWS += my $rows = $sth->rows;
-				$self->result("$target inserted $rows rows");
-				$self->track('f', 'update2claimant?', $sql);
-			}
-			$self->result("$target fixed $ROWS records");
-		} else {
-			$self->result("$target has ".@notok." records to fix(@args)");
-		} 
-	} else {
-		$self->result("nothing to do (@notok)");
-	}
-	
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
-}
-
-=item x32
+=item forward 
 
 Assumes bugids in db, messages in dir, find messages which were not forwarded, forward them.
 
 Not the same as an historic trawl, which is looking for new/replies, etc.
 
+redundant
+
 =cut
 
-sub x32 {
+sub forward { # e
 	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) x32");
+	my $bugid = shift || ''; # 
+	my $and  = ($bugid =~ /\w+/) ? "AND bugid LIKE '$bugid'" : "AND bugid LIKE '_%'";
+
+	my $ret  = '';
+	print "fixing($FIX) x32($and)\n";
 	
-	my @targs = $self->get_list("SELECT DISTINCT ticketid FROM tm_tickets WHERE status = 'open'");
+	my $o_bug = $self->object('bug');
+	my $o_msg = $self->object('message');
+	my $b_table = $o_bug->attr('table');
+	my $m_table = $o_msg->attr('table');
+	my @targs = $self->get_list("SELECT DISTINCT bugid FROM $b_table WHERE status = 'open' $and");
 	my $targs = join("', '", @targs);
 	
 	my $i_fix = 0;
 	my %noticed = $self->messageids_in_dirs($self->directory('mailinglists'));
 	foreach my $tid (@targs) {
-		my $get = "SELECT messageid FROM tm_messages WHERE ticketid = '$tid'";
+		my $get = "SELECT messageid FROM $m_table WHERE bugid = '$tid'";
 		my @got = $self->get_list($get);
 		if (scalar(@got) == 1) { # some reason for this.
-			my ($header) = $self->get_list("SELECT msgheader FROM tm_messages WHERE ticketid = '$tid'");
+			my ($header) = $self->get_list("SELECT header FROM $m_table WHERE bugid = '$tid'");
 			if ($header =~ /^Message-Id:\s*(.+)\s*$/msi) {
+				print "Couldn't get message-id($1) for tid($tid) from header($header)\n";
+			} else {
 				my $mid = $1;
 				if (grep(/^$mid$/i, keys %noticed)) {
-					$self->result("tid($tid) was forwarded($mid) and ignored");
+					print "tid($tid) was forwarded($mid) and ignored\n";
 				} else {
 					if ($FIX) {
-						$self->result("forwarding lost($tid) message($mid)");
-						my ($h_data) = $self->get_data("SELECT * FROM tm_messages WHERE ticketid = '$tid'");
+						print "tid($tid) has lost message($mid)\n";
+					} else {
+						print "forwarding lost($tid) message($mid)\n";
+						my ($h_data) = $self->get_data("SELECT * FROM $m_table WHERE bugid = '$tid'");
 						my $o_mail = $self->convert_db2mail($h_data);
 						if (ref($o_mail)) { # Notify p5p ...
+							print "Failed to retrieve mail object($o_mail) from database with tid($tid)\n";
+    					} else {
 							my ($o_hdr, $header, $body) = $self->splice($o_mail);
         					my $o_fwd = $self->get_header($o_hdr, 'remap');
 							my $i_ok = $self->send_mail($o_fwd, $body); 
         					my $msg = ($i_ok == 1) ? "Re-notified OK" : "Failed($i_ok) to re-notify with original header($header)";             
-        					$self->result($msg);
+        					print $msg."\n";
 							$i_fix += $i_ok;
-    					} else {
-							$self->result("Failed to retrieve mail object($o_mail) from database with tid($tid)");
 						}
-					} else {
-						$self->result("tid($tid) has lost message($mid)");
 					}
 				}
-			} else {
-				$self->result("Couldn't get message-id($1) for tid($tid) from header($header)");
 			}
 		}
 	}
 	
-	$self->result("fixed $i_fix");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	print "fixed $i_fix\n";
+
+	return $ret;
 }
 
 
-=item xspecial
+=item scan_bugs
 
-Specials
+Trawls and updates bug group, category, osname, versions etc.
 
 =cut
 
-sub xspecial { # xspecials
-	my $self = shift;
-	$self->debug('IN', @_);
-	my $line = shift;
-	my @args = @_;
-	my @res  = ();
-	my $i_ok = 1;
-	$self->result("fixing($FIX) xspecials(@args) -> zip");
-	return 1;
-	
-	my $target = 'tm_claimants';
-	
-	my @ok = $self->get_list("SELECT ticketid FROM $target WHERE userid = '$_[0]'");
-	my $ok = join('|', @ok);
-	my @targs = $self->get_list("SELECT DISTINCT objectid FROM tm_log WHERE userid = '$[0]' AND objecttype = 't'");
-	my @notok = map { grep(!/^($ok)$/, $_) } @targs;
-	my $notok = join("', '", @notok);
-	
-	$self->debug(1, "ok($ok), notok($notok)");
-	$self->result("ok(".@ok."), notok(".@notok.")");
-	
-	my $ROWS = 0;
-	if (scalar(@notok) >= 1) {
-		if ($FIX) {
-			foreach my $tid (@notok) {
-				my $sql = "INSERT INTO $target values (now(), '$tid', '$_[0]')";
-				my $sth = $self->exec($sql);
-				$ROWS += my $rows = $sth->rows;
-				$self->result("$target inserted $rows rows");
-				$self->track('f', 'update2claimant?', $sql);
+sub scan_bugs { # s 
+	my $self 	= shift;
+	my $bugid   = shift || '';
+	my $and     = ($bugid =~ /\w+/) ? "bugid LIKE '$bugid'" : "bugid LIKE '_%'";
+
+	my $ret     = 1;
+	my $i_seen	= 0;
+	my $i_cnt   = 0;
+
+	my $o_bug   = $self->object('bug');
+	my @bids    = $o_bug->ids($and);
+	my @targets = ($self->things('flag'), 'group');
+
+	print "fixing($FIX) to $MAX of ".@bids." bugs($and) against targets(@targets)\n";
+
+	BUG:
+	foreach my $bid (@bids) {
+		my $i_fxd = 0;
+		print "[$i_seen] <$i_cnt> $bid: ";		
+		$i_seen++;
+		$o_bug->read($bid);
+		my $body = $o_bug->data('body');
+		if (length($body) >= 1) {
+			print '...';
+			my $scan = $self->scan($body);
+			print 'scanned('.length($body).")...\n"; #.(Dumper($scan));		
+			my ($length) = reverse sort { $a <=> $b } map { length($_) } @targets; 
+			TGT:
+			foreach my $tgt (sort @targets) { # status, group, etc.
+				print "  $tgt...".(' ' x ($length - length($tgt)));
+				my @tgts = $o_bug->rel_ids($tgt);
+				my %tgts = ();
+				%tgts = map { $_ => ++$tgts{$_} } @tgts;
+				# print Dumper(\%tgts);
+				if (scalar(@tgts) >= 1) {
+					my @names = $self->object($tgt)->id2name(\@tgts);
+					print "  ok(@tgts->@names)\n";
+				} else {
+					print '* ';
+					my $o_tgt = $o_bug->rel($tgt);
+					$o_tgt->set_source($o_bug);
+					if ($tgt eq 'status') {
+						@tgts = ('open');
+					} else {
+						@tgts = keys %{$$scan{$tgt}} if $$scan{$tgt};
+						if ($tgt eq 'group') {
+							push(@tgts, keys %{$$scan{'category'}}) if $$scan{'category'};
+						}
+					}	# FIX @tgts
+					$o_tgt->_assign(\@tgts) if @tgts && $FIX; # !
+					$i_fxd += my $assigned = $o_tgt->ASSIGNED;
+					print "set($assigned) $tgt(@tgts)\n";
+				}
 			}
-			$self->result("$target fixed $ROWS records");
-		} else {
-			$self->result("$target has ".@notok." records to fix(@args)");
-		} 
-	} else {
-		$self->result("nothing to do (@notok)");
-	}
-	
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+			$i_cnt++ if $i_fxd >= 1;
+		}
+		print "\n";		
+		last BUG if $i_cnt >= $MAX;
+	}	# each BUG
+
+	print "fixed($FIX) fixable($i_cnt) of seen($i_seen) bids(".@bids.")\n";
+	return $ret;
 }
+
+
+=item trim_flags
+
+Trim flags where duplicates
+
+=cut
+
+sub trim_flags { # f 
+	my $self 	= shift;
+	my $flag    = shift || '';
+
+	my $ret     = '';
+	my $i_seen	= 0;
+	my $i_cnt   = 0;
+	my $i_cnts  = 0;
+
+	my @flags   = grep(/^$flag/, ($self->things('flag'), 'group'));
+
+	print "fixing($FIX) to $MAX of constrained($flag) flags(@flags)\n";
+
+	BUG:
+	foreach my $flag (@flags) {
+		my $i_fxd = 0;
+		print "[$i_seen] <$i_cnt> $flag: ";		
+		$i_seen++;
+		my $o_flag = $self->object($flag);
+		my @ids = $o_flag->ids();
+		my @names = $o_flag->id2name(\@ids);
+		my %names = ();
+		%names = map { $_ => ++$names{$_} } @names;
+		# print Dumper(\%names);
+		NAME:
+		foreach my $name (keys %names) {
+			print "\tname($name) ";
+			if ($names{$name} == 1) {
+				print "\tok($names{$name})\n";
+			} else {
+				print "has a problem($names{$name})... ";
+				my @ids = $o_flag->name2id([$name]);
+				my ($ok, @others) = sort { $a <=> $b } @ids;
+				print "ids: ok($ok) others(@others)\n";
+				if (!@others) {
+					print "\t$name can't be fixed\n";
+				} else {
+					$i_fxd++;
+					$o_flag->read($ok);
+					my $others = join("', '", @others);
+					my @rellies = (@{$o_flag->attr('from')}, @{$o_flag->attr('to')});
+					print "\tfixing $name(@rellies)...\n";
+					my $i_rows = 0;
+					foreach my $rel (@rellies) { # bug, user, address, etc.		
+						my $o_rel = $o_flag->rel($rel);
+						my ($pri, $table) = ($o_rel->primary_key, $o_rel->attr('table'));
+						print "\t\trel($rel)...";
+						my $sql = "UPDATE $table SET $pri = '$ok' WHERE $pri IN ('$others')";
+						if ($FIX) {
+							my $sth = $self->exec($sql) ;
+							my $rows = $sth->rows | $sth->affected_rows | $sth->num_rows;   
+							$i_rows += $rows;
+							print "\tset($rows) $pri($table) to ok($ok)\n";
+						}
+					}
+					print "\tdeleted($i_rows)\n";
+					$i_cnts++ if $i_rows;
+					$o_flag->delete(\@others) if $FIX;
+					print "\tcleaned(@others)\n" if $FIX && $o_flag->DELETED;
+				}
+			}
+		}
+		$i_cnt++ if $i_fxd;
+		print "\n";
+	}
+
+	print "fixed($FIX) fixable($i_cnt) names($i_cnt) ids($i_cnts) of seen($i_seen) flags(".@flags.")\n";
+	return $ret;
+}
+
+
+=item discard
+
+Discard duplicate and otherwise redundant info
+
+=cut
+
+sub discard { # d 
+	my $self 	= shift;
+	my $bugid   = shift || '';
+	my $and     = ($bugid =~ /\w+/) ? "bugid LIKE '$bugid'" : "bugid LIKE '_%'";
+
+	my $ret     = '';
+	my $i_seen	= 0;
+	my $i_cnt   = 0;
+
+	my $o_bug   = $self->object('bug');
+	my @targets = $self->things('mail');
+
+	print "fixing($FIX) to $MAX targets(@targets) and($and)\n";
+
+	if (1) { # duff
+		my @notok = $o_bug->ids("bugid NOT LIKE '________.___' AND $and");
+		$#notok = $MAX -1 if @notok > $MAX;
+		my $notok = join("', '", @notok);
+		my $b_table = $o_bug->attr('table');
+		if (!$FIX) {
+			print "$b_table has ".@notok." strange looking bugids('$notok')\n";
+		} else {
+			my $sql = "DELETE FROM $b_table WHERE bugid IN ('$notok')"; # o_bug won't allow this
+			my $sth = $self->exec($sql);
+			my $rows = $sth->rows;
+			print "$b_table removed($rows) strange looking bugids(@notok)\n";
+		}
+	}
+	if (1) { # duplicate
+		my @seen = ();
+		my @bids = sort { $a <=> $b } $o_bug->ids("email_msgid LIKE '_%' AND $and");
+		print "looking at ".@bids." bugids($and)\n";
+		my ($grp, $sev, $stat) = ('notabug', 'none', 'duplicate');
+		BUG:
+		foreach my $bid (@bids) {
+			$i_seen++;
+			print "[$i_seen] <$i_cnt> $bid: ";
+			if (grep(/^$bid$/, @seen)) {
+				print "seen already\n";
+			} else {
+				$o_bug->read($bid);			
+				my $msgid = $o_bug->data('email_msgid');
+				if ($msgid !~ /\w+/) {
+					print "has no email Message-Id($msgid) - fix=(i $bid)?\n";
+				} else {
+					my @dupes = grep(!/$bid/, $o_bug->ids("email_msgid = '$msgid'"));	
+					if (!(scalar(@dupes) >= 1)) {
+						# print "has no dupes(@dupes)\n";
+						print ".\n";
+					} else {
+						push(@seen, @dupes);
+						my $i_fxd = 0;
+						foreach my $dupe (@dupes) {
+							$o_bug->read($dupe);
+							my $o_dup = $o_bug->rel('group')->set_source($o_bug);
+							$o_dup->_store(['notabug']) if $FIX;
+							$i_fxd++ if $o_dup->STORED;
+							my $o_sev = $o_bug->rel('severity')->set_source($o_bug);
+							$o_sev->_store(['none']) if $FIX;
+							$i_fxd++ if $o_sev->STORED;
+							my $o_stat = $o_bug->rel('status')->set_source($o_bug);
+							$o_stat->_store(['duplicate']) if $FIX;
+							$i_fxd++ if $o_stat->STORED;
+							print "\t$dupe set($FIX) group($grp), severity($sev), status($stat) fixed($i_fxd)\n";
+							foreach my $rel (grep(!/^(bug|parent|child)$/i, $self->things('mail'))) {
+								my $o_rel = $self->object($rel);
+								my @ids = $o_rel->rel_ids('bug');	
+								if (scalar(@ids) >= 1) {
+									$o_bug->rel($rel)->assign(\@ids);	
+									print "\t\t$rel passed on ".@ids." ids\n";
+								}
+							}
+						}
+						$i_cnt++ if $i_fxd;
+					}
+				}
+			}
+			last BUG if $i_cnt >= $MAX;
+		}
+	}
+
+	print "fixed($FIX) fixable($i_cnt) of seen($i_seen) targets(".@targets.")\n";
+	return $ret;
+}
+
+
+=item scan_ids
+
+Trawls and updates bugs for msgid (email_msgid) Message-Id field
+
+=cut
+
+sub scan_ids { # i 
+	my $self 	= shift;
+	my $bugid   = shift || '';
+	my $and     = ($bugid =~ /\w+/) ? "AND bugid LIKE '$bugid'" : "AND (email_msgid IS NULL OR email_msgid = '')";
+
+	my $ret     = '';
+	my $i_seen	= 0;
+	my $i_cnt   = 0;
+
+	my $sql     = "header LIKE '_%' $and";
+	print "fixing($FIX) to $MAX bugs($sql)...";
+
+	my $o_bug   = $self->object('bug');
+	my @bids    = $o_bug->ids($sql);
+	my %seen    = ();
+	my %dupes   = ();
+
+	print "working with ".@bids." bugs\n";
+
+	BUG:
+	foreach my $bid (@bids) {
+		my $i_fxd = 0;
+		print "[$i_seen] <$i_cnt> $bid: ";		
+		$i_seen++;
+		$o_bug->read($bid);
+		my $msgid = $o_bug->data('emailid');
+		if ($msgid =~ /\w+/) {
+			print "has Message-Id($msgid)\n";
+		} else {
+			my $header = $o_bug->data('header');
+			if ($header !~ /\w+/) {
+				print "has no header($header)\n";
+			} else {
+				my @header = split("\n", $header);
+				print "hdr(".length($header).")...";
+				my $o_hdr  = Mail::Header->new(\@header);
+				if (ref($o_hdr)) {
+					my $msgid = $o_hdr->get('Message-Id');
+					chomp($msgid);
+					if ($msgid !~ /\w+/) {
+						print "\tno msgid($msgid) found!\n";
+					} else {
+						if (length($msgid) >= 100) {
+							print "problem with extra long Message-Id($msgid)\n";
+						} else {
+							$seen{$msgid}++;
+							$dupes{$msgid}++ if $seen{$msgid} > 1;
+							$o_bug->update({ 'email_msgid' => $msgid, }) if $FIX;
+							$i_cnt += my $updated = $o_bug->UPDATED;
+							print qq|\tSET($updated) seen($seen{$msgid}) length(|.length($msgid).
+								  qq|) ->\tmsgid($msgid)\n|;
+						}
+					}
+				}
+			}
+		}
+		last BUG if $i_cnt >= $MAX;
+	}	# each BUG
+
+	if (keys %dupes >= 1) {
+		print "Dupes: ".Dumper(\%dupes)."\n";
+	}
+
+	print "fixed($FIX) fixable($i_cnt) of seen($i_seen) bids(".@bids.")\n";
+	return $ret;
+}
+
 
 
 =back
 
 =head1 AUTHOR
 
-Richard Foley perlbug@rfi.net 2000
+Richard Foley perlbug@rfi.net 2000 2001
 
 =cut
 

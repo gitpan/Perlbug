@@ -1,7 +1,9 @@
-# $Id: Email.pm,v 1.66 2000/11/03 15:31:46 perlbug Exp perlbug $ 
+# $Id: Email.pm,v 1.80 2001/02/07 16:20:18 perlbug Exp $ 
 # 
 # X-Perlbug-Admin-URL: http://bugs.perl.org/admin/perlbug.cgi?req=bidmids&bidmids=20000817.019
 #
+# TODO: 
+# 
 
 =head1 NAME
 
@@ -22,10 +24,10 @@ use Perlbug::Cmd;
 @ISA = qw(Perlbug::Cmd);
 use strict;
 use vars qw($VERSION);
-$VERSION = 1.63;
+$VERSION = 1.74;
 $|=1;
-my $o_HEADER = '_h';
-my $o_MAIL = '_m';
+my $o_HEADER = 'non_existent_header_object';
+my $o_MAIL = 'non_existent_mail_object';
 
 
 =head1 DESCRIPTION
@@ -126,7 +128,7 @@ sub original { # get lines
 	my $tag = shift || '';
 	my $o_hdr = $self->_original_header;
 	my @data = ();
-	if (defined($o_hdr) and defined($tag)) {
+	if (ref($o_hdr) and $tag =~ /\w+/) {
 		@data = $o_hdr->get($tag);
 		chomp(@data);
 	};
@@ -169,6 +171,7 @@ sub mailing { # 1|0
 		$self->debug(2, "mailing set to '$1'");
 		if ($self->{'attr'}{'mailing'} != 1) {
 			$self->{'EMAIL'}{'mailer'} = 'test'; # cut sendmail :-)
+			# $self->current('mailer', 'test'); # cut sendmail :-)
 			my $mailer = $self->email('mailer');
 			$self->debug(1, "mailing set to 'test'? -> '$mailer'");
 		}
@@ -190,7 +193,9 @@ sub splice { # splice o_mail into useful bits
     my $self = shift;
 	$self->debug('IN', @_);
 	my $mail = shift || $self->_mail; # expecting a Mail::Internet->new(\$STDIN) product
-	$self->fatal("Can't splice mail($mail) object!") unless ref($mail); 
+	unless (ref($mail)) {	
+		$self->fatal("Can't splice mail($mail) object!")
+	}
     $mail->remove_sig;
     my @data = (
         $mail->head,
@@ -206,7 +211,7 @@ sub splice { # splice o_mail into useful bits
 
 Given a mail (Mail::Internet) object, parses it into command hash, also checks the header for X-Perlbug loop and the address of the sender via L<check_user>.
 
-    my $h_commands = $pb->parse_mail($mail);
+    my ($h_commands, $body) = $pb->parse_mail($o_mail);
 
 =cut
 
@@ -227,9 +232,8 @@ sub parse_mail { # bugdb@perl.org|*@bugs.perl.org -> includes check_user
 		$h_cmds = $self->parse_commands($commands, $body); # -a <bugids...> close install
 	}
 	$self->{'attr'}{'commands'} = $h_cmds if ref($h_cmds) eq 'HASH';
-	$self->debug('OUT', Dumper($h_cmds));
-	# print Dumper($h_cmds); exit;
-    return $h_cmds;
+	$self->debug('OUT', Dumper($h_cmds).$body);
+    return ($h_cmds, $body);
 }
 
 
@@ -417,85 +421,15 @@ sub doh { # help wrapper and modifier
 	$self->debug('IN', @_);
 	my $i_ok = 1;
 	my $title = $self->system('title');
-	$self->result(qq|The $title email interface has 2 interfaces, the first is addressed 
-by sending an email with the following form:
-
-	To: bugdb\@perl.org
-	Subject: (-opt (args)*)+
-	|);
-	$self->SUPER::doh(
-		'D' => 'Database dump retrieval by email ()', 
+	my $res = $self->SUPER::doh(
+		'D' => 'Database dump retrieval by email, with optional date filter (20001225)', 
 		'e' => 'email a copy to me too (emaila.copy@to.me.too.com)',
 		'H' => 'Heavier Help ()',
 		# 'p' => 'propose changes to the following (<bugids>)',
 	);
-	my $example = q#A couple of examples:
-	
-	To: bugdb@perl.org
-	Subject: -o -s define -m 1 55 999 -e copy@me.too 
-	
-	To: bugdb@perl.org
-	Subject: -o -c open patch macos -b <bugid1> <bugid2> -e copy@me.too 
-	
---------------------------------------------------------------------------------
-There is also a new email interface with an alternative command structure, 
-note that from here on the subject line is completely ignored:
-	
-	To: propose_close_<bugid>@bugs.perl.org
-	Subject: requests will go to active bug administrator for their attention
-	
-	To: register@bugs.perl.org
-	Subject: perlbug admin registration request
-	Body: if not a subscriber to the master(p5p)list, request will be forwarded 
-          to the relevant administrator for their attention
-
-	To: admins@bugs.perl.org
-	Subject: this will forward the mail onto all active bug adminstrators
-	Body: forwarded mail...
-
-Other useful (self-explanatory) commands are:	
-	
-	To: (help|info|overview)@bugs.perl.org
-	
-#;
-	$self->result($example);
-	my $admin = q#
--------------------------------------------------------------------------------
-Administration commands may also be sent in against particular bugids 
-using the *@bugs.perl.org address, the subject line is ignored:
-
-	To: close_<bugid>_install@bugs.perl.org
-	
-Patches may be assigned to one or more bugs, and should have a changeID 
-assigned.  The bug/s (if given) will be marked as closed and the patch 
-entered into the database, with the changeid and version number if parseable:
-
-	To: patch_<bugid>_<changeid>_<versionno>@bugs.perl.org
-
-Formatting of IDs is relevant:
-
-	Bugid      =~ /\d{8}\.\d{3}/   -> 19990321.007, 20130313.013 
-	Changeid   =~ /\d+/            -> 3821, 21, 9182732
-	Versionno  =~ /\d+\.[\d+\.]+/  -> 5.6.0, 5.6.0.32
-
-Notes may also be mailed against a given bug, as well as when administrating:
-
-	To: note_<bugid>@bugs.perl.org
-
-
-When using the email interface, keywords need to be at the beginning, ie:
-	
-    To: /^(patch|note|test|help)_xyz@bugs.perl.org
-
-Also, if you don't want to Cc: everyone else, add 'nocc' to your commands:
-
-	To: patch_<bugid>_nocc@bugs.perl.org
-
-	To: busy_<bugid>_nocc_hpux@bugs.perl.org
-
-#;
-	$self->result($admin) if $self->isadmin;
-	$self->debug('OUT', $i_ok);
+	$res .= $self->read('mailhelp');
+	$self->debug('OUT', $res);
+	return $res;
 }
 
 
@@ -509,10 +443,10 @@ sub doH { # help wrapper (verbose)
     my $self = shift;
 	$self->debug('IN', @_);
 	my $i_ok = 1;
-    $self->start('-H');
     my $HELP = $self->help;
     my $bugdb= $self->email('bugdb');
     my $home = $self->web('home');
+	# my $HELP = $self->read($self->directory('docs').'/mailhelp');
     $HELP .= qq|
 NOTE:
 All switches and arguments to the email interface are expected to be separated by a space.
@@ -521,20 +455,21 @@ RETRIEVAL:
 There are several different ways of searching the db:
     by bugid:       b, B
     by messagid:    m
-	by category:    c
+	by group:       g
     by subject:     s
     by messagebody: r
-	by sql query:   b
+	by category:    j
+	by sql query:   q
     by overview:    o
 
 Upper case letters usually expand upon or reverse the effect of the lowercase command in some way.
 
-c will return all bugs by category\|status\|osname\|severity.
+j will return all bugs by group: category\|status\|osname\|severity.
 eg; 
-    '-c low library'  (status = 'low' and category = 'library') 
-    '-c lo li'        (status = 'low' and category = 'library')
-    '-c l'      	  (status = 'low' and category = 'library' :-)
-    '-c mac op pat'   (status = open and category = 'patch' and osname = 'macos')
+    '-j low library'  (status = 'low' and category = 'library') 
+    '-j lo li'        (status = 'low' and category = 'library')
+    '-j l'      	  (status = 'low' and category = 'library' :-)
+    '-j mac op pat'   (status = open and category = 'patch' and osname = 'macos')
 
 Note that 'p' is acceptable as a shortened form of 'patch' etc. and may 
 be defined by either the first letter or the next several letters, if they 
@@ -547,15 +482,15 @@ set of fields and it is possible to exersize full searches on the db.
     
 When an item is requested from the db, the data is formatted according to the 
 format (-f) flag setting and returned via email.  The supported flags are: 
-    a (ascii-default), A (more info), l, (ascii-list), h (html), H (more data in your HTML)
+    a (ascii-default), A (ascii-extended), l, (ascii-list), h (html), H (more data in your HTML)
     |;
-    my $admin = q|
+    $HELP .= q|
 ADMINISTRATION: 
 The admin (-a) command reads like this:
-    set these flags, (if not an admin of this bug - make me one),
+    set these flags, (if not an admin of this particular bug - make me one),
     in the following bugids eg;
     
-    -a closed build 19990606.002 19990606.003 
+    -a close build 19990606.002 19990606.003 
         #translates to:
             UPDATE tm_bug
             SET status = 'closed' and category = 'build' 
@@ -568,7 +503,7 @@ The admin (-a) command reads like this:
         	SET status = 'closed' and category = 'patch'
         	WHERE bugid IN ('19990606.002', '19990606.003')
     
-	You may also use To: addresses to a similar effect:
+	You may also use the (To\|Cc): addresses to a similar effect:
 	
 	To: close_19990606.002_install@bugs.perl.org
 	
@@ -581,7 +516,7 @@ and those which are still open and under the patch category, then returns the
 results with a copy to the extra email address:
 
     To: $bugdb
-    Subject: -e my\@other.address -b 19990606.002 19990606.003 -h -c pa
+    Subject: -e my\@other.address -b 19990606.002 19990606.003 -h -j pa
 
     
 TUTORIAL:
@@ -590,19 +525,16 @@ Beginners may get used to the system by trying out these subject lines:
     -o
     -b 19990606.002
     -B 19990606.003 
-    -m 7
-    -c util clos
-    -c b sev op
+    -m 777
+    -j util clos
+    -j b sev op
     -o -h -m 3 55 21 -c abandoned patch -fA
 etc.
     |;
     my $maintainer = $self->system('maintainer');
     $HELP .= "\nComments, feedback, suggestions to '$maintainer'.\n";
-    $HELP .= $admin if $self->isadmin;
-    $self->result($HELP, 0);
-    $self->finish;
-	$self->debug('OUT', length($HELP));
-	return length($HELP);
+	$self->debug('OUT', $HELP);
+	return $HELP;
 }
 
 
@@ -631,10 +563,8 @@ sub get_header {
 			my @res = $self->$context($tag, @lines); # default|remap
 			$o_hdr->add($tag, @res) if scalar(@res) >= 1;
 		}
-	} else {
-		# return a plain header 
 	}
-	undef $o_hdr unless $i_ok == 1; # ?
+	undef $o_hdr unless $i_ok == 1; 
 	$self->debug('OUT', $o_hdr);
 	return $o_hdr; 		# Mail::Header
 }
@@ -673,7 +603,7 @@ sub default { # modify given tag, line
             push(@res, $self->email('from')); 
         } elsif ($tag =~ /^Reply-To/i) {    # 
             push(@res, $self->system('maintainer')); 
-		} elsif ($tag =~ /^(Subject|To|Cc|X-Original\-)/i) { # OK, keep them
+		} elsif ($tag =~ /^(Subject|To|Cc|X\-Original\-)/i) { # OK, keep them
             push(@res, @lines);
         } else {                        	# filter as unwanted
             # push(@res, @lines);
@@ -706,7 +636,8 @@ sub remap { # modify given tag, line
 	if ($tag !~ /\w+/) {
 		$self->debug(0, "Invalid tag($tag) given for remap($tag, @lines)");
 	} else {
-		my @targets = $self->get_vals('target');
+		# my @targets = $self->get_vals('target');
+		my @targets = split(/\s+/, $self->get_vals('target'));
 		if ($tag =~ /^(To|Cc)$/i) { # reply-to?
 			$self->debug(3, "remapping tag($tag: @lines) with our targets?: (@targets)");	
 			LINE:
@@ -805,7 +736,7 @@ sub send_mail { # sends mail :-)
                 	$hdr .= "$tag: $line\n";
                 }
         	}
-			if (open(MAIL, "|/usr/lib/sendmail -t")) { 
+			if (open(MAIL, "|/usr/lib/sendmail -t")) {  		# :-( sigh...
         		if (print MAIL "$hdr\n$body\n") {
 					if (close MAIL) {
 						$self->debug(0, "Mail(MAIL) sent?(".length($body).") -> to(@to), cc(@cc)");
@@ -844,15 +775,15 @@ sub tester {
     	$i_ok = 0;
 		$self->debug(0, "requires a valid Mail::Header($o_hdr) to test");
 	} else {
-		my ($o_orig, $header, $body) = $self->splice(); # original
 		if ($self->isatest) {
+			my $from = $self->email('from');
 			$self->{'EMAIL'}{'mailer'} = 'test' if $self->isatest == 2;
 			$self->debug(0, "Test: dumping to maintainer...");
 			$data = join('', @{$o_hdr->header}) || 'no header data',
 			$o_hdr->delete('Cc');
 			$o_hdr->delete('Bcc');
 			$o_hdr->replace('To', $self->system('maintainer'));
-			$o_hdr->replace('From', $o_orig->get('From') || $o_orig->get('Reply-To')|| $self->email('bugdb'));
+			$o_hdr->replace('From', $from);
 			$o_hdr->replace('Reply-To', $self->system('maintainer'));
 			$o_hdr->replace('Subject', $self->system('title')." test mail: ");
 			$o_hdr->replace('X-Perlbug-Test', 'test');
@@ -868,7 +799,7 @@ sub tester {
 
 =item defense
 
-Set mail defaults for _all_ mail emanating from here, calls L<clean_header()>, L<trim_to()>.
+Set mail defaults for _all_ mail emanating from here, calls L<clean_header()> -> L<trim_to()>.
 
     my $o_hdr = $self->defense($o_hdr); 
 
@@ -897,7 +828,8 @@ sub defense { # against duff outgoing headers
 			$o_hdr->replace('X-Perlbug', "Perlbug(tron) v$Perlbug::VERSION"); # [ID ...]+
 			$o_hdr->replace('From', $self->email('from')) unless defined($o_hdr->get('From'));
 			$o_hdr->replace('X-Errors-To', $self->system('maintainer')) unless defined($o_hdr->get('X-Errors-To')); 
-			$o_hdr->replace('Return-path', $self->system('maintainer')) unless defined($o_hdr->get('Return-path')); 
+			$o_hdr->replace('Return-Path', $self->system('maintainer')); 
+				# unless defined($o_hdr->get('Return-Path')); 
 			$o_hdr->replace('Message-Id', "<$$".'_'.rand(time)."\@".$self->email('domain').'>') unless defined($o_hdr->get('Message-Id'));
 			my $msgid = $o_hdr->get('Message-Id') || '';
 			chomp($msgid);
@@ -936,11 +868,11 @@ sub clean_header { # of invalid addresses
 		foreach my $tag ($o_hdr->tags) {
 			if ($tag =~ /^(To|Bcc|Cc|From|Reply-To|Return-Path)$/i) {
 				my @lines = $o_hdr->get($tag) || ();
-				$o_hdr->delete($tag);
+				$o_hdr->delete($tag); # if defined($o_hdr->get($tag));
 				my (@o_addrs) = Mail::Address->parse(@lines);
 				my @addrs = ();
 				ADDR:
-				foreach my $addr ( map { $_->format } @o_addrs ) {
+				foreach my $addr ( map { $_->address } @o_addrs ) {
 					push(@addrs, $addr); # if $self->ck822($addr);
 				}
 				chomp(@addrs);
@@ -980,10 +912,9 @@ sub trim_to { # Mail::Header -> Mail::Header
 	} else {
 		my $dodgy = $self->dodgy_addresses('to');
 		my $to = $o_hdr->get('To');
-		# my @orig = map { split(/[\,\s]+/, $_) } $o_hdr->get('Cc');
-		my @orig = map { split(/\,/, $_) } $o_hdr->get('Cc');
+		my @orig = $o_hdr->get('Cc');
 		chomp($to, @orig);
-		my %cc = ();
+		my %cc = (); # trim dupes
 		%cc = map { lc($_) => ++$cc{lc($_)}} (grep(!/($to|$dodgy)/i, @orig));  
 		my @cc = keys %cc;
 		$o_hdr->delete('To');
@@ -995,12 +926,11 @@ sub trim_to { # Mail::Header -> Mail::Header
 		} else {
 		    if (grep(/^($dodgy)$/i, $to, @cc)) { # final check
 			$i_ok = 0;
-			$self->debug(0, "Managed to somehow assign duff address: '$to, @cc'!"); 
+			$self->debug(0, "Managed to find a duff address: '$to, @cc'!"); 
 		    } else {
 			$self->debug(2, "whoto looks ok: '$to, @cc'");
 			$o_hdr->add('To', $to);
 			$o_hdr->add('Cc', join(', ', @cc)) if scalar(@cc) >= 1; 
-			# disallow duplicate or dodgy To, Cc's
 		    }
 		} 
 	}			
@@ -1083,9 +1013,9 @@ sub switch { # decision mechanism for tron recieved mails
 
 	# -----------------------------------------------------------------------------
     # X-Header
+	my ($o_hdr, $header, $body) = $self->splice($mail) if ref($mail);
 	if ($found == 0) {
 		$self->{'attr'}{'bugid'} = '';
-    	my ($o_hdr, $header, $body) = $self->splice($mail);
     	my $to      = $mail->head->get('To') || '';
     	my @cc      = $mail->head->get('Cc') || '';
     	my $from    = $mail->head->get('From') || '';
@@ -1094,6 +1024,8 @@ sub switch { # decision mechanism for tron recieved mails
     	my $inreply = $mail->head->get('In-Reply-To') || '';
     	my $messageid = $mail->head->get('Message-Id') || '';
     	chomp($from, $subject,  $messageid, $replyto, $inreply, $to, @cc);
+		($to) = map { ($_->address) } Mail::Address->parse($to);
+		(@cc  = map { ($_->address) } Mail::Address->parse(@cc)) if @cc;
     	$self->debug(1, "$0: To($to), From($from), Subject($subject), Cc(@cc), Message-Id($messageid), Reply-To($replyto), In-Reply-To($inreply)");
     	my $target = ''; # to/cc...
 		my @addresses = ();
@@ -1117,6 +1049,7 @@ sub switch { # decision mechanism for tron recieved mails
 				} 
 			}
 		}
+		# and then we ignore target, if it's for bugs.perl.org???
 		
     	# Have we seen messageid in db before? -> TRASH it
     	if ($found != 1) {
@@ -1135,7 +1068,7 @@ sub switch { # decision mechanism for tron recieved mails
 					if (scalar(@bseen) >= 1) {
 	                	$found++;
     	            	$switch = 'quiet'; 
-						$msg = "CLONE $switch($found) seen it before (@bseen), bale out! :-((";
+						$msg = "CLONE $switch($found) seen it before (@bseen), bale out! :-(( mids='$mids'";
             	 		$self->debug(1, $msg); 
             		} else {
 						$self->debug(2, "Nope, bugid not found(@bseen)");
@@ -1150,28 +1083,29 @@ sub switch { # decision mechanism for tron recieved mails
 
 		# Is there a bugid in the subject? -> REPLY
     	if ($found != 1) {   
-        	if ($subject =~ /(\d{8}\.\d{3})/) {    
-            	my $tid = $1;
-            	$self->debug(2, "Looking at subject/bugid($tid)"); # if in DB?
-            	my $sql = qq|SELECT bugid FROM tm_bug WHERE bugid = '$tid'|;
-            	my @seen = $self->get_list($sql);
-            	$self->debug(2, "Is this a reply to a bug id in the subject? ($sql)");
-            	if (scalar @seen >= 1) {
-                	$found++;
-                	$self->{'attr'}{'bugid'} = $tid;
-                	$switch = 'reply'; 
-					$msg = "REPLY $switch($found) from subject: ($tid) :-)";
-                	$self->debug(1, $msg); 
-            	} else {
-                	$self->debug(2, "Nope, bugid($tid) not found(@seen)");
-            	}
-        	} else {
-            	$self->debug(2, "Subject/bugid not usable($subject), ignoring it ($found)");
-        	}
-    	}
+        	if (my @subs = ($subject =~ /\b(\d{8}\.\d{3})\b/)) {    
+				foreach my $bid (@subs) {
+					$self->debug(2, "Looking at subject/bugid($bid)"); # if in DB?
+					my $sql = qq|SELECT bugid FROM tm_bug WHERE bugid = '$bid'|;
+					my @seen = $self->get_list($sql);
+					$self->debug(2, "Is this a reply to a bug id in the subject? ($sql)");
+					if (scalar @seen >= 1) {
+						$found++;
+						$self->{'attr'}{'bugid'} = $bid;
+						$switch = 'reply'; 
+						$msg = "REPLY $switch($found) from subject: ($bid) :-)";
+						$self->debug(1, $msg); 
+					} else {
+						$self->debug(2, "Nope, bugid($bid) not found(@seen)");
+					}
+				}
+			} else {
+				$self->debug(2, "Subject/bugid not relevant($subject), ignoring it ($found)");
+			}
+		}
 		
 		# Is there a ^[(BUG|PATCH|TEST|NOTE)] in the subject? (not BUG! see below)
-    	# if ($found != 1) { 		# not yet...
+		# if ($found != 1) { 		# not yet...
 		if ($found eq 'xa-1 7 123az^') { 	# unlikely :-)
 			foreach my $pos (qw(note patch test)) { # $self->objects
         		my $match = $self->match($pos);
@@ -1188,6 +1122,12 @@ sub switch { # decision mechanism for tron recieved mails
 		
 		# Is there a ^(bug|patch|test|note)_ in the to/cc?
 		# these all go to -> mail.pl
+		#
+		# (mail|tron)->switch()
+		# if $mail->isnonbouncer...
+		# if $mail->isfortargets() -> tron
+		# if $mail->isforus() -> mail
+		# else -> scrapit
 		
 		# Is it a reply to an unknown/unrecognised bug (in the subject) in the db? -> REPLY
     	if ($found != 1) {  
@@ -1204,11 +1144,11 @@ sub switch { # decision mechanism for tron recieved mails
                 	my $mids = join("', '", @mreply);
 					my $sql = qq|SELECT DISTINCT bugid FROM tm_bug_message WHERE messageid IN ('$mids')|;
             		my @breply = $self->get_list($sql);
-					if (scalar(@breply) >= 1 && $breply[0] =~ /(\d{8}\.\d{3})/) {
+					if (scalar(@breply) >= 1 && $self->ok($breply[0])) { # =~ /(\d{8}\.\d{3})/) {
 						$found++;
-                		my $tid = $self->{'attr'}{'bugid'} = $1; # !
+                		my $bid = $self->{'attr'}{'bugid'} = $1; # !
                 		$switch = 'reply'; 
-						$msg = "REPLY $switch($found): to previously unknown TID ($tid) - @breply) ;-)";
+						$msg = "REPLY $switch($found): to previously unknown BUGID ($bid) - @breply) ;-)";
                 		$self->debug(1, $msg);
 					} else {
                 		$self->debug(2, "Nope, reply not found(@breply)");
@@ -1258,6 +1198,7 @@ sub switch { # decision mechanism for tron recieved mails
     }
     $self->debug(1, "Decision -> do_$switch($found)");
     $self->debug('OUT', 'do_'.$switch);
+
     return ('do_'.$switch, $msg); # do_(new|reply|quiet|bounce) (do_$res, $reason) (look in the logs)
 }
 
@@ -1285,7 +1226,8 @@ sub do_new { # bug
 	my $origsubj  = $subject;
 	$self->debug(0, "NEW BUG: from($from), subject($subject), to($to), message($messageid)");
     $self->{'attr'}{'messageid'} = $messageid;
-	my ($title, $tron, $maint, $url) = ($self->system('title'), $self->email('tron'), $self->system('maintainer'), $self->web('hard_wired_url'));
+	my ($title, $tron, $maint) = ($self->system('title'), $self->email('tron'), $self->system('maintainer'));
+	my $h_tkt = {};
     # Open a new bug in the database
     if ($ok == 1) {
         ($ok, $bid, $mid) = $self->insert_bug($subject, $from, $to, $header, $body);
@@ -1294,7 +1236,7 @@ sub do_new { # bug
         $self->{'attr'}{'bugid'} = $bid;
         $subject = "[ID $bid] $subject"; 
         $o_hdr->replace('Subject', $subject);
-        my $h_tkt = $self->scan($body);
+        $h_tkt = $self->scan($body);
         if (ref($h_tkt) eq 'HASH') {
             if ($origsubj =~ /^\s*OK:/) {
 				$$h_tkt{'category'} = 'install';
@@ -1307,148 +1249,45 @@ sub do_new { # bug
         }
     }
 	if ($ok == 1) {
-		($ok, my @ccs) = $self->tm_cc($bid, $to, @cc);
+		($ok, my @ccs) = $self->tm_bug_address($bid, $to, @cc);
 	}
-    if ($ok == 1 && $self->mailing) {                    	# Notify p5p ...
-        my $o_reply = $self->get_header($o_hdr, 'remap');
-		$o_reply->add('X-Perlbug-Url-Bug', "$url?req=bid&bid=$bid");
-		my $perlbug = $self->web('cgi');
-		$url =~ s/$perlbug/admin\/$perlbug/;
-		$o_reply->add('X-Perlbug-Admin-Url-Bug', "$url?req=bidmids&bidmids=$bid");
+	my $url = $self->web('hard_wired_url');
+	$o_hdr->add('X-Perlbug-Url-Bug', "$url?req=bid&bid=$bid");
+	my $perlbug = $self->web('cgi');
+	$url =~ s/$perlbug/admin\/$perlbug/;
+	$o_hdr->add('X-Perlbug-Admin-Url-Bug', "$url?req=bidmids&bidmids=$bid");
+    if ($ok == 1 && $self->mailing) {                   # NOTIFY	
+		my $o_reply = $self->get_header($o_hdr, 'remap');	# p5p
+		my @ccs =  $self->bugid_2_addresses($bid, 'new');	# groups, etc
+		$o_reply->replace('Cc', join(', ', @ccs));
 		$ok = $self->send_mail($o_reply, $body); # auto
-        $err = ($ok == 1) ? "Notified" : "Failed to notify";             
-        $self->debug(1, $err);
-    }  
+        $err = ($ok == 1) ? "Notified" : "Failed to notify master and groups";             
+    }
     if ($ok == 1) {
-		if (($subject =~ /^(\s*OK)/i) || ($body =~ /\b(ack(nowledge)*=no)/si)) {    # DON'T send a response back to the source 
-        	$self->debug(2, "NOT($1) sending form response.");
+		if ($body =~ /(ack=no)/imsg) { # DON'T send a response back to the source 
+			$self->debug(2, "NOT($1) sending form response.");
 		} else {
 			$self->debug(3, "Sending form response.");
-        	my $o_response = $self->get_header($o_hdr);
-        	$o_response->replace('Subject', "Ack: $subject");
-        	$o_response->replace('To', $self->from($reply, $from)); 
+			my $o_response = $self->get_header($o_hdr);
+			$o_response->replace('Subject', "Ack: $subject");
+			$o_response->replace('To', $self->from($reply, $from)); 
 			$o_response->add('X-Perlbug-Admin-Url-Bug', "$url?req=bid&bid=$bid");
 			$o_response->add('X-Perlbug-Url-Bug', "$url?req=bid&bid=$bid");
-        	my $response = $self->read('response');
+			my $response = $self->read('response');
+			my $footer   = $self->read('footer');
 			$response =~ s/Bug\sID/Bug ID ($bid)/;
-        	$ok = $self->send_mail($o_response, $response.$self->read('footer'));
+			$response =~ s/(Original\ssubject:)/$1 $origsubj/;
+				$ok = $self->send_mail($o_response, $response.$footer);
 		}
-	}
-	$self->debug('OUT', $ok);
+    }
+    $self->debug('OUT', $ok);
     return $ok;
 }
 
-sub do_bug {
+
+sub do_bug { # wrapper
 	my $self = shift;
 	return $self->do_new(@_);
-}
-
-
-=item do_note
-
-Wrapper for a new note
-
-=cut
-
-sub do_note { # note
-    my $self = shift;
-    $self->debug('IN', @_);
-    my $mail = shift || $self->_mail;
-    my $ok = $self->doN();
-	$self->debug('OUT', $ok);
-    return $ok;
-}
-
-
-=item do_patch
-
-Wrapper for a new patch
-
-=cut
-
-sub do_patch { # patch
-    my $self = shift;
-    $self->debug('IN', @_);
-    my $mail = shift || $self->_mail;
-    my $ok = $self->doP();
-	$self->debug('OUT', $ok);
-    return $ok;
-}
-
-
-=item do_test
-
-Wrapper for a new test
-
-=cut
-
-sub do_test { # test
-    my $self = shift;
-    $self->debug('IN', @_);
-    my $mail = shift || $self->_mail;
-    my $ok = $self->doT();
-	$self->debug('OUT', $ok);
-    return $ok;
-}
-
-sub x_do_note { # redundant
-    my $self = shift;
-    $self->debug('IN', @_);
-    my $mail = shift || $self->_mail;
-    my ($o_hdr, $header, $body) = $self->splice($mail);
-    $self->{'attr'}{'bugid'} = '';
-    my ($ok, $err, $msg, $bid, $mid, $nid) = (1, '', '', '', '', '');
-    my $from      = $o_hdr->get('From');
-    my $subject   = $o_hdr->get('Subject');
-    my $to        = $o_hdr->get('To');
-    my @cc        = $o_hdr->get('Cc');
-    my $reply     = $o_hdr->get('Reply-To') || '';
-	my $messageid = $o_hdr->get('Message-Id');
-    chomp($from, $subject, $to, $reply, $messageid);
-	$self->debug(0, "NEW NOTE: from($from), subject($subject), to($to), message($messageid)");
-    $self->{'attr'}{'messageid'} = $messageid;
-	my ($title, $tron, $maint, $url) = ($self->system('title'), $self->email('tron'), $self->system('maintainer'), $self->web('hard_wired_url'));
-    
-	# Open a new note in the database
-    if ($ok == 1) {
-        ($ok, $nid) = $self->doN($subject, $from, $to, $header, $body);
-    }
-    if ($ok == 1) {
-        $self->{'attr'}{'bugid'} = $bid;
-        $subject = "[ID $bid] $subject"; 
-        $o_hdr->replace('Subject', $subject);
-        my $h_tkt = $self->scan($body);
-        if (ref($h_tkt) eq 'HASH') {
-            $ok = $self->bug_set($bid, $h_tkt); # inc. tracking
-        } else {
-            $ok = 0;
-            $err = 'SCAN failure';
-        }
-    }
-	if ($ok == 1) {
-		($ok, my @ccs) = $self->tm_cc($bid, $o_hdr->get('To'), $o_hdr->get('Cc'));
-	}
-    if ($ok == 1 && $self->mailing) {                    	# Notify p5p ...
-        my $o_reply = $self->get_header($o_hdr, 'remap');
-		$o_reply->add('X-Perlbug-Admin-Url-Bug', "$url?req=bid&bid=$bid");
-		$o_reply->add('X-Perlbug-Url-Bug', "$url?req=bid&bid=$bid");
-		$ok = $self->send_mail($o_reply, $body); # auto
-        $err = ($ok == 1) ? "Notified" : "Failed to notify";             
-        $self->debug(1, $err);
-    }  
-    if (($ok == 1) && ($subject !~ /^\s*OK/i) && ($body !~ /ack(nowledge){0,1}=no/si)) {    # Send a response back to the source 
-        $self->debug(3, "Sending form response.");
-        my $o_response = $self->get_header($o_hdr);
-        $o_response->replace('Subject', "Ack: $subject");
-        $o_response->replace('To', $self->from($reply, $from)); # don't mind about this anymore
-		$o_response->add('X-Perlbug-Admin-Url-Bug', "$url?req=bid&bid=$bid");
-		$o_response->add('X-Perlbug-Url-Bug', "$url?req=bid&bid=$bid");
-        my $response = $self->read('response');
-		$response =~ s/Bug\sID/Bug ID ($bid)/;
-        $ok = $self->send_mail($o_response, $response.$self->read('footer'));
-    }
-	$self->debug('OUT', $ok);
-    return $ok;
 }
 
 
@@ -1459,7 +1298,7 @@ Looking for both category=docs and '\brunning\s*under\ssome\s*perl' style marker
 
     my $h_data = $o_mail->scan($body);
     
-    my $res = $o_mail->bug_set($tid, $h_data);
+    my $res = $o_mail->bug_set($bid, $h_data);
 
 =cut
 
@@ -1477,7 +1316,7 @@ sub scan { # bug body
         'osname'    => $self->default('osname')   || 'generic',
         'severity'  => $self->default('severity') || 'low',
         'status'    => $self->default('status')   || 'open',
-        'version'   => $self->default('version')  || '5',
+        'version' => $self->default('version')  || '5',
     );
 	LINE:
     foreach my $line (split(/\n/, $body)) {         # look at each line for a type match
@@ -1509,21 +1348,16 @@ sub scan { # bug body
             		$self->debug(3, "type($type) <-> match($match)?");
                     if ($line =~ /$match/i) {                   # to what do we map?
                         if ($type eq 'version') {               # bodge for version
-                            $^W=0;
-                            my $num = $1.$2.$3;                 # only with this case - yuk!
+                            my $num = $1;                 
                             if ($num =~ /^\d+/) {
                                 $self->debug(0, "Bingo: versnum($num)");
 								$data{$type} = $num;			# :-)
                                 $set{$type}++;
                                 $self->debug(2, "YUP line($line) version ($num) -> next LINE");
                                 next TYPE;
-                            } else {
-                                $ok = 0;
-                                $self->debug(4, "Nope: failed to set non-matching version($num) target($match($1, $2, $3) -> $num)");
                             }               
-                            $^W=1;
                         } else {
-							next MATCH unless $line =~ /=/;
+							next MATCH unless $line =~ /=/;		# short circuit
                             my $target = $self->$type($match);  # open, closed, etc.
                             if (grep(/^$target/i, @setindb)) {  # do we have an assignation?
                                 $self->debug(0, "Bingo: target($target)");
@@ -1531,21 +1365,18 @@ sub scan { # bug body
                                 $set{$type}++;
                                 $self->debug(3, "YUP target($target) -> next LINE");
                                 next TYPE;
-                            } else {
-                                $ok = 0;
-                                $self->debug(1, "Nope: failed to set mis-matching match($match) -> target($target) in db options(@setindb)");
                             }
                         }
                     }
                 }
             }
-			$self->debug(4, "Matches found anything? -> ".Dumper(\%set));
+			$self->debug(3, "Matches found anything? -> ".Dumper(\%set));
 			
         }
         last LINE if keys %set >= 5; # found a match for each type      
     }
     my $reg = scalar keys %set;
-    $self->debug(0, "Scanned($ok) count($i_cnt), registered($reg): ".$self->dump(\%data));  
+    $self->debug(1, "Scanned($ok) count($i_cnt), registered($reg): ".$self->dump(\%data));  
 	$self->debug('OUT', \%data);
     return \%data;
 }
@@ -1561,37 +1392,37 @@ sub do_reply { # to existing bug
     my $self = shift;
     $self->debug('IN', @_);
     my $mail = shift || $self->_mail;
-    my $tid  = $self->{'attr'}{'bugid'}; # yek
+    my $bid  = $self->{'attr'}{'bugid'}; # yek
     my ($ok, $msg, $mid) = (1, '', '');
-    if (!(ref($mail) and $self->ok($tid))) {
+    if (!(ref($mail) and $self->ok($bid))) {
 		$ok = 0;
-		$self->debug(0, "requires a Mail::Internet($mail) and a tid($tid)");
+		$self->debug(0, "requires a Mail::Internet($mail) and a bid($bid)");
 	} else {
 		my ($o_hdr, $header, $body) = $self->splice($mail);
-    	my $from = $o_hdr->get('From');
+    	my $from 	= $o_hdr->get('From');
     	my $subject = $o_hdr->get('Subject');
     	my $reply   = $o_hdr->get('Reply-To');
     	my $to      = $o_hdr->get('To');
 		chomp($from, $subject, $reply, $to);
-    	$self->debug(1, "REPLY: subject($subject), tid($tid), from($from), reply($reply), to($to)");
+    	$self->debug(1, "REPLY: subject($subject), bid($bid), from($from), reply($reply), to($to)");
     	# Add it to the database
-    	($ok, $mid) = $self->message_add($tid, { 
+    	($mid) = $self->message_add($bid, { 
 			'sourceaddr'	=> $from,
             'subject'   	=> $subject,
             'toaddr'    	=> $to,
 			'msgheader'	 	=> $header,
             'msgbody'   	=> $body,
     	});
-    	if ($ok == 1) {
-        	$self->{'attr'}{'bugid'} = $tid;
-        	$msg = "mid ok";
-			($ok, my @ccs) = $self->tm_cc($tid, $to, $o_hdr->get('Cc'));
+    	if ($mid =~ /\d+/) {
+        	$self->{'attr'}{'bugid'} = $bid;
+        	$msg = "mid($mid) ok";
+			($ok, my @ccs) = $self->tm_bug_address($bid, $to, $o_hdr->get('Cc'));
     	} else {
         	$msg = 'reply failed to add message'; 
     	}
 	}
-	$self->debug('OUT', $ok);
-    return $ok;
+	$self->debug('OUT', $mid);
+    return $mid;
 }
 
 
@@ -1609,7 +1440,7 @@ sub header2admin {
     my $o_hdr = shift;
     my $data  = '';
 	if (!ref($o_hdr)) {
-		$self->debug(0, "registeration requires a header object($o_hdr)");
+		$self->debug(0, "registration requires a header object($o_hdr)");
 	} else {    
 		my $to 		= $o_hdr->get('To');
 		my $from 	= $o_hdr->get('From');
@@ -1669,16 +1500,17 @@ New password
 
 =cut
 
-sub doy {   # email to cc:
+sub doy {  # new pass 
     my $self = shift;
     my $args = shift;
 	$self->debug('IN', @_);
 	my @args = (ref($args) eq 'ARRAY') ? @{$args} : ($args);
 	my $i_ok = 0;
     my $userid = $self->isadmin;
-	$i_ok = $self->SUPER::doy(["$userid @args"]);
-	$self->debug('OUT', $i_ok);
-	$i_ok;
+	($i_ok) = $self->SUPER::doy(["$userid @args"]);
+	my $res = "new password(@args) request($i_ok)";
+	$self->debug('OUT', $res);
+	return $res;
 }
 
 
@@ -1688,7 +1520,7 @@ Volunteer proposed bug modifications
 
 	propose_close_<bugid>@bugs.perl.org
 	
-	my $i_ok = $o_obj->dov('tid close patch');
+	my $i_ok = $o_obj->dov('bid close patch');
 
 =cut
 
@@ -1711,14 +1543,14 @@ sub dov { # volunteer propose new bug status/mods
 		$self->debug(0, "perlbug proposal: @args");
 		my $o_prop = $self->get_header($o_hdr);
 		$o_prop->replace('To', $admin);
-		# $o_prop->replace('Cc', join(', ', @admins));
+		$o_prop->replace('Cc', join(', ', @admins));
 		$o_prop->replace('From', $self->from($replyto, $from));
 		$o_prop->replace('Subject', $self->system('title')." proposal: $subject");
 		$i_ok = $self->send_mail($o_prop, $body);
 	}
-	$self->result("The result of the bug proposal was forwarded($i_ok)");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	my $res = "Proposal request($i_ok)";
+	$self->debug('OUT', $res);
+	return $res;
 }
 
 
@@ -1735,7 +1567,7 @@ sub doV { # Propose new admin
 	$self->debug('IN', @_);
 	my $args = shift;
 	my @args = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-	my $request = "New admin request (\n@args\n)\n";
+	my $request = "New admin request -i[nitiate] (\n@args\n)\n";
 	my $i_ok = 1;
     my $o_mail = $self->_mail; # hopefully 
 	if (!ref($o_mail)) {
@@ -1747,17 +1579,15 @@ sub doV { # Propose new admin
 		my $subject = $o_hdr->get('Subject');
 		chomp($subject);
 		my $admin = $self->system('maintainer');
-		# my @admins  = $self->active_admin_addresses;
 		$o_prop->replace('To', $admin);
 		$o_prop->delete('Cc');
-		# $o_prop->replace('Cc', join(', ', @admins));
 		$o_prop->replace('Subject', $self->system('title')." admin volunteer: ");
 		$o_prop->replace('Reply-To', $admin);
 		$i_ok = $self->send_mail($o_prop, $request);
 	}
-	$self->result("The result of the admin proposal was forwarded($i_ok)");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	my $res = "Admin volunteer request($i_ok)";
+	$self->debug('OUT', $res);
+	return $res;
 }
 
 
@@ -1775,30 +1605,19 @@ sub doa { # admin a bug
 	my $args = shift;
 	my @args = (ref($args) eq 'ARRAY') ? @{$args} : $args;
 	@args = map { split(/[\s_]+/, $_) } @args;
-	my @tids = ();
+	my @bids = ();
 	my $i_cnt= 0;
 	my $i_ok = 1;
+	my $res  = '';
     my $o_mail = $self->_mail; # hopefully 
 	if (!ref($o_mail)) {
     	$i_ok = 0;
 		$self->debug(0, "admin requires a mail object($o_mail)");
 	} else {
-		my ($o_hdr, $header, $body) = $self->splice($o_mail);
-		ARG:
-		foreach my $arg (@args) {
-			next ARG unless $self->ok($arg);
-			push(@tids, $arg);
-			my ($i_nok, @notes) = $self->doN($arg, $body);
-			$i_cnt += $i_nok;
-			if ($i_ok == 1) {
-				$self->dok([$arg]) unless $self->admin_of_bug($arg, $self->isadmin);
-        	}
-		}
-		$i_ok = $self->SUPER::doa($args);
+		$res = $self->SUPER::doa($args, $o_mail);
 	}
-	$self->result("Admin of bugs(@tids) -> succesful($i_ok) updates($i_cnt)");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	$self->debug('OUT', $res);
+	return $res;
 }
 
 
@@ -1815,9 +1634,9 @@ sub doP { # recieve a patch
 	$self->debug('IN', @_);
 	my $i_ok = 1;
 	my $args = shift;
-	my $o_mail = shift || $self->_mail; 
-	my @tids = (); 
-	my $patchid  = '';
+	my $o_mail = $self->_mail; 
+	my @bids = (); 
+	my $res = '';
 	if (!ref($o_mail)) {
     	$i_ok = 0;
 		$self->debug(0, "requires a mail object($o_mail) for patching");
@@ -1826,27 +1645,23 @@ sub doP { # recieve a patch
 		chomp(my $to = $o_hdr->get('To'));
 		chomp(my $from = $o_hdr->get('From'));
 		chomp(my $subject = $o_hdr->get('Subject'));
-		$patchid = $self->SUPER::doP($args, $body, $header, $subject, $from, $to);
+		$res = $self->SUPER::doP($args, $body, $header, $subject, $from, $to);
 		
 		# notify everyone - otherwise they won't know it's arrived?
-		if ($patchid >= 1) {
+		if ($res =~ /assigned/) {
 			my $o_ack = $self->get_header($o_hdr);
 			my $admin = $self->system('maintainer');
 			my $bugdb = $self->email('bugdb');
 			my @admins = $self->active_admin_addresses;
 			$o_ack->replace('To', $admin);
 			# $o_ack->replace('Cc', join(', ', @admins)) unless grep(/nocc/i, $subject);
-			$o_ack->replace('Subject', $self->system('title')." patch($patchid) recieved");
+			$o_ack->replace('Subject', $self->system('title')." patch($res) recieved");
 			$o_ack->replace('Reply-To', $bugdb);
 			$i_ok = $self->send_mail($o_ack, $body);
-		} else {
-			$i_ok = 0;
-			$self->debug(0, "failed to assign the patch($patchid)");
 		}
 	}
-	$self->result("Patch($patchid), assigned($i_ok)");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	$self->debug('OUT', $res);
+	return $res;
 }
 
 
@@ -1863,8 +1678,8 @@ sub doT { # recieve a test
 	$self->debug('IN', @_);
 	my $i_ok = 1;
 	my $args = shift;
-    my $o_mail = shift || $self->_mail; # hopefully
-	my $testid  = '';
+    my $o_mail = $self->_mail; 
+	my $res = '';
 	if (!ref($o_mail)) {
     	$i_ok = 0;
 		$self->debug(0, "requires a mail object($o_mail) for testing");
@@ -1873,27 +1688,23 @@ sub doT { # recieve a test
 		chomp(my $to = $o_hdr->get('To'));
 		chomp(my $from = $o_hdr->get('From'));
 		chomp(my $subject = $o_hdr->get('Subject'));
-		$testid = $self->SUPER::doT($args, $body, $header, $subject, $from, $to);
+		$res = $self->SUPER::doT($args, $body, $header, $subject, $from, $to);
 		
 		# notify everyone - otherwise they won't know it's arrived?
-		if ($testid >= 1) {
+		if ($res =~ /assigned/) {
 			my $o_ack = $self->get_header($o_hdr);
 			my $admin = $self->system('maintainer');
 			my $bugdb = $self->email('bugdb');
 			my @admins = $self->active_admin_addresses;
 			$o_ack->replace('To', $admin);
 			# $o_ack->replace('Cc', join(', ', @admins)) unless grep(/nocc/i, $subject);
-			$o_ack->replace('Subject', $self->system('title')." test($testid) recieved($i_ok)");
+			$o_ack->replace('Subject', $self->system('title')." test($res) recieved($i_ok)");
 			$o_ack->replace('Reply-To', $bugdb);
 			$i_ok = $self->send_mail($o_ack, $body);
-		} else {
-			$i_ok = 0;
-			$self->debug(0, "failed to assign the test($testid)");
 		}
 	}
-	$self->result("test recieved($i_ok)");
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	$self->debug('OUT', $res);
+	return $res;
 }
 
 
@@ -1910,27 +1721,22 @@ sub doN { # recieve a note
 	$self->debug('IN', @_);
 	my $i_ok = 1;
 	my $args = shift;
-    my $o_mail = shift || $self->_mail; # hopefully
-	my @args = (ref($args) eq 'ARRAY') ? @{$args} : split(/\s+/, $args);
-	my @tids = ();
-	my @nids = ();
-	my $cnt  = 0;
+	my @args = @_; # have to ignore these
+	my $o_mail = $self->_mail; 
+	my @bids = (); 
+	my $res  = '';
 	if (!ref($o_mail)) {
     	$i_ok = 0;
-		$self->debug(0, "requires a mail object($o_mail) for a note");
+		$self->debug(0, "requires a mail object($o_mail) for note");
 	} else {
 		my ($o_hdr, $header, $body) = $self->splice($o_mail);
-		# $body = $self->quote($body);
-		ARG:
-		foreach my $arg (@args) {
-			next ARG unless $self->ok($arg);				# no bugs
-			push(@tids, $arg);
-			$cnt += $self->SUPER::doN($arg, $body, $header);
-		}
+		chomp(my $to = $o_hdr->get('To'));
+		chomp(my $from = $o_hdr->get('From'));
+		chomp(my $subject = $o_hdr->get('Subject'));
+		$res = $self->SUPER::doN($args, $body, $header, $subject, $from, $to);
 	}
-	$i_ok = ($cnt >= 1) ? 1 : 0;
-	$self->debug('OUT', $i_ok);
-	return $i_ok;
+	$self->debug('OUT', $res);
+	return $res;
 }
 
 
@@ -1965,7 +1771,6 @@ sub dow { # weiterleiten -> all active admins
  		# $o_forward->replace('Cc', join(', ', @admins));
 		$o_forward->replace('Reply-To', $from);
 		$o_forward->add('Subject', $self->system('title').": ".$o_hdr->get('Subject'));
-		$self->result("Message forwarded");
 		$i_ok = $self->send_mail($o_forward, "Forwarded message:\n$body");
 	}
 	$self->debug('OUT', $i_ok);
@@ -2013,7 +1818,7 @@ sub do_bounce { # and place in db
     chomp(my $cc      = $o_hdr->get('Cc'));
     chomp(my $xloop   = $o_hdr->get('X-Perlbug'));
     #
-    my ($ok, $tid, $mid) = (1, '', '');
+    my ($ok, $bid, $mid) = (1, '', '');
     $self->debug(0, "BOUNCE: subject($subject) into db for posterity...");
     my $rebound = $from;
     if ($xloop =~ /\w+/) {
@@ -2022,19 +1827,19 @@ sub do_bounce { # and place in db
         $subject = "X-Perlbug: $subject";
     } else {
         # register bounced mails as new onhold notabug low priority bugs
-        ($ok, $tid, $mid) = $self->insert_bug($subject, $from, $to,  $header,  $body);
+        ($ok, $bid, $mid) = $self->insert_bug($subject, $from, $to,  $header,  $body);
         if ($ok == 1) {
-            $self->{'attr'}{'bugid'} = $tid;
-            $ok = $self->bug_set($tid, { 
+            $self->{'attr'}{'bugid'} = $bid;
+            $ok = $self->bug_set($bid, { 
                 'status'    => 'closed',
                 'severity'  => 'none',
                 'category'  => 'bounce',
                 'osname'    => '',
             });  
-            # my $x = $self->track('t', $tid, "closed:none:bounce");
+            # my $x = $self->track('t', $bid, "closed:none:bounce");
         }
         if ($ok == 1) {
-			($ok, my @ccs) = $self->tm_cc($tid, $o_hdr->get('To'), $o_hdr->get('Cc'));
+			($ok, my @ccs) = $self->tm_bug_address($bid, $o_hdr->get('To'), $o_hdr->get('Cc'));
 		}
 		my ($title, $tron, $hint) = ($self->system('title'), $self->email('tron'), $self->email('hint'));
         $body = qq|
@@ -2107,27 +1912,33 @@ sub assign_bugs { # unclaimed to admins
         |;
     }
     
-    # TIDS
-    my @tids = ();
+    # BIDS
+    my @bids = ();
+    my @res  = ();
     if ($ok == 1) {
         my %assign = ();
         my $user = $self->check_user($admin);          # setup admin as current user or not
         foreach my $it (1..$num) {          # of given bugs
             last if $it >= 5;               # Let's not frighten them all off straight away :-)
             my $bug = shift @{$a_unclaimed}; # rand $num @unclaimed
-            $self->doc($admin, $bug);    # claim
-            $self->dob($bug);            # feedback
-            push(@tids, $bug);           # ref
+            $self->dok($admin, $bug);    # claim
+            push(@res, $self->dob($bug));# feedback
+            push(@bids, $bug);           # ref
             $self->debug(2, "Admin($admin), claimed bug($bug)");
         }
     }
 
+    if ($ok == 1) {
+        push(@res, $self->doo);
+	}
+
     # DATA + overview 
     my $data = '';
-    if ($ok == 1) {
+    if ($ok == 123) {
         $self->doo;
-        my ($a_results) = $self->get_results;
-        $data = (ref($a_results) eq 'ARRAY') ? join('', @{$a_results}) : $a_results;
+        # my ($a_results) = $self->get_results;
+        # my @results = $self->get_results;
+        # $data = (ref($a_results) eq 'ARRAY') ? join('', @{$a_results}) : $a_results;
         my $fh = $self->fh('res'); # REWIND results to zero HERE.
         flock $fh, 2;
         truncate $fh, 0;
@@ -2137,135 +1948,73 @@ sub assign_bugs { # unclaimed to admins
     # SEND MAIL
     if ($ok == 1) {
         my ($address) = $self->get_list("SELECT address FROM tm_user WHERE userid = '$admin'");
+		my $data = join('', @res);
         my $o_hdr = $self->get_header;
 		$o_hdr->add('To' => $address);
-        $o_hdr->add('Subject' => $self->system('title').' admin sheet (@tids)');
-        $ok = $self->send_mail($o_hdr, "$notice\nTIDs: (@tids)\n\n$data\n\n");
+        $o_hdr->add('Subject' => $self->system('title').' admin sheet (@bids)');
+        $ok = $self->send_mail($o_hdr, "$notice\nBUGIDs: (@bids)\n\n$data\n\n");
     }
 	$self->debug('OUT', $ok);     
     return $ok;
 }   # done assign_bugs
 
 
-=item check_mail
-
-Check headers against various given parameters, attempts to read all required lines/data.
-
-	# call													# Scope		Regex
-	my $o_new = $o_mail->process_header($o_hdr, $context);	# Mail::Send object (ready to go)
-	my @should 	 = $o_hdr->get('X-Perlbug-Match');			# Subject: 	\-h\s\-o
-	my @shouldnt = $o_hdr->get('X-Perlbug-Match-Non');		# To: 		\s*perlbug\@perl\.com
-	my @failures = $o_hdr->get('X-Perlbug-Match-Bad');		# To: 		\s*perlbug\@perl\.org
-
-	($i_ok, $feedback) = $o_bugmail->check_mail($o_new, $body, \@should, \@shouldnt, \@shouldfail); 
-	
-	warn "Mail header check failure: ($feedback)\n" unless $i_ok == 1;
-
-=cut
-
-sub check_mail { # test header lines
-	my $self  = shift; # o_perlbug_mail
-    $self->debug('IN', @_);
-	my $o_hdr = shift; # Mail::Internet->header object
-	my $body  = shift; # Mail::Internet->body string
-	my $a_pos = shift; # should have
-	my $a_neg = shift; # should not have
-	my $a_bad = shift; # should fail
-	my %data  = ('pos' => $a_pos, 'neg' => $a_neg, 'bad' => $a_bad);
-	my $i_ok  = 1;   
-	my $i_err = 0;   
-	my $info  = '';
-	
-	if (ref($o_hdr) && defined($body) && ref($a_pos).ref($a_neg).ref($a_bad) eq 'ARRAYARRAYARRAY') {
-		# print "All args OK(o_hdr($o_hdr), body(".length($body)."), a_pos($a_pos), a_neg($a_neg), a_bad($a_bad))\n";
-	} else {
-		$i_ok = 0;
-		$info = "Duff args given to checkit: o_hdr($o_hdr), body(".length($body)."), a_pos($a_pos), a_neg($a_neg), a_bad($a_bad)";
-	} 
-	if ($i_ok == 1) {
-		TYPE:
-		foreach my $type (qw(pos neg bad)) {
-			next TYPE unless scalar(@{$data{$type}}) >= 1;
-			MATCH:	
-			foreach my $elem (@{$data{$type}}) {
-				chomp($elem);
-				my $err  = 0;
-				my @data = ();
-				my ($scope, $regex) = ('', '');
-				if ($elem =~ /^([\w_-]+)?\:\s*(.+)\s*$/) { # To: regex\@here\.com
-					($scope, $regex) = ($1, $2);		# set SCOPE and MATCH
-				} else {
-					$err++; 
-					$info .= "Check_mail found no scope or regex in element($elem)\n";
-				}
-				if ($err == 0) {						# set TARGET DATA
-					if ($scope eq 'Body') { 
-						push(@data, $body); 
-					} elsif (ref($o_hdr) and $o_hdr->can('get')) {	# Mail::Header
-						@data = $o_hdr->get($scope);	
-					} elsif (ref($o_hdr->{$scope}) eq 'ARRAY') {	# Mail::Send has no access methods
-						@data = $o_hdr->{$scope}; 		
-					} else {
-						$err++;
-						$info .= "Check_mail failed to find the data for scope($scope)\n";
-					}
-				}
-				if ($err == 0) {						# DOIT neg, pos, bad
-					chomp($scope, $regex, @data);
-					if ($type eq 'neg') {
-						$err++ if grep(/$regex/, @data);
-					} elsif ($type eq 'bad') {
-						$err++ if grep(/$regex/, @data);
-					} elsif ($type eq 'pos') {
-						$err++ unless grep(/$regex/, @data);
-					} 
-					$err = !$err if $type eq 'bad'; # supposed to find it
-					$info .= ($err == 0) ? "OK: " : "NOT OK: ";		
-					$info .= "$type = scope($scope), regex($regex), data(@data)\n";
-				}
-				$i_err++ unless $err == 0;
-     		}
-		}
-	}
-	$i_ok = 0 unless $i_err == 0;
-
-	$self->debug('OUT', $i_ok, $info);	
-	return ($i_ok, $info);
-}
-
 
 =item doD
 
-Mail me a copy of the latest database dump
+Mail me a copy of the latest database dump, with 8-figure time filter
 
 =cut
 
 sub doD { # mail database dump
 	my $self = shift;
 	$self->debug('IN', @_);
-	my $file = $self->directory('arch').'/'.$self->database('latest');
-	my ($o_hdr, $header, $body) = $self->_mail;
-	my $address = $self->from($o_hdr->get('Reply-To'), $o_hdr->get('From'), $self->system('maintainer'));
-	my $cmd  = "uuencode $file $file.uu | mail $address";
-	$self->debug(2, "doD cmd($cmd)");
+	my $args = shift;
+    my $date = (ref($args) eq 'ARRAY') ? join(' ', @{$args}[0]) : $args;
 	my $i_ok = 1;
-	if ($address !~ /\w+/) {
-		$i_ok = 0;
-	} else {
-		$i_ok = !system($cmd);
-		if ($i_ok == 1) {
-			my $hinweis = "Database dump has been mailed to '$address'\n\n";
-			$hinweis .= qq|N.B.: \nIf you\'ve loaded the database before 2.26, the structure has changed, 
-you may want to trash it and start all over again.
-scripts/fixit::mig should help with the migration otherwise.\n
-|;
-			$self->result($hinweis);
+	my $file = $self->directory('arch').'/'.$self->database('latest');
+	if ($date !~ /^\s*(\d+)\s*$/) { # incremental
+		$self->debug(2, "Full database dump requested($args -> $date)");
+	} else {	
+		$date = $1;
+		$file = File::Spec->canonpath($self->directory('arch')."/Perlbug.sql.${date}.gz");
+		$i_ok = $self->SUPER::doD($date);
+		if ($i_ok != 1) {
+			$self->debug(0, "Database dump($file) request($date) failed to complete($i_ok)!");
+		}
+	} 
+	if ($i_ok == 1) {
+		my ($o_hdr, $header, $body) = $self->_mail;
+		my $address = $self->from($o_hdr->get('Reply-To'), $o_hdr->get('From'), $self->system('maintainer'));
+		my $title   = $self->system('title');
+		if ($address !~ /\w+/) {
+			$i_ok = 0;
 		} else {
-			$self->result("doD cmd($cmd) failed($i_ok) $!");
-		} 
+			my $size = -e $file;
+			my $cmd  = "uuencode $file $file | mail -s '$title db dump' $address"; # yek! :-/
+			$self->debug(2, "doD cmd($cmd)");
+			$i_ok = !system($cmd);
+			if ($i_ok == 1) {
+				my $hinweis = qq|$title database($size) dump(-D $date) mailed($i_ok) to '$address'
+
+Incremental updates may be retrieved using the following format:
+
+	-D                  \# everything 
+	-D 2000             \# everything since 1st Jan 2000
+	-D 20001120         \# everything since 20th Nov 2000
+	-D 20001120153527   \# everything since 27 seconds after 3.35pm on 20th Nov 2000
+
+N.B.: If you\'ve loaded the database before 2.26, the structure has changed, you may want to trash it and start all over again.  Alternatively ./scripts/fixit -> mig can help with the migration.
+
+|;
+				# $self->result($hinweis);
+			} else {
+				$self->debug(0, "doD cmd($cmd) failed($i_ok) $!");
+			} 
+		}
 	}
 	$self->debug(2, "doD i_ok($i_ok)");
-    $self->debug('OUT', $i_ok);
+	$self->debug('OUT', $i_ok);
 	return $i_ok;
 }
 
@@ -2351,41 +2100,37 @@ sub scan_header {
 				$cmd = "T $str";									# doT
 			} else {						# admin/proposal/note => bugid
 				$cmd = ($str =~ /^propos\w+/i) ? 'v' : 'a'; 		# dov | doa | note
-				my ($isok, $tid) = $self->get_id($str);
-				if (!($isok == 1 || $tid =~ /\d+/)) { 				# try again
-					($isok, $tid) = $self->get_id($subject); 		# ?
-					$str .= "_$tid" if $isok;
+				my ($isok, $bid) = $self->get_id($str);
+				if (!($isok == 1 || $bid =~ /\d+/)) { 				# try again
+					($isok, $bid) = $self->get_id($subject); 		# ?
+					$str .= "_$bid" if $isok;
 				}
-				if ($isok == 1 && $tid =~ /\d+/) {
+				if ($isok == 1 && $bid =~ /\d+/) {
 					if ($str =~ /^note/i) {							# doN (body)
-						$cmd = "N $tid";
+						$cmd = "N $bid";
 					} else {
 						$cmd = "$cmd $str";
 					}
 				} else {
-					$self->debug(0, "Failed($isok) to identify($cmd) bugid($tid) in string($str), referring to admins");
+					$self->debug(0, "Failed($isok) to identify($cmd) bugid($bid) in string($str), referring to admins");
 					$cmd = "v $str"; # refer to admins				# dov
 				}
 			}
 			$self->debug(1, "cmd($cmd)");
 		}
 	}
-	$self->debug('OUT', $cmd, length($body));
 	if ($cmd !~ /\w+/) {
-		$self->debug(1, "no cmd($cmd) found from str($str)");
-		my $err = qq|Selected input command($str)
-was not parseable($cmd) for some reason, returning help menu for assistance:
-		|;
-		$self->result($err);
+		$self->debug(0, "no cmd($cmd) found from str($str) return 'H' instead");
 		$cmd = 'H';
 	}
+	$self->debug('OUT', $cmd, length($body));
 	return ($cmd, $body);	
 }
 
 
 =item admin_of_bug
 
-Checks given bugid and administrator against tm_bug_user, tm_bugs::sourceaddr, tm_cc.
+Checks given bugid and administrator against tm_user_bug, tm_bugs::sourceaddr, tm_bug_address.
 
 Now you can admin a bug if you're on the source address, or the Cc: list.
 
@@ -2394,10 +2139,10 @@ Now you can admin a bug if you're on the source address, or the Cc: list.
 sub admin_of_bug {
     my $self  = shift;
 	$self->debug('IN', @_);
-	my $tid   = shift;
-    	my $admin = shift || $self->isadmin;
+	my $bid   = shift || '';
+	my $admin = shift || $self->isadmin;
 	chomp($admin);
-	my $i_ok  = $self->SUPER::admin_of_bug($tid, $admin);	# tm_bug_user::admin
+	my $i_ok  = $self->SUPER::admin_of_bug($bid, $admin);	# tm_user_bug::admin
 	if ($i_ok != 1) { 				# try again with address
 		my ($o_hdr, $header, $body) = $self->splice; # !
 		my ($from) = $o_hdr->get('From');
@@ -2405,16 +2150,16 @@ sub admin_of_bug {
 		if (!ref($o_addr)) {
 			$i_ok = 0;
 			$self->debug(0, "Can't get address object($o_addr) from ($from)");
-		} else { 												# TM_CC::address
+		} else { 												# tm_bug_address::address
 			my ($addr) = $o_addr->address;
 			chomp($addr);
-			my $sql   = "SELECT DISTINCT bugid FROM tm_cc WHERE UPPER(address) = UPPER('$addr') AND bugid = '$tid'";
+			my $sql   = "SELECT DISTINCT bugid FROM tm_bug_address WHERE UPPER(address) = UPPER('$addr') AND bugid = '$bid'";
     		my ($tkt) = $self->get_list($sql);
-			if (defined($tkt) and $tkt eq $tid) { 	# try again with source
+			if (defined($tkt) and $tkt eq $bid) { 	# try again with source
 				$i_ok = 1;
-				$self->debug(1, "Found: tid($tid) eq tm_cc_tkt($tkt)");
+				$self->debug(1, "Found: bid($bid) eq tm_bug_address_tkt($tkt)");
 			} else { 											# tm_bug::sourceaddr
-				$sql  = "SELECT sourceaddr FROM tm_bug WHERE bugid = '$tid'";
+				$sql  = "SELECT sourceaddr FROM tm_bug WHERE bugid = '$bid'";
 				my ($src) = $self->get_list($sql) ;
 				my ($o_addr) = Mail::Address->parse($src);
 				if (ref($o_addr)) {
@@ -2439,7 +2184,7 @@ sub admin_of_bug {
 
 Deal with a failed administration attempt
 
-	my $i_ok = $self->administration_failure($tid, $user, $commands);
+	my $i_ok = $self->administration_failure($bid, $user, $commands);
 
 =cut
 
@@ -2447,7 +2192,7 @@ sub administration_failure {
 	my $self = shift;
 	$self->debug('IN', @_);
 	my $i_ok = $self->SUPER::administration_failure(@_);
-	my $tid  = shift;
+	my $bid  = shift;
 	my $cmds = shift;
 	my $user = shift || $self->isadmin;
 	my $reason = shift || '';
@@ -2523,6 +2268,77 @@ sub _switch { #
 	$self->debug('OUT', $i_ok);
 	return $i_ok; 	
 }
+
+
+sub reminder { # open/fatal to relevant parties...
+    my $self    = shift;
+    $self->debug('IN', @_);
+    my $bid     = shift;
+	my @addrs   = @_;
+    my $ok = 1;
+    
+    if (!(($bid =~ /^\d{8}\.\d{3}$/) && (scalar(@addrs) >= 1))) {
+        $ok = 0;
+        $self->debug(0, "Duff args given to reminder: bid($bid), addrs(@addrs)");
+    } 
+     
+    my $o_bug = $self->object('bug')->read($bid);
+	my $o_usr = $self->object('user');
+    my $o_grp = $self->object('group');
+    my ($title, $perlbug, $maintainer, $home) = 
+		($self->system('title'), $self->email('perlbug'), $self->system('maintainer'), $self->web('hard_wired_url'));
+	my $status = $o_bug->data('status');
+    my $group = $o_bug->data('category');
+	my $gid = $o_grp->name2id($group);
+
+    # DATA + overview 
+    my $bugreport = '';
+    if ($ok == 1) {
+		($bugreport) = $self->dob([$bid]);
+        # my ($a_results) = $self->get_results;
+        # $bugreport = (ref($a_results) eq 'ARRAY') ? join('', @{$a_results}) : $a_results;
+	}
+	
+	if ($ok == 1) {
+        my $fh = $self->fh('res'); # REWIND results to zero HERE.
+        flock $fh, 2;
+        truncate $fh, 0;
+        flock $fh, 8;
+    }
+     
+    # NOTICE
+    if ($ok == 1) {
+        my $notice = qq|
+	This is a $title status($status) reminder for an outstanding 
+	bug, a report for which is appended at the base of this email.
+
+	Data relating to this bug ($bid) itself may be found at:
+
+		$home/perlbug.cgi?req=bidmids&bidmids=$bid
+
+	The group($group) responsible for this bug:
+
+		$home/perlbug.cgi?req=gid&gid=$gid
+    
+	For email help send an email to:
+	
+		To: $perlbug
+		Subject: -H
+
+	Bug report follows:
+	$bugreport
+        |;
+        my $o_hdr = $self->get_header;
+		$o_hdr->add('To' => $maintainer);
+		$o_hdr->add('Cc' => join(', ', @addrs)) if @addrs;
+        $o_hdr->add('Subject' => $self->system('title')." reminder of bug($bid) status");
+        $ok = $self->send_mail($o_hdr, "$notice");
+    }
+	$self->debug('OUT', $ok);     
+
+    return $ok;
+}   # done reminder
+
 
 __END__
 

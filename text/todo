@@ -1,0 +1,36 @@
+NAME
+    TODO - Perlbug TODO list
+
+DESCRIPTION
+    ID  X-Perlbug: [ID ...]
+
+        Where:
+
+                [ID]  = new ticket id has been assigned to this message
+
+                [ID*] = this is a reply to an existing non-open ticket
+
+                [ID+] = this is a reply to an existing open ticket 
+
+                [ID-] = this is a reply to a ticket which has been deleted or is non-existent
+
+    overview
+        Time related links on web overview, and check ratios
+
+    tests
+        Full test suite
+
+    oracle
+        v3.5 Oracle support
+
+    templates
+        Differential template support dependent on context, object and user
+        choice
+
+SUGGESTIONS
+            Email suggestions to: 
+
+                    <a href="mailto:perl5-porters@perl.org">perl5-porters@perl.org</a> 
+
+                    <a href="mailto:perlbug@rfi.net">perlbug@rfi.net</a> 
+

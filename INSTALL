@@ -1,7 +1,8 @@
 # Perlbug Installation instructions 
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: INSTALL,v 1.9 2000/10/05 13:27:15 perlbug Exp perlbug $
-#
+# 
+# $Id: INSTALL,v 1.14 2001/04/21 20:48:48 perlbug Exp $
+# 
 
 SHORT:
 
@@ -11,7 +12,7 @@ SHORT:
 	
     cd Perlbug
 	
-    modify ./config/Configuration
+    modify ~/config/Configuration
 		
     perl Makefile.PL PREFIX=Perlbug_installation # ?
 	
@@ -26,43 +27,52 @@ SHORT:
 
 LONG:
    
-    See below:
+    Keep reading.
+
 
 PREREQUISITES:
 
-    Perl :-)
-    
-    MySQL installation from TCX
-	
+	Perl :-)
+
+	MySQL installation from TCX
+
 	URI-1.09 or up from Gisle Aas
-	
-    HTML-Parser-3.03 or up originaly from Gisle Aas
-	
+
+	HTML-Parser-3.03 or up originaly from Gisle Aas
+
 	MailTools-1.13 or up from GBarr
+
+	Complete list of prerequisites in Makefile.PL
 
     
 INSTALLATION:
 
     Unpack the distribution in a suitable base level Perlbug directory.
+
+	Although it is recommended to create an appropriate system user,
+	'perlbug' for example, this is not necessary.  However all file 
+	and directory paths in these instructions will assume we are using 
+	a dedicated 'perlbug' user account, and will be relative to his/her home.
 	
-	The only files you should _need_ to edit are in the B<config> directory, 
-	though you will probably choose to modify the B<site> files too.
+	The only files you should _need_ to edit are in the ~/config directory, 
+	though, if using this application 'in anger', you will probably choose 
+	to modify the ~/site files too.
 	
-	Install suitable SQL database(currenly only Mysql supported, Oracle on the 
-	todo list), (make sure you can access the database with the parameters you 
-	give to the config/Configuration file).
+	Install suitable SQL database(currenly only Mysql supported, Oracle is 
+	on the todo list), (make sure you can access the database with the 
+	parameters you give to the ~/config/Configuration file).
 	
-	Run the scripts in the sql directory to create all the tables etc. 
-	in the database:
-		mysql -p < sql/create_perlbug.sql		
-		mysql -p perlbug < sql/create_tables.sql
-		mysql -p perlbug < sql/insert_flags.sql
-		mysql -p perlbug < sql/insert_admin.sql # perhaps?
-	
-	Set the enviroment variable Perlbug_Config=/path/to/config/Configuration,
-	and set it in Perlbug/Config.pm to be sure.
-	
-	Configure the ./config/Configuration file which should be fairly 
+	Run the scripts in the appropriate ~/sql/* directories to create the 
+	database, the default database user, all the tables, inserting some 
+	minimal default entries etc.  In particular, follow the instructions 
+	in ~/sql/README
+
+	Set the Configuration file location in ~/Perlbug/Config.pm, this can 
+	also be set 'on the fly' in the environment for testing, eg:
+
+		export Perlbug_Config=~/mytest/Configuration
+
+	Configure the ~/config/Configuration file which should be fairly 
 	self-explanatory, but in particular ensure that:
 	
 		database(username & password) are correct
@@ -70,45 +80,44 @@ INSTALLATION:
 		directory entries all point to the correct locations
 		
 		system::user is a real user on your system
-		system::user is a real user on your system
 	
-		directory::arch, spool(logs & ranges & results & temp) etc. 
-		exist and are writable by the appropriate user/s. 
+		directory::arch, spool(logs & temp) etc. 
+		all exist and are writable by the appropriate user/s. 
 		eg:
 			
-			mkdir -p /home/perlbug/spool archive 
-			mkdir -p /home/perlbug/spool logs 
-			mkdir -p /home/perlbug/spool results 
+			mkdir -p ~/perlbug/spool archive 
+			mkdir -p ~/perlbug/spool logs 
 			# etc. 
-			chmod -R 777 /home/perlbug/spool
+
+			chmod -R 777 ~/perlbug/spool
 	
-	Modify config/Matches to map patterns to targets categories/status, 
-	if the defaults are not suitable.
+	Modify ~/config/Matches to map patterns to targets categories/status, 
+	if the defaults are not suitable for your requirements.
 	
 	Setup mail forwarding to the appropriate scripts:
 	
-	    slurping the data:               tron.pl (email or mailing lists)
+	    slurping the data:               ~/scripts/tron.pl (email/mailing lists)
 	    
-	    query the data, admin interface: mail.pl (email)
+	    query the data, admin interface: ~/scripts/mail.pl (email)
 	
 	Setup a cron job for regular tasks, clean up:
 	
-	    every week: 		cron.cmd
+	    every week:                      ~/scripts/cron.cmd
         
-	Ensure perlbug.cgi is executable by the webserver.
+	Ensure ~/scripts/perlbug.cgi is executable by the webserver.
 	
-	You'll also want to modify the config/.htpasswd and web/.htaccess entries 
+	You'll also want to modify the ~/config/.htpasswd and ~/web/.htaccess entries 
 	to enable the administration side of things via www, unless you're using 
 	this in system::restricted=0 mode. 
 	
 	Create admins via the admins page at your config::web::domain
 		http://your.web.server/admin/perlbug.cgi?req=administrators page
 	
-		or adapt the ./sql/generic/create_admin.sql script
+		or adapt the ~/sql/generic/create_admin.sql script
 
 	For the default source and database data downloads to be operational 
-	links or files will need to be installed from archive to web/archive 
-	and web/admin/archive
+	links or files will need to be installed from archive to ~/web/archive 
+	and ~/web/admin/archive
 	
 	Voila! (hopefully :-)
 	
@@ -116,14 +125,14 @@ INSTALLATION:
 
 COMMENTS:
 	
-	The spool (logs, results, ranges, temp) directories are all initially 
-	installed under the Perlbug root.  These directories are liable to fill 
-	up with volatile data and are prime candidates for moving to another area 
-	(eg: /tmp/*), or disposing of periodically (eg: via cron). 
-	Remember to reflect changes in the Configuration file.
+	The ~/spool(archive, logs, results, ranges, temp) directories are all 
+	initially installed under the Perlbug root.  These directories are liable 
+	to fill up with volatile data and are prime candidates for moving to 
+	another area (eg: /tmp/*), or disposing of periodically (eg: via cron). 
+	Remember to reflect changes in the ~/config/Configuration file.
 
-	Any stray test ticket data inserted in the database by 'make test' that 
-	remains from an incomplete test run should be removed by t/99_Test.t
+	Any stray test bug data inserted in the database by 'make test' that 
+	remains from an incomplete test run should be removed by ~/t/99_Test.t
 
 	Further info in the docs: 'perldoc Perlbug'
 

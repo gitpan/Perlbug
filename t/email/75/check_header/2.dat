@@ -1,0 +1,13 @@
+Subject: -h -o 
+To: funny+looking+address%%line-here.@perl.org 
+From: "Richard Foley" <perlbug@perl.com>
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+
+
+Gruesse
+
+Should fail with 'From' line
+
+Ciao
+---
+Sig here

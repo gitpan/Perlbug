@@ -1,0 +1,13 @@
+Subject: -h -o 
+To: funny+looking+address%%line-here.@perl.org 
+From: perlbug@rfi.net
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+X-Perlbug: perlbug@perl.org
+
+Gruesse
+
+Should fail with X-Perlbug
+
+Ciao
+---
+Sig here

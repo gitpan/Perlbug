@@ -1,0 +1,9 @@
+# $Id: 227_to_228,v 1.1 2001/04/21 20:48:48 perlbug Exp $
+
+update tm_bug set status = 'fatal' where status = 'critical';
+delete from tm_flag where flag = 'critical';
+
+insert into tm_flag set created=now(), type='category', flag='utf8';
+insert into tm_flag set created=now(), type='category', flag='regex';
+insert into tm_flag set created=now(), type='category', flag='compiler';
+

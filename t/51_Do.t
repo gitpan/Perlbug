@@ -1,13 +1,13 @@
-#!/usr/bin/perl -w
-# Do utilities tests for Perlbug: get_switches, stats, admin_of_bug
+#!/usr/bin/perl 
+#
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 51_Do.t,v 1.1 2000/08/04 14:45:58 perlbug Exp perlbug $
+# $Id: 51_Do.t,v 1.3 2001/03/31 16:15:01 perlbug Exp $
 #
 BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::Testing;
-	plan('tests' => 6);
+	use Perlbug::TestBed;
+	plan('tests' => 4);
 }
 use strict;
 use Data::Dumper;
@@ -28,11 +28,11 @@ my $o_perlbug = '';
 # Libraries callable? 
 $test++; 
 $context = 'new';
-if ($o_perlbug = Perlbug::Base->new) {	# won't operate stand-alone
+if ($o_perlbug = Perlbug::Base->new) {	# wont operate stand-alone
 	$o_perlbug->current('isatest', 1);
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("base object ($o_perlbug) retrieval failed");
 }
 
@@ -43,7 +43,7 @@ my @switches = $o_perlbug->$context();
 if (grep(/^h$/, @switches) and grep(!/^a$/, @switches)) {	
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("$context failed(@switches)");
 }
 
@@ -53,7 +53,7 @@ $test++;
 if (grep(/^b$/, @switches) and grep(!/^a$/, @switches)) { 
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("$context('user') failed(@switches)");
 }
 
@@ -63,46 +63,22 @@ $test++;
 if (grep(/^a$/, @switches) and grep(/^x$/, @switches)) { 
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("$context('admin') failed(@switches)");
 }
 
+=pod
 # 5
 $test++;
-$context = 'stats';
-my %stats = %{$o_perlbug->$context}; 
+$context = 'stats'; # takes too long to bother testing
+my %stats = %{$o_perlbug->$context()}; 
 if ($stats{'bugs'} >= 1) { 
 	ok($test);
 } else {
-	notok($test);
+	ok(0);
 	output("$context failed: ".Dumper(\%stats));
 }
-
-# 6
-$test++;
-$context = 'admin_of_bug';
-my $get_test = q|SELECT bugid FROM tm_bug WHERE sourceaddr LIKE '%perlbug_test@rfi.net%'|;
-my ($TID) = $o_perlbug->get_list($get_test);
-my $isadmin = $o_perlbug->$context($TID, ''); 
-if ($TID =~ /\w+/ and $isadmin == 0) { 
-	ok($test);
-} else {
-	notok($test);
-	output("$context failed($isadmin)");
-}
-
-# 7
-# $test++;
-# $o_perlbug->isadmin('perlbug_test');
-# print $o_perlbug->isadmin;
-# $o_perlbug->doc($TID);
-# my $isnowadmin = $o_perlbug->$context($TID, ''); 
-# if ($isnowadmin == 1) { 
-# 	ok($test);
-# } else {
-# 	notok($test);
-# 	output("$context failed($isnowadmin)");
-# }
+=cut
 
 # Done
 # -----------------------------------------------------------------------------

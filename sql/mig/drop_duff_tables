@@ -1,0 +1,55 @@
+# $Id: drop_duff_tables,v 1.2 2001/04/21 20:48:48 perlbug Exp $ 
+#
+# redundant tables from various db structure migrations and fixes
+# 
+
+DROP TABLE IF EXISTS admin_groups;
+DROP TABLE IF EXISTS tm_bug_address_data;
+DROP TABLE IF EXISTS tm_bug_id;
+DROP TABLE IF EXISTS tm_bug_category;
+DROP TABLE IF EXISTS tm_bug_changeid;
+DROP TABLE IF EXISTS tm_bug_message_data;
+DROP TABLE IF EXISTS tm_bug_note_data;
+DROP TABLE IF EXISTS tm_bug_patch_data;
+DROP TABLE IF EXISTS tm_bug_test_data;
+DROP TABLE IF EXISTS tm_bug_user;
+DROP TABLE IF EXISTS tm_bug_user_data;
+DROP TABLE IF EXISTS tm_bug_version_data;
+DROP TABLE IF EXISTS tm_bugid_data;
+DROP TABLE IF EXISTS tm_cc;
+DROP TABLE IF EXISTS tm_cc_data;
+DROP TABLE IF EXISTS tm_category;
+DROP TABLE IF EXISTS tm_category_data;
+DROP TABLE IF EXISTS tm_claimants_data;
+DROP TABLE IF EXISTS tm_flag;
+DROP TABLE IF EXISTS tm_flags;
+DROP TABLE IF EXISTS tm_group_address_data;
+DROP TABLE IF EXISTS tm_group_data;
+DROP TABLE IF EXISTS tm_group_user_data;
+DROP TABLE IF EXISTS tm_id_data;
+DROP TABLE IF EXISTS tm_log_data;
+DROP TABLE IF EXISTS tm_old_log_data;
+DROP TABLE IF EXISTS tm_messages_data;
+DROP TABLE IF EXISTS tm_notes_data;
+DROP TABLE IF EXISTS tm_parent_child;
+DROP TABLE IF EXISTS tm_parent_child_data;
+DROP TABLE IF EXISTS tm_patch_change_data;
+DROP TABLE IF EXISTS tm_patch_changeid;
+DROP TABLE IF EXISTS tm_patch_ticket;
+DROP TABLE IF EXISTS tm_patch_version_data;
+DROP TABLE IF EXISTS tm_patches_data;
+DROP TABLE IF EXISTS tm_spam;
+DROP TABLE IF EXISTS tm_tests_data;
+DROP TABLE IF EXISTS tm_tickets_data;
+DROP TABLE IF EXISTS tm_template_user_thing;
+DROP TABLE IF EXISTS tm_test_ticket;
+DROP TABLE IF EXISTS tm_test_version_data;
+DROP TABLE IF EXISTS tm_tests_data;
+DROP TABLE IF EXISTS tm_type;
+DROP TABLE IF EXISTS tm_user_data;
+DROP TABLE IF EXISTS tm_user_group;
+DROP TABLE IF EXISTS tm_user_group_data;
+DROP TABLE IF EXISTS tm_users_data;
+DROP TABLE IF EXISTS tm_old_log_data;
+# 
+
