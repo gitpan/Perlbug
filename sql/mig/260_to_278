@@ -1,0 +1,61 @@
+# rjsf: correct addresses
+
+ALTER TABLE pb_user ADD p5p_key BLOB;
+
+update pb_user set match_address = 'aaron\\@iglou\\.com'		where userid = 'aarond';
+update pb_user set match_address = 'abigail\\@foad\\.org' 		where userid = 'abigail';
+update pb_user set match_address = 'Alan\\.Burlison\\@uk\\.sun\\.com'	where userid = 'alanb';
+update pb_user set match_address = 'ahmer\\.memon\\@interoute\\.de'	where userid = 'ahmerm';
+update pb_user set match_address = 'alex\\@rcon\\.org' 			where userid = 'alexg';
+update pb_user set match_address = 'a\\.koenig\\@franz\\.ww\\.tu-berlin\\.de' where userid = 'andreask';
+update pb_user set match_address = 'doughera\\@lafayette\\.edu'		where userid = 'andyd';
+update pb_user set match_address = 'arthur\\@cantiller\\.se' 		where userid = 'artur';
+update pb_user set match_address = 'ben\\.sugars\\@home\\.com' 		where userid = 'bsugars';
+update pb_user set match_address = 'crt\\@kiski\\.net' 			where userid = 'caseyt';
+update pb_user set match_address = 'chris\\@netmonger\\.net' 		where userid = 'chrism';
+update pb_user set match_address = 'pudge\\@pobox\\.com'		where userid = 'chrisn';
+update pb_user set match_address = 'doughera\\@lafayette\\.edu'		where userid = 'doughera';
+update pb_user set match_address = 'h\\.m\\.brand\\@hccnet\\.nel' 	where userid = 'hmbrand';
+update pb_user set match_address = 'hv\\@crypt0\\.demon\\.co\\.uk' 	where userid = 'hv';
+update pb_user set match_address = 'gbarr\\@pobox\\.com' 		where userid = 'gbarr';
+update pb_user set match_address = 'gsar\\@ActiveState\\.com' 		where userid = 'gurusamys';
+update pb_user set match_address = 'ian\\@dial\\.pipex\\.com' 		where userid = 'ianp';
+update pb_user set match_address = 'jand\\@ActiveState\\.com'		where userid = 'jand';
+update pb_user set match_address = 'jhi\\@iki\\.fi'			where userid = 'jarkkoh';
+update pb_user set match_address = 'mcmahon\\@ibiblio\\.org' 		where userid = 'joem';
+update pb_user set match_address = 'jweveland\\@yahoo\\.com' 		where userid = 'jone';
+update pb_user set match_address = 'jongunnip\\@hotmail\\.com' 		where userid = 'jong';
+update pb_user set match_address = 'Jonathan\\.Mark2\\@dyncorp\\.com' 	where userid = 'jonm';
+update pb_user set match_address = 'jpo\\@lsd\\.di\\.uminho\\.pt' 	where userid = 'joseo';
+update pb_user set match_address = 'kevin\\@jibsheet\\.com' 		where userid = 'kevinf';
+update pb_user set match_address = 'kstar\\@chapin\\.edu' 		where userid = 'kurts';
+update pb_user set match_address = 'larry\\@wall\\.org' 		where userid = 'larryw';
+update pb_user set match_address = 'mjd\\@plover\\.com' 		where userid = 'markj';
+update pb_user set match_address = 'mbeattie\\@sable\\.ox\\.ac\\.uk' 	where userid = 'malcolm';
+update pb_user set match_address = 'Martin\\.Brech\\@erl11\\.siemens\\.de' where userid = 'martinb';
+update pb_user set match_address = 'neeri\\@iis\\.ee\\.ethz\\.ch' where userid = 'mathiasn';
+update pb_user set match_address = 'michael\\@etla\\.org' 		where userid = 'michaels';
+update pb_user set match_address = 'schwern\\@pobox\\.com' 		where userid = 'mschwern';
+update pb_user set match_address = 'gnat\\@frii\\.com' 			where userid = 'natt';
+update pb_user set match_address = 'nick\\@(talking\\.bollo\\.cx|ccl4\\.org)' where userid = 'nickc';
+update pb_user set match_address = 'nick\\@ni-\\.u-net\\.com' 		where userid = 'nicki';
+update pb_user set match_address = 'kuervo\\@hmo\\.megared\\.net\\.mx' 	where userid = 'omar';
+update pb_user set match_address = 'z0d\\@artifact\\.hu' 		where userid = 'peterb';
+update pb_user set match_address = 'gozer\\@cpan\\.org' 		where userid = 'philippec';
+update pb_user set match_address = '\.*\\@rfi\\.net|[rR]ichard\\.[fF]oley\\@t-online\\.de' where userid = 'richardf';
+update pb_user set match_address = 'rs\\@crystalflame\\.net' 		where userid = 'richards';
+update pb_user set match_address = 'robin\\@(kitsite\\.com|cpan\\.org)'	where userid = 'robinh';
+update pb_user set match_address = 'rspier(\\+\\.+?)?\\@((speed\\.)seas\\.upenn\\.edu|pobox\\.com)' where userid = 'roberts';
+update pb_user set match_address = 'scott\\@physics\\.purdue\\.edu'	where userid = 'scottc';
+update pb_user set match_address = 'simon\\@brecon\\.co\\.uk'		where userid = 'simonc';
+update pb_user set match_address = 'stefan_dragnev\\@yahoo\\.com' 	where userid = 'stefand';
+update pb_user set match_address = 'spp\\@spotter\\.yi\\.org' 		where userid = 'stephenp';
+update pb_user set match_address = 'Tim\\.Bunce\\@ig\\.co\\.uk'		where userid = 'timb';
+update pb_user set match_address = 'tchrist\\@\\.*perl\\.(com|org)' 	where userid = 'tomc';
+update pb_user set match_address = 'tom\\@compton\\.nu' 		where userid = 'tomh';
+update pb_user set match_address = 'rootbeer\\@redcat\\.com' 		where userid = 'tomp';
+update pb_user set match_address = 'anthonyp\\@petsmart\\.com' 		where userid = 'tonyp';
+update pb_user set match_address = 'pfeifer\\@wait\\.de' 		where userid = 'ulrichp';
+
+select userid, match_address from pb_user order by userid;
+

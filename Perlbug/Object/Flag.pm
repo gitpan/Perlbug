@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Flag.pm,v 1.12 2001/03/05 09:16:25 perlbug Exp $
+# $Id: Flag.pm,v 1.14 2001/10/11 13:11:56 richardf Exp $
 #
 
 =head1 NAME
@@ -10,7 +10,7 @@ Perlbug::Object::Flag - Flag class
 =cut
 
 package Perlbug::Object::Flag;
-$VERSION = do { my @r = (q$Revision: 1.12 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.14 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 =head1 DESCRIPTION
 
@@ -34,10 +34,12 @@ use Data::Dumper;
 
 	my $o_flag = Perlbug::Object::Flag->new();
 
-	print $o_flag->read('category')->format('a');
+	print $o_flag->read('group')->format('a');
 
 
 =head1 METHODS
+
+=over 4
 
 =item new
 
@@ -64,6 +66,9 @@ sub new {
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

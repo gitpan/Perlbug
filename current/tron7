@@ -1,0 +1,606 @@
+From - Sun Oct  7 14:31:18 2001
+Return-Path: <perlbug@onion.perl.org>
+Received: from mimer.null.dk ([130.228.230.9]) by mailin02.sul.t-online.de
+	with smtp id 15qB8n-2L3qc4C; Sun, 7 Oct 2001 12:26:37 +0200
+Received: (qmail 22666 invoked by uid 1038); 7 Oct 2001 10:26:32 -0000
+Delivered-To: richard@mimer.null.dk
+Received: (qmail 22654 invoked by uid 1038); 7 Oct 2001 10:26:32 -0000
+Delivered-To: richard-rfi-rjsf-tron7@rfi.net
+Received: (qmail 22651 invoked from network); 7 Oct 2001 10:26:31 -0000
+Received: from onion.valueclick.com (HELO onion.perl.org) (209.85.157.220)
+  by mimer.null.dk with SMTP; 7 Oct 2001 10:26:31 -0000
+Received: (qmail 78655 invoked by uid 1007); 7 Oct 2001 10:26:30 -0000
+Date: 7 Oct 2001 10:26:30 -0000
+Message-ID: <20011007102630.78654.qmail@onion.perl.org>
+From: perlbug@onion.perl.org
+To: rjsf-tron7@rfi.net
+X-Mozilla-Status: 8001
+X-Mozilla-Status2: 00000000
+X-UIDL: 2fb0f4a316f4de84
+
+[0] INIT 2.86 (51468) debug(01sx) scr(/home/perlbug/Live/scripts/bugtron) 
+[1] /home/perlbug/Live/scripts/bugtron: 
+			Cc() 
+			From(rmoberly@mailandnews.com) 
+			In-Reply-To()
+			Message-Id(<000028c37a37$0000410a$0000032b@tat.de>) 
+			Reply-To() 
+			Subject(Pheromones 4 u                         811) 
+			To(<Special.Customers@chthon.perl.com>) 
+			X-Perlbug()
+		 
+[2] SQL: SHOW fields FROM pb_thing 
+[3] SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail' 
+[4] SQL: SHOW fields FROM pb_bug 
+[5] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <000028c37a37$0000410a$0000032b@tat.de>%') 
+[6] SQL: SHOW fields FROM pb_note 
+[7] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <000028c37a37$0000410a$0000032b@tat.de>%') 
+[8] SQL: SHOW fields FROM pb_patch 
+[9] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <000028c37a37$0000410a$0000032b@tat.de>%') 
+[10] SQL: SHOW fields FROM pb_test 
+[11] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <000028c37a37$0000410a$0000032b@tat.de>%') 
+[12] SQL: SHOW fields FROM pb_message 
+[13] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <000028c37a37$0000410a$0000032b@tat.de>%') 
+[14] /home/perlbug/Live/scripts/bugtron debug(01sx)
+	Startup:  0 wallclock secs ( 0.01 usr +  0.00 sys =  0.01 CPU)
+	Loaded :  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Runtime:  8 wallclock secs ( 0.20 usr +  0.02 sys =  0.22 CPU)
+	Alltook:  8 wallclock secs ( 0.21 usr +  0.02 sys =  0.23 CPU)
+        including 12 SQL statements 
+        using 1 database handle/s
+	 
+[15] SQL: SHOW fields FROM pb_range 
+[16] SQL: SELECT DISTINCT rangeid FROM pb_range WHERE TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10) 
+[0] INIT 2.86 (55482) debug(01sx) scr(/home/perlbug/Live/scripts/bugtron) 
+[1] /home/perlbug/Live/scripts/bugtron: 
+			Cc() 
+			From("InfoGrab.net" <infograb@mail.com>) 
+			In-Reply-To()
+			Message-Id(<200110070743.f977gv130950@chthon.perl.com>) 
+			Reply-To() 
+			Subject(RE:  .INFO is now live) 
+			To(perlbug@mox.perl.com) 
+			X-Perlbug()
+		 
+[2] SQL: SHOW fields FROM pb_thing 
+[3] SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail' 
+[4] SQL: SHOW fields FROM pb_bug 
+[5] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110070743.f977gv130950@chthon.perl.com>%') 
+[6] SQL: SHOW fields FROM pb_note 
+[7] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110070743.f977gv130950@chthon.perl.com>%') 
+[8] SQL: SHOW fields FROM pb_patch 
+[9] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110070743.f977gv130950@chthon.perl.com>%') 
+[10] SQL: SHOW fields FROM pb_test 
+[11] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110070743.f977gv130950@chthon.perl.com>%') 
+[12] SQL: SHOW fields FROM pb_message 
+[13] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110070743.f977gv130950@chthon.perl.com>%') 
+[14] /home/perlbug/Live/scripts/bugtron debug(01sx)
+	Startup:  0 wallclock secs ( 0.01 usr +  0.00 sys =  0.01 CPU)
+	Loaded :  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Runtime:  8 wallclock secs ( 0.20 usr +  0.02 sys =  0.21 CPU)
+	Alltook:  8 wallclock secs ( 0.20 usr +  0.02 sys =  0.22 CPU)
+        including 12 SQL statements 
+        using 1 database handle/s
+	 
+[15] SQL: SHOW fields FROM pb_range 
+[16] SQL: SELECT DISTINCT rangeid FROM pb_range WHERE TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10) 
+[0] INIT 2.86 (62151) debug(01sx) scr(/home/perlbug/Live/scripts/bugtron) 
+[1] /home/perlbug/Live/scripts/bugtron: 
+			Cc(Perl 5 Porters <perl5-porters@perl.org>) 
+			From(Stas Bekman <stas@stason.org>) 
+			In-Reply-To()
+			Message-Id(<3BC012B1.8030801@stason.org>) 
+			Reply-To() 
+			Subject(Re: ExtUtils::MakeMaker's PREOP vs distdir execution order) 
+			To("Andreas J. Koenig" <andreas.koenig@anima.de>) 
+			X-Perlbug()
+		 
+[2] SQL: SHOW fields FROM pb_thing 
+[3] SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail' 
+[4] SQL: SHOW fields FROM pb_bug 
+[5] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <3BC012B1.8030801@stason.org>%') 
+[6] SQL: SHOW fields FROM pb_note 
+[7] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <3BC012B1.8030801@stason.org>%') 
+[8] SQL: SHOW fields FROM pb_patch 
+[9] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <3BC012B1.8030801@stason.org>%') 
+[10] SQL: SHOW fields FROM pb_test 
+[11] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <3BC012B1.8030801@stason.org>%') 
+[12] SQL: SHOW fields FROM pb_message 
+[13] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <3BC012B1.8030801@stason.org>%') 
+[14] domain(bugs\.perl\.org) ?-> to("Andreas J. Koenig" <andreas.koenig@anima.de>), subject(Re: ExtUtils::MakeMaker's PREOP vs distdir execution order), cc(Perl 5 Porters <perl5-porters@perl.org>) 
+[15] IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[16] Decision -> do_quiet(0) IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[17] cmd(quiet) arg(Andreas J. Koenig wrote:
+
+>>>>>>On Sun, 07 Oct 2001 14:16:04 +0800, Stas Bekman <stas@stason.org> said:
+>>>>>>
+> 
+>   > README is in MANIFEST and manicopy fails, because
+>   > PREOP wasn't run yet:
+> 
+> Rats, you're right. What if you create a dummy README in the working
+> directory. It should be overwritten in the $(DISTVNAME)/ directory
+> then.
+
+Yup, as I've mentioned in the original post, that's the workaround I've 
+been using for a long time.
+
+That's why I've asked whether it'd be a good thing to do to make PRE- in 
+PREOP to be pre, and not post- :) i.e. run PREOP before distdir target. 
+Or is it wrong?
+
+_____________________________________________________________________
+Stas Bekman             JAm_pH      --   Just Another mod_perl Hacker
+http://stason.org/      mod_perl Guide   http://perl.apache.org/guide
+mailto:stas@stason.org  http://ticketmaster.com http://apacheweek.com
+http://singlesheaven.com http://perl.apache.org http://perlmonth.com/) => ret: $VAR1 = {
+          'opts' => '',
+          'body' => 'Andreas J. Koenig wrote:
+
+>>>>>>On Sun, 07 Oct 2001 14:16:04 +0800, Stas Bekman <stas@stason.org> said:
+>>>>>>
+> 
+>   > README is in MANIFEST and manicopy fails, because
+>   > PREOP wasn\'t run yet:
+> 
+> Rats, you\'re right. What if you create a dummy README in the working
+> directory. It should be overwritten in the $(DISTVNAME)/ directory
+> then.
+
+Yup, as I\'ve mentioned in the original post, that\'s the workaround I\'ve 
+been using for a long time.
+
+That\'s why I\'ve asked whether it\'d be a good thing to do to make PRE- in 
+PREOP to be pre, and not post- :) i.e. run PREOP before distdir target. 
+Or is it wrong?
+
+_____________________________________________________________________
+Stas Bekman             JAm_pH      --   Just Another mod_perl Hacker
+http://stason.org/      mod_perl Guide   http://perl.apache.org/guide
+mailto:stas@stason.org  http://ticketmaster.com http://apacheweek.com
+http://singlesheaven.com http://perl.apache.org http://perlmonth.com/'
+        };
+ 
+[18] /home/perlbug/Live/scripts/bugtron debug(01sx)
+	Startup:  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Loaded :  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Runtime:  8 wallclock secs ( 0.22 usr +  0.02 sys =  0.23 CPU)
+	Alltook:  8 wallclock secs ( 0.22 usr +  0.02 sys =  0.23 CPU)
+        including 12 SQL statements 
+        using 1 database handle/s
+	 
+[19] SQL: SHOW fields FROM pb_range 
+[20] SQL: SELECT DISTINCT rangeid FROM pb_range WHERE TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10) 
+[0] INIT 2.86 (64635) debug(01sx) scr(/home/perlbug/Live/scripts/bugtron) 
+[1] /home/perlbug/Live/scripts/bugtron: 
+			Cc() 
+			From(Michael G Schwern <schwern@pobox.com>) 
+			In-Reply-To(<20011007035850.A24485@alpha.hut.fi>)
+			Message-Id(<20011007045637.A616@blackrider>) 
+			Reply-To() 
+			Subject(Re: A philosophical tainting issue) 
+			To(Jarkko Hietaniemi <jhi@iki.fi>, perl5-porters@perl.org) 
+			X-Perlbug()
+		 
+[2] SQL: SHOW fields FROM pb_thing 
+[3] SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail' 
+[4] SQL: SHOW fields FROM pb_bug 
+[5] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045637.A616@blackrider>%') 
+[6] SQL: SHOW fields FROM pb_note 
+[7] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045637.A616@blackrider>%') 
+[8] SQL: SHOW fields FROM pb_patch 
+[9] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045637.A616@blackrider>%') 
+[10] SQL: SHOW fields FROM pb_test 
+[11] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045637.A616@blackrider>%') 
+[12] SQL: SHOW fields FROM pb_message 
+[13] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045637.A616@blackrider>%') 
+[14] domain(bugs\.perl\.org) ?-> to(Jarkko Hietaniemi <jhi@iki.fi>, perl5-porters@perl.org), subject(Re: A philosophical tainting issue), cc() 
+[15] reusing CACHED SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail'(ARRAY(0x853cde0)) 
+[16] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007035850.A24485@alpha.hut.fi>%') 
+[17] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007035850.A24485@alpha.hut.fi>%') 
+[18] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007035850.A24485@alpha.hut.fi>%') 
+[19] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007035850.A24485@alpha.hut.fi>%') 
+[20] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007035850.A24485@alpha.hut.fi>%') 
+[21] IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[22] Decision -> do_quiet(0) IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[23] cmd(quiet) arg(On Sun, Oct 07, 2001 at 03:58:50AM +0300, Jarkko Hietaniemi wrote:
+> #!/usr/bin/perl
+> print "$^X foobar\n";
+> ugli:~ ; ls -l x
+> -rwxr-xr-x    1 jhi      users          38 loka????  7 03:49 x
+> ugli:~ ; ./x
+> perl foobar
+> ugli:~ ; uname -a
+> Linux ugli.hut.fi 2.2.19 #1 Thu Apr 5 14:00:15 EET DST 2001 i686 unknown
+> ugli:~ ; 
+> 
+> The same happens in AIX, Tru64, and Mac OS X; Solaris, HP-UX, and IRIX
+> seem to have the absolute path in $^X.
+
+Weird.  I get an absolute path, Linux 2.4.  You're right about 2.2, though.
+
+Hrumf.
+
+-- 
+
+Michael G. Schwern   <schwern@pobox.com>    http://www.pobox.com/~schwern/
+Perl6 Quality Assurance     <perl-qa@perl.org>	     Kwalitee Is Job One
+Maybe they hooked you up with one of those ass-making magazines.
+	-- brian d. foy as misheard by Michael G Schwern) => ret: $VAR1 = {
+          'opts' => '',
+          'body' => 'On Sun, Oct 07, 2001 at 03:58:50AM +0300, Jarkko Hietaniemi wrote:
+> #!/usr/bin/perl
+> print "$^X foobar\\n";
+> ugli:~ ; ls -l x
+> -rwxr-xr-x    1 jhi      users          38 loka????  7 03:49 x
+> ugli:~ ; ./x
+> perl foobar
+> ugli:~ ; uname -a
+> Linux ugli.hut.fi 2.2.19 #1 Thu Apr 5 14:00:15 EET DST 2001 i686 unknown
+> ugli:~ ; 
+> 
+> The same happens in AIX, Tru64, and Mac OS X; Solaris, HP-UX, and IRIX
+> seem to have the absolute path in $^X.
+
+Weird.  I get an absolute path, Linux 2.4.  You\'re right about 2.2, though.
+
+Hrumf.
+
+-- 
+
+Michael G. Schwern   <schwern@pobox.com>    http://www.pobox.com/~schwern/
+Perl6 Quality Assurance     <perl-qa@perl.org>	     Kwalitee Is Job One
+Maybe they hooked you up with one of those ass-making magazines.
+	-- brian d. foy as misheard by Michael G Schwern'
+        };
+ 
+[24] /home/perlbug/Live/scripts/bugtron debug(01sx)
+	Startup:  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Loaded :  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Runtime: 10 wallclock secs ( 0.23 usr +  0.04 sys =  0.27 CPU)
+	Alltook: 10 wallclock secs ( 0.23 usr +  0.04 sys =  0.27 CPU)
+        including 17 SQL statements 
+        using 1 database handle/s
+	 
+[25] SQL: SHOW fields FROM pb_range 
+[26] SQL: SELECT DISTINCT rangeid FROM pb_range WHERE TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10) 
+[0] INIT 2.86 (65545) debug(01sx) scr(/home/perlbug/Live/scripts/bugtron) 
+[1] /home/perlbug/Live/scripts/bugtron: 
+			Cc(perl5-porters@perl.org) 
+			From(Michael G Schwern <schwern@pobox.com>) 
+			In-Reply-To(<20011007040729.23872.qmail@onion.perl.org>)
+			Message-Id(<20011007045959.B616@blackrider>) 
+			Reply-To() 
+			Subject(Re: Duplicated Code between ExtUtils::MM_Unix and File::Spec::Unix) 
+			To(chromatic <chromatic@rmci.net>) 
+			X-Perlbug()
+		 
+[2] SQL: SHOW fields FROM pb_thing 
+[3] SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail' 
+[4] SQL: SHOW fields FROM pb_bug 
+[5] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045959.B616@blackrider>%') 
+[6] SQL: SHOW fields FROM pb_note 
+[7] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045959.B616@blackrider>%') 
+[8] SQL: SHOW fields FROM pb_patch 
+[9] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045959.B616@blackrider>%') 
+[10] SQL: SHOW fields FROM pb_test 
+[11] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045959.B616@blackrider>%') 
+[12] SQL: SHOW fields FROM pb_message 
+[13] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007045959.B616@blackrider>%') 
+[14] domain(bugs\.perl\.org) ?-> to(chromatic <chromatic@rmci.net>), subject(Re: Duplicated Code between ExtUtils::MM_Unix and File::Spec::Unix), cc(perl5-porters@perl.org) 
+[15] reusing CACHED SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail'(ARRAY(0x853ee34)) 
+[16] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[17] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[18] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[19] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[20] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[21] IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[22] Decision -> do_quiet(0) IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[23] cmd(quiet) arg(On Sat, Oct 06, 2001 at 10:01:38PM -0600, chromatic wrote:
+> In ExtUtils::MM_Unix (scary), there's a bit of code that looks strangely like
+> code from File::Spec::Unix.  These functions are identical, down to the
+> comments:
+> 
+> 	canonpath
+> 	catdir
+> 	curdir
+> 	rootdir
+> 
+> This one is very close, only slightly more advanced in ExtUtils::MM_Unix:
+> 	catfile
+> 
+> Is this copy and paste coding that could be cleaned up?  Is MM_Unix used in
+> miniperl before File::Spec is available?  Would that help portability within
+> MM_* overall?
+
+I thought I did that.  I'm about to go to bed, have a look through the
+makemaker@perl.org archives for the patch, or I'll find it in the morning.
+
+
+-- 
+
+Michael G. Schwern   <schwern@pobox.com>    http://www.pobox.com/~schwern/
+Perl6 Quality Assurance     <perl-qa@perl.org>	     Kwalitee Is Job One
+If you have to shoot, shoot!  Don't talk.
+		-- Tuco, "The Good, The Bad And The Ugly") => ret: $VAR1 = {
+          'opts' => '',
+          'body' => 'On Sat, Oct 06, 2001 at 10:01:38PM -0600, chromatic wrote:
+> In ExtUtils::MM_Unix (scary), there\'s a bit of code that looks strangely like
+> code from File::Spec::Unix.  These functions are identical, down to the
+> comments:
+> 
+> 	canonpath
+> 	catdir
+> 	curdir
+> 	rootdir
+> 
+> This one is very close, only slightly more advanced in ExtUtils::MM_Unix:
+> 	catfile
+> 
+> Is this copy and paste coding that could be cleaned up?  Is MM_Unix used in
+> miniperl before File::Spec is available?  Would that help portability within
+> MM_* overall?
+
+I thought I did that.  I\'m about to go to bed, have a look through the
+makemaker@perl.org archives for the patch, or I\'ll find it in the morning.
+
+
+-- 
+
+Michael G. Schwern   <schwern@pobox.com>    http://www.pobox.com/~schwern/
+Perl6 Quality Assurance     <perl-qa@perl.org>	     Kwalitee Is Job One
+If you have to shoot, shoot!  Don\'t talk.
+		-- Tuco, "The Good, The Bad And The Ugly"'
+        };
+ 
+[24] /home/perlbug/Live/scripts/bugtron debug(01sx)
+	Startup:  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Loaded :  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Runtime:  4 wallclock secs ( 0.23 usr +  0.04 sys =  0.27 CPU)
+	Alltook:  4 wallclock secs ( 0.23 usr +  0.04 sys =  0.27 CPU)
+        including 17 SQL statements 
+        using 1 database handle/s
+	 
+[25] SQL: SHOW fields FROM pb_range 
+[26] SQL: SELECT DISTINCT rangeid FROM pb_range WHERE TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10) 
+[0] INIT 2.86 (66063) debug(01sx) scr(/home/perlbug/Live/scripts/bugtron) 
+[1] /home/perlbug/Live/scripts/bugtron: 
+			Cc(Jarkko Hietaniemi <jhi@iki.fi>, perl5-porters@perl.org) 
+			From(Nick Ing-Simmons <nick@ing-simmons.net>) 
+			In-Reply-To(<20011006192852.A588@blackrider> from Michael G Schwern on
+    Sat, 6 Oct 2001 19:28:53 -0400)
+			Message-Id(<20011007090029.746.1@bactrian.ni-s.u-net.com>) 
+			Reply-To(Nick Ing-Simmons <nick@ing-simmons.net>) 
+			Subject(Re: A philosophical tainting issue) 
+			To(schwern@pobox.com) 
+			X-Perlbug()
+		 
+[2] SQL: SHOW fields FROM pb_thing 
+[3] SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail' 
+[4] SQL: SHOW fields FROM pb_bug 
+[5] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090029.746.1@bactrian.ni-s.u-net.com>%') 
+[6] SQL: SHOW fields FROM pb_note 
+[7] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090029.746.1@bactrian.ni-s.u-net.com>%') 
+[8] SQL: SHOW fields FROM pb_patch 
+[9] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090029.746.1@bactrian.ni-s.u-net.com>%') 
+[10] SQL: SHOW fields FROM pb_test 
+[11] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090029.746.1@bactrian.ni-s.u-net.com>%') 
+[12] SQL: SHOW fields FROM pb_message 
+[13] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090029.746.1@bactrian.ni-s.u-net.com>%') 
+[14] domain(bugs\.perl\.org) ?-> to(schwern@pobox.com), subject(Re: A philosophical tainting issue), cc(Jarkko Hietaniemi <jhi@iki.fi>, perl5-porters@perl.org) 
+[15] reusing CACHED SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail'(ARRAY(0x853fec4)) 
+[16] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011006192852.A588@blackrider>%') 
+[17] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011006192852.A588@blackrider>%') 
+[18] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011006192852.A588@blackrider>%') 
+[19] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011006192852.A588@blackrider>%') 
+[20] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011006192852.A588@blackrider>%') 
+[21] IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[22] Decision -> do_quiet(0) IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[23] cmd(quiet) arg(Michael G Schwern <schwern@pobox.com> writes:
+>On Sat, Oct 06, 2001 at 08:00:45AM +0300, Jarkko Hietaniemi wrote:
+>> > So I'm pondering if using $^X + $ENV{PATH} (or it's moral equivalent
+>> > on other operating systems) to locate the currently running perl
+>> > executable is insecure, or if I can just trust it given that's exactly
+>> > how I started running the currently running perl.  Most of what Kurt
+>> 
+>> At least #! completely bypasses $ENV{PATH}.
+>
+>That's ok.  If #! bypasses $ENV{PATH} by using an absolute path to
+>Perl (ie. #!/usr/bin/perl) then $^X will be absolute and $ENV{PATH}
+>never enters the picture.  
+
+Not necessarily - on linux 2.2.* kernel at least $^X will just be "perl":
+
+nick@bactrian 502$ /tmp/x
+perl
+nick@bactrian 502$ cat !$
+cat /tmp/x
+#!/usr/local/bin/perl -w
+print "$^X\n";
+nick@bactrian 503$
+                                
+-- 
+Nick Ing-Simmons
+http://www.ni-s.u-net.com/) => ret: $VAR1 = {
+          'opts' => '',
+          'body' => 'Michael G Schwern <schwern@pobox.com> writes:
+>On Sat, Oct 06, 2001 at 08:00:45AM +0300, Jarkko Hietaniemi wrote:
+>> > So I\'m pondering if using $^X + $ENV{PATH} (or it\'s moral equivalent
+>> > on other operating systems) to locate the currently running perl
+>> > executable is insecure, or if I can just trust it given that\'s exactly
+>> > how I started running the currently running perl.  Most of what Kurt
+>> 
+>> At least #! completely bypasses $ENV{PATH}.
+>
+>That\'s ok.  If #! bypasses $ENV{PATH} by using an absolute path to
+>Perl (ie. #!/usr/bin/perl) then $^X will be absolute and $ENV{PATH}
+>never enters the picture.  
+
+Not necessarily - on linux 2.2.* kernel at least $^X will just be "perl":
+
+nick@bactrian 502$ /tmp/x
+perl
+nick@bactrian 502$ cat !$
+cat /tmp/x
+#!/usr/local/bin/perl -w
+print "$^X\\n";
+nick@bactrian 503$
+                                
+-- 
+Nick Ing-Simmons
+http://www.ni-s.u-net.com/'
+        };
+ 
+[24] /home/perlbug/Live/scripts/bugtron debug(01sx)
+	Startup:  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Loaded :  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Runtime:  6 wallclock secs ( 0.25 usr +  0.00 sys =  0.25 CPU)
+	Alltook:  6 wallclock secs ( 0.25 usr +  0.00 sys =  0.25 CPU)
+        including 17 SQL statements 
+        using 1 database handle/s
+	 
+[25] SQL: SHOW fields FROM pb_range 
+[26] SQL: SELECT DISTINCT rangeid FROM pb_range WHERE TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10) 
+[0] INIT 2.86 (66796) debug(01sx) scr(/home/perlbug/Live/scripts/bugtron) 
+[1] /home/perlbug/Live/scripts/bugtron: 
+			Cc(perl5-porters@perl.org) 
+			From(Nick Ing-Simmons <nick@ing-simmons.net>) 
+			In-Reply-To(<20011007040729.23872.qmail@onion.perl.org> from Chromatic on
+    Sat, 06 Oct 2001 22:01:38 -0600)
+			Message-Id(<20011007090129.746.2@bactrian.ni-s.u-net.com>) 
+			Reply-To(Nick Ing-Simmons <nick@ing-simmons.net>) 
+			Subject(Re: Duplicated Code between ExtUtils::MM_Unix and File::Spec::Unix) 
+			To(chromatic@rmci.net) 
+			X-Perlbug()
+		 
+[2] SQL: SHOW fields FROM pb_thing 
+[3] SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail' 
+[4] SQL: SHOW fields FROM pb_bug 
+[5] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090129.746.2@bactrian.ni-s.u-net.com>%') 
+[6] SQL: SHOW fields FROM pb_note 
+[7] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090129.746.2@bactrian.ni-s.u-net.com>%') 
+[8] SQL: SHOW fields FROM pb_patch 
+[9] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090129.746.2@bactrian.ni-s.u-net.com>%') 
+[10] SQL: SHOW fields FROM pb_test 
+[11] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090129.746.2@bactrian.ni-s.u-net.com>%') 
+[12] SQL: SHOW fields FROM pb_message 
+[13] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007090129.746.2@bactrian.ni-s.u-net.com>%') 
+[14] domain(bugs\.perl\.org) ?-> to(chromatic@rmci.net), subject(Re: Duplicated Code between ExtUtils::MM_Unix and File::Spec::Unix), cc(perl5-porters@perl.org) 
+[15] reusing CACHED SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail'(ARRAY(0x853eec4)) 
+[16] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[17] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[18] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[19] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[20] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <20011007040729.23872.qmail@onion.perl.org>%') 
+[21] IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[22] Decision -> do_quiet(0) IGNORE quiet(0): invalid perlbug data, potential p5p miscellanea or spam) :-|
+ 
+[23] cmd(quiet) arg(Chromatic <chromatic@rmci.net> writes:
+>In ExtUtils::MM_Unix (scary), there's a bit of code that looks strangely like
+>code from File::Spec::Unix.  These functions are identical, down to the
+>comments:
+>
+>	canonpath
+>	catdir
+>	curdir
+>	rootdir
+>
+>This one is very close, only slightly more advanced in ExtUtils::MM_Unix:
+>	catfile
+>
+>Is this copy and paste coding that could be cleaned up?  Is MM_Unix used in
+>miniperl before File::Spec is available?  Would that help portability within
+>MM_* overall?
+
+Just history I think - original File::Spec was copied from MM.
+
+>
+>It'd be easier to test with less code, anyway....
+>
+>-- c
+-- 
+Nick Ing-Simmons
+http://www.ni-s.u-net.com/) => ret: $VAR1 = {
+          'opts' => '',
+          'body' => 'Chromatic <chromatic@rmci.net> writes:
+>In ExtUtils::MM_Unix (scary), there\'s a bit of code that looks strangely like
+>code from File::Spec::Unix.  These functions are identical, down to the
+>comments:
+>
+>	canonpath
+>	catdir
+>	curdir
+>	rootdir
+>
+>This one is very close, only slightly more advanced in ExtUtils::MM_Unix:
+>	catfile
+>
+>Is this copy and paste coding that could be cleaned up?  Is MM_Unix used in
+>miniperl before File::Spec is available?  Would that help portability within
+>MM_* overall?
+
+Just history I think - original File::Spec was copied from MM.
+
+>
+>It\'d be easier to test with less code, anyway....
+>
+>-- c
+-- 
+Nick Ing-Simmons
+http://www.ni-s.u-net.com/'
+        };
+ 
+[24] /home/perlbug/Live/scripts/bugtron debug(01sx)
+	Startup:  0 wallclock secs ( 0.01 usr +  0.01 sys =  0.02 CPU)
+	Loaded :  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Runtime:  4 wallclock secs ( 0.27 usr +  0.00 sys =  0.27 CPU)
+	Alltook:  4 wallclock secs ( 0.28 usr +  0.01 sys =  0.29 CPU)
+        including 17 SQL statements 
+        using 1 database handle/s
+	 
+[25] SQL: SHOW fields FROM pb_range 
+[26] SQL: SELECT DISTINCT rangeid FROM pb_range WHERE TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10) 
+[0] INIT 2.86 (77193) debug(01sx) scr(/home/perlbug/Live/scripts/bugtron) 
+[1] /home/perlbug/Live/scripts/bugtron: 
+			Cc() 
+			From(oq5h3esm97v@hotmail.com) 
+			In-Reply-To()
+			Message-Id(<200110071015.OAA08676@mail.rgazu.ru>) 
+			Reply-To() 
+			Subject(75% off Life Insurance.  Free quotes in less than a minute, and
+    there's no hassle!) 
+			To(<fpwvek3djmsep@hotmail.com>) 
+			X-Perlbug()
+		 
+[2] SQL: SHOW fields FROM pb_thing 
+[3] SQL: SELECT DISTINCT name FROM pb_thing WHERE type LIKE 'mail' 
+[4] SQL: SHOW fields FROM pb_bug 
+[5] SQL: SELECT DISTINCT bugid FROM pb_bug WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110071015.OAA08676@mail.rgazu.ru>%') 
+[6] SQL: SHOW fields FROM pb_note 
+[7] SQL: SELECT DISTINCT noteid FROM pb_note WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110071015.OAA08676@mail.rgazu.ru>%') 
+[8] SQL: SHOW fields FROM pb_patch 
+[9] SQL: SELECT DISTINCT patchid FROM pb_patch WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110071015.OAA08676@mail.rgazu.ru>%') 
+[10] SQL: SHOW fields FROM pb_test 
+[11] SQL: SELECT DISTINCT testid FROM pb_test WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110071015.OAA08676@mail.rgazu.ru>%') 
+[12] SQL: SHOW fields FROM pb_message 
+[13] SQL: SELECT DISTINCT messageid FROM pb_message WHERE UPPER(header) LIKE UPPER('%Message-Id: <200110071015.OAA08676@mail.rgazu.ru>%') 
+[14] /home/perlbug/Live/scripts/bugtron debug(01sx)
+	Startup:  1 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Loaded :  0 wallclock secs ( 0.00 usr +  0.00 sys =  0.00 CPU)
+	Runtime: 23 wallclock secs ( 0.20 usr +  0.02 sys =  0.22 CPU)
+	Alltook: 24 wallclock secs ( 0.20 usr +  0.02 sys =  0.22 CPU)
+        including 12 SQL statements 
+        using 1 database handle/s
+	 
+[15] SQL: SHOW fields FROM pb_range 
+[16] SQL: SELECT DISTINCT rangeid FROM pb_range WHERE TO_DAYS(modified) < (TO_DAYS(SYSDATE()) -10) 
+

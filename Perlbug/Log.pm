@@ -1,11 +1,7 @@
 # Perlbug Logging and file accessor
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Log.pm,v 1.49 2001/03/22 08:33:51 perlbug Exp $
+# $Id: Log.pm,v 1.52 2001/09/18 13:37:49 richardf Exp $
 # 
-# TODO: 
-# 
-# debug(0, ...) -> error();
-#
 
 =head1 NAME
 
@@ -16,29 +12,18 @@ Perlbug::Log - Module for generic logging/debugging functions to all Perlbug.
 package Perlbug::Log;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.49 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.52 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1;
 
 use Carp;
 use Data::Dumper;
 # use Devel::Trace;
-use FindBin;
-use lib "$FindBin::Bin/..";
 use FileHandle;
 use Shell qw(chmod);
-
-# $Devel::Trace::TRACE = 0;
 
 my $LOG_COUNTER = 0;
 my $FILE_OPEN   = 0;
 my $LOG 		= '';
-my $FATAL		= 0;
-my $VERBOSE     = 0;
-my $CARP		= 0;
-my $carp		= 0;
-my $i_ERRS		= 0;
-my $i_MAX		= 1;
-$Perlbug::Debug = 0;
 
 
 =head1 DESCRIPTION
@@ -51,15 +36,15 @@ Debug level can be modified via the environment variable: B<Perlbug_Debug>
 =head1 SYNOPSIS
 
 	my $o_log = Perlbug::Log->new('log' => $log, 'res' => $res);
-	
+
 	$o_log->append('res', "other data\n");
-	
+
 	$o_log->append('log', "some data\n");	
-	
+
 	$o_log->append('res', "OK\n");
-	
+
 	my $a_data = $o_log->read('res');
-	
+
 	print $a_data; # 'other data\nOK\n'
 
 
@@ -88,7 +73,7 @@ sub new {
 			'handle' => '',
 			'status' => '',
 			'target' => '',
-		}
+		},
 		'_regex'	=> '^(.+)'.$sep.'?([\w_]*)\.(\w+)', 	# ext
 	}, $class);
 
@@ -100,28 +85,17 @@ sub new {
 	    	croak("Log tgt($tgt) doesn't match($rex) -> target($target)");
      	} else {
 			my ($dir, $file) = ($1, $2.'.'.$3);
-	    	if (!($dir =~ /\w+/ && -d $dir && -w _)) {
+	    	if (!($dir =~ /\w+/o && -d $dir && -w _)) {
        			croak("Log can't log to $tgt dir($dir): $!");
 	    	} else {
 				$self->open($tgt, $target);
 			}
         }
     }  
-	$i_ERRS = 0;
-	$i_MAX  = $o_conf->system('max_errors') || $i_MAX;
     $LOG 	= $o_conf->current('log_file');
 
-	$Perlbug::Debug = $ENV{'Perlbug_Debug'} || $o_conf->current('debug') || $Perlbug::Debug;
-	$Perlbug::Debug = '01x' if $Perlbug::Debug =~ /^1$/;
-	$Perlbug::Debug = '012sX' if $Perlbug::Debug =~ /^2$/;
-	$Perlbug::Debug = '0123csSX' if $Perlbug::Debug =~ /^3$/;
-	$Perlbug::Debug = '01234cCsSxXtT' if $Perlbug::Debug =~ /^4$/;
-	# $Devel::Trace::TRACE = 1 if $Perlbug::Debug =~ /T/;
-
-	$CARP++ if $Perlbug::Debug =~ /C/;
-	$carp++ if $Perlbug::Debug =~ /c/;
     $self->set_user($o_conf->system('user')); # ...
-	$self->debug(0, "INIT ($$) scr($0), debug($Perlbug::Debug) $self");
+	$self->debug(0, "INIT ($$) scr($0), debug($Perlbug::Debug) $self") if $Perlbug::DEBUG;
     return $self;
 }
 
@@ -171,7 +145,8 @@ Cleanup log and tmp files.
 sub DESTROY {
     my $self = shift;
 	foreach my $tgt ($self->files()) {
-		undef $self->handle($tgt) if $tgt;
+		my $fh = $self->handle($tgt); 
+		undef $fh; 
 	}
 }
 
@@ -221,21 +196,21 @@ sub debug {
         $self->logg("XXX: debug called with DUFF args($self, $flag, data(@_)");
 	} else {
 		my $DATA = '';
-        if ($flag =~ /^([aAsS0123xX])$/) {
-			if (($flag =~ /^(\d)$/i && $debug >= $flag) || ($debug =~ /$flag/)) {
-				if ($debug =~ /[mM]/) {
+        if ($flag =~ /^([aAsS0123xX])$/o) {
+			if (($flag =~ /^(\d)$/io && $debug >= $flag) || ($debug =~ /$flag/)) {
+				if ($debug =~ /[mM]/o) {
 					my @caller = ();
 					CALLER:
 					foreach my $i (0..4) {
 						@caller = caller($i);
 						last CALLER if $caller[3] !~ /debug/i;
 					}
-					my $caller = (($debug =~ /M/) ? "$caller[0]::$caller[3]" : "$caller[3]");
+					my $caller = (($debug =~ /M/o) ? "$caller[0]::$caller[3]" : "$caller[3]");
 					$caller =~ s/^(?:\w+::)+(\w+)$/$1/; # Perlbug::Base::get_list
 					$DATA .= "$caller: "; 
 				}
 			}
-			if ($flag =~ /^(\d)$/i && $debug >= $flag) {
+			if ($flag =~ /^(\d)$/io && $debug >= $flag) {
 					$DATA .= "@_".(($flag >= 2) ? "<- flag($flag)" : '');
 			} elsif ($debug =~ /$flag/) {
 					$DATA .= "@_";
@@ -252,37 +227,28 @@ sub _debug { # quiet
 }
 
 
-=item error
+=item open
 
-Handles error messages
+Open the file, returns self
 
-	print $o_log->error($msg);
-
-=cut
-
-sub error {
-	my $self = shift;
-	$i_ERRS++;
-	my $errs = "Error [$i_ERRS]: ".join(' ', @_)."<br>\n";
-	$self->debug(0, $errs);
-	carp($errs) if $CARP; 
-	confess("Max($i_MAX) errors exceeded: ".$errs) if $i_ERRS >= $i_MAX;
-}
-
-
-=item fatal
-
-Deals with a fatal condition by logging and dieing, traps dies to come out here:
-
-	&do_this or $o_log->fatal($message);
+	$o_file = $o_log->open($file, $perm, $num);
 
 =cut
 
-sub fatal { #
-	my $self = shift;
-	$self->error(@_);
-	confess(@_);
-	exit(1); # :-)
+sub open {
+    my $self = shift;
+	my $file = shift;
+	my $perm = shift;
+	my $num  = shift;
+
+	my $fh = $self->handle($self->fh($file, $perm, $num));
+	if (!$fh) {
+		$self->error("no handle returned!");
+	} else {
+		$self->status('open');
+	}
+
+	return $self;
 }
 
 
@@ -309,8 +275,7 @@ sub logg { #
 		$fh->seek(0, 2); # just in case it's been moved by someone else
 		print $fh $data;
 		flock($fh, 8); 
-		print $data if $carp;
-		carp($data) if $CARP;
+		print $data;
 	} else {
 		carp("logg couldn't log($data) to undefined fh($fh)");
 	}
@@ -330,12 +295,12 @@ sub fh {
     my $self = shift;
     my $arg  = shift;
     my $ctl  = shift || '+>>' || '<'; 
-    if ($arg =~ /^[\w_]+$/) {   
+    if ($arg =~ /^[\w_]+$/o) {   
         my $FH = $self->{"_${arg}_fh"};               # <-
 		if (!((defined($FH)) && (ref($FH)) && ($FH->isa('FileHandle')))) { # OK
         	my $file = $self->{"_${arg}_file"}; 
 	    	if ($file !~ /\w+/) { # 
-	        	my $tgt = ($FATAL >= 1) ? $LOG : $arg;
+	        	my $tgt = ($Perlbug::FATAL >= 1) ? $LOG : $arg;
 				if (-e $tgt && -f _) { 	# OK - site spec ?
 	       	    	$self->{$arg.'_file'} = $tgt;   
 				} else {				# give up
@@ -363,7 +328,7 @@ sub fh {
 Storage area (file) for results from queries, returns the FH.
 
 	my $pos = $log->append('res', 'store this stuff'); 
-	
+
 	# $pos is position in file
 
 =cut
@@ -375,9 +340,9 @@ sub append {
     my $perm = shift || '0766';
 	my $pos  = '';
 	if ($file !~ /^\w{3,4}$/) { # log res rng todo
-        $self->debug(0, "Can't append to unrecognised key: '$file'");
+        $self->error("Can't append to unrecognised key: '$file'");
    	} else {
-	    $self->debug(4, 'result storing '.$data); 
+	    $self->debug(3, 'result storing '.$data) if $Perlbug::DEBUG; 
 	    my $fh = $self->fh($file, '+>>', $perm);
 	    if (defined $fh) {
 			flock($fh, 2); # lock
@@ -388,9 +353,9 @@ sub append {
 	        # unless (chmod(0766, $file)) {
 			# 	$self->debug(2, "Can't modify file($file) permissions: $!");
 			# }
-			$self->debug(3, "Depth into '$file' file ($pos)"); # hint as to stored or not.
+			$self->debug(3, "Depth into '$file' file ($pos)") if $Perlbug::DEBUG;
 	    } else {
-	        $self->debug(0, "Didn't get a $file filehandle($fh) to append to. $!");
+	        $self->error( "Didn't get a $file filehandle($fh) to append to. $!");
 	    }
     }
     return $pos;
@@ -412,19 +377,19 @@ sub read {
     my $file = shift;
     my @data = ();      
     if ($file !~ /\w+/) {
-        $self->debug(0, "Can't read from '$file'");
+        $self->error("Can't read from '$file'");
     } else {
 	    my $fh = $self->fh($file, '<');
 		if (defined($fh)) {
 	        # $fh->flush;
 	        $fh->seek(0, 0);
 	        @data = $fh->getlines; 
-	    	$self->debug(2, "Read '".@data."' $file lines");
+	    	$self->debug(2, "Read '".@data."' $file lines") if $Perlbug::DEBUG;
 		} else {
-	        $self->debug(0, "Unable to open $file file ($fh) for read: $!");
+	        $self->error("Unable to open $file file ($fh) for read: $!");
 	    }
 		if (!scalar @data >= 1) {
-			$self->debug(1, "read($file) -> data($#data) looks short!");
+			$self->debug(1, "read($file) -> data($#data) looks short!") if $Perlbug::DEBUG;
 		}
     }
 	return \@data;
@@ -445,7 +410,7 @@ sub truncate {
     my $i_ok = 1;      
     if ($file !~ /^\w+$/) {
 		$i_ok = 0;
-        $self->debug(0, "Can't truncate '$file'");
+        $self->error("Can't truncate '$file'");
     } else {
 	    my $fh = $self->fh($file, '+<');
 	    if (defined($fh)) {
@@ -454,10 +419,10 @@ sub truncate {
 	        $fh->seek(0, 0);
 			$fh->truncate(0);
 	        $fh->seek(0, 8);
-	        $self->debug(2, "Truncated $file");
+	        $self->debug(2, "Truncated $file") if $Perlbug::DEBUG;
 		} else {
 			$i_ok = 0;
-	        $self->debug(0, "Unable to truncate file($file): $!");
+	        $self->error("Unable to truncate file($file): $!");
 	    }
     }
 	return $i_ok;
@@ -473,12 +438,12 @@ Set priority nicer by given integer, or by 12.
 sub prioritise {
     my $self = shift;
     # return "";  # disable
-    my ($priority) = ($_[0] =~ /^\d+$/) ? $_[0] : 12;
-	$self->debug(2, "priority'ing ($priority)");
+    my ($priority) = ($_[0] =~ /^\d+$/o) ? $_[0] : 12;
+	$self->debug(2, "priority'ing ($priority)") if $Perlbug::DEBUG;
 	my $pre = getpriority(0, 0);
 	setpriority(0, 0, $priority);
 	my $post = getpriority(0, 0);
-	$self->debug(2, "Priority: pre ($pre), post ($post)");
+	$self->debug(2, "Priority: pre ($pre), post ($post)") if $Perlbug::DEBUG;
 	return $self;
 }
 
@@ -488,7 +453,7 @@ sub prioritise {
 Sets the given user to the runner of this script.
 
 =cut
-    
+
 sub set_user {
     my $self = shift; # ignored
     my $user = shift;
@@ -498,7 +463,7 @@ sub set_user {
     ($>, $), $<, $() = ($data[2], $data[3], $data[2], $data[3]);
     my $pname  = getpwuid($>); 
     my $post = qq|curr($pname, $<, [$(])|;
-	$self->debug(2, "user($user) original($original) post($post)");
+	$self->debug(2, "user($user) original($original) post($post)") if $Perlbug::DEBUG;
 	return $self;
 }
 
@@ -508,7 +473,7 @@ sub set_user {
 Copy this to there
 
     $ok = $log->copy($file1, $file2);    
-    
+
     @file1_data = $log->copy($file1, $file2);
 
 =cut
@@ -521,14 +486,14 @@ sub copy {
     my @data = ();
     my $ok   = 1;
     
-    $self->debug(0, "copy called with orig($orig) and target($targ) and perms($perm)");
+    $self->debug(1, "copy called with orig($orig) and target($targ) and perms($perm)") if $Perlbug::DEBUG;
     
     # FILEHANDLES
     my $oldfh = new FileHandle($orig, '<');
-	my $newfh = new FileHandle($targ, '+>', $perm);
+	my $newfh = new FileHandle($targ, '+<', $perm);
 	if (!(defined($oldfh)) || (!defined($newfh))) {
 	    $ok = 0;
-	    $self->debug(0, "Filehandle failures for copy: orig($orig -> '$oldfh'), targ($targ -> '$newfh')");
+	    $self->error("Filehandle failures for copy: orig($orig -> '$oldfh'), targ($targ -> '$newfh')");
     }
    
     # TRANSFER DATA
@@ -540,7 +505,7 @@ sub copy {
                 push(@data, $_); # see what was copied
             } else {
                 $ok = 0;
-                $self->debug(0, "can't write to $targ: $!");
+                $self->error("can't write to $targ: $!");
                 last;
             }
         }
@@ -553,9 +518,9 @@ sub copy {
 
     # FEEDBACK
     if ($ok == 1) {
-        $self->debug(1, "Copy ok($ok)");
+        $self->debug(1, "Copy ok($ok)") if $Perlbug::DEBUG;
     } else {
-        $self->debug(0, "Copy($orig, $targ) failed($ok)");
+        $self->error("Copy($orig, $targ) failed($ok)");
     }
     
     return (wantarray ? @data : $ok);
@@ -577,27 +542,27 @@ sub link {
 	my $mod  = shift || ''; # -f?
     my $ok   = 1;
     
-    $self->debug(0, "link called with orig($orig) and target($targ)");
+    $self->debug(1, "link called with orig($orig) and target($targ)") if $Perlbug::DEBUG;
     
 	if ($ok == 1) {	
 		if (! -e $orig) {
-			$self->debug(0, "Link failure: original($orig) doesn't exist to link from: $!");
+			$self->error("Link failure: original($orig) doesn't exist to link from: $!");
 		} else {
 			my $cmd = "ln $mod -s $orig $targ";
 			my $res = system($cmd); 	# doit
 			if ($res == 1 || ! -l $targ) {
-				$self->debug(0, "Link($cmd) failed($res): $!");
+				$self->debug(0, "Link($cmd) failed($res): $!") if $Perlbug::DEBUG;
 			} else {
-				$self->debug(0, "Link($cmd) success");
+				$self->debug(1, "Link($cmd) success") if $Perlbug::DEBUG;
 			}
 		} 
 	}
     
     # FEEDBACK
     if ($ok == 1) {
-        $self->debug(1, "Link ok($ok)");
+        $self->debug(1, "Link ok($ok)") if $Perlbug::DEBUG;
     } else {
-        $self->debug(0, "Link($orig, $targ) failed($ok)");
+        $self->error("Link($orig, $targ) failed($ok)");
     }
     
     return $ok;
@@ -620,11 +585,11 @@ sub create {
     my $ok = 1;
     
     # ARGS
-    if (($file =~ /\w+/) && ($data =~ /\w+/)) {
-        $self->debug(0, "create called with file($file) and data(".length($data).", perm($perm))");
+    if (($file =~ /\w+/o) && ($data =~ /\w+/o)) {
+        $self->debug(1, "create called with file($file) and data(".length($data).", perm($perm))") if $Perlbug::DEBUG;
     } else {
         $ok = 0;
-        $self->debug(0, "Duff args given to create($file, $data, $perm)");
+        $self->error("Duff args given to create($file, $data, $perm)");
     }
     
     # OPEN
@@ -636,7 +601,7 @@ sub create {
 			flock($fh, 8);
         } else {
             $ok = 0;
-            $self->debug(0, "Undefined target filehandle ($fh): $!");
+            $self->error("Undefined target filehandle ($fh): $!");
         }
     }
     
@@ -658,15 +623,15 @@ sub _syntax_check {
     my $ok = 1;
     
     # ARGS
-    if ($file =~ /\w+/) {
-        $self->debug(0, "syntax_check called with file($file)");
+    if ($file =~ /\w+/o) {
+        $self->debug(1, "syntax_check called with file($file)") if $Perlbug::DEBUG;
         if (!-f $file) {
             $ok = 0;
-            $self->debug(0, "File ($file) doesn't exist");
+            $self->error("File ($file) doesn't exist");
         }
     } else {
         $ok = 0;
-        $self->debug(0, "Duff args given to syntax_check($file)");
+        $self->error("Duff args given to syntax_check($file)");
     }
     
     if ($ok == 1) {
@@ -675,9 +640,9 @@ sub _syntax_check {
         };
         if ($@) {
             $ok = 0;
-            $self->debug(0, "Syntax problem with '$file': $@");
+            $self->error("Syntax problem with '$file': $@");
         } else {
-            $self->debug(0, "Syntax looks OK for '$file': $@");  
+            $self->debug(1, "Syntax looks OK for '$file': $@") if $Perlbug::DEBUG;  
         }
     }
     

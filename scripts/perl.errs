@@ -1,4 +1,0 @@
-../Perlbug/Object.pm:23: Can't locate Perlbug/Base.pm in @INC (@INC contains: /usr/lib/perl5/5.00503/i686-linux /usr/lib/perl5/5.00503 /usr/lib/perl5/site_perl/5.005/i686-linux /usr/lib/perl5/site_perl/5.005 .) at ../Perlbug/Object.pm line 23.
-
-../Perlbug/Object.pm:23: BEGIN failed--compilation aborted at ../Perlbug/Object.pm line 23.
-

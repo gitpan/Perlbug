@@ -1,22 +1,19 @@
 #!/usr/bin/perl -w
-# Email tests for Perlbug: check the tron switching/decision mechanism: expects context return value(reply|quiet|etc...)
+# query some object data
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 30_Object.t,v 1.1 2001/03/31 16:15:01 perlbug Exp $
+# $Id: 30_Object.t,v 1.2 2001/09/18 13:37:50 richardf Exp $
 # 00_Test.t also :-)
 #
 # Note: this only does the mail objects at the moment!
 # bugfix will handle the relations...
 #
 
-BEGIN {
-	use File::Spec; 
-	use lib File::Spec->updir;
-	use Perlbug::TestBed;
-	plan('tests' => 7);
-}
 use strict;
 use lib qw(../);
+use Perlbug::Test;
 use Perlbug::Base;
+plan('tests' => 7);
+
 my $test = 0;
 my $err  = 0;
 my $context = '';
@@ -24,21 +21,21 @@ my $o_pb = Perlbug::Base->new;
 $o_pb->current('admin', 'richardf');
 $o_pb->current('isatest', 1);
 
-my %map = ( # thing types 
+my %map = ( # object types 
 	'application'	=> 'primary_in_testids',
 	'flag'			=> 'primary_in_testids',
 	'item'			=> 'primary_in_testids',
 	'mail'			=> qq|sourceaddr LIKE '%perlbug_test\@rfi.net%'|,
 );
 
-my $o_thing = $o_pb->object('thing');
+my $o_object = $o_pb->object('object');
 TYPE:
-foreach my $type (sort $o_thing->col('type')) { #
+foreach my $type (sort $o_object->col('type')) { #
 	next TYPE unless grep(/^$type$/, keys %map);	
 	next TYPE unless $type eq 'mail';			# ! -->	
 	OBJECT:	
-	foreach my $o (sort $o_thing->col('name', "type = '$type'")) {
-		next OBJECT unless $o =~ /\w+/;
+	foreach my $o (sort $o_object->col('name', "type = '$type'")) {
+		next OBJECT unless $o =~ /\w+/o;
 		$err = 0;
 		$test++; 
 		my $o_obj = $o_pb->object($o);

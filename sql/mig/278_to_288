@@ -1,0 +1,8 @@
+# rjsf: template, thing->object
+
+ALTER TABLE pb_thing RENAME pb_object;
+ALTER TABLE pb_object MODIFY COLUMN thingid objectid;
+
+CREATE TABLE pb_template...;
+CREATE TABLE pb_template_user...;
+

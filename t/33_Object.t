@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
 # Object Utility tests for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 33_Object.t,v 1.1 2001/04/21 20:48:48 perlbug Exp $
+# $Id: 33_Object.t,v 1.3 2001/10/05 08:23:53 richardf Exp $
 #
 BEGIN { 
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::TestBed; 
+	use Perlbug::Test; 
 	plan('tests' => 11); 
 }
 use strict;
@@ -68,9 +68,10 @@ if ($key eq $oid) {
 
 # 5
 # data 
+$DB::single=2;
 my $created = $o_obj->data('created');
 $test++; 
-if ($created =~ /^\d+/) {
+if ($created =~ /^\d+/o) {
 	ok($test);
 } else {
 	ok(0);
@@ -117,7 +118,7 @@ if ($bid eq $oid) {
 # _gen_field_handler - migrated
 my ($subject) = $o_obj->data('subject');
 $test++; 
-if ($subject =~ /\w+/) {
+if ($subject =~ /\w+/o) {
 	ok($test);
 } else {
 	ok(0);
@@ -126,7 +127,7 @@ if ($subject =~ /\w+/) {
 
 # 10 
 # ref
-my $href = $o_obj->_oref('attribute');
+my $href = $o_obj->_oref('attr');
 $test++; 
 if (ref($href) eq 'HASH') {
 	ok($test);
@@ -138,11 +139,12 @@ if (ref($href) eq 'HASH') {
 # 11 
 # base 
 my $o_base = $o_obj->base;
+my $o_object = $o_base->object('bug');
 $test++; 
-if (ref($o_base) && $o_base->isabase) {
+if (ref($o_object)) {
 	ok($test);
 } else {
 	ok(0);
-	output("failed to retrieve base($o_base)!");
+	output("failed to retrieve base($o_base) object($o_object)!");
 }
 

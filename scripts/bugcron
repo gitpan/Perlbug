@@ -1,7 +1,7 @@
 #!/usr/bin/perl 
 # Perlbug cron daemon - assign open bugs to active admins, backup database etc.
 # (C) 1999 Richard Foley RFI perlbug@rfi.net 
-# $Id: bugcron,v 1.4 2001/04/21 20:48:48 perlbug Exp $
+# $Id: bugcron,v 1.7 2001/10/19 12:40:21 richardf Exp $
 # 
 # 22.09.1999 Initial version
 # 25.09.1999 active admin list
@@ -10,32 +10,28 @@
 # 26.07.2000 overview (again)
 # 
 
-$VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 use FindBin;
 use lib "$FindBin::Bin/..";
-use Mail::Header;
 use Perlbug::Interface::Email;
-use Perlbug::Interface::Cmd;
 use strict;
 
 # -----------------------------------------------------------------------------
 my $o_em = Perlbug::Interface::Email->new();
-$o_em->_original_mail($o_em->_duff_mail);
-my $cmd = Perlbug::Interface::Cmd->new;
 $o_em->debug(1, "$0: $o_em");
-$cmd->prioritise(22); # what the heck.
 my $o_bug = $o_em->object('bug');
 my $o_grp = $o_em->object('group');
 my $o_usr = $o_em->object('user');
 
 my $ok = 1;
 my $admin  = $o_em->system('maintainer');
-my $admins = my @admins = $o_em->active_admins;
-my @addresses = $o_em->active_admin_addresses;
+my $admins = my @admins = $o_usr->col('userid', "active = '1'");
+my @addresses = $o_usr->col('address', "active = '1'");
+my $i_max = 101;
 
 # ADMINS (active list), UN/CLAIMED grp->unclaimed/unknown 
-if ($ok == 123) {
+if ($ok == 123) { # don't bother unless using groups properly 
 	$o_em->debug(1, "Doing active administrators");
 	my @claimed   = $o_em->get_list("SELECT DISTINCT bugid FROM pb_bug_user");
 	my $claimed   = join("', '", @claimed);
@@ -45,40 +41,54 @@ if ($ok == 123) {
 	my $max = sprintf("%03d", (scalar @unclaimed / scalar @admins || 1));
 	my $MAX = ($max >= 5) ? $o_em->system('max_age') : $max;
 	$o_em->debug(0,"Admins($admins), unclaimed($unclaimed), each($max->$MAX)");
+ 	my $i_admins = 0;
+	ADMIN:
 	foreach my $admin (@admins) {
-    	my $ok = $o_em->assign_bugs($admin, $MAX, \@unclaimed);
+		$i_admins++;
+		last ADMIN unless $ok == 1;
+    	$ok = $o_em->assign_bugs($admin, $MAX, \@unclaimed);
 	}    
-	$o_em->debug(1, "Done active administrators");
+	$o_em->debug(1, "Done $i_admins active administrators");
 }
 
-if ($ok == 1) { # outstanding bugs group, source reminders
-	$cmd->debug(1, "Doing outstanding bugs reminders");
-	# my $query = "(status = 'open' OR status = 'unknown') AND severity = 'fatal'";
-	#  AND TO_DAYS(created) >= TO_DAYS(now()) - 30";
+# Outstanding bugs group, source reminders
+if ($ok == 1) {
+	my $sql = qq|SELECT DISTINCT bst.bugid 
+		FROM pb_status st, pb_bug_status bst 
+		WHERE st.statusid = bst.statusid 
+		AND (st.name = 'open' OR st.name = 'unknown') 
+		AND (TO_DAYS(now()) - 30) > TO_DAYS(bst.created) 
+		ORDER BY bst.modified
+	|; # recent are irrelevant
+=pod	
 	my $sql = qq|SELECT DISTINCT bst.bugid 
 		FROM pb_status st, pb_bug_status bst, pb_severity sv, pb_bug_severity bsv 
-		WHERE bst.bugid = bsv.bugid
-		AND st.statusid = bst.statusid
-		AND sv.severityid = bsv.severityid
-		AND (st.name = 'open' OR st.name = 'unknown')  
-		AND (sv.name = 'fatal' OR sv.name = 'high')  
-	|;
-	$cmd->debug(1, "sql($sql)");
-	my @bugids = $o_em->get_list($sql);
-	my $bugids = join("', '", @bugids);
-	$cmd->debug(1, "ids('$bugids')");
+		WHERE bst.bugid = bsv.bugid 
+		AND st.statusid = bst.statusid 
+		AND sv.severityid = bsv.severityid 
+		AND (st.name = 'open' OR st.name = 'unknown') 
+		AND (sv.name IN('fatal', 'high', 'medium')) 
+		AND (TO_DAYS(now()) - 30) >= TO_DAYS(created) 
+	|; 
+=cut
+	my @bugids = my @orig = $o_em->get_list($sql);
+	$#bugids = $i_max - 1 if scalar(@bugids) >= $i_max;	
+	$o_em->debug(1, "reminding orig(".@orig.") max($i_max) bugids(".@bugids.")");
+	exit;
+	my $i_bugids = 0;
 	BUGID:
 	foreach my $bid (@bugids) {
+		$i_bugids++;
 		last BUGID unless $ok == 1;
 		if ($o_bug->ok_ids([$bid])) {
 			my @addrs = $o_em->bugid_2_addresses($bid, 'reminder');
 			$ok = $o_em->reminder($bid, @addrs) if @addrs;
 		}
 	}
-	$cmd->debug(1, "Done outstanding bugs reminders");
+	$o_em->debug(1, "Done $i_bugids bug reminders");
 }
 
-# overview
+# Overview
 if ($ok == 1) {
 	$o_em->debug(1, "Doing overview");
 	my $overview = $o_em->doo;
@@ -91,15 +101,12 @@ if ($ok == 1) {
 	$o_em->debug(1, "Done overview");
 }
 
-# backup db
+# Backup DB
 if ($ok == 1) {	
-	$cmd->debug(1, "Doing database backup");
-	$ok = $cmd->doD;
-	$cmd->debug(1, "Done database backup");
+	$ok = $o_em->SUPER::doD;
+	$o_em->debug(1, "Done dbdump($ok)");
 }
 
-$cmd->debug(1, "$0 -> ($ok)");
-$cmd->clean_up;
 $o_em->debug(1, "$0 -> ($ok)");
 $o_em->clean_up;
 exit 0;

@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Range.pm,v 1.8 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Range.pm,v 1.10 2001/08/20 18:57:31 mstevens Exp $
 #
 
 =head1 NAME
@@ -12,9 +12,8 @@ Perlbug::Object::Range - Range class
 package Perlbug::Object::Range;
 use strict;
 use vars qw(@ISA $VERSION);
-$VERSION = do { my @r = (q$Revision: 1.8 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 @ISA = qw(Perlbug::Object); 
-my $DEBUG = $ENV{'Perlbug_Object_Range_DEBUG'} || $Perlbug::Object::Range::DEBUG || '';
 $|=1;
 
 =head1 DESCRIPTION
@@ -41,6 +40,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Range object:
@@ -61,11 +62,12 @@ sub new {
 		'track'		=> 0,
 	);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

@@ -1,5 +1,5 @@
 # 
-# $Id: Makefile.PL,v 1.7 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Makefile.PL,v 1.8 2001/08/20 16:33:50 richardf Exp $
 # 
 # Perlbug Makefile.PL -> 'perl Makefile.PL'
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
@@ -20,6 +20,7 @@ WriteMakefile(
 		'CGI'           => 0,
 		'DBI'           => 0,
 		'Data::Dumper'  => 0,
+		'Email::Valid'  => 0.13,
 		'Exporter'		=> 0,
 		'FileHandle'    => 0,
 		'File::Spec'	=> 0,

@@ -1,0 +1,103 @@
+#!/usr/bin/perl 
+
+
+use Benchmark;
+use Data::Dumper;
+use strict;
+$|=1;
+
+my $iterations = $ARGV[0] =~ /^(\d+)$/ ? $1 : 100000;
+
+my $o_obj = Testit->new;
+timethese($iterations, {
+	'autoloaded'	=> q|call('attr')|,		# should be faster
+	'objectcall'	=> q|call('xattr')|,	# should be slower
+});
+sub call { my $call = shift; return $o_obj->$call('objectid'); }
+
+exit 0;
+
+
+package Testit;
+use vars(qw($VERSION $AUTOLOAD));
+
+sub new {
+	my $class = shift;
+	my $self = {
+		'_attr'	=> {
+			'objectid'	=> 'of some sort',
+		},
+	};
+	bless($self, $class); 
+}	
+
+sub xattr { # test method
+	my $self = shift;
+	my $get  = shift;
+	my @ret  = ();
+
+	if (!defined($get)) {
+		@ret = keys %{$self->{'_attr'}}; 			# ref
+	} else {
+		if (ref($get) ne 'HASH') { 					# get
+			@ret = ($self->{'_attr'}{$get});
+		} else {									# set
+			my $keys = join('|', keys %{$self->{'_attr'}}); 	# ref
+			SET:
+			foreach my $key (keys %{$get}) {
+				if ($key =~ /^($keys)$/) {
+					$self->{'_attr'}->{$key} = $$get{$key}; # SET
+					push(@ret, $$get{$key});
+				} else {
+					$self->debug(2, ref($self)." has no such attribute key($key) valid($keys)") if $Perlbug::DEBUG;
+				}
+			}
+		}
+	}
+	return wantarray ? @ret : $ret[0];
+}
+
+sub AUTOLOAD {
+    my $self = shift;
+    my $get  = shift || '';	
+	my $meth = $AutoLoader::AUTOLOAD = $AUTOLOAD;
+    return if $meth =~ /::DESTROY$/o;
+
+    $meth =~ s/^(.*):://o;
+	my $pkg = ref($self);
+	my @ret = ();
+
+    if ($meth !~ /^(attr|data|flag)$/) {
+        $self->error("$pkg->$meth($get, @_) called with a duff method($AUTOLOAD)!  Try: 'perldoc $pkg'");
+    } else { 
+		no strict 'refs';
+		*{$AUTOLOAD} = sub { # this bit is virtually identical to the xattr() sub
+			my $self = shift;
+			my $get  = shift;
+			my @ret  = ();
+
+			if (!defined($get)) {
+				@ret = keys %{$self->{"_$meth"}}; 			#
+			} else {
+				$DB::single=2;
+				if (ref($get) ne 'HASH') { 					# get
+					@ret = ($self->{"_$meth"}{$get});
+				} else {									# set
+					my $keys = join('|', keys %{$self->{"_$meth"}});
+					SET:
+					foreach my $key (keys %{$get}) {
+						if ($key =~ /^($keys)$/) {
+							$self->{"_$meth"}->{$key} = $$get{$key}; # SET
+							push(@ret, $$get{$key});
+						} else {
+							$self->debug(2, "$pkg has no such $meth key($key) valid($keys)") if $Perlbug::DEBUG;
+						}
+					}
+				}
+			}
+			return wantarray ? @ret : $ret[0];
+		}
+    }
+	return wantarray ? @ret : $ret[0];
+}
+

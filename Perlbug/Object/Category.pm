@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Category.pm,v 1.5 2001/02/18 12:54:18 perlbug Exp $
+# $Id: Category.pm,v 1.7 2001/09/18 13:37:50 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Object::Category;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 =head1 DESCRIPTION
 
@@ -24,8 +24,6 @@ For inherited methods, see L<Perlbug::Object>
 =cut
 
 use Data::Dumper;
-use FindBin;
-use lib "$FindBin::Bin/..";
 use Perlbug::Base;
 use Perlbug::Object;
 @ISA = qw(Perlbug::Object); 
@@ -41,6 +39,8 @@ use Perlbug::Object;
 
 
 =head1 METHODS
+
+=over 4
 
 =item new
 
@@ -66,6 +66,9 @@ sub new {
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Osname.pm,v 1.8 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Osname.pm,v 1.10 2001/08/20 18:57:31 mstevens Exp $
 #
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::Object::Osname - osname handler
 package Perlbug::Object::Osname;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.8 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Osname_DEBUG'} || $Perlbug::Object::Osname::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 =head1 DESCRIPTION
@@ -41,6 +40,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Osname object:
@@ -60,11 +61,12 @@ sub new {
 		'to'		=> [],
 	);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

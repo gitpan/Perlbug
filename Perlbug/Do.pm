@@ -1,7 +1,10 @@
 # Perlbug functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Do.pm,v 1.54 2001/04/26 13:19:48 perlbug Exp $
+# $Id: Do.pm,v 1.65 2001/10/22 15:29:50 richardf Exp $
 #
+# TODO 
+# see doh
+# 
 
 =head1 NAME
 
@@ -10,13 +13,11 @@ Perlbug::Do - Commands (switches) for generic interface to perlbug database.
 =cut
 
 package Perlbug::Do; 
+use Data::Dumper;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.54 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.65 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
-
-use Data::Dumper;
-my $DEBUG = $ENV{'Perlbug_Do_DEBUG'} || $Perlbug::Database::DEBUG || '';
 
 
 =head1 DESCRIPTION
@@ -32,15 +33,15 @@ To be printed, returned by email, etc.
 
 =head1 SYNOPSIS
 
-Use like this:
+Note that all B<do...()> methods expect to recieve one of the following arguments:
 
-	print $o_obj->dod(2); 			# "debug level set to '2'"
+Either a string, an arrayref, or a hashref (helpful - huh?)
 
-	print $o_obj->dob(\@list_of_bugids); 	# formatted
+	my $h_cmds = $o_do->parse_input($line); # parse string
 
-	print $o_obj->doh(); 			# help menu...
+	print $o_do->process_commands($h_cmds); # calls do($cmd, $args) foreach 
 
-	
+
 =head1 METHODS
 
 =over 2
@@ -50,133 +51,464 @@ Use like this:
 
 Create new Perlbug::Do object:
 
-	my $do = Perlbug::Do->new();
+	my $o_do = Perlbug::Do->new();
 
 =cut
 
-sub new { # 
+sub new {
     my $proto = shift;
 	my $class = ref($proto) || $proto; 
-
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
 
    	bless({}, $class);
 }
 
 
-=item get_switches
+=item parse_input
 
-Returns array of current switches, rather than string
+Parses the given line into a reference to a command hash, this is also where
+the input should be massaged into the correct format for each method call.
 
-	my @switches = $o_pb->get_switches('user');
+Wraps B<input2args()>, override on a per interface basis, where appropriate.
+
+Input line is expected to look like: -h -b (bugid)+ -r (keywords)+ ...
+
+    my $h_cmds = $o_do->parse_input($line); 
 
 =cut
 
-sub get_switches { # current or admin|user
+sub parse_input {
     my $self = shift;
-	my $arg  = shift || '';
-	my @switches = ();
-	if ($arg eq 'admin') {
-		@switches = split(//, $self->system('admin_switches'));
-	} elsif ($arg eq 'user') {
-		@switches = split(//, $self->system('user_switches'));
-	} else {
-		@switches = split(//, $self->current('switches'));
+    my $line = shift;
+	my %cmds = ();
+    $self->{'attr'}{'commands'} = {};
+
+    if ($line !~ /\-\w+/) {
+		$cmds{'h'} = "invalid command($line)";
+		$self->debug(0, "requires a valid command($line)!");
+    } else {
+		%cmds = %{$self->parse_line($line)};
+		COMMANDS:
+		foreach my $cmd (keys %cmds) {
+			$cmds{$cmd} = $self->input2args($cmd, $cmds{$cmd});
+		}
 	}
-	@switches = ($self->isadmin =~ /^richardf$/) ? grep(/^(\w|\!)$/, @switches) : grep(/^\w$/, @switches);
-    return @switches;
+
+	$self->{'commands'} = \%cmds;
+
+	$self->debug(0, "Do input($line): ".Dumper(\%cmds)) if $Perlbug::DEBUG;
+
+    return \%cmds;
 }
 
 
-=item doh
+=item parse_line
 
-Returns help message built from a hash_ref, commands may be overwritten by sending in a hash.
+parse_input without the input2args
 
-Syntax for the hash is 'key => description (sample args)':
-
-	print $o_obj->doh({
-		'e' => 'email me a copy too (email@address.com)', 	# add
-		'H' => 'Help - more detailed info ()',			# replace
-		'z' => '', 						# unrequired 
-	});
+    my $h_cmds = $o_do->parse_input($line); 
 
 =cut
 
-sub doh { # command line help
+sub parse_line {
     my $self = shift;
-	my $data = qq|
-Switches are sent on the subject line, dash may be omitted if only option:
---------------------------------------------------------------------------------
-|;
-	# A = Admin
-	# B = Bugmaster
-	# C = Cc list (or master list or admin)
-	# 
-	my %data = (
-		'a' => 'administration command - cmds bugids      (close b 19990606.002 [...])',	# A
-		'A' => 'Administration command and return bugs    (c build 19990606.002 [...])', 	# A
-		'b' => 'bug retrieval by bugid                    (19990606.002 [...])', 
-		'B' => 'bug retrieval including messages          (19990606.002 [...])', 
-      #        'INSERT a Bug' not supported here
-		'c' => 'change id retrieval, patches, bugs.       (12 777 c8123 c55)', 					
-	  # 'C' => 'INSERT a Change against a bugid           (19990606.002 changeid)',			# A
-		'd' => 'debug flag data goes in logfile           ()', 								# A
-		'D' => 'Dump database for backup                  ()',    							# A
-	  # 'e' => 'email a copy to this email address', 
-		'f' => 'format of data ascii|html|lean            ([aA|hH|l])', 
-		'g' => 'group info retrieval                      (patch|install|docs|...])', 
-		'G' => 'new group                                 (another_group_name)', 			# A
-		'h' => 'help - this message                       ()', 
-		'H' => 'more detailed help                        ()',
-      # 'i' => 'initiate new admin - inc. htpasswd        (-i)',							# B
-	  # 'j' => 'just treat as a reply - track             ()', 
-	    'k' => 'claim a bug with optional email addr      (19990606.002 me@here.net [...])',# C
-		'K' => 'unClaim this bug - remove from cc         (19990606.002 me@here.net [...])',# C
-		'l' => 'log of current process                    ()', 								# A
-		'L' => 'Logfile - todays complete retrieval       ()', 								# A
-		'm' => 'retrieval by messageid                    (13 47 23 [...])', 
-	  # 'M' => 'INSERT a Message against a bugid          (19990606.002 some_message)',		# A
-		'n' => 'note retrieval                            (76 33 1  [...])',
-	  # 'N' => 'INSERT a Note against a bugid             (19990606.002 some_note)',		# A
-		'o' => 'overview of bugs in db                    ()', 
-		'O' => 'Overview of bugs in db - more detail      ()', 
-	    'p' => 'patch retrieval                           (patchid)', # change
-	  # 'P' => 'INSERT a Patch against a bugid            (19990606.002 some_patch)',		# A
-	  	'q' => 'query the db directly                     (select * from db_type where 1 = 0)', 
-		'Q' => 'Query the schema for the db               ()', 
-		'r' => 'retrieve body search criteria             (d_sigaction=define)', 
-		'R' => 'Retrieve body search criteria as per -B   (d_sigaction=define)', 
-		's' => 'subject search by literal                 (bug in docs)', 
-		'S' => 'Subject search as per -B                  (bug in docs)', 
-	    't' => 'test retrieval by testid                  (77 [...])', 
-	  # 'T' => 'INSERT a Test against a bugid|patch       (19990606.002 test|patch)', 		# A
-		'u' => 'user retrieval by userid                  (richardf [...])', 				# A
-	  	'v' => 'volunteer bug group etc.                  (19990606.002 close)',
-	  # 'V' => 'Volunteer as admin',  
-	  # 'w'	=> 'where group ...',
-		'x' => 'xterminate bug - remove bug               (19990606.002 [...])', 			# A
-		'X' => 'Xterminate bug - and messages             (19990606.002 [...])', 			# A
-	    'y' => 'yet another password                      ()', 								# 
-	    'z' => 'Configuration data                        (current)',						# A
-		@_,																					# Overwrite
-	);
-	SWITCH:
-    foreach my $key (sort { lc($a) cmp lc($b) } keys %data) {
-		next SWITCH unless grep(/^$key$/, $self->get_switches); # 
-		next SWITCH unless $key =~ /^\w$/;
-		if ($data{$key} =~ /^\s*(.+)\s*(?:\((.*)\))\s*$/) {
-			my ($desc, $args) = ($1, $2);
-			$desc =~ s/\s+/ /g;
-			$args =~ s/\s+/ /g;
-			my $combo = length($desc) + length($args);
-			my $x = ($combo >= 1 && $combo <= 70) ? 71 - $combo : 1; # allow 9 for wrapping (may run over)
-			my $spaces = ' ' x $x;
-			$data .= "$key = $desc".$spaces."(-$key $args)"."\n"; 	 # 80?
+    my $line = shift;
+	my %cmds = ();
+    $self->{'attr'}{'commands'} = {};
+
+    if ($line !~ /\-\w+/) {
+		$cmds{'h'} = "invalid command($line)";
+		$self->debug(0, "requires a valid command($line)!");
+    } else {
+		CHUNK: {
+			$cmds{$1} = '',	redo CHUNK if $line =~ /\G\s*-([a-zA-Z])\s*$/ciog;			# -h
+			$cmds{$1} = $2,	redo CHUNK if $line =~ /\G\s*-([a-zA-Z])\s*([^-]+)/cigo;		# -d 2
+	    };      
+		$self->debug(1, "Commands($line): ".Dumper(\%cmds)) if $Perlbug::DEBUG;
+	}
+
+	$self->{'commands'} = \%cmds;
+    return \%cmds;
+}
+
+
+=item return_type
+
+Return appropriate type of argument wanted given command
+
+	my $wanted = $self->return_type($cmd);
+
+	eg:
+		b -> ARRAY 
+		P -> HASH
+		s -> SCALAR 
+
+=cut
+
+sub return_type {
+	my $self = shift;
+	my $cmd  = shift || '';
+
+	my $wanted = 
+		$cmd =~ /^[aBCGMNPTUVv]$/o ? 'HASH' : 
+		$cmd =~ /^[dfhHloqrsz]$/o ? 'SCALAR' : 
+		'ARRAY'; # default
+	;
+
+	return $wanted;
+}
+
+
+=item input2args
+
+Handles email input, calls B<SUPER::input2args()>
+
+	my $cmd_args = $o_do->input2args($cmd, $args);
+
+=cut
+
+sub input2args {
+	my $self = shift;
+	my $cmd  = shift;
+	my $arg  = shift || '';
+	my $ret  = '';
+
+	$cmd =~ s/^\s+//o;
+	$cmd =~ s/\s+$//o;
+	$arg =~ s/^\s+//o;
+	$arg =~ s/\s+$//o;
+
+	my $wanted = $self->return_type($cmd);
+
+	if ($wanted eq 'ARRAY') {
+		my @ret = (ref($arg) eq 'ARRAY') ? @{$arg} : split(/\s+/, $arg);
+		$ret = \@ret;
+	} elsif ($wanted eq 'HASH') {	
+		my ($opts, $body) = ($arg =~ m/^\s*(?:opts\s*\(\s*([^)]+)\s*\))\s*(.+)/mso)
+			? ($1, $2) : ('', $arg);
+		$ret = {
+			'body'	=> $body,
+			'opts'	=> $opts,
+		};
+	} else {
+		$ret = $arg;
+	}
+
+	$self->debug(2, "cmd($cmd) arg($arg) => ret: ".Dumper($ret)) if $Perlbug::DEBUG;
+	
+	return $ret;
+}
+
+
+=item process_commands
+
+Interface to all B<do()> methods, calls B<SUPER::process_commands()>.
+
+	my @res = $o_do->process_commands(\%args);
+
+Where B<%args> looks something like this:
+
+	my %args = (	
+		'a'	=> \@categories_status_etc,
+		'B' => \%new_data,	
+		'b' => \@bug_ids,
+		'h' => \%extra_info,
+		'l'	=> $date || '',
+		'q' => $sql_query,
+		'z' => $config_type,
+		'Z' => [($type, $string)],
+	); 
+
+=cut
+
+sub process_commands {
+	my $self   = shift;
+    my $h_cmds = shift;	# 
+    my @res    = ();
+
+	if (!ref($h_cmds)) {
+		$self->error("requires commands($h_cmds)!");
+	} else {
+		my %cmds = %{$h_cmds}; 
+		$self->debug(2, "processing(\%cmds): ".Dumper(\%cmds)) if $Perlbug::DEBUG;
+		my %adminable = ();
+		%adminable = map { $_ => ++$adminable{$_} } $self->get_switches('admin');
+		SWITCH:
+		foreach my $switch (keys %cmds) {
+			next SWITCH unless $switch =~ /^\w+$/o;
+			next SWITCH unless grep(/^$switch$/, $self->get_switches);
+			if (!$self->isadmin) {
+				next SWITCH if $adminable{$switch};
+			}
+			if (!($self->can("do$switch"))) {
+				$self->error("Unrecognised switch($switch) next..."); 
+			} else {
+				$self->debug(1, "processing($switch, $cmds{$switch})...") if $Perlbug::DEBUG;
+				my @result = $self->do($switch, $cmds{$switch}); 
+				push(@res, "$switch: => ".join("\n", @result));
+				$self->debug(1, "processed(@res)") if $Perlbug::DEBUG;
+			}
 		}
 	}
-    # 
-	$self->debug(3, 'help retrieved') if $DEBUG;    
-	return $data;
+
+    return @res;
+}
+
+
+=item do
+
+Wrap a Perlbug::dox command where 'x' may be any alphabetic character.
+
+Each B<do()> command returns the product of it's call for output.
+
+    print "Bugs(@bugids): ".join('', $pb->do('b', \@bugids));
+
+    print "New bug: ".join('', $pb->do('B', '', $newbug));
+
+    print "New msg: ".join('', $pb->do('M', $bugidstring, $message)); # Base 
+
+    print "New msg: ".join('', $pb->do('M', $bugidstring, \%mail));   # Email
+
+=cut
+
+sub do {
+    my $self = shift;
+    my $arg  = shift; # char
+	my $cmd  = shift; # string or array_ref, or hashref
+    my @res  = ();
+
+	SWITCH:
+	if ($arg !~ /^\w+$/) {
+		$self->error("Can't do $arg($cmd)!");
+	} else {
+		my $this = "do$arg";
+		$DB::single=2;
+    	@res = $self->$this($cmd);
+	    $self->debug(3, "called $this($cmd) -> res(@res)") if $Perlbug::DEBUG;
+	}
+
+	return @res;
+}
+
+# -----------------------------------------------------------------------------
+# From here are all the do\w commands
+# -----------------------------------------------------------------------------
+
+=item doa
+
+ONLY do this if registered as admin
+
+	my @res = $o_do->doa($command_string);
+
+=cut
+
+sub doa {
+    my $self   = shift;
+	my $h_args = shift;
+	my %args   = %{$h_args};
+	my @res    = ();
+
+	my %cmds = $self->parse_str($$h_args{'opts'});
+	my @bids = ref($cmds{'bug'}{'ids'}) eq 'ARRAY' ? @{$cmds{'bug'}{'ids'}} : ();
+
+	if (!(@bids >= 1)) {
+		$self->error("requires bugids(@bids) to administrate!");
+	} else {
+		my $o_bug = $self->object('bug');
+		my $o_note = $self->object('note');
+
+	$DB::single=2;
+	    foreach my $b (@bids) {
+	        next unless $o_bug->ok_ids([$b]);
+			my $orig = $o_bug->read($b)->format('a');
+			if (!$o_bug->READ) {		
+				push(@res, "Bugid($b) read failure");
+			} else {
+				my $i_rel = $o_bug->relate(\%cmds);
+				$self->debug(0, "related($b): ".Dumper(\%cmds));
+				my $o_int = $self->setup_int($o_bug->data('header'), $o_bug->data('body'));
+				my ($o_hdr, $header, $body) = $self->splice($o_int);
+				chomp(my $to = $o_hdr->get('To'));
+				chomp(my $from = $o_hdr->get('From'));
+				chomp(my $subject = $o_hdr->get('Subject'));
+				$o_note->create({
+					'noteid'		=> $o_note->new_id,
+					'body'	 		=> $body, 
+					'header' 		=> $header, 
+					'subject'		=> $subject, 
+					'sourceaddr'	=> $from, 
+					'toaddr'		=> $to,
+					'email_msgid'	=> 'no-B-msgid',
+				});
+				if ($o_note->CREATED) {
+					my $nid = $o_note->oid;
+					$o_bug->rel('note')->assign([$nid]);
+				}
+				if ($self->current('mailing') == 1) {
+					my $i_x = $self->notify_cc($b, $orig) unless grep(/nocc/, $cmds{'unknown'});
+				}
+			}
+            $self->debug(2, "Bug ($b)  administration done") if $Perlbug::DEBUG;
+			my $current = $o_bug->read($b)->format('a');
+			push(@res, "Current status (post admin)\n$current\n");
+			my $diff = $o_bug->diff($orig, $current);
+			push(@res, "Difference from previous status (by line): \n$diff\n");
+	    }
+	    $self->debug(2, "All administration commands done") if $Perlbug::DEBUG;
+	} 
+
+	return @res;
+}
+
+
+=item doA
+
+Wrapper for L<doa()>, calls L<dob()> also.
+
+	my @res = $o_do->doa($command_string);
+
+=cut
+
+sub doA {
+    my $self = shift;
+	my $cmds = shift;
+	my @res  = ();
+
+	my %cmds = $self->parse_str($cmds);
+
+	my @bids = ref($cmds{'bug'}{'ids'}) eq 'ARRAY' ? @{$cmds{'bug'}{'ids'}} : ();
+
+	if (!(@bids >= 1)) {
+		$self->error("requires bugids(@bids) to Administrate!");
+	} else {
+		push(@res, $self->doa($cmds));
+
+		push(@res, $self->dob($cmds{'bug'}{'ids'}));
+	}
+
+	return @res;
+}
+
+
+=item dob
+
+Return the formatted bug by id/s
+
+    my @res = $o_do->dob(@bugids);
+
+=cut
+
+sub dob {
+	my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+	my $fmt   = $self->current('format');
+	my $o_obj = $self->object('bug');
+
+	foreach my $i ($o_obj->ok_ids(\@ids)) {
+		my $str = $o_obj->read($i)->format($fmt);
+		push(@res, $str);
+	} 
+	$self->debug(1, "bug ids(@ids)") if $Perlbug::DEBUG;
+
+	return @res;
+}
+
+
+=item doB
+
+Create new bug, returning id.
+
+    my $bugid = $o_do->doB(\%bug);
+
+=cut
+
+sub doB {
+    my $self   = shift;
+	my $h_args = shift;
+	my %args   = %{$h_args};
+	my $bug    = $args{'body'};
+	my $target = 'bug';
+	my $id     = '';
+
+	if ($bug !~ /\w+/) {
+		$self->error("requires a valid $target($args{'body'}) to insert");
+	} else {
+		my $o_obj = $self->object($target);
+		my $newid = $o_obj->new_id;
+		$o_obj->create({
+			$target.'id'	=> $newid,
+			'subject'		=> 'no-subject-given', 
+			'sourceaddr'	=> 'no-sourceaddr-given', 
+			'toaddr'		=> 'no-toaddr-given', 
+			'header'		=> 'no-header-given', 
+			'body'			=> 'no-body-given',
+			'email_msgid'	=> 'no-msgid-given',
+			%args,
+		});	
+
+		if (!($o_obj->CREATED)) {
+			$self->error("failed to create new($newid) $target: ".Dumper($h_args));	
+		} else {
+			$id = $o_obj->oid;
+			my %cmds = $self->parse_str($args{'opts'});
+			my $i_rel = $o_obj->relate(\%cmds);
+			my $i_ok = $self->notify($target, $id); 
+		}
+	}
+
+    return $id;
+}
+
+
+=item doc
+
+Get the patches, or bugs for this changeid 
+
+	my @res = $o_do->doc(\@cids);	
+
+=cut
+
+sub doc {
+	my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+	foreach my $id (@ids) {
+        next unless $id =~ /^\d+$/o;
+		my $o_chg = $self->object('change')->read($id);
+		my @pids = $o_chg->relation('patch')->ids($o_chg);
+		$self->debug(2, "found pids(@pids) related to changeid($id)") if $Perlbug::DEBUG;
+		if (scalar(@pids) >= 1) {
+			push(@res, $self->dop(\@pids));
+        } else {
+			print "No patches found with changeid($id), trying with bugs...<br>\n"; 
+			my @bids = $o_chg->relation('bug')->ids($o_chg);
+			$self->debug(2, "found bids(@bids) related to changeid($id)") if $Perlbug::DEBUG;
+			if (scalar(@bids) >= 1) {
+				push(@res, $self->dob(\@bids));
+			}	
+		}
+    }
+	$self->debug(2, "found ".@res." related items to ids(@ids)") if $Perlbug::DEBUG;
+
+	return @res;
+}
+
+
+=item doC
+
+Create a new changeid
+
+	my $cid = $o_do->doC($h_args);
+
+=cut
+
+sub doC {
+	my $self = shift;
+	return "Change-Id creation unsupported at this time";
 }
 
 
@@ -184,19 +516,21 @@ Switches are sent on the subject line, dash may be omitted if only option:
 
 Switches debugging on (1).
 
+	my $level_set = $o_do->dod($level);
+
 =cut
 
-sub dod { # debug
-	my $self = shift;
-	my ($d) = @_;
-	my $ret = '';
-	my $level = (@{$d}[0] =~ /^\d$/) ? @{$d}[0] : 1;
-    if ($level =~ /\d/) {
-		$Perlbug::DEBUG = $level;
-		$self->current({'debug', $level});
-		$ret = "Debug level($level) set";
+sub dod {
+	my $self  = shift;
+	my $level = shift;
+
+	my $res   = $self->current('debug');
+
+    if ($level =~ /^\w+$/o) {
+		$res = $self->set_debug($level);
     }
-	return $ret;
+
+	return $res;
 }
 
 
@@ -204,50 +538,54 @@ sub dod { # debug
 
 Dumps database for backup and recovery.
 
+	my $feedback = $o_do->doD($date);
+
 =cut
 
 sub doD { # Dump Database (for recovery)
-    my $self = shift;
-	my ($input) = @_;
-	my ($since) = (ref($input) eq 'ARRAY') ? @{$input}[0] : ($input);
-    $self->debug(0, "DB dump($since) requested by '".$self->isadmin."'") if $DEBUG;
-    my $i_ok = 1;
-	my $ret = '';
+    my $self  = shift;
+	my $since = shift;
+    my $i_ok  = 1;
+	my $res   = '';
+
+    $self->debug(2, "DB dump($since) requested by '".$self->isadmin."'") if $Perlbug::DEBUG;
+
 	my $adir = $self->directory('arch');
 	my $date = $self->current('date');
 	my $tdir = $self->directory('spool').'/temp';
 	my $pdir = $self->directory('perlbug');
 	my $target = File::Spec->canonpath($tdir.'/'.$self->database('latest'));
-	my $tgt  = ($since =~ /\d+/) ? "from_$since" : $date;
+	my $tgt  = ($since =~ /\d+/o) ? "from_$since" : $date;
 	$target =~ s/^(.+?\.)gz/${1}$tgt\.gz/;
 	my $dage = $self->database('backup_interval');
+
 	if (($since !~ /\d+/) && (-e $target) && (-M _ >= $dage)) {
-		$ret ="Recent($date) non-incremental database dump($target) found less than $dage days old";
+		$res ="Recent($date) non-incremental database dump($target) found less than $dage days old";
 	} else {
 		my $dump = $self->database_dump_command($target, $since);
 		if (!(defined($dump))) {
-			$ret = "Failed to get database dump command($dump)";
+			$res = "Failed to get database dump command($dump)";
 		} else {	
-			$dump =~ s/\s+/ /g;
+			$dump =~ s/\s+/ /go;
 			$i_ok = !system($dump); 		# doit
 			my ($ts) = $self->get_list("SELECT SYSDATE() + 0");
 			if ($since !~ /\d+/) { 			# full blown backup
 				if (!($i_ok == 1 && -f $target)) {
-					$ret = "Looks like database backup failed: $? $!";
+					$res = "Looks like database backup failed: $? $!";
 				} else {
 					my $arch = File::Spec->canonpath($adir."/Perlbug.sql.${date}.gz");
 					my $lach = File::Spec->canonpath($adir.'/'.$self->database('latest'));
 					$i_ok = $self->copy($target, $arch);
-					$ret = "Database backup copy($i_ok)";
+					$res = "Database backup copy($i_ok)";
 					if ($i_ok == 1) {
 						$i_ok = $self->link($arch, $lach, '-f');
-						$ret .= ", database backup link($i_ok)";
+						$res .= ", database backup link($i_ok)";
 					}	
 				}
 			}
 		}
 	}
-	return $ret;
+	return $res;
 }
 
 
@@ -257,16 +595,17 @@ Returns database dump command (mysql/oracle) for given date (or full) and target
 
 else undef 
 
-    my $cmd = $do->database_dump_command($date, $file);
+    my $cmd = $o_do->database_dump_command($date, $file);
 
 =cut
 
 sub database_dump_command { # get database dump command
-	my $self = shift;
-	my ($target, $date) = @_;
-	($target, $date) = (ref($target) eq 'ARRAY') ? @{$target} : ($target, $date);
-	my $cmd = '';
-	my $i_ok = 1;
+	my $self   = shift;
+	my $target = shift;
+	my $date   = shift;
+	my $i_ok   = 1;
+	my $cmd    = '';
+
 	if ($target !~ /^(.+)$/) {
 		$i_ok = 0;
 		$self->error("Invalid target($target) given for database backup");
@@ -278,9 +617,9 @@ sub database_dump_command { # get database dump command
 		my $db   = $self->database('database');
 		my $comp = $self->system('compress');
 		if ($date !~ /^(\d+)$/) {
-			$self->debug(0, "Null or invalid numerical date($date) given, dumping entire db.");
+			$self->error("Null or invalid numerical date($date) given, dumping entire db.");
 		} else {
-			if (!($date =~ /^(\d{8,14})$/)) {
+			if (!($date =~ /^(\d{8,14})$/o)) {
 				$i_ok = 0;
 				$self->error("Invalid date($date) offered, should be of the form(19990127)");
 			} else {	
@@ -292,115 +631,114 @@ sub database_dump_command { # get database dump command
 					$i_ok = 0;
 					$self->error("Out of range date($check) offered, should between min($min) and max($max)'");
 				} else {
-					$self->debug(2, "Accepting date($filter, $check) min($min) and max($max)") if $DEBUG;
+					$self->debug(2, "Accepting date($filter, $check) min($min) and max($max)") if $Perlbug::DEBUG;
 					$args .= " -w'ts>=$filter'";
 				}
 			}
 		}
-		$cmd = "$bakup $args -u$user -p$pass $db | $comp > $target" if $i_ok == 1;
+		$cmd = "$bakup $args -u$user -p$pass $db | $comp > $target" if $i_ok == 1; # ek
 	} 
 	return $cmd;
 }
 
 
-=item dom
+=item doe
 
-Return the given message(id), places the L<Perlbug/format>ed result in to the
-results array.
+Add email address to any cc's 'Cc:' to "-e me.too@some.where.org"
 
-    my $res = $do->dom([@messageids]);
+	my $i_set = $o_do->doe($cc_addrs);
 
 =cut
 
-sub dom { # retrieve message by id
-	my $self = shift;
-	my $input = shift;
-	my $fmt  = shift || $self->current('format');
-	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	my @res = ();
-	my $o_msg = $self->object('message');
-	my $i_ok = 0;
-	foreach my $i (@args) {
-	    next unless $i =~ /^\d+$/;
-	    $self->debug(3, "message id=$i") if $DEBUG;
-		my $str = $o_msg->read($i)->format($fmt);
-		push(@res, $str);
-	} 
-	return @res;
+sub doe {
+    my $self  = shift;
+	my $a_args= shift;
+	my $addrs = @{$a_args};
+
+	my @ccs = $self->parse_addrs($addrs);
+	my $ccs = join(', ', @ccs);
+
+	$self->current({'cc' => $ccs});
+
+	my $res = "Cc($addrs) set to ($ccs)";
+
+    $self->debug(2, $res) if $Perlbug::DEBUG;
+
+	return $res;
 }
 
 
-=item doM
+=item doE
 
-Create new message
+Send an email notify() about th(is|ese) bugid/s, as if the email was newly recieved.
 
-    my $new_mid = $do->doM($bugid, 'message', 'etc');
+	my $i_ok = $o_obj->doE(\@bugids); 
 
 =cut
 
-sub doM { # create new message
+sub doE {
+	my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my $i_res = 0;
+
+	foreach my $bugid (@ids) {
+		$i_res += $self->notify('bug', $bugid);
+	}
+
+	return $i_res;
+}
+
+
+=item dof
+
+Sets the appropriate format for use by L<Formatter> methods, overrides default 'a' set earlier.
+
+	my $feedback = $o_obj->dof('h'); 
+
+=cut
+
+sub dof {
 	my $self = shift;
-	my $xstr  	= shift;
-	my $xmsg 	= shift || '';
-	my $xhdr 	= shift || '';
-	my $xsubj 	= shift || '';
-	my $xfrom 	= shift || '';
-	my $xto 	= shift || '';
-	my ($str, $msg, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xmsg, $xhdr, $xsubj, $xfrom, $xto) : ($xstr, $xmsg, $xhdr, $xsubj, $xfrom, $xto);
-	my $mid  = 0;
-	my @res = ();
-	my %cmds = $self->parse_str($str);
+	my $fmt  = shift;
 
-	if ($msg !~ /\w+/) {
-		$self->error("requires a valid message($msg) to insert");
-	} else {
-		my $o_msg = $self->object('message');
-		$o_msg->create({
-			'messageid'	=> $o_msg->new_id,
-			'subject'	=> $subj, 
-			'sourceaddr'=> $frm, 
-			'toaddr'	=> $to, 
-			'header'	=> $hdr, 
-			'body'		=> $msg,
-			'email_msgid'	=> '',
-		});
-		if ($o_msg->CREATED) {
-			$mid = $o_msg->insertid;
-			if ($mid !~ /\w+/) {
-				$self->debug(0, "failed to retrieve messageid($msg)") if $DEBUG;
-			} else {
-				if (ref($cmds{'bugids'}) eq 'ARRAY') {
-					$o_msg->relation('bug')->assign($cmds{'bugids'});
-				}
-			}
-		}
-	}		
+	my $cur  = $self->current('format');
+	my $res  = '';
 
-	return $mid;
+	if ($fmt =~ /^[ahilx]$/io) {
+		my $new = $self->current({'format' => $fmt});
+		$res .= "current format($cur), new format($new) set";
+	}
+
+	return $res;
 }
 
 
 =item dog
 
-Return the given group(id), places the L<Perlbug/format>ed result in to the
-results array.
+Return the formatted group by id/s
 
-    my @res = $do->dog([@groupids]);
+    my @res = $o_do->dog(\@groupids);
 
 =cut
 
-sub dog { # get group by name 
-	my $self = shift;
-	my $input = shift;
-	my $fmt  = shift || $self->current('format');
-	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	my $o_grp = $self->object('group');
-	my @res = ();
-	foreach my $i (@args) {
-	    next unless $i =~ /^\w+$/;
-		my $str = $o_grp->read($i)->format($fmt);
+sub dog {
+	my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+	my $fmt   = $self->current('format');
+	my $o_obj = $self->object('group');
+
+	foreach my $i (@ids) {
+	    next unless $i =~ /^\d+$/o;
+		my $str = $o_obj->read($i)->format($fmt);
 		push(@res, $str);
 	} 
+
+	$self->debug(2, "group ids(@ids)") if $Perlbug::DEBUG;
+
 	return @res;
 }
 
@@ -409,523 +747,314 @@ sub dog { # get group by name
 
 Create new group 
 
-    my $new_gid = $do->doG($bugid, 'message', 'etc');
+    my $new_gid = $o_do->doG($h_args);
 
 =cut
 
-sub doG { # create new group 
-	my $self = shift;
-	my $xstr  	= shift;
-	my $xgrp 	= shift || '';
-	my $xdes 	= shift || '';
-	my ($str, $grp, $des) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xgrp, $xdes) : ($xstr, $xgrp, $xdes);
-	my $gid  = 0;
-	my %cmds = $self->parse_str($str);
+sub doG {
+	my $self   = shift;
+	my $h_args = shift;
+	my %args   = %{$h_args};
+	my $target = 'group';
+	my $id     = 0;
 
-	if ($grp !~ /^\w+$/) {
-		$self->error("requires a valid alphanumeric group($grp) to insert");
+	if (!($args{'name'} =~ /^\w+$/o && $args{'description'} =~ /\w+/o)) {
+		$self->error("requires a valid alphanumeric name($args{'name'}) and a $target($args{'description'}) to insert");
 	} else {
-		my $o_grp = $self->object('bug');
-		$o_grp->create({
-			'groupid'	=> $o_grp->new_id,
-			'name'			=> $xgrp, 
-			'description' 	=> $xdes, 
+		my $o_obj = $self->object($target);
+		$o_obj->create({
+			$target.'id'	=> $o_obj->new_id,
+			'name'			=> 'no-name-given', 
+			'description' 	=> 'no-description-given',
+			%args
 		});
-		if ($o_grp->CREATED) {
-			$gid = $o_grp->insertid;
-			if ($gid !~ /\w+/) {
-				$self->debug(0, "failed to retrieve groupid($xgrp)") if $DEBUG;
-				if (ref($cmds{'bugids'}) eq 'ARRAY') {
-					$o_grp->relation('bug')->assign($cmds{'bugids'});
-				}
-			}
+		if (!($o_obj->CREATED)) {
+			$self->error("failed to create $target: ".Dumper($h_args)); 
+		} else {
+			$id = $o_obj->oid;
+			my %cmds  = $self->parse_str($args{'opts'});
+			my $i_rel = $o_obj->relate(\%cmds);
+			# $self->notify($target, $id); - no header :-)
 		}
 	}		
 
-	return $gid;
+	return $id;
 }
 
 
-=item dop
+=item doh
 
-Return the given patch(id), places the L<Perlbug/format>ed result in to the
-results array.
+Returns help message built from a hash_ref
 
-    my @res = $do->dop([@patchids]);
+Syntax for the hash is 'key => description (sample args)': 
 
-=cut
+	print $o_obj->doh({ 
+		'e' => 'email me a copy too (email@address.com)', 	
+		# add 'H' => 'Help - more detailed info ()',			
+		# replace 'z' => '', 						
+	}); 
+	
+=cut 
 
-sub dop { # get patch by id
+sub doh { 
+	my $self = shift; 
+	my $args = shift; 
+	my @args = (ref($args) eq 'HASH') ? %{$args} : (); 
+
+	my $data = qq| 
+Switches are sent on the subject line, dash may be omitted if only option: 
+-------------------------------------------------------------------------------- 
+|; 
+	# A = Admin 
+	# B = Bugmaster 
+	# C = Cc list (or master list or admin) 
+	# 
+	# should migrate: 
+	# a = admin retrieval (CREATE_table pb_admin, admin_id, admin_name, ...) 
+	# A = create admin entry 
+	# 
+	# i = index retrieval by group, status, severity, osname 
+	# 
+	# u = update status of bugs 
+	# U = update and return bugs 
+	#
+	# appending an 'r' to any search criteria will return relations 
+	# appending an 'R' to any search criteria will return fully expanded relations 
+	# -br 19870502.007
+	# 
+	#   cmd    explanation                                args                              # ?		
+	my %data = ( 
+		'a' => 'administration command - cmds bugids      (close b 19990606.002 [...])',	# A 
+		'A' => 'Administration command and return bugs    (c build 19990606.002 [...])', 	# A 
+		'b' => 'bug retrieval by bugid                    (19990606.002 [...])', 
+		'B' => 'INSERT a new bug                          (opts(build) new bug entry here)',# A 
+		'c' => 'change id retrieval, patches, bugs.       (12 777 c8123 c55)', 					
+		'C' => 'INSERT a Change against a bugid           (opts(19990606.002) changeid)',	# A 
+		'd' => 'debug flag data goes in logfile           ()', 								# A 
+		'D' => 'Dump database for backup                  ()',    							# A 
+		'e' => 'email me too, if any emails sent          (email.me@as.well.com)',
+		#cmd?email 'E' => 'Email a notification as if never recieved (19990606.002)',					# A 
+		'f' => 'format of data ascii|html|lean            ([aA|hH|l])', 
+		'g' => 'group info retrieval                      (patch|install|docs|...])', 
+		'G' => 'new group                                 (another_group_name)', 			# A 
+		'h' => 'help - this message                       ()', 
+		'H' => 'more detailed help                        ()', 
+		'i' => 'index retrieval criteria                  (open high aix)', 
+		'I' => 'Index retrieval criteria more detail      (open high aix)', 
+		'j' => 'just test for a response                  ()', 
+		'k' => 'claim a bug with optional email addr      (19990606.002 me@here.net [...])',# C 
+		'K' => 'unClaim this bug - remove from cc         (19990606.002 me@here.net [...])',# C 
+		'l' => 'log of current process                    ()', 								# A 
+		'L' => 'Logfile - todays complete retrieval       ()', 								# A 
+		'm' => 'retrieval by messageid                    (13 47 23 [...])', 
+		'M' => 'INSERT a Message against a bugid          (opts(19990606.002) some_message)',# A 
+		'n' => 'note retrieval                            (76 33 1  [...])', 
+		'N' => 'INSERT a Note against a bugid             (opts(19990606.002) some_note)',	# A 
+		'o' => 'overview of bugs in db                    ()', 
+		'O' => 'Overview of bugs in db - more detail      ()', 
+		'p' => 'patch retrieval                           (patchid)', # change 
+		'P' => 'INSERT a Patch against a bugid            (opts(19990606.002) some_patch)',	# A 
+		'q' => 'query the db directly                     (select * from db_type where 1 = 0)', 
+		'Q' => 'Query the schema for the db               ()', 
+		'r' => 'retrieve bug body search                  (d_sigaction=define)', 
+		'R' => 'Retrieve bug body search more detail      (d_sigaction=define)', 
+		's' => 'subject search by literal                 (bug in docs)', 
+		'S' => 'Subject search more detail                (bug in docs)', 
+		't' => 'test retrieval by testid                  (77 [...])', 
+		'T' => 'INSERT a Test against a bugid|patch       (opts(19990606.002) test data)',	# A 
+		'u' => 'user retrieval by userid                  (richardf [...])', 				# A 
+		'U' => 'INSERT a User as administrator            (userid passwd name address match)', # B 
+		'v' => 'volunteer info, forward to admins etc.    (19990606.002 close)', 
+		'V' => 'Volunteer as admin',  # 
+		'w'	=> 'where group ...', 
+		'x' => 'xterminate bug - remove bug               (19990606.002 [...])', 			# A 
+		'X' => 'Xterminate bug - and messages             (19990606.002 [...])', 			# A 
+		# y -> U 'y' => 'yet another password                      ()', 								# 
+		'z' => 'get current configuration data            (debug)',							# A 
+		'Z' => 'Zet current configuration data            (debug 1)',						# B 
+		@args
+	); 
+	SWITCH: 
+	foreach my $key (sort { lc($a) cmp lc($b) } keys %data) { 
+		next SWITCH unless grep(/^$key$/, $self->get_switches); 
+		# next SWITCH unless $key =~ /^\w$/; 
+		if ($data{$key} =~ /^\s*([^(]+)\((.*)\)\s*$/o) { 
+			my ($desc, $args) = ($1, $2); 
+			$desc =~ s/\s+/ /go;
+			$args =~ s/\s+/ /go;
+			my $combo = length($desc) + length($args); 
+			my $x = ($combo >= 1 && $combo <= 70) ? 71 - $combo : 1; 
+		
+			# allow 9 for wrapping (may run over) 
+			my $spaces = ' ' x $x; 
+		
+			$data .= "$key = $desc".$spaces."(-$key $args)"."\n"; 	 # 80?  
+		} 
+	} # 
+	
+	$self->debug(3, 'help retrieved '.length($data)) if $Perlbug::DEBUG;    
+
+	return $data; 
+}
+
+
+=item doi
+
+Retrieve by index (group, status, etc.)
+
+	my @res = $o_do->doi($str); 
+
+=cut 
+	
+sub doi {
 	my $self = shift;
-	my ($input) = shift;
-	my $fmt  = shift || $self->current('format');
-	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	my $o_pat = $self->object('patch');
-	my @res = ();
-	foreach my $i (@args) {
-	    next unless $i =~ /^\d+$/;
-		my $str = $o_pat->read($i)->format($fmt);
-		push(@res, $str);
-	} 
+	my $cmds = shift;
+
+	my %cmds = $self->parse_str($cmds);
+	my @res  = ();
+
+	# @res = "Currently unsupported"; # rjsf - urgent!
+
+	INDEX:
+	foreach my $in (keys %cmds) {
+		next INDEX unless $in =~ /\w+/o;
+		my $a_tgt = $cmds{$in};
+		next INDEX unless ref($a_tgt) eq 'ARRAY' && scalar(@{$a_tgt}) >= 1;
+		if ($in !~ /^([a-z]+)(id|name)s/) {
+			$self->debug(2, "didn't recognise in($in)!") if $Perlbug::DEBUG;
+		} else {
+			my ($rel, $type) = ($1, $2);
+			my $o_rel = $self->object($rel);
+			my @ids = ($type eq 'name') ? $o_rel->name2ids($a_tgt) : @{$a_tgt};
+			my @bugids = map { $o_rel->read($_)->rel('bug')->ids } @ids;
+			push(@res, @bugids); 
+		}			
+	}
+
 	return @res;
 }
 
 
-=item doP
+=item doI
 
-Assign to given bugid, given patch, return i_ok
+Wrapper for L<doi()>, in large format
 
-	$res = $o_obj->doP('tid_chid_versid', 'patch...here', 'hdr', 'sbj', 'frm', 'to);
+	my @res = $o_do->doI('open');
 
 =cut
 
-sub doP {
-	my $self  = shift;
-	my $xstr  	= shift;
-	my $xpatch 	= shift || '';
-	my $xhdr 	= shift || 'no header supplied';
-	my $xsubj 	= shift || 'no subject supplied';
-	my $xfrom 	= shift || 'no_from_line';
-	my $xto 	= shift || 'no_to_line';
-	my ($str, $patch, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xpatch, $xhdr, $xsubj, $xfrom, $xto) : ($xstr, $xpatch, $xhdr, $xsubj, $xfrom, $xto);
-	my $res = '';
-	my %cmds = $self->parse_str($str);
+sub doI {
+	my $self = shift;
+	my $srch = shift;
 
-	if ($patch !~ /\w+/) {
-		$self->error("requires a valid patch($patch) to insert");
-	} else {
-		my $o_pat = $self->object('patch');
-		$o_pat->create({
-			'patchid'	=> $o_pat->new_id,
-			'subject'	=> $subj, 
-			'sourceaddr'=> $frm, 
-			'toaddr'	=> $to, 
-			'header'	=> $hdr, 
-			'body'		=> $patch,
-			'email_msgid'	=> '',
-		});	
-		if ($o_pat->CREATED) {
-			my $patchid = $o_pat->insertid;
-			if (ref($cmds{'bugids'}) eq 'ARRAY') {
-				$o_pat->relation('bug')->assign($cmds{'bugids'});
-			}
-			if (ref($cmds{'change'}) eq 'ARRAY') {
-				$o_pat->relation('change')->assign($cmds{'change'});
-			}
-			if (ref($cmds{'version'}) eq 'ARRAY') {
-				$o_pat->relation('version')->assign($cmds{'version'});
-			}
-		}
-	}
+	my $orig = $self->current('format');
+	$self->current('format', uc($orig));
+
+	my @res  = $self->doi($srch);
+
+	$self->current('format', $orig);
+
+	return @res;
+}
+
+
+=item doj 
+
+Just test for a response - produces "$title $version => ok"
+
+	my @res = $o_do->doj(@args); 
+
+=cut 
+	
+sub doj {
+	my $self = shift;
+
+	my $res  = join(' ', $self->system('title'), $self->version, '=>', 'ok');
 
 	return $res;
 }
 
 
-=item dot
+=item dok
 
-Return the given test(id), places the L<Perlbug/format>ed result in to the
-results array.
+Klaim the bug(id) given
 
-    my @res = $do->dot([@testids]);
-
-=cut
-
-sub dot { # get test by id
-	my $self = shift;
-	my ($input) = shift;
-	my $fmt  = shift || $self->current('format');
-	my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	my $o_test = $self->object('test');
-	my @res = ();
-	foreach my $i (@args) {
-	    next unless $i =~ /^\d+$/;
-		my $str = $o_test->read($i)->format($fmt);
-		push(@res, $str);
-	} 
-	return @res;
-}
-
-
-=item doT
-
-Assign to given bugid, given test, return i_ok
-
-	$new_tid = $o_obj->doT('tid_chid_versid', 'test...here', 'hdr', 'sbj', 'frm', 'to);
+	my $feedback = $o_do->dok(\@bids);
 
 =cut
 
-sub doT {
-	my $self  = shift;
-	my $xstr  = shift;
-	my $xtest = shift;
-	my $xhdr 	= shift || 'no header supplied';
-	my $xsubj 	= shift || 'no subject supplied';
-	my $xfrom 	= shift || 'no_from_line';
-	my $xto 	= shift || 'no_to_line';
-	my ($str, $test, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xtest, $xhdr, $xsubj, $xfrom, $xto) : ($xstr, $xtest, $xhdr, $xsubj, $xfrom, $xto);
-	my %cmds = $self->parse_str($str);
-	my $res = '';
-
-	if ($test !~ /\w+/) {
-		$res = "requires a valid test($test) to insert";
-	} else {
-		my $o_tst= $self->object('test');
-		$o_tst->create({
-			'testid'	=> $o_tst->new_id,
-			'subject'	=> $subj, 
-			'sourceaddr'=> $frm, 
-			'toaddr'	=> $to, 
-			'header'	=> $hdr, 
-			'body'		=> $test,
-			'email_msgid'	=> '',
-		});	
-		if ($o_tst->CREATED) {
-			$res = $o_tst->insertid;
-			if (ref($cmds{'bugids'}) eq 'ARRAY') {
-				$o_tst->relation('bug')->assign($cmds{'bugids'});
-			}
-		}
-	}
-
-	return $res;
-}
-
-
-=item dob
-
-Return the given bug(id), places the L<Perlbug/format>ed result in to the 
-result array.
-
-    my @res = $do->dob([@bugids]);
-    
-=cut
-
-sub dob { # get bug by id 
-	my $self = shift;
-	my $t    = shift; 
-	my $fmt  = shift || $self->current('format');
-	my @bids = (ref($t) eq 'ARRAY') ? @{$t} : ($t);
-	my $o_bug = $self->object('bug');
-	my $fnd = 0;
-	my @res = ();
-	foreach my $i (@bids) {
-		my $str = $o_bug->read($i)->format($fmt);
-		push(@res, $str);
-	}
-	return @res;
-}
-
-
-=item doB
-
-Return the given bug(id), with all the messages assigned to it, calls dob()
-
-    my @res = $do->doB(\@bugids);
-
-=cut
-
-sub doB { # get bug by id (large format)
-    my $self 	= shift;
-    my $input 	= shift;
-    my $sep 	= shift;
-    my @args = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	my $o_bug = $self->object('bug');
-	my @res = ();
-    foreach my $bid (@args) {
-		push(@res, $o_bug->read($bid)->format());
-		
-		my @mids = $o_bug->rel_ids('message');
-		my ($mid) = sort { $a <=> $b } @mids;
-        push(@res, $self->dom(\@mids));
-		
-        my @pids = $o_bug->rel_ids('patch');
-        push(@res, $self->dop(\@pids));
-		
-        my @tids = $o_bug->rel_ids('test');
-        push(@res, $self->dot(\@tids));
-		
-        my @nids = $o_bug->rel_ids('note');
-        push(@res, $self->don(\@nids));
-    }
-
-    return @res;
-}
-
-
-=item dou
-
-Get the given user, checks if active
-    
-    my @res = $o_do->dou($userid);
-
-=cut
-
-sub dou { # get user by id
-    my $self = shift;
-    my $args = shift;
-	my $fmt  = shift || $self->current('format');
-    my @uids = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-	my $o_user = $self->object('user');
-    my $fnd = 0;
-	my @res = ();
-    foreach my $uid (@uids) {
-        next unless $uid =~ /^\w+$/;
-		my $str = $o_user->read($uid)->format($fmt);
-		push(@res, $str);
-    }
-    return @res;
-}
-
-
-
-=item dos
-
-Retrieve bugs based on the subject line of a bug
-
-    my @res = $do->dos('build failure');
-
-=cut
-
-sub dos { # subject -b
-	my $self   = shift;
-	my $input  = shift;
-	my $borB   = shift || '';
-	my ($crit) = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-	my @bids = $self->object('bug')->ids("subject LIKE '%$crit%'");
-	my @res = ();
-	if (defined($borB) && $borB eq 'B') {
-	    @res = $self->doB(\@bids);
-	} else {
-    	@res = $self->dob(\@bids);
-	}
-	return @res;
-}
-
-
-=item doS
-
-Wrapper for L<dos()> in 'large format'
-
-	my @RES = $do->doS('some subject');	
-
-=cut
-
-sub doS {
-	my $self  = shift;
-	my $args = shift;
-	my @res = $self->dos($args, 'B');
-	return @res;
-}
-
-
-=item dor
-
-Retrieve data based on contents of the Body of a message
-
-    my @res = $do->dor('open build');
-
-=cut
-
-sub dor { # retrieve in body 
-	my $self   = shift;
-	my $input  = shift;
-	my $borB   = shift  || '';
-	my ($crit) = (ref($input) eq 'ARRAY') ? join(' ', @{$input}) : $input;
-	my $o_msg = $self->object('message');
-	my @mids = $o_msg->ids("body LIKE '%$crit%'");
-	my @res = ();
-	if (scalar(@mids) >= 1) {
-		my $mids = join("', '", @mids);
-		my @bids = $o_msg->relation('bug')->ids("messageid IN ('$mids')"); 
-		push(@res, $self->dob(\@bids, $borB));
-	}
-	return @res;
-}
-
-=item doR
-
-Wrapper for L<dor()>, in large format
-
-	my @res = $do->doR('open');
-
-=cut
-
-sub doR {
-	my $self  = shift;
-	my @res = $self->dor($_[0], 'B');
-	return @res;
-}
-
-
-=item don
-
-Get the note for this noteid
-
-	my @res = $do->don(\@nids);
-
-=cut
-
-sub don {
-	my $self = shift;
-	my $input = shift;
-	my $fmt  = shift || $self->current('format');
-	my @nids = (ref($input) eq 'ARRAY') ? @{$input} : ($input);
-	my $o_note = $self->object('note');
-	my $fnd = 0;
-	my @res = ();
-	foreach my $nid (@nids) {
-        next unless $nid =~ /^\d+$/;
-		my $str = $o_note->read($nid)->format($fmt);
-		push(@res, $str);
-    }
-	return @res;
-}
-
-
-=item doN
-
-Creates new note (assigns to given bugid).
-
-	my $nid = $self->doN($str, $body, $header, $subject, $from, $to);
-
-=cut
-
-sub doN {
-	my $self  = shift;
-	my $xstr  = shift;
-	my $xnote = shift;
-	my $xhdr 	= shift || 'no header supplied';
-	my $xsubj 	= shift || 'no subject supplied';
-	my $xfrom 	= shift || 'no_from_line';
-	my $xto 	= shift || 'no_to_line';
-	my ($str, $note, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xnote, $xhdr, $xsubj, $xfrom, $xto) : ($xstr, $xnote, $xhdr, $xsubj, $xfrom, $xto);
-	my %cmds  = $self->parse_str($str);
+sub dok {
+    my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
 	my $res   = '';
 
-		if ($note!~ /\w+/) {
-			$res = "requires a valid note($note) to insert";
-		} else {
-			my $o_note = $self->object('note');
-			$o_note->create({
-				'noteid'	=> $o_note->new_id,
-				'subject'	=> $subj, 
-				'sourceaddr'=> $frm, 
-				'toaddr'	=> $to, 
-				'header'	=> $hdr, 
-				'body'		=> $note,
-				'email_msgid'	=> '',
-			});	
-			if ($o_note->CREATED) {
-				$res = $o_note->insertid;
-				if (ref($cmds{'bugids'}) eq 'ARRAY') {
-					$o_note->relation('bug')->assign($cmds{'bugids'});
-				}
-			}
-		}
+    my $admin = $self->isadmin;
+	if (scalar(@ids) >= 1 && $admin =~ /\w+/o && $admin ne 'generic') {
+		$self->object('user')->read($admin)->relation('bug')->assign(\@ids);
+		$res = "Claimed(@ids)";
+	}
 
 	return $res;
 }
 
 
-=item doc
+=item doK
 
-Get the patches, or bugs for this changeid 
+UnKlaim the bug(id) given
 
-	my @res = $do->doc(\@cids);	
+	my $feedback = $o_do->doK(\@bids);
 
 =cut
 
-sub doc {
-	my $self = shift;
-	my $input = shift;
-	my @cids = (ref($input) eq 'ARRAY') ? @{$input} : ($input);
-	my @res = ();
-	foreach my $cid (@cids) {
-        next unless $cid =~ /^\d+$/;
-		my $o_chg = $self->object('change')->read($cid);
-		my @pids = $o_chg->relation('patch')->ids($o_chg);
-		$self->debug(2, "found pids(@pids) related to changeid($cid)") if $DEBUG;
-		if (scalar(@pids) >= 1) {
-			@res = $self->dop(\@pids);
-        } else {
-			print "No patches found with changeid($cid), trying with bugs...<br>\n"; 
-			my @bids = $o_chg->relation('bug')->ids($o_chg);
-			$self->debug(2, "found bids(@bids) related to changeid($cid)") if $DEBUG;
-			if (scalar(@bids) >= 1) {
-				@res = $self->dob(\@bids);
-			}	
-		}
+sub doK {
+    my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+    foreach my $i (@ids) {
+        next unless $self->ok_ids([$i]);
+        my @res = $self->bug_unclaim($i, $self->isadmin);
+		push(@res, "Claimed($i)");
+        $self->debug(2, "unclaimed ($i)") if $Perlbug::DEBUG;
     }
-	$self->debug(2, "found ".@res." related items to cids(@cids)") if $DEBUG;
+
 	return @res;
 }
 
 
-=item doq
 
-Gets the sql _q_ query statement given in the body of the message, executes it, and
-returns the result in the result array.
+=item dol
 
-=cut
+Just the stored log results from this process.
 
-sub doq { # sql
-    my $self = shift;
-    my ($input) = @_;
-	my $i_ok = 0;
-    my ($sql) = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-    $sql =~ tr/\n\t\r/ /; 
-    $sql =~ s/^(.+)?[\;\s]*$/$1/;
-    my ($errs, $res) = (0, '');
-    if (($self->isadmin eq $self->system('bugmaster'))){# && ($sql !~ /delete|drop/i)){
-        # let it through for testing purposes
-    } else {
-        # could be a little paranoid, but...
-	 	if ($sql =~ /\b(alter|create|delete|drop|file|grant|insert|rename|shutdown|update)\b/si) {
-	 		$res = "You may not execute this sql($1) from this interface<br>\n";
-			$errs++;
-		}
-		if ($sql !~ /^\b(desc|select|show)\b/si)  { 
-			$res = "You may only execute DESC|SELECT|SHOW statements from this interface - invalid sql($sql)<br>\n";
-			$errs++;
-		}
-    }
-	if ($errs == 0) {   
-		my $sth = $self->db->query($sql);
-		if (defined($sth)) {
-			$i_ok++;
-			# my $maxlen  = $self->database('maxlen') || 1500;
-			# my $lsep	= "\n";
-			# my $fsep	= ",\t";
-			# my $fh 		= $self->fh('res');
-			# my $rows = $sth->dump_results($maxlen, $lsep, $fsep, $fh);
-			$res = $sth->as_string; # better? => Oracle?
-		} else {
-			$res = "No results($DBI::errstr) from '$sql'";
-		}
-	}
-	return $res;
-}
-
-
-=item doQ
-
-Returns the database schema, for use with SQL statements.
-
-	my @tables_data = $do->doQ;
+	my $process_log = $o_do->dol($max_lines_from_end);
 
 =cut
 
-sub doQ { # Schema
+sub dol {
     my $self = shift;
-	my @tables = $self->get_list("SHOW tables FROM ".$self->database('database'));
-	my $res = ();
-	foreach my $t (@tables) {
-	    next unless $t =~ /^\w+/;
-	    my $sql = "SHOW fields FROM $t";
-    	$res .= "$t: \n".$self->doq($sql);
+	my $max  = shift;
+	my $log  = '';
+
+	my @data = $self->log->read;
+
+	my ($switch, $cnt) = (0, 0);
+
+	foreach my $line (@data) {
+		chomp($line);
+		if ($line =~ /^\[0\]\s+INIT\s+\($$\)\s/i) {
+			$switch++;
+		} 
+		if ($switch >= 1) {         # record from here to end
+			$log .= "$line\n";
+			$cnt++;
+		}
 	}
-	return $res;
+	$self->debug(2, "Retrieved $cnt lines from log") if $Perlbug::DEBUG;
+
+	return $log;
 }
 
 
@@ -933,17 +1062,18 @@ sub doQ { # Schema
 
 Returns the current (or given later) logfile.
 
-	my $LOG = $do->doL;
-	
+	my $LOG = $o_do->doL($date);
+
 =cut
 
-sub doL { # Log (all)
+sub doL {
 	my $self = shift;
-	my ($input) = @_;
-    my ($given) = (ref($input) eq 'ARRAY') ? @{$input} : $input;
-    ($given == 1) && ($given = 'today');
+	my $date = shift;
+	my $LOG  = '';
+
+	$date = 'today' if $date == 1;
 	my $fh = $self->fh('log'); # , db_log_\d{8}
-	my $LOG = '';
+
 	if (!(defined $fh)) {
         $self->error("Can't read LOG from undefined fh ($fh)");
 	} else {
@@ -953,59 +1083,176 @@ sub doL { # Log (all)
 	    }
 	    $fh->seek(0, 2);   
 	    my $length = length($LOG);
-	    $self->debug(2, "log ($fh) length ($length) read") if $DEBUG;
+	    $self->debug(2, "log ($fh) length ($length) read") if $Perlbug::DEBUG;
     } 
+
 	return $LOG;
 }
 
 
-=item dol
+=item dom
 
-Just the stored log results from this process.
+Return the formatted message by id/s
 
-	my $process_log = $do->dol;
+    my @data = $o_do->dom(\@messageids);
 
 =cut
 
-sub dol { # log (this process)
-    my $self  = shift;
-	my $o_log = $self->log;
-	my ($line, $switch, $log, $cnt) = ('', 0, '', 0);
-	my @data = $o_log->read;
+sub dom {
+	my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
 
-		foreach my $line (@data) {
-			chomp($line);
-    		if ($line =~ /^\[0\]\s+INIT\s+\($$\)\s/i) {
-				# $self->debug(0, "INIT ($$) debug($Perlbug::DEBUG) scr($0)"); # if $DEBUG
-				$switch++;
-				# print "MATCHED -> '$line'\n\n";
-    	    } 
-    	    if ($switch >= 1) {         # record from here to end
-    	        $log .= "$line\n";
-    	        $cnt++;
-    	    }
-    	}
-    	$self->debug(2, "Retrieved $cnt lines from log") if $DEBUG;
+	my $fmt   = $self->current('format');
+	my $o_obj = $self->object('message');
 
-	return $log;
+	foreach my $i (@ids) {
+	    next unless $i =~ /^\d+$/o;
+		my $str = $o_obj->read($i)->format($fmt);
+		push(@res, $str);
+	} 
+
+	$self->debug(2, "message ids(@ids)") if $Perlbug::DEBUG;
+
+	return @res;
 }
 
 
-=item dof
+=item doM
 
-Sets the appropriate format for use by L<Formatter> methods, overrides default 'a' set earlier.
+Create new message
 
-	my @res = $o_obj->dof('h'); 
+    my $new_mid = $o_do->doM($h_args);
 
 =cut
 
-sub dof { # format setting
-	my $self = shift;
-	my ($fmt) = @_;
-	my $format = (ref ($fmt) eq 'ARRAY') ? @{$fmt}[0] : $fmt;
-	my $ok = ($format =~ /^[aAhHiIlLxX]$/) ? $format : 'a'; # supported formats
-	my $ret = $self->current({'format' => $ok});
-	my $res = "Format($format) -> ok($ok) -> ($ret) set";
+sub doM {
+	my $self   = shift;
+	my $h_args = shift;
+	my %args   = %{$h_args};
+	my $target = 'message';
+	my $id     = '';
+
+	if ($args{'body'} !~ /\w+/) {
+		$self->error("requires a $target($args{'body'})!");
+	} else {
+		my $o_obj = $self->object($target);
+		$o_obj->create({
+			$target.'id'	=> $o_obj->new_id,
+			'subject'		=> 'no-subject-given', 
+			'sourceaddr'	=> 'no-sourceaddr-given', 
+			'toaddr'		=> 'no-toaddr-given', 
+			'header'		=> 'no-header-given', 
+			'body'			=> 'no-body-given',
+			'email_msgid'	=> 'no-msgid-given',
+			%args,
+		});	
+		if (!($o_obj->CREATED)) {
+			$self->error("Failed to create $target: ".Dumper($h_args));
+		} else {
+			$id = $o_obj->oid; 
+			my %cmds = $self->parse_str($args{'opts'});
+			my $i_rel = $o_obj->relate(\%cmds);
+			# $self->notify($target, $id); - track only
+		}
+	}
+
+	return $id;
+}
+
+
+=item don
+
+Return the formatted user by id/s
+
+	my @res = $o_do->don(\@nids);
+
+=cut
+
+sub don {
+	my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+	my $fmt   = $self->current('format');
+	my $o_obj = $self->object('note');
+
+	foreach my $i (@ids) {
+	    next unless $i =~ /^\d+$/o;
+		my $str = $o_obj->read($i)->format($fmt);
+		push(@res, $str);
+	} 
+
+	$self->debug(2, "note ids(@ids)") if $Perlbug::DEBUG;
+
+	return @res;
+}
+
+
+=item doN
+
+Creates new note (assigns to given bugid).
+
+	my $nid = $self->doN($h_args);
+
+=cut
+
+sub doN {
+	my $self   = shift;
+	my $h_args = shift;
+	my %args   = %{$h_args};
+	my $target = 'note';
+	my $id     = '';
+
+	if ($args{'body'} !~ /\w+/) {
+		$self->error("requires a valid $target($args{'body'}) to insert");
+	} else {
+		my $o_obj = $self->object($target);
+		$o_obj->create({
+			$target.'id'	=> $o_obj->new_id,
+			'subject'		=> 'no-subject-given', 
+			'sourceaddr'	=> 'no-sourceaddr-given', 
+			'toaddr'		=> 'no-toaddr-given', 
+			'header'		=> 'no-header-given', 
+			'body'			=> 'no-body-given',
+			'email_msgid'	=> 'no-msgid-given',
+			%args,
+		});	
+		if (!($o_obj->CREATED)) {
+			$self->error("failed to create $target: ".Dumper($h_args));
+		} else {
+			$id = $o_obj->oid;
+			my %cmds = $self->parse_str($args{'opts'});
+			my $i_rel = $o_obj->relate(\%cmds);
+			# $self->notify($target, $id);
+		}
+	}
+
+	return $id;
+}
+
+
+=item doo
+
+Returns a summary overview of the bugs, bugs, messages etc. in the database.
+
+	my @over = $o_do->doo();
+
+=cut
+
+sub doo {
+    my $self = shift;	
+	my $over = shift;
+ 	my $fmt  = $self->current('format');
+
+    my $h_over = $self->stats();
+	$self->debug(1, "overview stat'd, formatting...") if $Perlbug::DEBUG;
+
+    my $res = $self->format_overview($h_over, $fmt);
+	$self->debug(1, "overview formatted...") if $Perlbug::DEBUG;
+
 	return $res;
 }
 
@@ -1020,6 +1267,7 @@ Get stats from db for overview usage.
 
 sub stats {
     my $self = shift;
+
     my %over = (); 
 	my $o_bug = $self->object('bug');
 	my $o_usr = $self->object('user');
@@ -1062,12 +1310,12 @@ sub stats {
 	my %flags = $self->all_flags;
 	FLAG:
 	foreach my $flag (keys %flags) { # group os sev stat user version
-		$self->debug(1, "Overview flag: '$flag'") if $DEBUG;
+		$self->debug(1, "Overview flag: '$flag'") if $Perlbug::DEBUG;
 		my @types = @{$flags{$flag}};
 		my $o_flag = $self->object($flag); # 
 		TYPE:
 		foreach my $type (@types) {  # inst core docs | open clos busy | etc:
-			$self->debug(2, "Overview flag type: '$type'") if $DEBUG;
+			$self->debug(2, "Overview flag type: '$type'") if $Perlbug::DEBUG;
 			my ($fid) = $o_flag->name2id([$type]);
 			my $i_cnt = my @bids = $o_flag->read($fid)->rel_ids('bug');
 			$over{$flag}{$type} = $i_cnt || ''; 			#	
@@ -1078,9 +1326,9 @@ sub stats {
 			my $ocnt = my @obids = $o_status->rel_ids('bug', "bugid IN ('$bids')");
 			$over{$flag}{'Open'}{$type} = $ocnt || ''; 	# 
 
-			if ($flag eq 'version' && $type =~ /^(\d)\.0*([1-9])([\d\.])+\s*$/) {
+			if ($flag eq 'version' && $type =~ /^(\d)\.0*([1-9])([\d\.])+\s*$/o) {
 				my $trim = "$1.$2.\%"; 
-				$self->debug(3, "found version type($type) -> 1($1) 2($2) 3($3) assigning to trim($trim)") if $DEBUG;
+				$self->debug(3, "found version type($type) -> 1($1) 2($2) 3($3) assigning to trim($trim)") if $Perlbug::DEBUG;
 				$over{$flag}{$trim} += $i_cnt;				#
 				$over{$flag}{'Open'}{$trim} += $ocnt;		#
 			}
@@ -1099,290 +1347,447 @@ sub stats {
 }
 
 
-=item doo
+=item dop
 
-Returns a summary overview of the bugs, bugs, messages etc. in the database.
+Return the formatted patch by id/s
 
-	my @over = $o_do->doo(); # data in result via formatting...
-
-=cut
-
-sub doo { # overview
-    my $self = shift;	
-	my $args = shift;
-	my ($fmt) = (ref($args) eq 'ARRAY') ? @{$args} : ($args);
- 	$fmt = $fmt || $self->current('format');
-    my $h_over = $self->stats;
-	$self->debug(0, "overview stat'd, formatting...") if $DEBUG;
-    my $res = $self->format_overview($h_over, $fmt);
-	$self->debug(0, "overview formatted...") if $DEBUG;
-	return $res;
-}
-
-
-=item doa
-
-ONLY do this if registered as admin of bug.
-in which case dok could still dok(\@bids) these bugids...
-or should it automatically add id as admin?
-
-	my ($res) = $do->doa($command_string, $body);
+    my @res = $o_do->dop(\@patchids);
 
 =cut
 
-sub doa { # admin
-    my $self = shift;
-    my $args = shift; 
-	my $fmt  = shift || $self->current('format');
-    my @args = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-	my $o_mail = $self->_mail;
-	my ($o_hdr, $header, $body) = $self->splice($o_mail);
-	my $res = '';
-	
-	my $str = join(' ', @args);
-	my %cmds = $self->parse_str($str);
-	my @bids = @{$cmds{'bugids'}};
-	if (!(@bids >= 1)) {
-		$self->error("requires bugids(@bids) to administrate!");
-	} else {
-		my $o_bug = $self->object('bug');
-		my $o_note = $self->object('note');
+sub dop {
+	my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
 
-	    foreach my $b (@{$cmds{'bugids'}}) {
-	        next unless $o_bug->ok_ids([$b]);
-			my $orig = $o_bug->read($b)->format($fmt);
-			foreach my $flag ($self->things('flag')) {
-				my $store = ($flag =~ /^(status|severity)$/) ? '_store' : '_assign';
-				$o_bug->relation($flag)->$store($cmds{$flag}) if $cmds{$flag};
-			}
-			if (!$o_bug->READ) {		
-				$res .= "Bug ($b) update failure";
-			} else {
-				chomp(my $to = $o_hdr->get('To'));
-				chomp(my $from = $o_hdr->get('From'));
-				chomp(my $subject = $o_hdr->get('Subject'));
-				$o_note->create({
-					'noteid'		=> $o_note->new_id,
-					'body'	 		=> $body, 
-					'header' 		=> $header, 
-					'subject'		=> $subject, 
-					'sourceaddr'	=> $from, 
-					'toaddr'		=> $to,
-					'email_msgid'	=> '',
-				});
-				if ($o_note->CREATED) {
-					my $nid = $o_note->insertid;
-				}
-				my $i_x = $self->notify_cc($b, $orig) unless grep(/nocc/, $cmds{'unknown'});
-			}
-            $self->debug(2, "Bug ($b)  administration done") if $DEBUG;
-	    }
-	    $self->debug(2, "All administration commands done") if $DEBUG;
+	my $fmt   = $self->current('format');
+	my $o_obj = $self->object('patch');
+
+	foreach my $i (@ids) {
+	    next unless $i =~ /^\d+$/o;
+		my $str = $o_obj->read($i)->format($fmt);
+		push(@res, $str);
 	} 
-	return $res;
+
+	$self->debug(2, "patch ids(@ids)") if $Perlbug::DEBUG;
+
+	return @res;
 }
 
 
-=item doA
+=item doP
 
-Wrapper for L<doa()>
+Assign to given bugid, given patch, return new patch_id
 
-=cut
-
-sub doA { # Admin 
-    my $self = shift;
-    #setting -t taken care of in Perlbug::Email::parse_commands.
-    my ($res) = $self->doa(@_);
-	return $res;
-}
-
-
-=item dok
-
-Klaim the bug(id) given
-
-	my $i_claimed = $do->dok(\@bids);
+	$pid = $o_obj->doP($h_args);
 
 =cut
 
-sub dok { # claim bug
-    my $self = shift;
-    my $a_bids = shift;
-    my $i_ok = 1;
-    my $admin = $self->isadmin;
-	if (ref($a_bids) eq 'ARRAY' && $admin =~ /\w+/ && $admin ne 'generic') {
-		$self->object('user')->read($admin)->relation('bug')->assign($a_bids);
+sub doP {
+	my $self   = shift;
+	my $h_args = shift;
+	my %args   = %{$h_args};
+	my $target = 'patch';
+	my $id     = '';
+
+
+	if ($args{'body'} !~ /\w+/) {
+		$self->error("requires a valid $target($args{'body'}) to insert");
+	} else {
+		my $o_obj = $self->object($target);
+		$o_obj->create({
+			$target.'id'	=> $o_obj->new_id,
+			'subject'		=> 'no-subject-given', 
+			'sourceaddr'	=> 'no-sourceaddr-given', 
+			'toaddr'		=> 'no-toaddr-given', 
+			'header'		=> 'no-header-given', 
+			'body'			=> 'no-body-given',
+			'email_msgid'	=> 'no-msgid-given',
+			%args,
+		});	
+		if ($o_obj->CREATED) {
+			$id = $o_obj->oid;
+			my %cmds = $self->parse_str($args{'opts'});
+			my $i_rel = $o_obj->relate(\%cmds);
+			$self->notify($target, $id);
+		}	
 	}
-	return $i_ok;
+
+	return $id;
 }
 
 
-=item doK
+=item doq
 
-UnKlaim the bug(id) given
+Gets the sql _q_ query statement given in the body of the message, executes it, and
+returns the result in the result array.
 
-	my $i_unclaimed = $do->doK(\@bids);
+	my @results = $o_do->doq($sql);
 
 =cut
 
-sub doK { # unclaim bug 
+sub doq {
     my $self = shift;
-	my ($args) = @_;
-    my $i_ok = 0;
-    my @bids = (ref($args) eq 'ARRAY') ? @{$args} : $args;
-    foreach my $i (@bids) {
-        next unless $self->ok_ids([$i]);
-        $i_ok += my @res = $self->bug_unclaim($i, $self->isadmin);
-        $self->debug(2, "unclaimed ($i)") if $DEBUG;
+	my $sql  = shift;
+    my $errs = 0;
+	my @res  = ();
+
+    $sql =~ tr/\n\t\r/ /; 
+    $sql =~ s/^(.+)?[\;\s]*$/$1/;
+
+    if (($self->isadmin eq $self->system('bugmaster'))){# && ($sql !~ /delete|drop/i)){
+        # let it through for testing purposes
+    } else {
+        # could be a little paranoid, but...
+	 	if ($sql =~ /\b(alter|create|delete|drop|file|grant|insert|rename|shutdown|update)\b/sio) {
+	 		$self->error("You may not execute this sql($1) from this interface!");
+			$errs++;
+		}
+		if ($sql !~ /^\b(desc(ribe)*|select|show)\b/si)  { 
+			$self->error("You may only execute DESC|SELECT|SHOW statements from this interface - invalid sql($sql)!");
+			$errs++;
+		}
     }
-	return $i_ok;
-}
-
-
-=item dox
-
-Delete bug from db_bug table.
-
-Use C<doX> for messages associated with bugs.
-
-	my ($feedback) = $do->dox(\@bids);
-
-=cut
-
-sub dox { # xterminate bugs
-    my $self   = shift;
-    my $a_bids = shift;
-
-	my $i_res  = 0;
-	if (ref($a_bids) ne 'ARRAY') {
-		$self->error("requires array_ref of x bugids($a_bids)");
-	} else {
-		if (!($self->isadmin)) {
-			$self->error("not x admin: ".$self->isadmin);
+	
+	if ($errs == 0) {   
+		# my $sth = $self->db->query($sql);
+		# if (defined($sth)) {
+		my @data = $self->get_data($sql);
+		if (!(@data >= 1)) {
+			$self->debug(0, "No results from sql($sql)") if $Perlbug::DEBUG;
 		} else {
-			my $o_bug = $self->object('bug');
-			$o_bug->delete($a_bids);
-			$i_res = $o_bug->DELETED;
-		}
-	}
-
-	return $i_res;
-}
-
-
-=item doX
-
-Delete given bugs along with messages from db_message.
-
-Also does parent/child, bug_user, etc. tables, also calls L<dox()>
-
-	my ($feedback) = $do->doX(\@bids);
-
-=cut
-
-sub doX { # Xterminate messages
-    my $self   = shift;
-    my $a_bids = shift;
-
-	my $i_del  = 0;
-
-	if (ref($a_bids) ne 'ARRAY') {
-		$self->error("requires array_ref of bugids($a_bids)");
-	} else {
-		if (!($self->isadmin)) {
-			$self->error("not admin: ".$self->isadmin);
-		} else {
-			my $o_bug = $self->object('bug');
-			my @rels  = $o_bug->relations;
-			BUG:
-			foreach my $arg (@{$a_bids}) {
-				next BUG unless $o_bug->ok_ids([$arg]);
-				REL:
-				foreach my $rel (@rels) {
-					next REL unless $rel;
-					my $o_rel = $o_bug->relation($rel)->set_source($o_bug);
-					$o_rel->delete([$o_bug->rel_ids($rel)]);
+			my $maxlen  = $self->database('maxlen') || 1500;
+			my $lsep	= "\n";
+			my $fsep	= ",\t";
+			# push(@res, $sth->dump_results($maxlen, $lsep, $fsep, $x));
+			# push(@res, map { $_."\n" } DBI::neat_list(\@data, $maxlen, $fsep));
+			foreach my $d (@data) {
+				my $data = '';
+				foreach my $key (keys %{$d}) {
+					my $val = $$d{$key};
+					$data .= DBI::neat_list([($key, $val)], $maxlen, $fsep)."\n";
 				}
-				$i_del += $self->dox($arg); # bug if $sofarsogood
+				push(@res, $data);
 			}
+			# $res = $sth->as_string; # better? Mysql => Oracle?
+			# $res = $sth->neat; # better? Mysql => Oracle?
 		}
 	}
-    return $i_del;
+
+	return @res;
 }
 
 
-=item doi
+=item doQ
+
+Returns the database schema, for use with SQL statements.
+
+	my @tables_data = $o_do->doQ;
+
+=cut
+
+sub doQ {
+    my $self = shift;
+	my $sql  = shift;
+	my @res  = ();
+
+	my @tables = $self->get_list("SHOW tables FROM ".$self->database('database'));
+	foreach my $t (@tables) {
+	    next unless $t =~ /^\w+/o;
+	    my $sql = "DESCRIBE $t";
+		my $res = join("\n", $self->get_list($sql));
+    	push(@res, "$t: \n$res\n");
+	}
+
+	return @res;
+}
+
+
+=item dor
+
+Retrieve data based on contents of the body of a bug 
+
+    my @res = $o_do->dor('object initialisation problem');
+
+=cut
+
+sub dor {
+	my $self = shift;
+	my $srch = shift;
+	my @res  = ();
+
+	my $o_bug = $self->object('bug');
+	my @bids  = $o_bug->ids("body LIKE '%$srch%'");
+
+	if (scalar(@bids) >= 1) {
+		push(@res, $self->dob(\@bids));
+	}
+
+	return @res;
+}
+
+
+=item doR
+
+Wrapper for L<dor()>, in large format
+
+    my @res = $o_do->doR('object initialisation problem');
+
+=cut
+
+sub doR {
+	my $self = shift;
+	my $srch = shift;
+
+	my $orig = $self->current('format');
+	$self->current('format', uc($orig));
+
+	my @res  = $self->dor($srch);
+
+	$self->current('format', $orig);
+
+	return @res;
+}
+
+
+=item dos
+
+Retrieve bugs based on the subject line of a bug
+
+    my @res = $o_do->dos('build failure');
+
+=cut
+
+sub dos {
+	my $self = shift;
+	my $subj = shift;
+	my @res  = ();
+
+	my @bids = $self->object('bug')->ids("subject LIKE '%$subj%'");
+
+	@res = $self->dob(\@bids);
+
+	return @res;
+}
+
+
+=item doS
+
+Wrapper for L<dos()> in 'large format'
+
+	my @RES = $o_do->doS('some subject');	
+
+=cut
+
+sub doS {
+	my $self = shift;
+	my $subj = shift;
+
+	my $orig = $self->current('format');
+	$self->current('format', uc($orig));
+
+	my @res = $self->dos($subj);
+
+	$self->current('format', $orig);
+
+=rjsf
+
+	and R
+
+    foreach my $bid (@args) {
+		push(@res, $o_bug->read($bid)->format());
+		
+		my @mids = $o_bug->rel_ids('message');
+		my ($mid) = sort { $a <=> $b } @mids;
+        push(@res, $self->dom(\@mids));
+		
+        my @pids = $o_bug->rel_ids('patch');
+        push(@res, $self->dop(\@pids));
+		
+        my @tids = $o_bug->rel_ids('test');
+        push(@res, $self->dot(\@tids));
+		
+        my @nids = $o_bug->rel_ids('note');
+        push(@res, $self->don(\@nids));
+    }
+
+=cut
+
+	return @res;
+}
+
+
+=item dot
+
+Return the formatted test by id/s
+
+    my @res = $o_do->dot(\@testids);
+
+=cut
+
+sub dot {
+	my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+	my $fmt   = $self->current('format');
+	my $o_obj = $self->object('test');
+
+	foreach my $i (@ids) {
+	    next unless $i =~ /^\d+$/o;
+		my $str = $o_obj->read($i)->format($fmt);
+		push(@res, $str);
+	} 
+
+	$self->debug(2, "test ids(@ids)") if $Perlbug::DEBUG;
+
+	return @res;
+}
+
+
+=item doT
+
+Assign to given bugid, given test, return i_ok
+
+	$new_tid = $o_obj->doT($h_args);
+
+=cut
+
+sub doT {
+	my $self  = shift;
+	my $h_args = shift;
+	my %args   = %{$h_args};
+	my $target = 'test';
+	my $id     = '';
+
+	if ($args{'body'} !~ /\w+/) {
+		$self->error("requires a valid $target($args{'body'}) to insert");
+	} else {
+		my $o_obj = $self->object($target);
+		$o_obj->create({
+			$target.'id'	=> $o_obj->new_id,
+			'subject'		=> 'no-subject-given', 
+			'sourceaddr'	=> 'no-sourceaddr-given', 
+			'toaddr'		=> 'no-toaddr-given', 
+			'header'		=> 'no-header-given', 
+			'body'			=> 'no-body-given',
+			'email_msgid'	=> 'no-msgid-given',
+			%args,
+		});	
+		if ($o_obj->CREATED) {
+			$id = $o_obj->oid;
+			my %cmds = $self->parse_str($args{'opts'});
+			my $i_rel = $o_obj->relate(\%cmds);
+			$self->notify($target, $id);
+		}
+	}
+
+	return $id;
+}
+
+
+=item dou
+
+Return the formatted user by id/s
+
+    my @res = $o_do->dou(\@userids);
+
+=cut
+
+sub dou {
+    my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+	my $fmt   = $self->current('format');
+	my $o_obj = $self->object('user');
+
+	foreach my $i (@ids) {
+	    next unless $i =~ /^\w+$/o;
+		my $str = $o_obj->read($i)->format($fmt);
+		push(@res, $str);
+	} 
+
+	$self->debug(2, "user ids(@ids)") if $Perlbug::DEBUG;
+
+    return @res;
+}
+
+
+=item doU
+
+Create new user entry
+
+	my $uid = $self->doU($h_args);
 
 Initiate new admin entry, including htpasswd entry, (currently rf only)
 
-	userid=test_user:
-	password=p*ss33*t:
-	address=perlbugtest@rfi.net:
-	match_address=.*\@rfi\.net:
-	name=Richard Foley:
-
-or
-
-	userid=test_user:password=p*ss33*t:address=perlbugtest@rfi.net:match_address=.*\@rfi\.net:name=Richard Foley
-
-	my $i_ok = $do->doi($data);
+	userid		= test_user:
+	password	= p*ss33*t:
+	address		= perlbugtest@rfi.net:
+	match_address =.*\@rfi\.net:
+	name		= Richard Foley:
 
 =cut
 
-sub doi { # initiate new admin
-    my $self = shift;
-    my ($data) = @_;
-    my ($entry) = (ref($data) eq 'ARRAY') ? @{$data} : ($data);
+sub doU { # rjsf
+    my $self   = shift;
+	my $h_args = shift;
+	my %user = %{$h_args};
     my $i_ok = 1;
-	my $res = '';
+
 	my $tick = 0;
+
     my ($userid, $password, $address, $name, $match_address, $encrypted) = ('', '', '', '', '', '');
 	my $o_usr = $self->object('user');
-	$entry =~ s/[\n\t\r]+//g; 
+
+	my $entry = ''; # rjsf!!!
     if ($entry !~ /userid/) {
     	$i_ok = 0;
 		$self->error("No userid offered in entry($entry)!");
 	} else { # GET EACH ITEM
 		ITEM:
 	    foreach my $item (split(':', $entry)) {
-			$self->debug(0, "inspecting item($item)") if $DEBUG;
-            next ITEM unless $item =~ /\w+/;
+			$self->debug(1, "inspecting item($item)") if $Perlbug::DEBUG;
+            next ITEM unless $item =~ /\w+/o;
 			last ITEM if $tick == 5;
-			if ($item =~ /^\s*userid=(\w+)\s*$/) {
+			if ($item =~ /^\s*userid=(\w+)\s*$/o) {
                 $userid = $1; 
                 $tick++;
-                $self->debug(0, "userid($userid)") if $DEBUG;
-            } elsif ($item =~ /^\s*password=([\w\*]+)\s*$/) { # encrypt it here
+                $self->debug(2, "userid($userid)") if $Perlbug::DEBUG;
+            } elsif ($item =~ /^\s*password=([\w\*]+)\s*$/o) { # encrypt it here
                 $password = $1; 
                 $tick++;
-                $self->debug(0, "password($password)") if $DEBUG;
+                $self->debug(2, "password($password)") if $Perlbug::DEBUG;
                 $encrypted = crypt($password, 'pb');
-            } elsif ($item =~ /^\s*address=(.+)\s*$/) {
+            } elsif ($item =~ /^\s*address=(.+)\s*$/o) {
                 $address = $1; 
                 $tick++;
-                $self->debug(0, "address($address)") if $DEBUG;
-            } elsif ($item =~ /^\s*name=(.+)\s*$/) {
+                $self->debug(2, "address($address)") if $Perlbug::DEBUG;
+            } elsif ($item =~ /^\s*name=(.+)\s*$/o) {
                 $name = $1; 
                 $tick++;
-                $self->debug(0, "name($name)") if $DEBUG;
-            } elsif ($item =~ /^\s*match_address=(.+)\s*$/) {
+                $self->debug(2, "name($name)") if $Perlbug::DEBUG;
+            } elsif ($item =~ /^\s*match_address=(.+)\s*$/o) {
                 $match_address = $1; 
                 $tick++;
-                $self->debug(0, "match_address($match_address)") if $DEBUG;
+                $self->debug(2, "match_address($match_address)") if $Perlbug::DEBUG;
             }
         }  
         if ($tick != 5) {
             $i_ok = 0;
             $self->error("Not enough appropriate values ($tick) found in data($entry)");
         } else {
-            $self->debug(0, "Sufficient($i_ok) values ($tick) found: ". # if $DEBUG
-			"userid($userid)
-			name($name)
-			password($password)
-			address($address)
-			match($match_address)
-			"
-			) if $DEBUG;
+            $self->debug(2, "Sufficient($i_ok) values ($tick) found: ".qq| 
+				userid($userid)
+				name($name)
+				password($password)
+				address($address)
+				match($match_address)
+			|) if $Perlbug::DEBUG;
 		}
   	}
 	if ($i_ok == 1) { # CHECK UNIQUE IN DB
@@ -1402,18 +1807,18 @@ sub doi { # initiate new admin
 			'active'		=> 0,
 		});
         if ($o_usr->CREATED) {
-            $self->debug(0, "Admin inserted into db.") if $DEBUG;
+            $self->debug(2, "Admin inserted into db.") if $Perlbug::DEBUG;
         } else {
 			$i_ok = 0;
             $self->error("Admin db insertion failure");
         }
     } 
     if ($i_ok == 1) { # HTPASSWD
-    	$self->debug(0, "Admin creation: '$i_ok', going for htpasswd update.") if $DEBUG;
+    	$self->debug(2, "Admin creation: '$i_ok', going for htpasswd update.") if $Perlbug::DEBUG;
 		$i_ok = $self->htpasswd($userid, $encrypted);
     }
 	if ($i_ok == 1) { # feedback
-	    $self->debug(0, "Returning notification") if $DEBUG;
+	    $self->debug(2, "Returning notification") if $Perlbug::DEBUG;
         my $title = $self->system('title');
 		my $url   = 'http://'.$self->web('domain');
 		my $new_admin = qq|
@@ -1449,7 +1854,6 @@ Welcome $name as a new $title administrator:
     	|;
 		use Perlbug::Interface::Email; # yek
 		my $o_email = Perlbug::Interface::Email->new;
-		$o_email->_original_mail($o_email->_duff_mail); # dummy - blek
 		my $o_notify = $o_email->get_header;
 		$o_notify->add('To', $address);
 		$o_notify->add('Bcc', $self->system('maintainer'));
@@ -1457,77 +1861,183 @@ Welcome $name as a new $title administrator:
 		$o_notify->add('Subject', "$title administrator");
 		$i_ok = $o_email->send_mail($o_notify, $new_admin);
     } 
-    return $i_ok;
+
+    return ($i_ok == 1) ? $userid : '';
 }  
 
 
-=item doI
+=item dov
 
-Disable a user entry
-	
-	my $i_disabled = $do->doI(\@uids);
+Volunteer proposed bug modifications where msg is something like: 'propose_close_<bugid>@bugs.perl.org'
+
+	my $i_ok = $o_obj->dov($h_args);
 
 =cut
 
-sub doI {
-	my $self = shift;
-	my $uids = shift;
+sub dov { # rjsf
+	my $self   = shift;
+	my $h_args = shift;
+	my %args   = %{$h_args};
+	my $res    = '';
+
+	my %cmds   = $self->parse_str($args{'opts'});
+
 	my $i_ok = 0;
-	my @uids = (ref($uids) eq 'ARRAY') ? @{$uids} : ($uids);
-    my ($deleted, $m_deleted) = (0, 0);
-	if ($self->isadmin) {
-		UID:
-		foreach my $tgt (@uids) {
-        	next UID unless $tgt =~ /^\s*(\w+)\s*$/;
-			my $uid = $1;
-        	$self->debug(2, "Disabling userid($uid)") if $DEBUG;
-			my $o_usr = $self->object('user');
-			$o_usr->update({
-				'active'	=> '',
-			});
-			$i_ok = 1 if $o_usr->UPDATED;
-		}
-    }
-	return $i_ok;
+	if (1 != 1) {
+		$self->error("forwarding requires something ...!");
+	} else {
+		my $body    = $args{'body'} || '';
+		my $from    = $args{'from'} || '';
+		my $replyto = $args{'replyto'} || '';
+		my $subject = $args{'subject'} || '';
+		my $admin   = $self->system('maintainer');
+		my @admins  = $self->object('user')->col('address', "active = '1'");
+		my $o_prop  = $self->get_header(); # $o_hdr);
+		$o_prop->replace('To', $admin);
+		# $o_prop->replace('Cc', join(', ', @admins));
+		$o_prop->replace('From', $self->from($replyto, $from));
+		$o_prop->replace('Subject', $self->system('title')." forward - $subject");
+		$i_ok = $self->send_mail($o_prop, $body);
+	}
+
+	$res = "Proposal request forwarded($i_ok)";
+
+	return $res;
 }
 
 
-=item doz
+=item doV
 
-Configuration data
+Volunteer a new administrator
 
-    $data = $o_obj->doz('current');
+	my $feedback = $o_do->doV($h_args);
 
 =cut
 
-sub doz { # update
-    my $self = shift;
+sub doV { # rjsf
+	my $self = shift;
+	my $h_args = shift;
+
 	my $args = shift;
-	my @args = (ref($args) eq 'ARRAY') ? @{$args} : ($args);
-	my $config = $self->get_config(@args);
-    
-	return $config;
+	my $o_int = shift;
+
+	my @args = (ref($args) eq 'ARRAY') ? @{$args} : $args;
+	my $request = "New admin request -i[nitiate] (\n@args\n)\n";
+	my $i_ok = 0;
+	if (!ref($o_int)) {
+		$self->error("admin volunteer requires a mail object($o_int)");
+	} else {
+		my ($o_hdr, $header, $body) = $self->splice($o_int);
+		my $o_prop = $self->get_header($o_hdr);
+		my $subject = $o_hdr->get('Subject');
+		chomp($subject);
+		my $admin = $self->system('maintainer');
+		$o_prop->replace('To', $admin);
+		$o_prop->delete('Cc');
+		$o_prop->replace('Subject', $self->system('title')." admin volunteer");
+		$o_prop->replace('Reply-To', $admin);
+		$i_ok = $self->send_mail($o_prop, $request);
+	}
+	my $res = "Admin volunteer request($i_ok)";
+
+	return $res;
 }
+
+
+=item dox
+
+Delete bug from db_bug table.
+
+Use C<doX> for messages associated with bugs.
+
+	my @feedback = $o_do->dox(\@bids);
+
+=cut
+
+sub dox {
+    my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+	if (!(scalar(@ids) >= 1)) {
+		$self->error("requires bugids(@ids)");
+	} else {
+		my $user = $self->isadmin;
+		if (!($user)) {
+			$self->error("user($user) not an admin!");
+		} else {
+			my $o_bug = $self->object('bug');
+			$o_bug->delete(\@ids);
+			push(@res, $o_bug->DELETED." bugs deleted!");
+		}
+	}
+
+	return @res;
+}
+
+
+=item doX
+
+Delete given bugs along with messages from db_message.
+
+Also does parent/child, bug_user, etc. tables, also calls L<dox()>
+
+	my @feedback = $o_do->doX(\@bids);
+
+=cut
+
+sub doX {
+    my $self  = shift;
+	my $a_ids = shift;
+	my @ids   = @{$a_ids};
+	my @res   = ();
+
+	if (!(scalar(@ids) >= 1)) {
+		$self->error("requires bugids(@ids)");
+	} else {
+		if (!($self->isadmin)) {
+			$self->error("not admin: ".$self->isadmin);
+		} else {
+			my $o_bug = $self->object('bug');
+			my @rels  = $o_bug->relations;
+			BUG:
+			foreach my $id (@ids) {
+				next BUG unless $o_bug->ok_ids([$id]);
+				REL:
+				foreach my $rel (@rels) {
+					next REL unless $rel;
+					my $o_rel = $o_bug->relation($rel)->set_source($o_bug);
+					$o_rel->delete([$o_bug->rel_ids($rel)]);
+				}
+				push(@res, $self->dox($id)." bug($id) rellies deleted!\n");
+			}
+		}
+	}
+    return @res;
+}
+
 
 
 =item doy
 
 Password renewal
 
-    my ($i_ok) = $do->doy($user, $pass);
+    my $i_ok = $o_do->doy("$user $pass");
 
 =cut
 
-sub doy { # password, user
+sub doy {
     my $self = shift;
-	my $input = shift;
-	($input) = (ref($input) eq 'ARRAY') ? @{$input} : ($input);
-	my ($user, $pass) = split(/\s+/, $input);
-	$pass = 'default_password' unless $pass =~ /\w+/;
+	my $uspa = shift;
+
+	my ($user, $pass) = split(/\s+/, $uspa);
+
+	$pass = 'default_password' unless $pass =~ /\w+/o;
     my $i_ok = 1;
 	my $o_usr = $self->object('user');
     
-	if (!($user =~ /\w+/ && $pass =~ /\w+/)) {
+	if (!($user =~ /\w+/o && $pass =~ /\w+/o)) {
 		$i_ok = 0;
 		$self->error("invalid user($user) or pass($pass)");
 	} else {
@@ -1542,7 +2052,7 @@ sub doy { # password, user
 		my $encrypted = crypt($pass, substr($pass, 0, 2));
 		$i_ok = $self->htpasswd($user, $encrypted);
 		if ($i_ok == 1) {
-			$self->debug(0, "htp: user($user) inserted new password($pass)") if $DEBUG;
+			$self->debug(2, "htp: user($user) inserted new password($pass)") if $Perlbug::DEBUG;
 		} else {
 			$i_ok = 0;
 			$self->error("htp: user($user) failed to insert new password($pass)");
@@ -1554,7 +2064,7 @@ sub doy { # password, user
 			'password'	=> "PASSWORD('$pass')",
 		});
     	if ($o_usr->UPDATED) {
-			$self->debug(0, "db: user($user) set new password($pass)") if $DEBUG; 
+			$self->debug(2, "db: user($user) set new password($pass)") if $Perlbug::DEBUG; 
 		} else {
 			$i_ok = 0;
 			$self->error("db: user($user) failed to set new password($pass)"); 
@@ -1565,11 +2075,62 @@ sub doy { # password, user
 }
 
 
+=item doz
+
+Retrieve configuration data
+
+    $data = $o_obj->doz([qw(current email target)]);
+
+=cut
+
+sub doz {
+    my $self = shift;
+	my $conf = shift;
+
+	my @res  = $self->get_config($conf);
+    
+	return @res;
+}
+
+
+=item doZ
+
+Attempt to set B<current> configuration data, for this session only
+
+    my $debuglevel = $o_obj->doZ('debug', 2);
+
+    my $switches   = $o_obj->doZ('switches', 'abcdef');
+
+=cut
+
+sub doZ {
+    my $self = shift;
+	my $cmds = shift;
+	my ($key, $val) = split(/\s+/, $cmds);
+	my @res  = ();
+
+	my $user = $self->isadmin;
+	if ($user eq $self->system('bugmaster')) {
+		$self->error("User($user) can't set current key($key) val($val)!");
+	} else {
+		@res  = $self->current({$key, $val});
+		# print "$self->current({$key, $val}) => res(@res)\n";
+	}
+    
+	return @res;
+}
+
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
 =item overview
 
 Formatting for overview.
 
-        $fmt{'bugs'} = $data{'bugs'};
+	my $overview = $o_do->overview($h_overview, [$fmt]);
 
 =cut
 
@@ -1580,7 +2141,7 @@ sub overview {
 
 	my $url = $self->current('url');
 	my $cgi = $self->cgi();
-    my $ret = '';
+    my $res = '';
 
     if (ref($ref) ne 'HASH') {       # duff old style.
 		$self->error("Can't format unrecognised data($ref)");
@@ -1597,20 +2158,20 @@ sub overview {
 			TYPE:
 	        foreach my $type (@types) {		# aix, closed, 5.7.%
 				if ($flag eq 'version') {
-					$type = "$1.$2.%" if $type =~ /^(\d)\.0*([1-9])([\d\.\%]).*$/; # Do::stats 
+					$type = "$1.$2.%" if $type =~ /^(\d)\.0*([1-9])([\d\.\%]).*$/o; # Do::stats 
 					my $v = $fmt{'version'}{$type};
-					next TYPE unless $v =~ /\%/;
+					next TYPE unless $v =~ /\%/o;
 					my $o = $fmt{'version'}{'Open'}{$type};
 				}
-	            $self->debug(3, "Overview format($fmt) flag($flag), type($type)") if $DEBUG;
-                if ($fmt =~ /^[IhHL]$/) { # HTML
+	            $self->debug(3, "Overview format($fmt) flag($flag), type($type)") if $Perlbug::DEBUG;
+                if ($fmt =~ /^[IhHL]$/o) { # HTML
 					$fmt{$type} = $self->href("query&$flag=$type", [], "$fmt{$flag}{$type}", '');
-	                if (($fmt{$flag}{'Open'}{$type} =~ /^(\d+)$/) && ($flag ne 'status')) {
+	                if (($fmt{$flag}{'Open'}{$type} =~ /^(\d+)$/o) && ($flag ne 'status')) {
 						($fmt{$type}) .= '&nbsp;('.$self->href("query&$flag=$type&status=open", [], "$fmt{$flag}{'Open'}{$type}", '').')';
 	                }
 	            } else {                	 # ASCII
 	                $fmt{$type} = "$fmt{$flag}{$type}";
-	                if (($flag ne 'status') && defined($fmt{$flag}{'Open'}{$type}) && ($fmt{$flag}{'Open'}{$type} =~ /^(\d+)$/)) {
+	                if (($flag ne 'status') && defined($fmt{$flag}{'Open'}{$type}) && ($fmt{$flag}{'Open'}{$type} =~ /^(\d+)$/o)) {
 	                    $fmt{$type} .= "($fmt{$flag}{'Open'}{$type})";
 	                } 
 				}
@@ -1622,18 +2183,18 @@ sub overview {
 		# this bit's a melange ...
 		$= = 1000;	# lines per page
 		$^A = ""; 								# set
-		if ($fmt =~ /[aAl]/) {
+		if ($fmt =~ /[aAl]/o) {
 			formline($_format, @args);			# 1
 		} else {
 			$^A = $_format;
 		}
-		$ret = $self->pre($fmt).
+		$res = $self->mypre($fmt).
 				$top.$^A .
-			    $self->post($fmt);	
+			    $self->mypost($fmt);	
 		$^A = ""; 								# reset
 	}
 
-    return $ret;    
+    return $res;    
 }
 
 
@@ -1642,7 +2203,7 @@ sub overview {
 Formating for lean overview (currently wrapper for L<FORMAT_a>
 
 	my ($top, $format, @args) = $o_fmt->FORMAT_l(\%overview);
-    
+
 =cut
 
 sub FORMAT_O_l { my $self = shift; return $self->FORMAT_O_a(@_); }
@@ -1653,7 +2214,7 @@ sub FORMAT_O_l { my $self = shift; return $self->FORMAT_O_a(@_); }
 Formating for Lean Html overview (currently wrapper for L<FORMAT_h>
 
 	my ($top, $format, @args) = $o_fmt->FORMAT_L(\%overview);
-    
+
 =cut
 
 sub FORMAT_O_L { my $self = shift; return $self->FORMAT_O_h(@_); }
@@ -1664,7 +2225,7 @@ sub FORMAT_O_L { my $self = shift; return $self->FORMAT_O_h(@_); }
 Formating for overview (default).
 
 	my ($top, $format, @args) = $o_fmt->FORMAT_a(\%overview);
-    
+
 =cut
 
 sub FORMAT_O_a {
@@ -1673,7 +2234,7 @@ sub FORMAT_O_a {
 	my $h_fmt= shift;
 	my %fmt  = %{$h_fmt};
 	my @args = (
-		$fmt{'bug'}, $fmt{'message'}, $fmt{'patch'}, $fmt{'test'}, $fmt{'note'}, $fmt{'user'}, $fmt{'days1'}, $fmt{'days7'}, $fmt{'days30'}, $fmt{'days90'},
+		$fmt{'bug'}, $fmt{'message'}, $fmt{'patch'}, $fmt{'test'}, $fmt{'note'}, $fmt{'administrators'}, $fmt{'days1'}, $fmt{'days7'}, $fmt{'days30'}, $fmt{'days90'},
 		$fmt{'ratio_o2c'}, $fmt{'ratio_c2o'}, $fmt{'ratio_m2t'}, $fmt{'ratio_t2a'},
 		$fmt{'open'}, $fmt{'closed'}, $fmt{'busy'}, $fmt{'onhold'}, $fmt{'abandoned'}, $fmt{'duplicate'},
 		$fmt{'install'}, $fmt{'library'}, $fmt{'patch'}, $fmt{'core'}, $fmt{'docs'}, $fmt{'utilities'},
@@ -1731,7 +2292,7 @@ sub FORMAT_O_A {
 |;
 	my $format = '';
 	my @args = ();
-	my @keys = ($self->things('mail'), $self->things('item'), $self->things('flag'));
+	my @keys = ($self->objects('mail'), $self->objects('item'), $self->objects('flag'));
 	my $cnt = 0;
 	KEY:
 	foreach my $key (keys %{$x}) { 					# bug, group, status, note...
@@ -1776,7 +2337,7 @@ sub FORMAT_O_h {
 
 	my %fmt  = %{$h_fmt};
 	my $top  = '<p>';
-	my $url = $self->url;
+	my $url = $self->myurl;
 	my ($full) = $self->href('overview&format=H', [], 'full overview', 'ALL bug <-> flags data (be a little patient, please :)');
 	my $format = qq|
 <table border=1><tr>
@@ -1913,7 +2474,7 @@ sub FORMAT_O_h {
 	</td><td><b>HPux:</b> &nbsp;
 	$fmt{'hpux'}
 	</td><td><b>Aix:</b> &nbsp;
-	$fmt{'aix'}}
+	$fmt{'aix'}
 	</td><td><b>Win32:</b> &nbsp;
 	$fmt{'mswin32'}
 	</td><td><b>MacOS:</b> &nbsp;
@@ -1964,7 +2525,7 @@ sub FORMAT_O_H {
 	my $top = qq|<h2>PerlBug Database overview, figures in brackets() are still open:</h2> <hr> |;
 	my $format = '<table border=0><tr>';
 	my @args = ();
-	my @keys = ($self->things('mail'), $self->things('item'), $self->things('flag'));
+	my @keys = ($self->objects('mail'), $self->objects('item'), $self->objects('flag'));
 	my $cnt = 0;
 	KEY:
 	foreach my $key (sort keys %{$x}) {					# bug, group, status, note...
@@ -1996,7 +2557,7 @@ sub FORMAT_O_H {
 		}
 	}
 	$format .= qq|</tr></table><hr>|; 
-	$format =~ s/\s+/ /;
+	$format =~ s/\s+/ /o;
 
 
 	return ($top, $format, @args);

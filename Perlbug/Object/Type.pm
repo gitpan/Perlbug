@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Type.pm,v 1.4 2001/03/23 14:36:16 perlbug Exp $
+# $Id: Type.pm,v 1.5 2001/08/20 18:57:31 mstevens Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Thing - Thing class
 package Perlbug::Object::Thing;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 =head1 DESCRIPTION
@@ -42,6 +42,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Thing object:
@@ -66,6 +68,9 @@ sub new {
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

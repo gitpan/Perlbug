@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
 # Object retrieval tests (for objects and relations) for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 32_Object.t,v 1.1 2001/04/21 20:48:48 perlbug Exp $
+# $Id: 32_Object.t,v 1.2 2001/09/18 13:37:50 richardf Exp $
 #
 BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::TestBed;
+	use Perlbug::Test;
 	plan('tests' => 2);
 }
 use strict;
@@ -19,8 +19,8 @@ my $err = 0;
 # -----------------------------------------------------------------------------
 use Perlbug::Base;
 my $o_pb   = Perlbug::Base->new;
-my $o_test = Perlbug::TestBed->new($o_pb);
-my @objects= $o_pb->things;
+my $o_test = Perlbug::Test->new($o_pb);
+my @objects= $o_pb->objects;
 
 # Tests
 # -----------------------------------------------------------------------------

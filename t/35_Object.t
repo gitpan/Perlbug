@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
 # Object Utility tests for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 35_Object.t,v 1.1 2001/04/21 20:48:48 perlbug Exp $
+# $Id: 35_Object.t,v 1.2 2001/09/18 13:37:50 richardf Exp $
 #
 BEGIN { 
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::TestBed; 
+	use Perlbug::Test; 
 	plan('tests' => 3); 
 }
 use strict;
@@ -39,7 +39,7 @@ if ($o_obj->READ) {
 # get/set data 
 $test++;
 my $old = $o_obj->data('subject');
-my $new = ($old =~ 'some') ? 'a bug of another sort' : 'a bug of some sort';
+my $new = ($old =~ /some/io) ? 'a bug of another sort' : 'a bug of some sort';
 my @vars = $o_obj->data({
 	'subject' => $new,
 });

@@ -1,23 +1,26 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl
 # Perlbug mail bugtron processor (tron) 
 # (C) 1999 2000 Richard Foley RFI perlbug@rfi.net 
-# $Id: bugtron,v 1.2 2001/02/18 13:55:56 perlbug Exp $
+# $Id: bugtron,v 1.5 2001/10/22 15:29:51 richardf Exp $
 #
 use strict;
 use vars(qw($VERSION));
-$VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
+use Data::Dumper;
 use FindBin;
 use lib "$FindBin::Bin/..";
 use Mail::Internet;
 use Perlbug::Interface::Email;
 $|=1;
 
-my $mail = Mail::Internet->new(*STDIN);
-my $pb = Perlbug::Interface::Email->new($mail);
+my $o_int = Mail::Internet->new(\*STDIN);
+my $o_email = Perlbug::Interface::Email->new;
 
-my ($meth, $msg) = $pb->switch;
-my $ok = $pb->$meth($mail); 
-$pb->clean_up("$0 meth($meth) -> msg($msg) -> ($ok)");
+my $h_cmds = $o_email->parse_input($o_int);
+
+my @res = $o_email->process_commands($h_cmds, $o_int);
+
+$o_email->clean_up("$0 -> res(@res)");
 
 exit 0;

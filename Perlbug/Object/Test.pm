@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Test.pm,v 1.17 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Test.pm,v 1.20 2001/09/18 13:37:50 richardf Exp $
 #
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::Object::Test - Test class
 package Perlbug::Object::Test;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.17 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Test_DEBUG'} || $Perlbug::Object::Test::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.20 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 =head1 DESCRIPTION
@@ -59,8 +58,6 @@ sub new {
 		'from'		=> [qw(bug)],
 		'to'		=> [qw(version)],
 	);
-
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
 
 	bless($self, $class);
 }

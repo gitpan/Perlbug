@@ -1,6 +1,6 @@
 # Perlbug Fileging and file accessor
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: File.pm,v 1.5 2001/04/21 20:48:48 perlbug Exp $
+# $Id: File.pm,v 1.9 2001/09/18 13:37:49 richardf Exp $
 # 
 
 =head1 NAME
@@ -12,15 +12,13 @@ Perlbug::File - Module for generic file access functions Perlbug.
 package Perlbug::File;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_File_DEBUG'} || $Perlbug::File::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.9 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1;
 
 use Carp;
 use Data::Dumper;
 use FileHandle;
 use Shell qw(chmod);
-
 
 
 =head1 DESCRIPTION
@@ -31,11 +29,11 @@ Simple file access module, handling checking readability, locking and unlocking,
 =head1 SYNOPSIS
 
 	my $o_file = Perlbug::File->new('/tmp/abc.xyz', '+>>', '0755');
-	
+
 	$o_file->append("data");
-	
+
 	my $a_data = $o_file->read();
-	
+
 	print $a_data; # 'other data\nOK\n'
 
 
@@ -71,7 +69,7 @@ sub new {
 		$self->error("File($file) doesn't match($rex)");
 	} else {
 		my ($dir, $tgt) = ($1, $3);
-		if (!($dir =~ /\w+/ && -d $dir && -r _)) {
+		if (!($dir =~ /\w+/o && -d $dir && -r _)) {
 			$self->error("file can't attach to dir($dir) file($tgt): $!");
 		} else {
 			$self->{'_name'} = $file;
@@ -79,27 +77,20 @@ sub new {
 		}
 	}	
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
 	return $self;
 }
 
 
 =item error
 
-Errors are croaked out, as we probably have a problem with the file in question :-)
+Wrapper for Perlbug::Config->error($error)
 
-	$o_file->error("File is not open") unless $o_file->status eq 'open';
+	$o_file->error($error);
 
 =cut
 
 sub error {
-	my $self = shift;
-	
-	my $dump = Dumper($self);
-	croak "@_, \nPerlbug::File::error($dump)\n";
-
-	die(@_);
-	exit;
+	return Perlbug::Config->error(@_);
 }
 
 
@@ -346,12 +337,11 @@ sub copy {
 	my $perm = shift || '0766';
     my @data = ();
     
-    
     # FILEHANDLES
     # my $oldfh = new FileHandle($orig, '<');
 	# my $newfh = new FileHandle($targ, '+>', $perm);
     my $oldfh = $self->fh($orig, '<');
-	my $newfh = $self->fh($targ, '+>', $perm);
+	my $newfh = $self->fh($targ, '+<', $perm);
 
 	if (!(defined($oldfh)) || (!defined($newfh))) {
 	    $self->error("Filehandle failures for copy: orig($orig -> '$oldfh'), targ($targ -> '$newfh')");
@@ -378,6 +368,38 @@ sub copy {
 
     return @data;
 }
+
+
+=item create_file
+
+Create new file with this data:
+
+    $ok = $self->create("$dir/$file.tmp", $data);
+
+=cut
+
+sub xcreate {
+    my $self = shift;
+    my $file = shift;
+    my $data = shift;
+	my $perm = shift || '0766';
+	my $o_file = '';
+    
+    # ARGS
+    if (!(($file =~ /\w+/o) && ($data =~ /\w+/o))) {
+        $self->errors("Duff args given to create($file, $data, $perm)");
+    } else {
+    	$o_file = Perlbug::File($file, '>', $perm);
+        if (ref($o_file)) {
+			$o_file->append($data);
+        } else {
+            $self->error("failed to create file($file) -> o_file($o_file)");
+        }
+    }
+    
+    return $o_file;
+}
+
 
 
 =item link
@@ -424,7 +446,7 @@ sub _syntax_check {
     my $ok = 0;
     
     # ARGS
-    if ($file =~ /\w+/) {
+    if ($file =~ /\w+/o) {
         $self->error("requires a file($file) to syntax check");
 	} else {
         if (-f $file) {

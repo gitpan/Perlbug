@@ -1,12 +1,12 @@
 #!/usr/bin/perl 
 # Perlbug historical data or archive processor 
 # (C) 1999 Richard Foley RFI perlbug@rfi.net 
-# $Id: bughist,v 1.3 2001/04/21 20:48:48 perlbug Exp $
+# $Id: bughist,v 1.8 2001/10/19 12:40:21 richardf Exp $
 #
 
 use strict;
 use vars(qw($VERSION));
-$VERSION = do { my @r = (q$Revision: 1.3 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.8 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 =head1 NAME
 
@@ -18,7 +18,7 @@ Loops through all files in a given directory, looking for a potential mail messa
 
 =head1 USAGE
 
-	./bughist -[dehmqrvt] -i input_file_or_dir
+	./bughist -[deEhmqrvt] -i input_file_or_dir
 
 =cut
 
@@ -35,6 +35,8 @@ use IO::File;
 use Mail::Internet;
 use Perlbug::Interface::Email; 
 
+my $o_pb = Perlbug::Interface::Email->new;
+
 my $i_fnd	= 0;
 my $i_cnt	= 0;
 my $i_nr    = 0;
@@ -50,9 +52,13 @@ debug level
 
 email switch (1=notify p5p, 0=don't:default)
 
+=item E
+
+Email a notification of any input - B<no> data in DB and sets B<e=1> and B<t=0>
+
 =item h
 
-help
+help - perldoc $0
 
 =item i
 
@@ -83,7 +89,8 @@ offer feedback on switch <- subject, to, x-perlbug, etc
 # ARGs
 my %arg = (
 	'd'	=> 0,   # debug
-	'e'	=> 0,	# email(default is no email)
+	'e'	=> 0,	# email (default is no email - just db ops)
+	'E'	=> 0,	# re-notify (overrides and sets e=1, t=0)
 	'h' => 0, 	# help
 	'i' => '',	# dir
 	'm'	=> 101, # max
@@ -92,12 +99,17 @@ my %arg = (
 	't' => 0, 	# test 
 	'v' => 0, 	# verbose 
 );
-getopts('d:ehi:m:vqt', \%arg);
-use vars(qw($d $e $h $i $m $q $r $t $v));
+getopts('d:eEhi:m:qrtv', \%arg);
+use vars(qw($d $e $E $h $i $m $q $r $t $v));
 foreach my $switch (keys %arg) {
 	no strict 'refs';
 	$$switch = $arg{$switch};
 }
+if ($E) { $e = 1; }
+$o_pb->current({'debug'		=> $d});
+$o_pb->current({'isatest'	=> $t});
+$o_pb->current({'renotify'	=> $E});
+$o_pb->current({'mailing'	=> $e}); 
 
 # Process 
 # -----------------------------------------------------------------------------
@@ -111,6 +123,7 @@ if ($v) {
 	print "found($i_fnd) processed($i_cnt) <$i_nr> of max($m)\n";
 	print "output: ".Dumper(\%dir) if $d;
 }
+$o_pb->clean_up("$0 -> ($i_ok)");
 exit;
 
 
@@ -163,7 +176,11 @@ sub dir {
 			print "Found [".@items."] items in dir($dir)\n" if $v;
 			ITEM:
 			foreach my $item (@items) {
-				last ITEM if $i_cnt >= $m; # control it
+				if ($i_cnt >= $m) {
+					print "Passed maximum($m) object count($i_cnt)\n";
+					exit; 
+					last ITEM; # control it
+				}
 				$i_dircnt++;
 				$item = $dir.'/'.$item;
 				if (-d $item) {
@@ -200,35 +217,25 @@ sub process {
 		if (!(open($FH, $file))) {
 			carp("Can't open file($file): $!");
 		} else {
-			my $mail = Mail::Internet->new($FH);
+			my $o_int = Mail::Internet->new($FH);
 			close $FH;
-			my $o_pb = Perlbug::Interface::Email->new($mail);
-			$o_pb->current('debug', $d);
-			$o_pb->current('isatest', $t);
-			$o_pb->mailing($e); 
 			print "inspecting mail...\n";
-			my ($meth, $msg) = $o_pb->switch($mail);
-			if ($meth =~ /new|reply/i) {
+			my $h_cmds = $o_pb->parse_input($o_int);
+			my ($meth) = keys %{$h_cmds};
+			if (grep(/new|reply|B|E|M|N|P|T/, keys %{$h_cmds})) {
 				$star = '*';
 				$i_nr++;
 			}
-			my ($o_hdr, $header, $body) = $o_pb->splice($mail);
-			my ($to, $subject, $from, $xperlbug, @cc) = (
-			    $o_hdr->get('To'), $o_hdr->get('Subject'), $o_hdr->get('From'), $o_hdr->get('X-Perlbug'), $o_hdr->get('Cc')
-			); chomp($to, $subject, $from, $xperlbug, @cc);
-			my $verbose = 'switch -> '.uc($meth).qq| <-
-    To:           $to
-    Cc:           @cc
-    Subject:      $subject
-    From:         $from
-    X-Perlbug:    $xperlbug	
-|; 
-			print $verbose if $v;
-			$i_ok = $o_pb->$meth($mail);
-			undef $mail;
-			$o_pb->clean_up("$0 meth($meth) -> ($i_ok)");
+			my @res = $o_pb->process_commands($h_cmds, $o_int);
+			undef $o_int;
 			print "[$i_cnt] <$i_nr> -> ".substr("${meth}$star", 0, 9)." -> ok($i_ok)\n" unless $q;
-			print "$msg\n" if $v;
+			if (ref($$h_cmds{$meth}) eq 'HASH') {
+				unless ($v) {
+					$$h_cmds{$meth}{'body'}   = 'trimmed';
+					$$h_cmds{$meth}{'header'} = 'trimmed';
+				}
+			} 	
+			print "[$i_cnt] $file($meth): ".Dumper($h_cmds) unless $q;
 		}
 	}
 	return $i_ok;

@@ -1,24 +1,26 @@
-#!/usr/bin/perl 
-# Perlbug mail interface to database (bugdb)
+#!/usr/bin/perl
+# Perlbug mail bugtron processor (tron) 
 # (C) 1999 2000 Richard Foley RFI perlbug@rfi.net 
-# $Id: bugmail,v 1.3 2001/02/26 10:04:36 perlbug Exp $
+# $Id: bugmail,v 1.6 2001/10/22 15:29:51 richardf Exp $
 #
 use strict;
 use vars(qw($VERSION));
-$VERSION = do { my @r = (q$Revision: 1.3 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
+use Data::Dumper;
 use FindBin;
 use lib "$FindBin::Bin/..";
 use Mail::Internet;
 use Perlbug::Interface::Email;
 $|=1;
 
-my $mail = Mail::Internet->new(*STDIN);  
-my $pb = Perlbug::Interface::Email->new($mail);
+my $o_int = Mail::Internet->new(\*STDIN);
+my $o_email = Perlbug::Interface::Email->new;
 
-my ($h_cmds, $body) = $pb->parse_mail();
-my @res = $pb->process_commands($h_cmds, $body);
-$pb->return_info($mail, join("\n", @res));
-$pb->clean_up("$0 done");
+my $h_cmds = $o_email->parse_input($o_int);
 
-exit(0);
+my @res = $o_email->process_commands($h_cmds, $o_int);
+
+$o_email->clean_up("$0 -> res(@res)");
+
+exit 0;

@@ -1,18 +1,22 @@
 # Perlbug site configuration
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Configuration,v 1.1 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Configuration,v 1.11 2001/10/22 15:29:51 richardf Exp $
 #
 
 my $h_Config = {
 	#CURRENT
 	'CURRENT' 	=> {								#  
+		'cc'		=> '',                          # return addrs
 		'context' 	=> 'text',                      # /(text|html)/i
-		'debug'		=> '01sxX', 	                    # /[cmsx0-5]/i 
+		'debug'		=> '01x',                       # /[msx0-5]/i #!
+		'fatal'  	=> 1,                           # errors are fatal(1), or debugable(0) #!
 		'format'	=> 'a',                         # /[ahilx]/i
 		'framed'	=> 1,                           # wasn't me guv! :-)
-		'isatest'	=> 1,                           # ! 0=normal 1=maintainer 2=print
+		'isatest'	=> 2,                           # ! 0=normal 1=maintainer 2=print #!
 		'log_file'	=> '',                          # placeholder
-		'switches'	=> 'bcfghjmnoprstu',            # minimal
+		'mailing'	=> 1,							# 0|1
+		'renotify'	=> 0,							# 0|1
+		'switches'	=> 'bBceEfjghmMnNopPrstTuv',     # minimal
 		'tmp_file'	=> '',                          # placeholder
 		'url'		=> 'perlbug.cgi',               # start point 
 		'user'		=> 'generic',			  		# user
@@ -20,12 +24,13 @@ my $h_Config = {
 	#DATABASE
 	'DATABASE'	=> {								# 
 		# -t(no create statements) -d(no data) -c(all create and data) -w(where...)
-		'backup_args'  	 => '-l',                	# default all data and create statements
+		'backup_args'  	 => '-opt',      	        # default all data and create statements
+		# 'backup_args'  	 => '-l',              	# default all data and create statements
 		'backup_command' => '/usr/bin/mysqldump',   # backup tool
 		'backup_interval'=> 7, 			      		# auto backup interval in days
 		'connect' 	     => '', 				  	# use this if set
 		'database'       => 'perlbug',              # database to connect to
-		'engine'         => 'Mysql',                # Mysql | Oracle support (via DBI!)
+		'engine'         => 'mysql',                # DBI(mysql|Oracle) support
 		'latest'         => 'Perlbug.sql.gz',       # name for latest db backup
 		'passfile'       => 'x2',                   # database password 
 		'password'       => 'm0use1',               # database password
@@ -70,23 +75,37 @@ my $h_Config = {
 	#FORWARD (transparent forwards to address, undef -> generic) - was reply
 	'FORWARD'	=> { 
 		'generic'   	=> [qw(perl5-porters@perl.org)],  
-		'macos'     	=> [qw(macperl-porters@macperl.org)],        # f
+		'macos'     	=> [qw(macperl-porters@macperl.org macperl-porters@perl.org)],        # f
 		'win32'     	=> [qw(perl-win32-porters@activestate.com)], # f
 		'ok'            => [qw(perl-ok@perl.org)],					 # f
 		'test'          => [qw(forwardtest@bugs.perl.org)],			 # f
 	},
+	'MESSAGE'	=> {
+		'bounce'		=> "Inappropriate mail - please include output of 'perl -v'", 
+		'clone'			=> 'Seen messageid before',
+		'B'				=> 'New bug recieved',
+		'E'				=> 'Renotification',
+		'new'			=> 'New bug recieved',
+		'nobugids'		=> 'No bugids found in email',
+		'nocommand'		=> 'No action given or did not understand request',
+		'nomatch'		=> "No initiating match found - please include output of 'perl -v'",
+		'patch'			=> 'New patch recieved against bug',
+		'quiet'			=> 'Invalid mail (header or content) could be spam, chat or clone?', 
+		'reply'			=> 'Reply to existing bug',
+		'M'				=> 'Reply to existing bug',
+		'test'			=> 'New test recieved against bug',
+	},
 	#SYSTEM
 	'SYSTEM' 	=> {								# 
-		'admin_switches'=> 'aACDGiILMNPTxXyz',     # admin switches, in _opposition_ to users (B)
+		'admin_switches'=> 'aACDGiLUxXyzZ',         # admin switches, in _opposition_ to users (B)
 		'assign'		=> 5,                  		# max tickets to assign/admin
 		'bugmaster'		=> 'richardf',		  		# master admin 
 		'cachable'		=> 1,						# cachable objects?
 		'compress'		=> 'gzip',					# compression tool
 		'enabled'		=> 1,			  			# enabler
-		'hostname'		=> 'pc026991',              # expected hostname of machine
+		'hostname'		=> 'blue.rfi.net',          # expected hostname of machine
 		'maintainer'    => 'perlbug@rfi.net',       # address
 		'max_age'       => 3,                       # max age of log files in days
-		'max_errors'    => 1,                       # max num of errors before exiting
 		'path'          => '/bin:/usr/bin',         # path to set for logs etc.
 		'preload'       => 0,						# objects at start, or as requested 
 		'restricted'    => 1,                       # (0|1) (all|admin)->can(modify) 
@@ -96,7 +115,7 @@ my $h_Config = {
 		'timeout_interactive' => 33600,             # bug(db|fix|tk)
 		'title'			=> 'Perlbug',		  		# :-)
 		'user'          => 'perlbug',               # username on system
-		'user_switches'	=> 'bBcdefghHjJlmnopqQrRsStuv', # normal user switches
+		'user_switches'	=> 'bBcdeEfghHjJlmMnNopPqQrRsStTuvV', # normal user switches
 	},
 	#TARGET set off a new bug, undef -> generic
 	'TARGET'	=> {							    
@@ -114,7 +133,7 @@ my $h_Config = {
 		'cgi'           => 'perlbug.cgi',               	   	# base script
 		'domain'        => 'bugs.perl.org',                    	# top level domain
 		'home'          => 'index.html',                       	# home address page
-		'hard_wired_url'=> 'http://blue/perlbug/index.html',	# hard-wired-url
+		'hard_wired_url'=> 'http://localhost/perlbug/index.html',	# hard-wired-url
 		'htpasswd'      => '.htpasswd',                        	# in config dir!
 		'logo'          => '<img src="images/perl_republic.gif">', # graphic
 	},
@@ -146,12 +165,13 @@ my $h_Config = {
 	'VERSION'	=> { 	# VERSION
 		# Summary of my perl5 (5.0 patchlevel 5 subversion 3) configuration:        
 		# Summary of my perl5 (revision 5.0 version 5 subversion 640) configuration:    
-		'(?:ummary\sof\smy\sperl\d+\s\((?:revision)*\s*(\d\.\d)\s(?:patchlevel|version)\s(\d+)\ssubversion\s(\d+))' => '$1.$2.$3',
+		'ummary\sof\smy\sperl\d+\s\((?:revision)*\s*(\d[\d\.]+\d)\s(?:patchlevel|version)\s(\d+)\ssubversion\s(\d+)' => '$1.$2.$3',
 		# generated with the help of perlbug 1.27 running under perl 5.00503.
-		'(?:\brunning\sunder\sperl\sv*(\d[\d\.]+))'	=> '$1', 		# 
-		'(?:\bperl\s+version\s*(\d[\d\.]+))'		=> '$1', 		# 
+		'\brunning\s+under\sperl\sv*(\d[\d\.]+\d)'	=> '$1', 		# 
+		'\bperl\s+version\s*(\d[\d\.]+\d)'		=> '$1', 		# 
 		# Site configuration information for perl 5.00503:
-		'(?:\bconfiguration\sinformation\sfor\sperl\sv*(\d[\d\.]+))' => '$1', # 
+		'summary\s+of\s+my\s+perl5\s*\((\d[\d\.]*)\s+patchlevel\s+(\d[\d\.])\s+subversion\s+(3)\)\s+configuration' => '$1',
+		'\bconfiguration\s+information\s+for\s+perl\s+v*(\d[\d\.]+\d)' => '$1', # 
 	},
 }; 	# Config
 

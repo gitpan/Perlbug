@@ -5,6 +5,14 @@
 # Server version	3.22.32
 
 #
+# Table structure for table 'bug_msgs_count'
+#
+CREATE TABLE bug_msgs_count (
+  bugid varchar(12),
+  msgcount int(5)
+);
+
+#
 # Table structure for table 'pb_address'
 #
 CREATE TABLE pb_address (
@@ -107,12 +115,12 @@ CREATE TABLE pb_bug_message (
   messageid bigint(20) unsigned DEFAULT '0' NOT NULL
 );
 
-# 
-# counting the replies (no sub selects in mysql :-()
+#
+# Table structure for table 'pb_bug_message_count'
 #
 CREATE TABLE pb_bug_message_count (
-        bugid VARCHAR(12),
-        messagecount INT(5)
+  bugid varchar(12),
+  messagecount int(5)
 );
 
 #
@@ -223,15 +231,6 @@ CREATE TABLE pb_bug_version (
   modified datetime,
   bugid varchar(12),
   versionid smallint(5)
-);
-
-#
-# Table structure for table 'pb_bugid'
-#
-CREATE TABLE pb_bugid (
-  created datetime,
-  modified datetime,
-  bugid varchar(12) DEFAULT '' NOT NULL
 );
 
 #
@@ -434,14 +433,25 @@ CREATE TABLE pb_template (
   created datetime,
   ts timestamp(14),
   templateid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
-  name varchar(16),
-  description varchar(150),
-  subject varchar(100),
-  sourceaddr varchar(100),
-  toaddr varchar(100),
+  object varchar(16),
+  type varchar(16) DEFAULT '',
+  format char(1) DEFAULT '' NOT NULL,
+  wrap int(11),
+  repeat int(11),
+  description varchar(255),
   header blob,
   body blob,
   PRIMARY KEY (templateid)
+);
+
+#
+# Table structure for table 'pb_template_user'
+#
+CREATE TABLE pb_template_user (
+  created datetime,
+  modified datetime,
+  templateid bigint(20),
+  userid varchar(16) DEFAULT '' NOT NULL
 );
 
 #
@@ -451,8 +461,8 @@ CREATE TABLE pb_test (
   created datetime,
   modified datetime,
   testid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
-  subject varchar(100),
-  sourceaddr varchar(100),
+  subject varchar(100) DEFAULT '',
+  sourceaddr varchar(100) DEFAULT '',
   toaddr varchar(100),
   header blob,
   body blob,
@@ -511,6 +521,7 @@ CREATE TABLE pb_user (
   name varchar(50),
   match_address varchar(150),
   active char(1),
+  public_key blob,
   PRIMARY KEY (userid),
   UNIQUE tm_user_id_i (userid)
 );

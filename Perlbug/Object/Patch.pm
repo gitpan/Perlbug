@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Patch.pm,v 1.14 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Patch.pm,v 1.16 2001/08/20 18:57:31 mstevens Exp $
 #
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::Object::Patch - Patch class
 package Perlbug::Object::Patch;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.14 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Patch_DEBUG'} || $Perlbug::Object::Patch::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.16 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -42,6 +41,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Patch object:
@@ -61,11 +62,12 @@ sub new {
 		'to'		=> [qw(change version)],
 	);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

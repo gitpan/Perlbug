@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Version.pm,v 1.10 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Version.pm,v 1.13 2001/10/19 12:40:21 richardf Exp $
 #
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::Object::Version - version handler
 package Perlbug::Object::Version;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Version_DEBUG'} || $Perlbug::Object::Version::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.13 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -42,6 +41,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Version object:
@@ -56,18 +57,19 @@ sub new {
 	my $o_base = (ref($_[0])) ? shift : Perlbug::Base->new;
 
 	my $self = Perlbug::Object->new( $o_base, 
-		'name'		=> 'Version',
-		'from'		=> [qw(bug patch test)],
-		'to'		=> [],
-		'type'		=> 'prejudicial',
+		'name'			=> 'Version',
+		'from'			=> [qw(bug patch test)],
+		'prejudicial'	=> 1,
+		'to'			=> [],
 		@_,
 	);
-
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
 
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

@@ -1,12 +1,8 @@
 A couple of points on the tests:
  
-31_Object.t must succeed for most of the rest of the tests to stand half a chance
+	31_Object.t must succeed for most of the rest of the tests to stand half a chance
  
-Some of these can be used specifically in the following manner, to help track down bugs:
-	perl t/76_Email.t 	# run all tests in this file 
- 	perl t/76_Email.t remap	# run only the remap tests
-
-Test sequence should look like this:
+	Test sequence should look like this:
 
 0..n 	System:	
 	Config
@@ -33,17 +29,17 @@ Test sequence should look like this:
 5..n 	Utilities:
 	Fix
 	JS
-	TestBed
+	Test
 
-6..n  	
+6..n  	Interface:	
+	Cmd
+	Tk
+	Web	
 
 7..n	Interface:	
 	Email
 
-8..n	Interface:
-	Cmd
-	Tk
-	Web	
+8..n	Spare
 
 9..n    Clean-up:
 

@@ -5,34 +5,117 @@
 # 
 # 
 
-use strict;
-use vars(qw($VERSION));
-$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+package Testit;
 
-use FindBin;
-use lib "$FindBin::Bin/..";
-use Benchmark;
-use Data::Dumper;
-use Perlbug::Interface::Cmd;
+use strict;
+use vars(qw($VERSION $AUTOLOAD));
+$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
+use Benchmark;
 my $iterations = $ARGV[0] || 0;
+die "Usage: $0 \$i_num # (number of iterations)\n" unless $iterations;
 
-$DB::single=2;
-my $pb = Perlbug::Interface::Cmd->new(@ARGV);
-$pb->debug(1, "$0: starting($pb)");
+use Data::Dumper;
+use Perlbug::Interface::Cmd;
+use Perlbug::Test;
+my $pb = Perlbug::Interface::Email->new(@ARGV);
+my $o_test = Perlbug::Test->new($pb);
+$o_test->debug(1, "$0: starting($o_test)");
 
-my $o_obj = $pb->object('Bug');
+my $o_obj = $o_test->object('user');
 $o_obj->read('19870502.007');
+$o_obj->read('richardf');
+$DB::single=2;
+print $o_obj->template('a');
 # print Dumper($o_obj); exit;
 
+__END__
+
+sub new {
+	my $class = shift;
+	my $self = {
+		'attribute'	=> 'of some sort',
+	};
+	bless($self, $class); 
+}	
+
+sub xattr { # test method
+	my $self = shift;
+	my $get  = shift;
+	my @ret  = ();
+
+	if (!defined($get)) {
+		@ret = keys %{$self->{'_attr'}}; 			# ref
+	} else {
+		if (ref($get) ne 'HASH') { 					# get
+			@ret = ($self->{'_attr'}{$get});
+		} else {									# set
+			my $keys = join('|', keys %{$self->{'_attr'}}); 	# ref
+			SET:
+			foreach my $key (keys %{$get}) {
+				if ($key =~ /^($keys)$/) {
+					$self->{'_attr'}->{$key} = $$get{$key}; # SET
+					push(@ret, $$get{$key});
+				} else {
+					$self->debug(2, ref($self)." has no such attribute key($key) valid($keys)") if $Perlbug::DEBUG;
+				}
+			}
+		}
+	}
+	return wantarray ? @ret : $ret[0];
+}
+
+sub AUTOLOAD {
+    my $self = shift;
+    my $get  = shift || '';	
+	my $meth = $AutoLoader::AUTOLOAD = $AUTOLOAD;
+    return if $meth =~ /::DESTROY$/o;
+
+    $meth =~ s/^(.*):://o;
+	my $pkg = ref($self);
+	my @ret = ();
+
+    if ($meth !~ /^(attr|data|flag)$/) {
+        $self->error("$pkg->$meth($get, @_) called with a duff method($AUTOLOAD)!  Try: 'perldoc $pkg'");
+    } else { 
+		no strict 'refs';
+		*{$AUTOLOAD} = sub { # this bit is virtually identical to the xattr() sub
+			my $self = shift;
+			my $get  = shift;
+			my @ret  = ();
+
+			if (!defined($get)) {
+				@ret = keys %{$self->{"_$meth"}}; 			#
+			} else {
+				$DB::single=2;
+				if (ref($get) ne 'HASH') { 					# get
+					@ret = ($self->{"_$meth"}{$get});
+				} else {									# set
+					my $keys = join('|', keys %{$self->{"_$meth"}});
+					SET:
+					foreach my $key (keys %{$get}) {
+						if ($key =~ /^($keys)$/) {
+							$self->{"_$meth"}->{$key} = $$get{$key}; # SET
+							push(@ret, $$get{$key});
+						} else {
+							$self->debug(2, "$pkg has no such $meth key($key) valid($keys)") if $Perlbug::DEBUG;
+						}
+					}
+				}
+			}
+			return wantarray ? @ret : $ret[0];
+		}
+    }
+	return wantarray ? @ret : $ret[0];
+}
+
+my $o_obj = Testit->new;
 timethese($iterations, {
 	'anonymous'	=> q|call('attr')|,
 	'explicit'	=> q|call('xattr')|,
 });
 sub call { my $call = shift; return $o_obj->$call('objectid'); }
 
-$pb->debug(1, "$0: done()");
-$DB::single=2;
-$pb->clean_up;
 exit 0;
+

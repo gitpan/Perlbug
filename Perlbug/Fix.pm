@@ -1,4 +1,4 @@
-# $Id: Fix.pm,v 1.29 2001/07/05 08:32:26 richardf Exp $ 
+# $Id: Fix.pm,v 1.36 2001/10/22 15:29:50 richardf Exp $ 
 # 	
 
 =head1 NAME
@@ -10,8 +10,7 @@ Perlbug::Fix - Command line interface to fixing perlbug database.
 package Perlbug::Fix;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.29 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG  = $ENV{'Perlbug_Database_DEBUG'} || $Perlbug::Database::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.36 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -44,18 +43,16 @@ Most calls take an integer as the maximimum number of records to process, or def
 	
 	UPPERcase expands/effects
 	
-	> h		# help
+	> h		# help [with args]
 	
 	> H		# Helpful help
-	
-	> f		# view erroneous flags
-	
-	> F		# Fix erroneous flags
 
-	> bv	# see how many dodgy bug_version records exist
+	> k 125	# set Perlbug_Max (number of records to fix) to 125
 
-	> BV 57 # Attempt to fix up to 57 of them
-	
+	> s		# scan for correctable relationships
+
+	> S 200108%	# implement corrections for August registered bugs
+
 	> 		# etc.
 
 
@@ -77,7 +74,6 @@ sub new {
     my $arg   = shift;
     my $self = Perlbug::Interface::Cmd->new(@_);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
     bless($self, $class);
 }
 
@@ -100,16 +96,18 @@ my %MAP = ( # a=pb_address bu=pb_bug_user l=pb_log...
 #	't' 	=> 'tables       [primaryid%]',	'th' 	=> 'tidy all tables created=SYSDATE(), etc.',
 	'u' 	=> 'users        [userid%]',	'uh' 	=> 'de-activate non-valid users',
 	'x'		=> 'execute      [sql]',		'xh'	=> 'xecute sql on db!', # only if bugmaster
-	'w'		=> 'wrapper      [Perlbug_Max]','wh'	=> 'wrap all calls - takes quite a long time...',
+	'w'		=> 'wrapper      [Perlbug_Max]','wh'	=> 'wrap all calls(@WRAP) - takes quite a looong time...',
+#	'v'		=> 'version      [bugid%]',     'vh'    => 'version specific scanning',
 	'z'		=> 'header_body  [bugid%]',	 	'zh'	=> 'migrate headers and body across to bug from original mail',
 );
 
+my @WRAP = qw(z i d m f s a c u l); 
+
 sub wrapper { # w 
 	my $self = shift;
-	my @wrap = qw(z i d m f s a c u l); 
-	foreach my $w (@wrap) {
+	foreach my $w (@WRAP) {
 		my $W = uc($w);
-		print "Wrapping $w($W) of wrap(@wrap) -> \n";
+		print "Wrapping $w($W) of wrap(@WRAP) -> \n";
 		$self->process($w, @_);
 		print "... done wrapping $w($W)       <-\n";
 	}
@@ -133,7 +131,7 @@ where the database was actually changed:
 
 |;
 	foreach my $k (sort keys %MAP) {
-		next if $k =~ /^\w+h$/;
+		next if $k =~ /^\w+h$/o;
 		my $hint = "${k}h";
 		$help .= ($FIX == 1) ? "$k = $MAP{$hint}\n" : "$k = $MAP{$k}\n";
 	}
@@ -149,6 +147,7 @@ sub doq { # q rewrapper :-\
 }
 
 
+
 =item kick
 
 Kick Perlbug_Max value ...
@@ -161,7 +160,7 @@ sub kick { # k
 	
 	my $ret = "Perlbug_Max($newval) must be a digit!\n";	
 
-	if ($newval =~ /^\d+$/) {
+	if ($newval =~ /^\d+$/o) {
 		$MAX = $newval;
 		$ret = "set Perlbug_Max($MAX)\n";	
 	}
@@ -190,11 +189,11 @@ sub process {
 	if ($call !~ /^\w+$/) {
 		print "didn't understand orig($orig), call($call), args(@args)\n";
 	} else { 
-		$FIX++ if $call =~ /^[A-Z]+$/;
+		$FIX++ if $call =~ /^[A-Z]+$/o;
 		my $meth = $MAP{lc($call)};
 		$meth =~ s/^(\w+)\s+.+$/$1/;
 		if (!$self->can($meth)) {
-			$self->error("unsupported call($call) meth($meth) - please contact the maintainer: ".$self->system('maintainer'));
+			$self->error("unsupported call($call) meth($meth)");
 		} else {
 			# print "fix($FIX) max($MAX) call($meth) args(@args)\n";
 			@res = $self->$meth(@args);
@@ -203,10 +202,11 @@ sub process {
 	}
 	if (!(scalar(@res) >= 1)) { 
 		@res = ("Command($orig) failed to produce any results(@res) - try 'h'\n");
-	} 
-	my $i_ok = $self->scroll(@res);
+	} else {
+		$self->scroll(@res);
+	}
 
-	return $i_ok;
+	return @res;
 }
 
 
@@ -235,11 +235,11 @@ sub references { # r
 	my $tgt  = shift || '';
 	my $attr = shift || '_%';
 
-	($src, $tgt) = ('bug', $src) unless $tgt =~ /\w+/;
+	($src, $tgt) = ('bug', $src) unless $tgt =~ /\w+/o;
 
 	my $ret = '';
 
-	if (!($src =~ /^\w+$/ && $tgt =~ /^\w+$/)) {
+	if (!($src =~ /^\w+$/o && $tgt =~ /^\w+$/o)) {
 		print "references requires a source($src) and target($tgt) attr($attr)"; 
 	} else {
 		print "fixing($FIX) src($src) tgt($tgt) attr($attr)\n";
@@ -276,8 +276,7 @@ sub references { # r
 				} else {
 					my $sql = "DELETE FROM $reftable WHERE $srcpkey IN ('$notok')";
 					my $sth = $self->exec($sql);
-					$rows = $sth->rows;
-					print "deleted $rows from $reftable\n";
+					print "$reftable delete success\n" if $sth;
 				}		
 			}
 		}
@@ -330,7 +329,8 @@ sub src_address { # address
 		MID:
 		foreach my $mid (@mids) { 		# AND EVERY
 			my ($header) = $self->get_list("SELECT header FROM $m_table WHERE messageid = '$mid' AND header LIKE '%Cc:%'");
-			next MID unless $header =~ /\w+/;
+			$header = '' unless $header;
+			next MID unless $header =~ /\w+/o;
 			# my $o_hdr = $o_email->header2hdr($header);
 			my @lines = split("\n", $header);
 			my @cc = map { /^Cc:\s*(.+)\s*$/ } grep(/^Cc:/, @lines);
@@ -341,7 +341,7 @@ sub src_address { # address
 				next CC unless ref($o_cc);
 				# my ($addr) = $o_cc->address;
 				my ($addr) = $o_cc->format;
-				push (@addrs, $addr) if ($addr =~ /\w+/ and $addr !~ /$exists/i and $addr =~ /\@/);
+				push (@addrs, $addr) if ($addr =~ /\w+/o and $addr !~ /$exists/i and $addr =~ /\@/o);
 			}
 			if (!(scalar(@addrs) >= 1)) {	# ONE
 				print "$i_t($id->$mid) looks ok missing(".@addrs.")\n";
@@ -383,7 +383,7 @@ Example file contents:
 				 From: Peter Prymmer <pvhp@forte.com>
 				 Date: Fri, 1 Sep 2000 15:50:57 -0700 (PDT)
 				 Message-ID: <Pine.OSF.4.10.10009011542550.147696-100000@aspara.forte.com>
-	 
+
 				 plus rework the http: spots as suggested by Tom Christiansen,
 				 plus regen perltoc.
 		 Branch: perl
@@ -418,7 +418,7 @@ sub change { # c
 	my @bids = $o_bug->ids;
 	
 	if (!(-f $file && -r _)) {
-		print "no file($file) given or not readable: $!\n";
+		print "no Changes file($file) given or not readable: $!\n";
 	} else {
 		my $FH = FileHandle->new($file);
 		if (!defined($FH)) {
@@ -432,24 +432,24 @@ sub change { # c
 				chomp($line);
 				# print "looking at line($line)\n" if $line =~ /subject/i;
 				last LINE if $i_rec >= $i_max;
-				next LINE unless $line =~ /\w+/;
-				if ($line =~ /^\[\s*(\d+)\]/) {
+				next LINE unless $line =~ /\w+/o;
+				if ($line =~ /^\[\s*(\d+)\]/o) {
 					$cid = $1;
 					$inarec++;
 					$i_rec++;
 					# print "found start: cid($cid), inarec($inarec), i_rec($i_rec)\n";
 				}
-				$inalog++    if $line =~ /Log: /;
-				$inabranch++ if $line =~ /Branch: /;
+				$inalog++    if $line =~ /Log: /o;
+				$inabranch++ if $line =~ /Branch: /o;
 				if (!$inarec) {
 					$notarec  .= $line;
 					# print "notarec($inarec)\n";
 				} else {
 					if ($inalog) {
 						# $bid   = $1 if $line =~ /Subject:.*?\D*(\d{8}\.\d{3})\D*/;
-						$bid   = $1 if $line =~ /Subject:.+?(\d{8}\.\d{3})/;
-						$msgid = $1 if $line =~ /Message-Id:\s*(\S+)\s*$/;
-						$hdr  .= $line if $line =~ /^\s+[\w-]+:\s*/;
+						$bid   = $1 if $line =~ /Subject:.+?(\d{8}\.\d{3})/o;
+						$msgid = $1 if $line =~ /Message-Id:\s*(\S+)\s*$/o;
+						$hdr  .= $line if $line =~ /^\s+[\w-]+:\s*/o;
 						$body .= $line if $line !~ /^\s+[\w-]+:\s*/;
 						# print "inalog: cid($cid) bid($bid) at current line($line)\n" if $line =~ /subject/i;
 					} elsif ($inabranch) {
@@ -460,9 +460,9 @@ sub change { # c
 						# print "undecided\n";
 					}
 				}	
-				if ($line =~ /^__+\s*$/) { # end of rec
+				if ($line =~ /^__+\s*$/o) { # end of rec
 					# print "end of rec\n";
-					if (!($bid =~ /\w+/ && $cid =~ /\w+/)) {
+					if (!($bid =~ /\w+/o && $cid =~ /\w+/o)) {
 						# print "failed to find bid($bid) and cid($cid)\n";
 					} else {
 						# print "found bid($bid), cid($cid)\n";
@@ -478,8 +478,7 @@ sub change { # c
 								if ($FIX) {
 									my $insert = "INSERT INTO $bc_table SET created=SYSDATE(), modified=SYSDATE(), bugid='$bid', changeid='$cid'";
 									my $sth = $self->exec($insert);
-									$i_cnt += $sth->rows if defined($sth);
-									print "[$i_cnt]: inserted bid($bid), cid($cid)\n";
+									print "[$i_cnt]: inserted bid($bid), cid($cid)\n" if $sth;
 									last LINE if $i_nindb >= $MAX;
 								}
 							} else {
@@ -516,7 +515,7 @@ sub message { # m
 	my $o_msg = $self->object('message');
 	my $table = $o_msg->attr('table');
 
-	my $where = ($msgid =~ /\w+/) ? "messageid LIKE '$msgid'" : '';
+	my $where = ($msgid =~ /\w+/o) ? "messageid LIKE '$msgid'" : '';
 	print "fixing($FIX) $table($where)\n";
 
 	my $i_mids = my @mids = $o_msg->ids($where);
@@ -535,12 +534,12 @@ sub message { # m
 				$i_req++;
 				print "! ";
 				my $header = $o_msg->data('header');
-				if ($header =~ /Subject:\s*([^\n]+)\n/msi) {
+				if ($header =~ /Subject:\s*([^\n]+)\n/msio) {
 					$subject = $1;
 					$i_fnd++;
 					print "$i_fnd ($subject)";
 					if ($FIX) {
-						my $qsubj = $o_msg->base->quote($subject);
+						my ($qsubj) = $o_msg->base->db->quote($subject);
 						$o_msg->update({'subject' => $subject});
 						$i_fxd++;
 						print ':-) ';
@@ -565,7 +564,7 @@ Migrate headers and body from original bug
 sub header_body { # z
 	my $self = shift;
 	my $bugid= shift || '';
-	my $and  = ($bugid =~ /\w+/) ? "AND bugid LIKE '$bugid'" : '';
+	my $and  = ($bugid =~ /\w+/o) ? "AND bugid LIKE '$bugid'" : '';
 	my $ret  = ();
 
 	my $fix = 'header_body';
@@ -594,7 +593,7 @@ sub header_body { # z
 				my @mids = $o_bug->rel_ids('message');
 				my ($mid) = my @sorted = sort { $a <=> $b } @mids; # the first one
 				print "-> mid($mid) of ".@mids." from($sorted[0]) to($sorted[$#sorted])\n" ;
-				if ($mid =~ /^\d+$/) {
+				if ($mid =~ /^\d+$/o) {
 					$i_req++;
 					print "\t* ";
 					$o_msg->read($mid);
@@ -631,6 +630,24 @@ sub header_body { # z
 	return $ret;
 }
 
+sub _log {
+	my $self = shift;
+	my @args = @_;
+	my $ret = '';
+
+	my $o_log = $self->object('log');
+	my $table = $o_log->attr('table');
+	print "fixing($FIX) $table\n";
+
+	if ($FIX) {
+		my $sql = "UPDATE $table SET entry = 'trimmed'";
+		my $sth = $self->exec($sql);
+		print "modified($sql) over enthusiastic log entries\n" if $sth;
+	}
+
+	return $ret;
+}
+
 
 =item users
 
@@ -641,7 +658,7 @@ Correct users table, currently only looks for blank passwords
 sub users { # u 
 	my $self = shift;
 	my $user = shift || '';
-	my $and  = ($user =~ /\w+/) ? "AND userid LIKE '$user'" : '';
+	my $and  = ($user =~ /\w+/o) ? "AND userid LIKE '$user'" : '';
 
 	my $ret  = '';
 
@@ -664,8 +681,7 @@ sub users { # u
 		if ($FIX) {
 			my $sql = "UPDATE $table SET active = NULL WHERE userid IN ('$notok')";
 			my $sth = $self->exec($sql);
-			$rows = $sth->rows;
-			print "disabled($rows) invalid userids\n";
+			print "disabled($sql) invalid userids\n" if $sth;
 		}
 	} else {
 		print "nothing to do (@notok)\n";
@@ -699,14 +715,10 @@ sub execute { # x
 			print "Not bugmaster!\n";
 		} else {
 			my $sth = $self->exec($action);
-			if (!defined($sth)) {
+			if (!$sth) {
 				print "Action failed($sth) -> for action($action)\n";
 			} else {
-				my $rows = 0;
-				$ROWS += $rows = $sth->rows;
-				# $i_ok = ($rows >= 1) ? 1 : 0;
-				my $str = $sth->as_string;
-				print "Action affected($rows)... \n$str\n";
+				print "Action $action OK\n";
 			}
 		}
 	}
@@ -724,7 +736,7 @@ Update db_user_bug from db_log by userid
 sub ubl { # ubl user_bug_log 
 	my $self = shift;
 	my $user = shift || '';
-	my $sql  = ($user =~ /\w+/) ? "userid LIKE '$user'" : "userid LIKE '_%'";
+	my $sql  = ($user =~ /\w+/o) ? "userid LIKE '$user'" : "userid LIKE '_%'";
 
 	my $ret   = '';
 	my $i_cnt = 0;
@@ -780,7 +792,7 @@ redundant
 sub forward { # e
 	my $self = shift;
 	my $bugid = shift || ''; # 
-	my $and  = ($bugid =~ /\w+/) ? "AND bugid LIKE '$bugid'" : "AND bugid LIKE '_%'";
+	my $and  = ($bugid =~ /\w+/o) ? "AND bugid LIKE '$bugid'" : "AND bugid LIKE '_%'";
 
 	my $ret  = '';
 	print "fixing($FIX) x32($and)\n";
@@ -799,7 +811,7 @@ sub forward { # e
 		my @got = $self->get_list($get);
 		if (scalar(@got) == 1) { # some reason for this.
 			my ($header) = $self->get_list("SELECT header FROM $m_table WHERE bugid = '$tid'");
-			if ($header =~ /^Message-Id:\s*(.+)\s*$/msi) {
+			if ($header =~ /^Message-Id:\s*(.+)\s*$/msio) {
 				print "Couldn't get message-id($1) for tid($tid) from header($header)\n";
 			} else {
 				my $mid = $1;
@@ -836,14 +848,14 @@ sub forward { # e
 
 =item scan_bugs
 
-Trawls and updates bug group, category, osname, versions etc.
+Trawls and updates bug group, osname, versions etc.
 
 =cut
 
 sub scan_bugs { # s 
 	my $self 	= shift;
 	my $bugid   = shift || '';
-	my $and     = ($bugid =~ /\w+/) ? "bugid LIKE '$bugid'" : "bugid LIKE '_%'";
+	my $and     = ($bugid =~ /\w+/o) ? "bugid LIKE '$bugid'" : "bugid LIKE '%_.___'";
 
 	my $ret     = 1;
 	my $i_seen	= 0;
@@ -851,9 +863,8 @@ sub scan_bugs { # s
 
 	my $o_bug   = $self->object('bug');
 	my @bids    = $o_bug->ids($and);
-	my @targets = ($self->things('flag'), 'group');
 
-	print "fixing($FIX) to $MAX of ".@bids." bugs($and) against targets(@targets)\n";
+	print "fixing($FIX) to $MAX of ".@bids." bugs($and)\n";
 
 	BUG:
 	foreach my $bid (@bids) {
@@ -861,40 +872,46 @@ sub scan_bugs { # s
 		print "[$i_seen] <$i_cnt> $bid: ";		
 		$i_seen++;
 		$o_bug->read($bid);
-		my $body = $o_bug->data('body');
-		if (length($body) >= 1) {
-			print '...';
-			my $scan = $self->scan($body);
-			print 'scanned('.length($body).")...\n"; #.(Dumper($scan));		
-			my ($length) = reverse sort { $a <=> $b } map { length($_) } @targets; 
-			TGT:
-			foreach my $tgt (sort @targets) { # status, group, etc.
-				print "  $tgt...".(' ' x ($length - length($tgt)));
-				my @tgts = $o_bug->rel_ids($tgt);
-				my %tgts = ();
-				%tgts = map { $_ => ++$tgts{$_} } @tgts;
-				# print Dumper(\%tgts);
-				if (scalar(@tgts) >= 1) {
-					my @names = $self->object($tgt)->id2name(\@tgts);
-					print "  ok(@tgts->@names)\n";
-				} else {
-					print '* ';
-					my $o_tgt = $o_bug->rel($tgt);
-					$o_tgt->set_source($o_bug);
-					if ($tgt eq 'status') {
-						@tgts = ('open');
-					} else {
-						@tgts = keys %{$$scan{$tgt}} if $$scan{$tgt};
-						if ($tgt eq 'group') {
-							push(@tgts, keys %{$$scan{'category'}}) if $$scan{'category'};
-						}
-					}	# FIX @tgts
-					$o_tgt->_assign(\@tgts) if @tgts && $FIX; # !
-					$i_fxd += my $assigned = $o_tgt->ASSIGNED;
-					print "set($assigned) $tgt(@tgts)\n";
-				}
+		my $body   = $o_bug->data('body');
+		my $header = $o_bug->data('header');
+		my $o_int  = $self->setup_int($header);
+		my @cc     = ();	
+
+		if (ref($o_int)) {
+			my $o_hdr  = $o_int->head; 
+			@cc        = $o_hdr->get('Cc');
+			my $from   = $o_hdr->get('From');
+			my $msgid  = $o_hdr->get('Message-Id');
+			my $subject= $o_hdr->get('Subject');
+			my $to     = $o_hdr->get('To');
+			chomp(@cc, $from, $subject, $to);
+
+			my $wanted = '^(no\-[a-z]+\-given|\s*)$';
+			if ($o_bug->data('email_msgid') =~ /$wanted/) {
+				$o_bug->update({'email_msgid'	=> $msgid});
+				print "fixed(".$o_bug->UPDATED.") was($1) => msgid($msgid)\n";
 			}
-			$i_cnt++ if $i_fxd >= 1;
+			if ($o_bug->data('sourceaddr') =~ /$wanted/) {
+				$o_bug->update({'sourceaddr'	=> $from});
+				print "fixed(".$o_bug->UPDATED.") was($1) => from($from)\n";
+			}
+			if ($o_bug->data('subject') =~ /$wanted/) {
+				$o_bug->update({'subject'	=> $subject});
+				print "fixed(".$o_bug->UPDATED.") was($1) => subject($subject)\n";
+			}
+			if ($o_bug->data('toaddr') =~ /$wanted/) {
+				$o_bug->update({'toaddr'	=> $to});
+				print "fixed(".$o_bug->UPDATED.") was($1) => to($to)\n";
+			}
+		}
+
+		if (length($body) >= 1) {
+			print '... ';
+			my $h_scan = $self->scan($body);
+			$$h_scan{'address'}{'names'} = \@cc if scalar(@cc) >= 1;
+			print 'scanned('.length($body).') '; # .(Dumper($h_scan));		
+			my $i_rels = my @rels = $o_bug->relate($h_scan);
+			print "-> fixed $i_rels rels(@rels)\n";
 		}
 		print "\n";		
 		last BUG if $i_cnt >= $MAX;
@@ -920,7 +937,7 @@ sub trim_flags { # f
 	my $i_cnt   = 0;
 	my $i_cnts  = 0;
 
-	my @flags   = grep(/^$flag/, ($self->things('flag'), 'group'));
+	my @flags   = grep(/^$flag/, ($self->objects('flag'), 'group'));
 
 	print "fixing($FIX) to $MAX of constrained($flag) flags(@flags)\n";
 
@@ -961,9 +978,7 @@ sub trim_flags { # f
 						my $sql = "UPDATE $table SET $pri = '$ok' WHERE $pri IN ('$others')";
 						if ($FIX) {
 							my $sth = $self->exec($sql) ;
-							my $rows = $sth->rows | $sth->affected_rows | $sth->num_rows;   
-							$i_rows += $rows;
-							print "\tset($rows) $pri($table) to ok($ok)\n";
+							print "\tset($sql) $pri($table) to ok($ok)\n" if $sth;
 						}
 					}
 					print "\tdeleted($i_rows)\n";
@@ -991,14 +1006,14 @@ Discard duplicate and otherwise redundant info
 sub discard { # d 
 	my $self 	= shift;
 	my $bugid   = shift || '';
-	my $and     = ($bugid =~ /\w+/) ? "bugid LIKE '$bugid'" : "bugid LIKE '_%'";
+	my $and     = ($bugid =~ /\w+/o) ? "bugid LIKE '$bugid'" : "bugid LIKE '_%'";
 
 	my $ret     = '';
 	my $i_seen	= 0;
 	my $i_cnt   = 0;
 
 	my $o_bug   = $self->object('bug');
-	my @targets = $self->things('mail');
+	my @targets = $self->objects('mail');
 
 	print "fixing($FIX) to $MAX targets(@targets) and($and)\n";
 
@@ -1012,8 +1027,7 @@ sub discard { # d
 		} else {
 			my $sql = "DELETE FROM $b_table WHERE bugid IN ('$notok')"; # o_bug won't allow this
 			my $sth = $self->exec($sql);
-			my $rows = $sth->rows;
-			print "$b_table removed($rows) strange looking bugids(@notok)\n";
+			print "$b_table removed($sql) strange looking bugids(@notok)\n" if $sth;
 		}
 	}
 	if (1) { # duplicate
@@ -1045,6 +1059,7 @@ sub discard { # d
 							my $o_dup = $o_bug->rel('group')->set_source($o_bug);
 							$o_dup->_store(['notabug']) if $FIX;
 							$i_fxd++ if $o_dup->STORED;
+							# $i_fxd++ if $o_bug->rel('group')->set_source($o_bug)->_store(['notabug'])->STORED;
 							my $o_sev = $o_bug->rel('severity')->set_source($o_bug);
 							$o_sev->_store(['none']) if $FIX;
 							$i_fxd++ if $o_sev->STORED;
@@ -1052,7 +1067,7 @@ sub discard { # d
 							$o_stat->_store(['duplicate']) if $FIX;
 							$i_fxd++ if $o_stat->STORED;
 							print "\t$dupe set($FIX) group($grp), severity($sev), status($stat) fixed($i_fxd)\n";
-							foreach my $rel (grep(!/^(bug|parent|child)$/i, $self->things('mail'))) {
+							foreach my $rel (grep(!/^(bug|parent|child)$/i, $self->objects('mail'))) {
 								my $o_rel = $self->object($rel);
 								my @ids = $o_rel->rel_ids('bug');	
 								if (scalar(@ids) >= 1) {
@@ -1083,7 +1098,7 @@ Trawls and updates bugs for msgid (email_msgid) Message-Id field
 sub scan_ids { # i 
 	my $self 	= shift;
 	my $bugid   = shift || '';
-	my $and     = ($bugid =~ /\w+/) ? "AND bugid LIKE '$bugid'" : "AND (email_msgid IS NULL OR email_msgid = '')";
+	my $and     = ($bugid =~ /\w+/o) ? "AND bugid LIKE '$bugid'" : "AND (email_msgid IS NULL OR email_msgid = '')";
 
 	my $ret     = '';
 	my $i_seen	= 0;
@@ -1106,7 +1121,7 @@ sub scan_ids { # i
 		$i_seen++;
 		$o_bug->read($bid);
 		my $msgid = $o_bug->data('emailid');
-		if ($msgid =~ /\w+/) {
+		if ($msgid =~ /\w+/o) {
 			print "has Message-Id($msgid)\n";
 		} else {
 			my $header = $o_bug->data('header');

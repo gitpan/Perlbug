@@ -1,29 +1,28 @@
 #!/usr/bin/perl 
 # Perlbug command line interface
 # (C) 2000 Richard Foley RFI perlbug@rfi.net 
-# $Id: bugdb,v 1.5 2001/02/18 13:55:56 perlbug Exp $
+# $Id: bugdb,v 1.6 2001/09/18 13:37:50 richardf Exp $
 # 
 # 20.06.2000 Initial version
 # 
 
 use strict;
 use vars(qw($VERSION));
-$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 use FindBin;
 use lib "$FindBin::Bin/..";
-use Mail::Header;
 use Perlbug::Interface::Cmd;
 $|=1;
 
-my $pb = Perlbug::Interface::Cmd->new(@ARGV);
-$pb->debug(1, "$0: $pb");
+my $o_cmd = Perlbug::Interface::Cmd->new(@ARGV);
+$o_cmd->debug(1, "$0: $o_cmd");
 
 # backup db
-$pb->debug(1, "Command Line Interface started...");
-my $ok = $pb->cmd; # loop
-$pb->debug(1, "Command Line Interface finished...");
+$o_cmd->debug(1, "Command Line Interface started...");
+my $ok = $o_cmd->cmd; # loop
+$o_cmd->debug(1, "Command Line Interface finished...");
 
-$pb->debug(1, "$0 -> $ok");
-$pb->clean_up;
+$o_cmd->debug(1, "$0 -> $ok");
+$o_cmd->clean_up;
 exit 0;

@@ -1,6 +1,6 @@
 # Perlbug Bug support functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Database.pm,v 1.12 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Database.pm,v 1.15 2001/09/18 13:37:49 richardf Exp $
 #
 # Based on TicketMonger.pm: Copyright 1997 Christopher Masto, NetMonger Communications
 # Perlbug(::Database) integration: RFI 1998 -> 2001
@@ -15,16 +15,19 @@ Perlbug::Database - Bug support functions for Perlbug
 package Perlbug::Database;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.12 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.15 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
-use Data::Dumper;
-use IO::File;
-use Mysql;
 use Carp;
-my ($o_DBH, $lasterror) = (undef, '');
-my $i_SQL = 0;
-my $DEBUG = $ENV{'Perlbug_Database_DEBUG'} || $Perlbug::Database::DEBUG || '';
-my %DB    = ();
+use Data::Dumper;
+use DBI;
+use IO::File;
+my $o_DBH  = undef;
+my $lasterror = '';
+my $o_Base = '';
+my %DB     = ();
+
+$Perlbug::Database::SQL = 0;
+$Perlbug::Database::HANDLE = 0;
 
 
 =head1 DESCRIPTION
@@ -33,9 +36,11 @@ Access to the database for Perlbug
 
 =head1 SYNOPSIS
 
-	my $o_db = Perlbug::Database->new;
+	my $o_db = Perlbug::Database->new(@args);
 	
-	my @tables = $o_db->query('show tables');
+	my $sth  = $o_db->query('show tables');
+
+	my @tables = $sth->fetchrow_array; # yek (should move get_list|data() from Base to here)
 	
 	print "tables: @tables\n";
 
@@ -46,6 +51,10 @@ Access to the database for Perlbug
 
 =item new
 
+Get a new db object
+
+	my $o_db = Perlbug::Database->new(@args);
+
 =cut
 
 sub new {
@@ -54,20 +63,50 @@ sub new {
 	%DB = @_;
 	# undef $o_DBH;
 
-	my $self = bless({}, $class);
-
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
-	return $self;
+	bless({}, $class);
 }
 
-sub DESTROY { 
-	undef $o_DBH if defined($o_DBH); 
+sub base {
+	my $self = shift;
+
+	$o_Base = ref($o_Base) ? $o_Base : Perlbug::Base->new;	
+
+	return $o_Base;
 }
+
+sub error {
+	my $self = shift;
+	return $self->base->error($self, @_);
+}
+
+
+=item quote
+
+Quote the given string/s to 'sql\'s'
+
+	my $quoted = $o_db->quote($sql); 
+
+=cut
 
 sub quote { 
 	my $self = shift;
-	return $self->dbh->quote(@_);
+	my @args = @_;
+	my @quot = ();
+
+	# scalar context(?) of s/// returns numerical value!
+	# return map { s/^\'(.*)\'$/ } $self->dbh->quote(@_); 
+	# sigh...
+
+	my $i_xq = my @xquoted = $self->dbh->quote(@_);
+
+	foreach my $q (@xquoted) {
+		$q =~ s/^\'(.*)\'$/$1/;
+		push(@quot, $q);
+	}
+	
+	# print "in(@args)<br>\nxq($i_xq, @xquoted)<br>\nout(@quot)<br>\n";
+
+	return wantarray ? @quot : $quot[0];
 }
 
 
@@ -75,16 +114,16 @@ sub quote {
 
 Returns database handle for queries
 
-=cut
+	my $o_dbh = $o_db->dbh;
 
-my $i_CNT = 0;
+=cut
 
 sub dbh {
 	my $self = shift;	
 
-	$i_CNT++;
 	$o_DBH = ref($o_DBH) ? $o_DBH : $self->DBConnect;
-	# carp("[$i_CNT] dbh ...($o_DBH)\n"); #.Dumper($o_DBH) unless $o_DBH;
+
+	$self->error("dbh undefined database handle($o_DBH)\n") unless $o_DBH;
 
 	return $o_DBH;
 }
@@ -96,51 +135,43 @@ sub dbh {
 # database handle.  This eliminates opening and closing database
 # handles during a session.  undef is returned 
 sub DBConnect {
-    my $self = shift;
-    unless (defined $o_DBH) {
-        my ($secretspath) =''; # $DB{'config'}.'/.mysql'; # Path to passwd 
-=pod
-        unless (defined $sqlpassword) {  # Get password if not assigned above
-            my $sqlpasswordfh=new IO::File("<$secretspath");
-            unless (defined $sqlpasswordfh) {
-                croak($lasterror="Can't open secrets file: '$secretspath'");
-                return undef;
-            }
-            chomp($sqlpassword=$sqlpasswordfh->getline);
-            $sqlpasswordfh->close;
-        }
-=cut
-        # A bit Mysql|Oracle specific just here ($o_conf->database('connect'))
-        $o_DBH=Mysql->Connect($DB{'sqlhost'}, $DB{'database'}, $DB{'user'}, $DB{'password'});
+	my $self = shift;
+	if (!defined($o_DBH)) {
+		$Perlbug::Database::HANDLE++;
+		my @connect = (($DB{'connect'} =~ /^(.+)$/o)
+			? ($1)
+			: (qq|DBI:$DB{'engine'}:$DB{'database'};host=$DB{'sqlhost'}|)
+			, $DB{'user'}, $DB{'password'});
+        $o_DBH = DBI->connect(@connect);
 		# use CGI; print CGI->new->header, '<pre>'.Dumper($self).'</pre>';
         if (!(defined($o_DBH))) {
-            croak("Can't connect to db($o_DBH): '$Mysql::db_errstr'".Dumper(\%DB));
+            $self->error("Can't connect to db($o_DBH): '$DBI::errstr'".Dumper(\%DB));
         }
     }
+
     return $o_DBH;
 }
 
 
+=item query
+
+Return sth from given query
+
+	my $sth = $o_db->query($sql);
+
+=cut
+
 sub query {
     my $self = shift;
-    # my ($sql) = $self->quote(shift); 
-	# $sql =~ s/^\s*\'\s*(.+)\s*\'\s*$/$1/; 
 	my $sql = shift;
-    $i_SQL++;    
-    my $sth = undef;
-    $o_DBH=$self->dbh; # or return undef;
-    if (!(defined($o_DBH))) {
-        croak("Undefined dbh($o_DBH)");
-    } else {
-        $sth=$o_DBH->Query($sql);
-        if (defined $sth) {
-			my $rows = 0;
-			$rows = $sth->rows if $sth->can('rows');
-            my ($selected, $affected) = ($sth->num_rows, $sth->affected_rows);
-        } else {
-            $lasterror="Query <$i_SQL> ($sql) failed: '$Mysql::db_errstr'";
-            croak($lasterror);
-        }
+    $Perlbug::Database::SQL++;    
+    $o_DBH = $self->dbh; # or return undef;
+    my $sth = $o_DBH->prepare($sql) if $o_DBH;
+	if (!$sth) {
+		$self->error($self, "Couldn't prepare sql($sql): $DBI::errstr");
+	} else {
+		my $rv = $sth->execute;
+		# $self->error("failed sql query($sql)") ...?;
     }
 
     return $sth;
@@ -151,7 +182,9 @@ sub query {
 
 =head1 AUTHOR
 
-Chris Masto chrism@netmonger.net and Richard Foley perlbug@rfi.net Oct 1999 2000 2001 
+Richard Foley perlbug@rfi.net Oct 1999 2000 2001 
+
+From original work by Chris Masto chrism@netmonger.net 
 
 =cut
 

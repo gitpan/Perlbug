@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
 # Do tests for Perlbug do(f h d)
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 50_Do.t,v 1.7 2001/04/21 20:48:48 perlbug Exp $
+# $Id: 50_Do.t,v 1.8 2001/09/18 13:37:50 richardf Exp $
 #
 BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::TestBed;
+	use Perlbug::Test;
 	plan('tests' => 4);
 }
 use strict;

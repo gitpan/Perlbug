@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Relation.pm,v 1.27 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Relation.pm,v 1.34 2001/10/22 15:29:50 richardf Exp $
 #
 
 =head1 NAME
@@ -13,8 +13,7 @@ package Perlbug::Relation;
 use strict;
 use vars(qw($VERSION @ISA));
 @ISA = qw(Perlbug::Object); 
-$VERSION = do { my @r = (q$Revision: 1.27 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Relation_DEBUG'} || $Perlbug::Relation::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.34 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 =head1 DESCRIPTION
@@ -42,6 +41,8 @@ use Perlbug::Object;
 
 
 =head1 METHODS
+
+=over 4
 
 =item new
 
@@ -71,7 +72,7 @@ sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto; 
 	my $o_Perlbug_Base = 
-		(ref($_[0]) =~ /^Perlbug::(Base|Fix|(Interface::(Cmd|Email|Web)))$/) 
+		(ref($_[0]) =~ /^Perlbug::(Base|Fix|(Interface::(Cmd|Email|Web)))$/o) 
 		? shift 
 		: Perlbug::Base->new; # yek, but...
 
@@ -80,14 +81,12 @@ sub new {
 	my $type   = shift || 'to';
 	($src, $tgt) = ($type eq 'from') ? ($tgt, $src) : ($src, $tgt);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
 	my $o_src = (ref($src)) ? $src : $o_Perlbug_Base->object($src);	# cache?
 	my $s_key = $o_src->attr('key');
 
 	my $o_tgt = (ref($tgt)) ? $tgt : $o_Perlbug_Base->object($tgt);	# cache?
 	my $hint = $src.'_x_'.$tgt;
-	my $t_key = lc(($hint =~ /(parent|child)/i) ? $1 : $o_tgt->attr('key')); # ek s too?
+	my $t_key = lc(($hint =~ /(parent|child)/io) ? $1 : $o_tgt->attr('key')); # ek s too?
 	
 	# $self->check($o_src, $o_tgt);
 	my $table = 'pb_'.join('_', sort($s_key, $t_key));
@@ -100,16 +99,16 @@ sub new {
 		'table'   		=> $table,					# pb_bug_patch | pb_address_bug
 		'type'			=> $type,					# from|to
 	);
-	$self->{'_attribute'}{'source'} = $s_key;		# indicator	
-	$self->{'_attribute'}{'target'} = $t_key;		# indicator
+	$self->{'_attr'}{'source'} = $s_key;		# indicator	
+	$self->{'_attr'}{'target'} = $t_key;		# indicator
 
 	bless($self, $class);
 
 	$table = $self->attr('table');
-	$self->debug(4, "rjsf: Relation::new($type) src($src)\t-> ".
+	$self->debug(3, "rjsf: Relation::new($type) src($src)\t-> ".
 		sprintf('%-15s', $o_src).") & tgt($tgt)\t-> ".
 		sprintf('%-15s', $o_tgt)." table($table)"
-	) if $DEBUG;
+	) if $Perlbug::DEBUG;
 
 	$self->source($o_src); 
 	$self->target($o_tgt); 
@@ -166,14 +165,14 @@ Check the relations are OK to each other
 =cut
 
 sub check {
-	my $self = shift;
+	my $self  = shift;
 	my $o_src = shift || $self->source;
 	my $o_tgt = shift || $self->target;
-	my $i_ok  = 1;
+	my $i_ok  = 0;
 
-	my $hint = $self->attr('hint');
-	my $name = $self->attr('name');
-	my $table= $self->attr('table');
+	my $hint  = $self->attr('hint');
+	my $name  = $self->attr('name');
+	my $table = $self->attr('table');
 
 	my $src = $o_src->key;
 	my @src_from = @{$o_src->attr('from')};
@@ -186,34 +185,33 @@ sub check {
 	# $src = 'parent' if $o_src =~ /parent/i;
 	# $tgt = 'child'  if $o_tgt =~ /child/i;
 
-	my $data = qq|$self $hint $name $table
-	Src($src) $o_src 
-		from(@src_from) 
-		to(@src_to)
-	Tgt($tgt) $o_tgt
-		from(@tgt_from) 
-		to(@tgt_to)
-	\n|;
-
 	# VET
-	unless ($hint =~ /(parent|child)/i) {
+	my $err = '';
+	unless ($hint =~ /(parent|child)/io) {
 		if (lc($src) eq lc($tgt)) {
-			$self->debug(0, "Source(".ref($o_src).") is the same as target(".ref($o_tgt).") $data!"); 
-			print "x: src($src) eq tgt($tgt) $data\n" if $0 =~ /\w\.t$/;
-			$i_ok = 0;
+			$err = "Source(".ref($o_src).") is the same as target(".ref($o_tgt).")!"; 
 		}
 		if (!(grep(/^$tgt$/, @src_to, @src_from))) {
-			$self->debug(0, "Source(".ref($o_src).") doesn't recognise target(".ref($o_tgt).") $data!");
-			print "x: tgt($tgt) not in src(@src_to @src_from) $data\n" if $0 =~ /\w\.t$/;
-			$i_ok = 0;
+			$err = "Source(".ref($o_src).") doesn't recognise target(".ref($o_tgt).")!";
 		}
 		if (!(grep(/^$src$/, @tgt_to, @tgt_from))) {
-			$self->debug(0, "Target(".ref($o_tgt).") doesn't recognise source(".ref($o_src).") $data!");
-			print "x: src($src) not in tgt(@tgt_to @tgt_from) $data\n" if $0 =~ /\w\.t$/;
-			$i_ok = 0;
+			$err = "Target(".ref($o_tgt).") doesn't recognise source(".ref($o_src).")!";
 		}
 	}
-	# print "check done($i_ok)\n" if $0 =~ /\w\.t$/;
+
+	if ($err !~ /\w+/) {
+		$i_ok++;
+	} else {
+		$self->error(qq|$self $hint $name $table
+		Src($src) $o_src 
+			from(@src_from) 
+			to(@src_to)
+		Tgt($tgt) $o_tgt
+			from(@tgt_from) 
+			to(@tgt_to)
+		$err
+		|); 
+	}
 
 	return $i_ok;
 }
@@ -247,7 +245,7 @@ sub set_source {
 	my ($o_src, $o_tgt) = ($self->source, $self->target);
 	my ($s_key, $t_key) = ($o_src->key, $o_tgt->key);
 	my $type = ($self->attr('type') eq 'from') ? 'to' : 'from';
-	if ($key =~ /\w+/ && $key eq $t_key) { # swap'em
+	if ($key =~ /\w+/o && $key eq $t_key) { # swap'em
 		$self->attr({
 			'type'   => $type, # 
 			'source' => $t_key,
@@ -264,7 +262,7 @@ sub set_source {
 	$self->debug(3, qq|key($key) oid($oid) type($type)...
 		src($s_key)\t-> o_src($o_src)
 		tgt($t_key)\t-> o_tgt($o_tgt)
-	|) if $DEBUG;	
+	|) if $Perlbug::DEBUG;	
 
 	return $self;
 }	
@@ -300,7 +298,7 @@ Wrapper to get and set self and source objectid.
 
 sub oid { # ?
 	my $self = shift;
-	my $in  = shift;
+	my $in  = shift || '';
 
 	my ($o_src, $s_key) = ($self->source, $self->key('source'));
 	my ($o_tgt, $t_key) = ($self->target, $self->key('target'));
@@ -312,6 +310,7 @@ sub oid { # ?
 	}
 	my $oid = $self->attr('objectid');
 	# my $oid = $self->SUPER::oid($src);
+	$self->debug(3, "oid: src($s_key) tgt($t_key) -> in($in) oid($oid)") if $Perlbug::DEBUG;
 
 	return $oid;
 }
@@ -341,8 +340,8 @@ sub ids { # class
 	if (ref($input)) {				# OBJECT with ids, etc.
 		$sql .= ' WHERE '.$input->key."id = '".$input->oid()."'";		
 		$sql .= " AND $extra" if $extra;
-	} elsif ($input =~ /\w+/) { 	# SQL where clause
-		$input =~ s/^\s*WHERE\s*//i;	
+	} elsif ($input =~ /\w+/o) { 	# SQL where clause
+		$input =~ s/^\s*WHERE\s*//io;
 		$sql  .= " WHERE $input";	
 	} # else = all 
 	
@@ -352,19 +351,19 @@ sub ids { # class
 }
 
 
-=item reset
+=item reinit 
 
 Reset relation to default values
 
-For more info see L<Perlbug::Object::reset()>
+For more info see L<Perlbug::Object::reinit()>
 
 =cut
 
-sub reset { 
+sub reinit { 
 	my $self = shift; 
 	my $oid = shift || $self->oid;
 
-	$self->SUPER::reset($oid);
+	$self->SUPER::reinit($oid);
 	$self->ASSIGNED(0);
 
 	$self;
@@ -375,7 +374,7 @@ sub prep {
 	my $self = shift;
 	my $sql = $self->SUPER::prep(@_);
 
-	$self->error("NULL's not allowed in relations: ".$sql) if $sql =~ /NULL/; 
+	$self->error("NULL's not allowed in relations: ".$sql) if $sql =~ /NULL/o;
 	
 	# useless query while patchid=3, addressid=3
 	# $self->error("Duplicate ids? 1($1) 2($2): ".$sql) 
@@ -393,6 +392,9 @@ sub track { # do nothing (wasteful)
 	return $self;
 }
 
+=pod
+
+=back
 
 =head1 RECORDS
 
@@ -400,6 +402,7 @@ Record handling methods for L<Perlbug::Relation::\w+>'s
 
 These all return the object reference, so calls may be chained.
 
+=over 4
 
 =item assign
 
@@ -427,14 +430,14 @@ sub assign {
 			$self->error("has no source valid objectid($oid) to assign from!");
 		} else {
 			my $ids = join("', '", @ids);
-			$self->debug(3, "working with ids(@ids)") if $DEBUG;
+			$self->debug(1, "working with ids(@ids) from ".Dumper($a_input)) if $Perlbug::DEBUG;
 			foreach my $id (@ids) {
 				$self->oid($oid);
 				$self->data({ $t_key => $id, });
 				$self->create($self->_oref('data'), 'relation');
 				if ($self->CREATED) {
 					$self->ASSIGNED(1);
-					$self->debug(2, "assigned: $s_key($oid) $t_key($id)") if $DEBUG;
+					$self->debug(2, "assigned: $s_key($oid) $t_key($id)") if $Perlbug::DEBUG;
 				}
 			}
 		}
@@ -456,7 +459,7 @@ sub ASSIGNED {
 	my $self = shift;
 	my $i_flag = shift || ''; 
 
-	$self->flag({'assigned', $1}) if $i_flag =~ /^(1|0)$/;	
+	$self->flag({'assigned', $1}) if $i_flag =~ /^(1|0)$/o;
 
 	$i_flag = $self->flag('assigned');
 
@@ -480,6 +483,7 @@ sub _assign {
 	if (!ref($a_input)) {
 		$self->error("no input names given to _assign($a_input)");
 	} else {
+		my $rel = ref($self);
 		$self->create_target($a_input);	
 		my @ids = $self->target->name2id($a_input);
 		$self->assign(\@ids);
@@ -523,14 +527,16 @@ sub store {
 			$self->error("has no source objectid($oid) to store against!");
 		} else {
 			if (!(scalar(@ids) >= 1)) {
-				$self->error("not trashing($oid) records unless supplied(@orig) with valid objectids(@ids)!"); # try using delete()
+				$self->debug(0, "not trashing($oid) records unless supplied(@orig) with valid objectids(@ids)!"); # try using delete()
 			} else { # can't use $self->delete([target NOT IN (...)])
 				$self->assign(\@ids); # first!
+				$self->debug(0, "assigned(".$self->ASSIGNED.") ids(@ids)") if $Perlbug::DEBUG;
 				if ($self->ASSIGNED) {
 					my $where = " WHERE $s_key = '".$o_src->oid()."'";		
 					my $sql = "DELETE FROM ".$self->attr('table')." $where AND $t_key NOT IN ('$ids')"; 
 					my $sth = $self->base->exec($sql);
-					if (defined($sth)) {
+					$self->debug(3, "prejudicial(".$self->ASSIGNED.") DELETE WHERE NOT IN ids($ids)") if $Perlbug::DEBUG;
+					if ($sth) {
 						$self->STORED(1);
 						$self->base->clean_cache('sql');
 					} else { 
@@ -593,7 +599,7 @@ sub delete {
 		my ($o_tgt, $t_key) = ($self->target, $self->key('target'));
 
 		my @ids = $o_tgt->exists($a_input);
-		$self->debug(3, "working with ids(@ids)") if $DEBUG;
+		$self->debug(3, "working with ids(@ids)") if $Perlbug::DEBUG;
 		my $ids = join("', '", @ids);
 		my $oid = $o_src->oid();
 		if (scalar($o_src->exists([$oid])) == 0) {
@@ -602,7 +608,7 @@ sub delete {
 			my $where = " WHERE $s_key = '$oid'";		
 			my $sql = "DELETE FROM ".$self->attr('table')." $where AND $t_key IN ('$ids')"; 
 			my $sth = $self->base->exec($sql);
-			if (!defined($sth)) {
+			if (!$sth) {
 				$self->error(ref($self)." delete failed: sql($sql) -> sth($sth)");
 			} else {
 				$self->DELETED(1);
@@ -672,13 +678,14 @@ sub create_target { # by id from hashref
 		} else {
 			my @exist = $o_tgt->_exists(\@given);
 			my @extantids = $o_tgt->name2id(\@exist);
-			$self->debug(0, "pri($t_pri) given(@given) exist(@exist) extant(@extantids)") if $DEBUG;
-			ID:
+			$self->debug(1, "pri($t_pri) given(@given) exist(@exist) extant(@extantids)") if $Perlbug::DEBUG;
+			IDENT:
 			foreach my $ident (@given) {
-				$self->debug(0, "does $ident exist(@exist)?") if $DEBUG;
-				next ID if grep(/^$ident$/, @exist);
-				$self->debug(0, "NOPE($ident) -> inserting!") if $DEBUG;
-				$o_tgt->reset->data({ 
+				next IDENT unless $ident =~ /\w+/o;
+				$self->debug(1, "does $ident exist(@exist)?") if $Perlbug::DEBUG;
+				next IDENT if grep(/^$ident$/, @exist);
+				$self->debug(1, "NOPE($ident) -> inserting!") if $Perlbug::DEBUG;
+				$o_tgt->reinit->data({ 
 					$t_key => $self->new_id,	
 					$o_tgt->identifier => $ident, 
 				});
@@ -691,6 +698,9 @@ sub create_target { # by id from hashref
 	return $self;
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

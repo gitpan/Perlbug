@@ -1,0 +1,63 @@
+| tomc      | tchrist@.*perl\.(com|org)                              |
+| nicki     | nick@ni-s\.u-net\.com                                  |
+| chrisn    | pudge@pobox\.com                                       |
+| malcolmb  | mbeattie@sable\.ox\.ac\.uk                             |
+| gbarr     | gbarr@pobox\.com                                       |
+| tomp      | rootbeer@redcat\.com                                   |
+| chrism    | chris@netmonger\.net                                   |
+| natt      | gnat@frii\.com                                         |
+| timb      | Tim\.Bunce@ig\.co\.uk                                  |
+| gurusamys | gsar@ActiveState.com                                   |
+| mathiasn  | neeri@iis\.ee\.ethz\.ch                                |
+| larryw    | larry@wall\.org                                        |
+| richardf  | (\.*@rfi\.net|(Richard\.Foley|3*fo26619)@m\.dasa\.de)  |
+| ianp      | ian@dial.pipex.com                                     |
+| jarkkoh   | jhi@iki\.fi                                            |
+| andreask  | a.koenig@franz\.ww\.tu-berlin\.de                      |
+| martinb   | 'Martin.Brech@erl11.siemens.de'                        |
+| ulrichp   | pfeifer@wait.de                                        |
+| roberts   | rspier(\+.+?)?\@((speed\.)seas\.upenn\.edu|pobox\.com) |
+| alanb     | Alan\.Burlison\@uk\.sun\.com                           |
+| simonc    | 'simon\\@brecon\\.co\\.uk'                             |
+| aarond    | aaron\@iglou\.com                                      |
+| richards  | rs@crystalflame.net                                    |
+| markj     | 'mjd\\@plover\\.com'                                   |
+| kurts     | kstar\@chapin\.edu                                     |
+| tomh      | tom\@compton\.nu                                       |
+| stephenp  | spp\@spotter\.yi\.org                                  |
+| hv        | hv\@crypt0\.demon\.co\.uk                              |
+| michaels  | michael@etla.org                                       |
+| doughera  | 'doughera@lafayette.edu'                               |
+| andyd     | doughera@lafayette.edu                                 |
+| tonyp     | anthonyp\@petsmart\.com                                |
+| hmbrand   | 'h\\.m\\.brand\\@hccnet\\.nl'                          |
+| jong      | '\'jongunnip\\\\@hotmail\\\\.com\''                    |
+| nickc     | nick@ccl4.org                                          |
+| jand      | jand@ActiveState.com                                   |
+| caseyt    | crt@kiski.net                                          |
+| bsugars   | '\'ben\\\\.sugars\\\\@home\\\\.com\''                  |
+| jone      | 'jweveland\\@yahoo\\.com'                              |
+| peterb    | 'z0d\\@artifact\\.hu'                                  |
+| ahmerm    | ahmer\.memon\@interoute\.de                            |
+| philippec | gozer@cpan.org                                         |
+| scottc    | scott@physics.purdue.edu                               |
+| joseo     | jpo@lsd.di.uminho.pt                                   |
+| kevinf    | 'kevin\\@jibsheet\\.com'                               |
+| marcov    | marcov@                                                |
+| jonm      | Jonathan.Mark2\@dyncorp\.com                           |
+| robinh    | 'robin\\@(kitsite\\.com|cpan\\.org)'                   |
+| joem      | mcmahon\@ibiblio\.org                                  |
+| artur     | 'arthur\\@cantiller\\.se'                              |
+| stefand   | stefan_dragnev@yahoo.com                               |
+| omarr     | kuervo@hmo.megared.net.mx                              |
+
+update pb_user set match_address = 'alex\\@rcon\\.org' where userid = 'alexg';
+update pb_user set match_address = 'schwern\\@pobox\\.com' where userid = 'mschwern';
+update pb_user set match_address = 'abigail\\@foad\\.org' where userid = 'abigail';
+update pb_user set match_address = 'kuervo\\@hmo\\.megared\\.net\\.mx' where userid = 'omar';
+update pb_user set match_address = 'stefan_dragnev\\@yahoo\\.com' where userid = 'stefand';
+update pb_user set match_address = 'arthur\\@cantiller\\.se' where userid = 'artur';
+update pb_user set match_address = 'mcmahon\\@ibiblio\\.org' where userid = 'joem';
+
+select userid, match_address from pb_user
+

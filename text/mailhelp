@@ -201,15 +201,27 @@ TO
 
     The following administration functions are also supported:
 
-    Note that in the cases where a (note|patch|test) is being assigned, this
-    keyword should be at the beginning of the To: line, otherwise the
-    formatting is largely irrelevant.
+            To: busy_win32_library_regex<bugid>@... 
 
-    That is (in a slightly contrived example);
+            To: abandoned_aix_<bugid>@... 
+
+	Etc.
+
+    Note that in the cases where a (bug|message|note|patch|reply|test) 
+	is being assigned, this keyword should be at the beginning of the 
+	To|Cc: line, otherwise the formatting is largely irrelevant.
+
+    That is:
+
+            To: patch_close<bugid>@... 
+
+            	will create a new patch and close this bug
 
             To: close_patch_<bugid>@... 
 
-                    will close the bug and assign the bug to the patch group
+            	will close the bug and will ignore the 'patch'
+
+	With one exception (can't have everything :)
 
             To: patch_close_<bugid>@...' 
         
@@ -218,11 +230,11 @@ TO
     flags
         may be assigned to a bug like this:
 
-                To: close_irix_<bugid1>_<bugid2>_configure@bugs.perl.org
+                To: close_IRIX_<bugid1>_<bugid2>_configure@bugs.perl.org
 
-        short forms are still acceptable:
+        short (minimum 3 character) forms are still acceptable:
 
-                To: clo_ir_<bugid1>_<bugid2>_con@bugs.perl.org
+                To: clo_iri_<bugid1>_<bugid2>_con@bugs.perl.org
 
     notes
         may be assigned to a bug:
@@ -257,7 +269,7 @@ TO
 
                 To: patch_<bugid>_nocc@bugs.perl.org
 
-                To: busy_<bugid>_nocc_hpux@bugs.perl.org
+                To: busy_<bugid>_NOCC_hpux@bugs.perl.org
 
 AUTHOR
     Richard Foley <richard@rfi.net> 2000 2001

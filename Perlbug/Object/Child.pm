@@ -1,6 +1,6 @@
 # Perlbug bug parent handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Child.pm,v 1.9 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Child.pm,v 1.11 2001/08/20 18:57:31 mstevens Exp $
 #
 #
 
@@ -13,8 +13,7 @@ Perlbug::Object::Child - Bug class
 package Perlbug::Object::Child;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.9 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Child_DEBUG'} || $Perlbug::Object::Child::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.11 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 my %fmt = ();
@@ -43,6 +42,8 @@ use Perlbug::Object::Bug;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Child object:
@@ -66,11 +67,12 @@ sub new {
 	bless($self, $class);
 	# $self->attr({'Name', 'Child'});
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
 	return $self;
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

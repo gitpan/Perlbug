@@ -1,28 +1,24 @@
 # Perlbug Installation instructions 
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
 # 
-# $Id: INSTALL,v 1.15 2001/07/05 13:55:45 richardf Exp $
+# $Id: INSTALL,v 1.19 2001/08/16 21:03:53 mstevens Exp $
 # 
 
 SHORT:
 
-    gunzip Perlbug.tar.gz
-	
-    tar -xf Perlbug.tar
+    tar -xzf Perlbug.tar.gz
 	
     cd Perlbug
 	
-    modify ~/config/Configuration
+    modify ./config/Configuration
 		
-    perl Makefile.PL PREFIX=Perlbug_installation # ?
+    perl Makefile.PL # PREFIX=Perlbug_installation 
 	
-    make clean
-
     make
 	
     make test
 	
-    make install # only if you're sure you want this centrally located!
+    make install
 
 
 LONG:
@@ -95,18 +91,15 @@ INSTALLATION:
 
 			chmod -R 777 ~/perlbug/spool
 	
-	Modify ~/config/Matches to map patterns to targets categories/status, 
-	if the defaults are not suitable for your requirements.
-	
 	Setup mail forwarding to the appropriate scripts:
 	
-	    slurping the data:               ~/scripts/tron.pl (email/mailing lists)
+	    slurping the data:               ~/scripts/bugtron (email/mailing lists)
 	    
-	    query the data, admin interface: ~/scripts/mail.pl (email)
+	    query the data, admin interface: ~/scripts/bugmail (email)
 	
 	Setup a cron job for regular tasks, clean up:
 	
-	    every week:                      ~/scripts/cron.cmd
+	    every week:                      ~/scripts/bugcron
         
 	Ensure ~/scripts/perlbug.cgi is executable by the webserver.
 	

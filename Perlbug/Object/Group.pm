@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Group.pm,v 1.22 2001/07/04 15:27:37 uid51918 Exp $
+# $Id: Group.pm,v 1.25 2001/09/18 13:37:50 richardf Exp $
 #
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::Object::Group - Group class
 package Perlbug::Object::Group;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.22 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Group_DEBUG'} || $Perlbug::Object::Group::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.25 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -42,6 +41,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Group object:
@@ -61,8 +62,6 @@ sub new {
 		'to'		=> [qw(address bug user)],
 	);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
 	bless($self, $class);
 }
 
@@ -80,6 +79,7 @@ sub htmlify {
     my $h_grp= shift;
 	my $req  = shift || 'admin';
 	return undef unless ref($h_grp) eq 'HASH';
+
     my %grp = %{$h_grp};
     my $cgi = $self->base->cgi();
 	
@@ -107,10 +107,15 @@ sub htmlify {
 
 # --------------------------------------------------------- #
 
+=pod
+
+=back
+
 =head1 FORMATS
 
 Group formatter for all occasions...
 
+=over 4
 
 =item FORMAT_l
 
@@ -262,6 +267,7 @@ sub FORMAT_h { #
 <td><b>Created</b></td> 
 <td><b>Modified</b></td> 
 </tr>|;
+	$^W = 0;
 	my $format = '<tr><td>'.join('&nbsp;</td><td>', @args).'&nbsp;<td></tr>';	
 	return ($top, $format, @args);
 }
@@ -316,6 +322,9 @@ sub FORMAT_H { #
 	return ($top, $format, @args);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

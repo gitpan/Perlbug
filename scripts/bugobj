@@ -2,29 +2,52 @@
 # Perlbug object runner
 # (C) 2000 Richard Foley RFI perlbug@rfi.net 
 # 
-# $Id: bugobj,v 1.4 2001/04/21 20:48:48 perlbug Exp $
- 
+# $Id: bugobj,v 1.5 2001/10/19 12:40:21 richardf Exp $
+
+=head1 NAME
+
+BUGOBJ - run a series of relation inserts against each object
+
+=cut
 
 # LIBs
 use strict;
 use vars(qw($VERSION));
-$VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 use Data::Dumper;
 use FindBin;
 use lib "$FindBin::Bin/..";
 use Perlbug::Base;
+use Perlbug::Test;
 $|=1;
 
+=head1 USAGE
+
+	bugobj user abc 
+
+	bugobj bug 19870502.007
+
+=head1 SWITCHES 
+
+=item h
+
+help
+
+=back
+
+=cut
+
 my %obj = (
-		'Bug'		=> '19870502.007',
-		'Group'		=> '2',
-		'Message'	=> '4444',
-		'Note'		=> '3',
-		'Patch'		=> '6',
-		'Test'		=> '2',
-		'User'		=> 'richardf',
-	);
+	'Address'	=> '2',
+	'Bug'		=> '19870502.007',
+	'Group'		=> '2',
+	'Message'	=> '4444',
+	'Note'		=> '3',
+	'Patch'		=> '6',
+	'Test'		=> '2',
+	'User'		=> 'richardf',
+);
 
 # ARGs
 my $obj = $ARGV[0] || '';
@@ -37,6 +60,11 @@ my $fmt = $ARGV[2] || 'a';
 print "given obj($obj), oid($oid), format($fmt)\n";
 
 my $o_pb = Perlbug::Base->new(@ARGV);
+my $o_test = Perlbug::Test->new($o_pb);
+my $FROM = $o_test->from;
+my $TO = $o_test->bugdb;
+my $SUBJECT = $o_test->subject;
+my $MSGID = $o_test->messageid;
 
 TGT:
 foreach my $tgt ($obj, sort keys %obj) {
@@ -87,7 +115,12 @@ my %new = (
 		'sourceaddr'=> 'src@addr.net',
 		'toaddr'	=> 'to@addr.net',
 		'subject'	=> ($o_obj->data('subject') =~ /other/) ? 'this subject' : 'that other subject',
-		'header'	=> 'message header',
+		'header'	=> join("\n", 
+			"From: $FROM",
+			"Subject: $SUBJECT",
+			"To: $TO",
+			"Message-Id: $MSGID",
+		),
 		'body'		=> 'message body',
 	},
 	'status'	=> {

@@ -1,0 +1,42 @@
+# SQL
+	DELETE FROM pb_object WHERE name  = 'thing';
+	DELETE FROM pb_group WHERE name  = 'patch';
+
+# CVS
+	move t/34_Object.t -> t/41_Relation.t
+	move t/40_Relationst t/40_Relation.t
+
+# Ack has no content
+
+# remove t/53_Do.t
+
+# closures in OBJECT::AUTOLOAD
+ 
+# templates need to have default behaviour as per Format
+
+# absorb patches/changeids - ask Jarkho
+
+# (admin|user)_switches only
+
+# pb_log hash redo track->history
+
+# if you're an object, your generic name links to a search/create page
+# 	sourceaddr|patch|admin|status->search/create
+
+# CVS::docs - rename directories so ~perlbug/Perlbug/...
+
+# get all dependant modules into handy dist. so we can run 
+# everything without any problems, harmless no-db installation.
+# Distribution dependencies:
+Carp
+CGI
+Data::Dumper
+DBI
+DBD::Oracle-dist
+IO
+libnet!
+libwww!
+MailTools
+Msql-Mysql-dist
+Shell
+

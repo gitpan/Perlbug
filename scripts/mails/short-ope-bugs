@@ -1,0 +1,7 @@
+Message-Id: <short-ope-bugs_20011027232256_4968@rfi.net>
+To: ope_aiX_5.6.0_19870502.007_LIN_cor_med@bugs.perl.org
+From: perlbug-test@rfi.net
+Subject: irrelevant
+
+close (short) request
+

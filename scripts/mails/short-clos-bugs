@@ -1,0 +1,7 @@
+Message-Id: <short-clos-bugs_20011027232256_4968@rfi.net>
+To: clos_AIX_19870502.007_5.7.1_lin_doc_hig@bugs.perl.org
+From: perlbug-test@rfi.net
+Subject: irrelevant
+
+close (short) request
+

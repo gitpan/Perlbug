@@ -1,76 +1,177 @@
 #!/usr/bin/perl -w
-# Email tests for Perlbug: check the tron scanning of mail bodies for category, etc. - requires special scan matching
+# Email tests for do([jBGMNPT]) etc., 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 78_Email.t,v 1.4 2001/04/21 20:48:48 perlbug Exp $
+# $Id: 78_Email.t,v 1.6 2001/10/05 08:20:58 richardf Exp $
 #
-BEGIN {
-	use File::Spec; 
-	use lib File::Spec->updir;
-	use Perlbug::TestBed;
-	plan('tests' => 1);
-}
+
 use strict;
 use lib qw(../);
-my $test = 0;
-
-
-# Libs
-# -----------------------------------------------------------------------------
-use Perlbug::Interface::Email;
+use Data::Dumper; $Data::Dumper::Indent=1;
 use FileHandle;
 use Mail::Internet;
+use Perlbug::Interface::Email;
+use Perlbug::Test;
 use Sys::Hostname;
-my $o_mail = Perlbug::Interface::Email->new;
-my $o_test = Perlbug::TestBed->new($o_mail);
-$o_mail->current('admin', 'richardf');
 
-# Setup
-# -----------------------------------------------------------------------------
-my %all_flags   = $o_mail->all_flags;
-my %installed	= ();
-my $context		= '';
-my $dir			= './t/email/78';
-my $err			= 0;
+my $i_test = 0;
+
+my $o_mail = Perlbug::Interface::Email->new;
+my $o_test = Perlbug::Test->new($o_mail);
+
+my $BUGID  = $o_test->bugid;
 
 # Tests
 # -----------------------------------------------------------------------------
-# 
-CONTEXT:
-foreach my $context ('scan') {
-	$test++; 
-	$err = 0;
-	my @tests = $o_test->get_tests("$dir/$context");
-	if (!scalar(@tests) >= 1) {
-		$err++; 
-		output("No tests for context($context) in dir($dir)!");
-	} else {
-		my $i_ok = 1;
-		TEST:
-		foreach my $test (@tests) {
-			last TEST unless $i_ok == 1;
-			($i_ok, my $data) = &get_data("$dir/$context/$test");
-			if ($i_ok != 1) {
-				$err++;
-				output("$context test($test) failed($err) -> $i_ok, $data");
-			}	
+my %tests = (
+	'dobounce' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> $o_test->target,
+				'Subject'	=> "should bounce with a bugid",
+			},
+			'body'		=> "with nothing relevant here",
+			'expected'	=> '^bounce: => .+\d+$',
+		},
+	],
+	'donocommand' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> $o_test->bugdb,
+				'Subject'	=> 'no recognisable commands here',
+			},
+			'body'		=> "with nothing in here either",
+			'expected'	=> '(?ms:^nocommand: => .+)',
+		},
+	],
+	'doquiet' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> $o_test->target,
+				'Subject'	=> 'Grow more hair today!',
+			},
+			'body'		=> "silent spam :-)",
+			'expected'	=> '^quiet: => .*\d+$',
+		},
+	],
+	'doa' => [
+		{ #  
+			'header'	=> {
+				'To'		=> "close_$BUGID".'@'.$o_test->DOMAIN,
+				'From'		=> $o_test->from,
+			},
+			'body'		=> "some admin command\n",
+			'expected'	=> '(?ms:^a: => \w+)',
+		},
+	],	
+	'doB' => [
+		{ #  
+			'header'	=> {
+				'To'		=> 'perlbug@'.$o_test->domain,
+				'From'		=> $o_test->from,
+			},
+			'body'		=> "some perl bug\n",
+			'expected'	=> '^B: => \d+\.\d+$'
+		},
+	],	
+	'doG' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> "group_xgroup$$@".$o_test->DOMAIN,
+				'Subject'	=> "new group",
+			},
+			'body'		=> "some group\n",
+			'expected'	=> '^G: => \d+$'
+		},
+	],	
+	'doj' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> "perlbug-test@".$o_test->DOMAIN,
+				'Subject'	=> "just want a response",
+			},
+			'body'		=> "???\n",
+			'expected'	=> '^j: => .*\d+$'
+		},
+	],
+	'doM' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> 'reply@'.$o_test->DOMAIN,
+				'Subject'	=> "re; $BUGID",
+			},
+			'body'		=> "some reply\n",
+			'expected'	=> '^M: => \d+$'
+		},
+	],
+	'doN' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> 'note@'.$o_test->DOMAIN,
+				'Subject'	=> "re; $BUGID",
+			},
+			'body'		=> "some note\n",
+			'expected'	=> '^N: => \d+$'
+		},
+	],
+	'doP' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> 'patch@'.$o_test->DOMAIN,
+				'Subject'	=> "re; $BUGID",
+			},
+			'body'		=> "some patch\n",
+			'expected'	=> '^P: => \d+$'
+		},
+	],
+	'doT' => [
+		{ #  
+			'header'	=> {
+				'From'		=> $o_test->from,
+				'To'		=> 'test@'.$o_test->DOMAIN,
+				'Subject'	=> "re; $BUGID",
+			},
+			'body'		=> "some test\n",
+			'expected'	=> '^T: => \d+$'
+		},
+	],
+);
+
+# How many?
+plan('tests' => scalar(keys %tests));
+
+my @args = ($ARGV[0] =~ /^\w+$/) ? ($ARGV[0]) : keys %tests;
+
+TYPE:
+foreach my $type (sort @args) {
+	my $a_type = $tests{$type};
+	my $call   = substr($type, 2);
+	my $i_err  = 0;
+	$i_test++; 
+	TEST:
+	foreach my $h_test (@{$a_type}) {
+		my $expected = $$h_test{'expected'};
+		my $o_int    = $o_mail->setup_int($$h_test{'header'}, $$h_test{'body'});
+		my $h_cmds   = $o_mail->parse_input($o_int);
+		$DB::single=2;
+		my ($result) = $o_mail->process_commands({$call, $$h_cmds{$call}}, $o_int);
+		$DB::single=2;
+		if ($result !~ /$expected/) {
+			$i_err++;
+			output("Mis-matching type($type) process_commands($call, $$h_cmds{$call}) => \n\texpected($expected) \n\t  result($result)");
+			last TYPE;
 		}
-	}
-	output("$dir/$context -> err($err)") if $err;
-	($err == 0) ? ok($test) :  ok(0);
+	} # each test
+
+	$i_err == 0 ? ok($i_test) : ok(0);
+	# last TYPE unless $i_err == 0; 
 }
 
-# Done
-# -----------------------------------------------------------------------------
-# .
-		
-sub get_data { # get mail, data, scan, return $data as per fmt() 
-	my $file = shift;
-	my ($i_ok, $data) = (0, '');
-	my $o_int = $o_test->file2minet($file);
-	if (defined($o_int)) {
-		my ($o_hdr, $header, $body) = $o_mail->splice($o_int);
-		my @args = $o_test->minet2args($o_hdr);
-		($i_ok, $data) = $o_test->check_mail($o_hdr, $body, @args);
-    }
-	return ($i_ok, $data);
-}
+#

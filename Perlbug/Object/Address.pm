@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net 
-# $Id: Address.pm,v 1.11 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Address.pm,v 1.13 2001/08/20 18:57:30 mstevens Exp $
 #
 
 =head1 NAME
@@ -13,8 +13,7 @@ package Perlbug::Object::Address;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.11 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Address_DEBUG'} || $Perlbug::Object::Address::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.13 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 
 =head1 DESCRIPTION
@@ -42,6 +41,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Address object:
@@ -61,8 +62,6 @@ sub new {
 		'to'		=> [],
 	);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
 	bless($self, $class);
 }
 
@@ -70,7 +69,7 @@ sub new {
 =item FORMAT_a
 
 Default ascii format, inc. message body
-	
+
 	my ($top, $format, @args) = $o_msg->FORMAT_a(\%data);
 
 =cut
@@ -97,7 +96,7 @@ $obj_key_oid  Bugids  Created            |;
 =item FORMAT_A
 
 Default ascii format, inc. message body
-	
+
 	my ($top, $format, @args) = $o_msg->FORMAT_a(\%data);
 
 =cut
@@ -122,6 +121,9 @@ $obj_key_oid  Bugids  Created            |;
 	return ($top, $format, @args);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

@@ -1,4 +1,4 @@
-# $Id: Bug.pm,v 1.34 2001/07/04 15:27:37 uid51918 Exp $
+# $Id: Bug.pm,v 1.39 2001/10/19 12:40:20 richardf Exp $
 #
 
 =head1 NAME
@@ -10,8 +10,7 @@ Perlbug::Object::Bug - Bug class
 package Perlbug::Object::Bug;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.34 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Bug_DEBUG'} || $Perlbug::Object::Bug::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.39 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 my %fmt = ();
@@ -41,6 +40,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Bug object:
@@ -67,8 +68,6 @@ sub new {
 		)],
 	);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG;
-
 	bless($self, $class);
 }
 
@@ -86,7 +85,7 @@ extend B<SUPER::update> with notify_cc (of changes)
 
 =cut
 
-sub update {
+sub xupdate {
 	my $self = shift;
 
 	# my $ix = $self->notify_cc($bid, '', $orig) unless $nocc eq 'nocc';
@@ -115,16 +114,18 @@ sub new_id {
 =item insertid
 
 Returns newly inserted id from recently created object.
-	
+
 	my $new_oid = $o_obj->insertid();
 
 =cut
 
-sub insertid {
+sub xinsertid {
 	my $self = shift;
+	my $sth  = shift;		# ignored
+	my $oid  = shift || 'unspecified'; 
 
-	my $oid = $self->data($self->attr('primary_key'));	
-	$self->debug(0, "newly inserted bugoid($oid)") if $DEBUG;
+	# my $oid = $self->data($self->attr('primary_key'));	
+	$self->debug(1, "newly inserted bugoid($oid)") if $Perlbug::DEBUG;
 
 	return $oid; 
 }
@@ -145,9 +146,9 @@ sub htmlify {
     my $h_bug= shift;
 	my $req  = shift || 'admin';
 	return undef unless ref($h_bug) eq 'HASH';
-    # $self->debug(3, $self->base->dump($h_bug)) if $DEBUG;
+    # $self->debug(3, $self->base->dump($h_bug)) if $Perlbug::DEBUG;
     my $cgi = $self->base->cgi();
-    my $url = $self->base->url;
+    my $url = $self->base->myurl;
     my %bug = %{$h_bug};
     my $bid = $bug{'bugid'}; # save for bid usage
 	# print $self->base->html_dump($h_bug);
@@ -180,7 +181,7 @@ sub htmlify {
 		
 	# admin?
     if ($self->base->isadmin && $self->base->current('format') ne 'L' && $req ne 'noadmin') { # LEAN for browsing...
-	    $self->debug(3, "Admin of bug($bid) called.") if $DEBUG;
+	    $self->debug(3, "Admin of bug($bid) called.") if $Perlbug::DEBUG;
 		my ($group)    = @{$$h_bug{'group_ids'}}    if $$h_bug{'group_ids'};
 		my ($osname)   = @{$$h_bug{'osname_ids'}}   if $$h_bug{'osname_ids'};
 		my ($severity) = @{$$h_bug{'severity_ids'}} if $$h_bug{'severity_ids'};
@@ -191,38 +192,42 @@ sub htmlify {
 		# print "<hr>c($group) o($osname) sev($severity) stat($status) u($user) ver($version)<hr>";
 		$bug{'help'} = q|Enter an <b>existing</b> id in the <b>ID</b> row <i>above</i>, to assign a new relation to this bug.<hr>|;
 		$bug{'help'}.= q|Enter new <b>data</b> in the row <i>below</i> to create a new note, patch or test.  With a new patch, consider entering a <b>changeID</b> at the same time!|;
-		$bug{'address_names'} = $self->object('address')->textfield($bid.'_address', '', -'size' => 55).$bug{'address_ids'};
-		$bug{'note_names'}   	= $self->object('note')->textfield($bid.'_note', '').$bug{'note_ids'};
+		$bug{'address_names'} = $self->object('address')->text_field($bid.'_address', '', -'size' => 55).$bug{'address_ids'};
+		$bug{'note_names'}   	= $self->object('note')->text_field($bid.'_note', '').$bug{'note_ids'};
 		$bug{'group_names'}  	= $self->object('group')->popup($bid.'_group', $group); 
-		$bug{'change_names'}  = $self->object('change')->textfield($bid.'_change', '').$bug{'change_ids'};
-		$bug{'child_ids'}   = $self->object('child')->textfield($bid.'_child', '').$bug{'child_ids'};
-        $bug{'fixed'}       = $self->object('fixed')->textfield($bid.'_fixed', $fixed);
+		$bug{'change_names'}  = $self->object('change')->text_field($bid.'_change', '').$bug{'change_ids'};
+		$bug{'child_ids'}   = $self->object('child')->text_field($bid.'_child', '').$bug{'child_ids'};
+        $bug{'fixed'}       = $self->object('fixed')->text_field($bid.'_fixed', $fixed);
 		# new stuff is only for format::H
 		$bug{'newnote'}     = $cgi->textarea(-'name'  => $bid.'_newnote',  -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1, 'onChange' => 'pick(this)');
 		$bug{'newpatch'}    = $cgi->textarea(-'name'  => $bid.'_newpatch', -'value' => '', -'rows' => 3, -'cols' => 35, -'override' => 1, 'onChange' => 'pick(this)');
 		$bug{'newtest'}     = $cgi->textarea(-'name'  => $bid.'_newtest',  -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1, 'onChange' => 'pick(this)');
 		# end newstuff
-		$bug{'note_ids'}  = $self->object('note')->textfield($bid.'_note', '').$bug{'note_ids'};
+		$bug{'note_ids'}  = $self->object('note')->text_field($bid.'_note', '').$bug{'note_ids'};
 		$bug{'osname_names'}  = $self->object('osname')->popup($bid.'_osname', $osname);
-		$bug{'parent_ids'}  = $self->object('parent')->textfield($bid.'_parent', '').$bug{'parent_ids'};
-		$bug{'patch_ids'}   = $self->object('patch')->textfield($bid.'_patch', '').$bug{'patch_ids'};
-		$bug{'test_ids'}    = $self->object('test')->textfield($bid.'_test', '').$bug{'test_ids'};
+		$bug{'parent_ids'}  = $self->object('parent')->text_field($bid.'_parent', '').$bug{'parent_ids'};
+		$bug{'patch_ids'}   = $self->object('patch')->text_field($bid.'_patch', '').$bug{'patch_ids'};
+		$bug{'test_ids'}    = $self->object('test')->text_field($bid.'_test', '').$bug{'test_ids'};
 		$bug{'severity_names'}= $self->object('severity')->popup($bid.'_severity', $severity);
         $bug{'status_names'}  = $self->object('status')->popup($bid.'_status', $status);
     	$bug{'select'}      = $cgi->checkbox(-'name'=>'bugids', -'checked' => '', -'value'=> $bid, -'label' => '', -'override' => 1);
         # $bug{'user_ids'}  = $self->object('user')->selector($bid.'_user', $user);
-        $bug{'version_names'} = $self->object('version')->textfield($bid.'_version', $version);
+        $bug{'version_names'} = $self->object('version')->text_field($bid.'_version', $version);
 	}
 	# print '<pre>h_bug'.encode_entities(Dumper($h_bug)).'</pre>'; 
 	# print '<pre>bug'.encode_entities(Dumper(\%bug)).'</pre>'; 
 	return \%bug;
 }
 
+=pod
+
+=back
 
 =head1 FORMATS
 
 Bug formatters for all occasions...
 
+=over 4
 
 =item FORMAT_l
 
@@ -256,7 +261,7 @@ Bug id         Status   Severity Group     Os      Fixd Adms Msgs Nts Pchs Tsts
 =item FORMAT_a
 
 Default ascii format
-	
+
 	my ($top, $format, @args) = $o_bug->FORMAT_a(\%data);
 
 =cut
@@ -361,7 +366,7 @@ Message body :
 =item FORMAT_L
 
 Lean html format for bugs:
-	
+
 	my ($top, $format, @args) = $o_bug->FORMAT_L(\%data);
 
 =cut
@@ -407,7 +412,7 @@ sub FORMAT_L { #
 =item FORMAT_h
 
 html format for bugs:
-	
+
 	my ($top, $format, @args) = $o_bug->FORMAT_h(\%data);
 
 =cut
@@ -461,7 +466,7 @@ sub FORMAT_h { #
 =item FORMAT_H
 
 HTML format for bugs:
-	
+
 	my ($top, $format, @args) = $o_bug->FORMAT_H(\%data);
 
 =cut
@@ -530,81 +535,33 @@ $$x{'group_names'} &nbsp;</td>
 
 =item new_id
 
-Generate new_id for perlbug - YUK
+Generate new_id for perlbug bug
+
+	my $new_id = $o_bug->new_id;
 
 =cut
 
-sub new_id { # rf -> xxxx0827.007 ->19990827.007
-    my $self = shift;
-    my ($id, $ok) = ('', 1);
-    my ($today) = $self->base->get_date();
-    $self->debug(2, "new_id requested on '$today'") if $DEBUG;
-    my $sth = $self->base->db->query("SELECT max(bugid) FROM pb_bugid");
-    my $found = '';
-    if (defined $sth) {
-        ($found) = $sth->fetchcol(0);
-        $self->debug(3, "Found bugid: '$found'.") if $DEBUG;
-    } else {
-        $self->debug(0, "Couldn't get max(bugid) FROM pb_bugid: $Mysql::db_errstr") if $DEBUG;
-    }
-    my ($date, $num) = ("", "");
-    if ($found  =~ /^(\d{8})\.(\d{3})$/) { #
-        ($date, $num) = ($1, $2);
-        if (length($num) == 1) { $num = '00'.$num; }
-        if (length($num) == 2) { $num = '0'.$num; } 
-    } else {
-        $ok = 0;
-        $self->debug(0, "Can't find the latest ($found) id!") if $DEBUG;
-        #or start a new one.
-        $date = $today;
-        $num = '001';
-    }
-    if (($date == $today) && ($ok == 1)) {
-        if ($num >= 999) { # > just in case.
-            $self->debug(0, "Ran out of bug ids today ($today) at: '$found'") if $DEBUG;
-            $ok = 0;
-        } else {
-            $num++;
-            #$num = sprintf("%03d", $num);
-            if (length($num) == 1) { $num = '00'.$num; }
-            if (length($num) == 2) { $num = '0'.$num; } 
-        }
-    } else {
-        $num = '001';
-    }
-    if ($ok == 1) {
-	    my $newid   = $today.'.'.$num;
-	    my $update = "UPDATE pb_bugid SET bugid = '$newid' WHERE bugid = '$found'";
-	    my $sth = $self->base->db->query($update);
-	    if (defined($sth)) {
-	        my $res = $sth->affected_rows;
-	        if ($res) {
-	            $id = $newid;
-	            $self->debug(2, "New ID ($newid) generated.") if $DEBUG;
-	        } else {
-	            $self->error("Don't know what happened at pb_bugid update ($res)."); 
-	        }
-	    } else {
-	        $self->error("Can't generate new ID ($newid), sth($sth), update($update): $Mysql::db_errstr"); 
-	    }
-	} else {
-	    my $newid   = $today.'.'.$num;
-	    my $insert = "INSERT INTO pb_bugid SET bugid = '$newid'";
-	    my $sth = $self->base->db->query($insert);	
-	    if (defined($sth)) {
-	        my $res = $sth->affected_rows;
-	        if ($res) {
-	            $id = $newid;
-	            $self->debug(2, "New ID ($newid) generated.") if $DEBUG;
-	        } else {
-	            $self->error("Don't know what happened at pb_bugid insert($res).");
-	        }
-	    } else {
-	        $self->error("Can't insert new ID ($newid), sth($sth), insert($insert): $Mysql::db_errstr");
-	    }
-	}	
-	$self->debug(2, "Returning new_id($id)") if $DEBUG;
-    return $id;
+sub new_id {
+    my $self  = shift;
+
+    my $today  = $self->base->get_date();
+	my $newid  = "$today.001";
+	my @extant = ($self->base->get_list("SELECT max(bugid) FROM pb_bug"), $self->base->extant);
+	my ($max)  = sort { $b <=> $a } @extant;
+	if ($max =~ /^(\d{8})\.(\d{3})$/o) {
+		my $num = $2 + 1;
+		$newid = $today.'.'.sprintf("%03d", $num);
+		if (grep(/^$newid$/, @extant)) {
+			$newid = $today.'.'.sprintf("%03d", $num + 1);
+		} # parent/child fix
+		if ($num >= 999) {
+			$self->error("Ran out of bug ids today ($today) at: '$newid'");
+		}
+	}
+	$self->debug(1, "today($today), extant(@extant) max($max) => newid($newid)") if $Perlbug::DEBUG;
+	$self->base->extant($newid);
+
+    return $newid;
 }
 
 
@@ -621,14 +578,17 @@ sub get_id {
     my $str = shift;
     my ($ok, $id) = (0, '');
     # /^\[[ID]*\s*(\d{8}\.\d{3})\s*\]$/ -> brackets ...?
-    if ($str =~ /(\d{8}\.\d{3})/) { # no \b while _ is a letter?
+    if ($str =~ /(\d{8}\.\d{3})/o) { # no \b while _ is a letter?
         $id = $1;
         $ok = 1;
     }
-    $self->debug(3, "str($str) -> $ok ($id)") if $DEBUG;
+    $self->debug(3, "str($str) -> $ok ($id)") if $Perlbug::DEBUG;
     return ($ok, $id);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

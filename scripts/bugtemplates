@@ -1,0 +1,297 @@
+#!/usr/bin/perl -w
+# Insert templates
+# Richard Foley RFI perlbug@rfi.net
+# $Id: bugtemplates,v 1.2 2001/10/22 15:29:51 richardf Exp $
+#
+use Perlbug::Test;
+use strict;
+use lib qw(../); 
+use Data::Dumper;
+use FileHandle;
+use Getopt::Std; 
+use Mail::Internet;
+use Perlbug::Base;
+use Sys::Hostname;
+my $o_pb   = Perlbug::Base->new;
+my $o_test = Perlbug::Test->new($o_pb);
+
+
+=head1 NAME
+
+bugtemplates - insert object templates
+
+=head1 DESCRIPTION
+
+Inserts templates on behalf of all/any objects into database
+
+=head1 USAGE
+
+	./bugtemplates -[dfFhmoqtux]
+
+
+=head1 SWITCHES
+
+=item d
+
+debug level
+
+=item f
+
+format (a|h|H|i|L|...) default is all (regex)
+
+=item F
+
+Force insert, even though comparable exists(delete) in DB
+
+=item h
+
+help - perldoc $0
+
+=item m
+
+max number of inserts to process
+
+=item o
+
+object (bug|patch|user|...) or defaults for (mail|flag|...) - default is /\w+/
+
+=item q
+
+quiet
+
+=item t
+
+test - no inserts, just echo which would have been inserted
+
+=item u
+
+user:s who can use these templates - default is perlbug (list split by B<:>)
+
+=item x
+
+object / default (similar to B<f> and B<u>)
+
+=cut
+
+# ARGs
+my %arg = (
+	'd'	=> 0,   		# debug
+	'f'	=> '^\w+$', 	# format 
+	'F'	=> 0, 			# Force
+	'h' => 0, 			# help
+	'm'	=> 101, 		# max
+	'o'	=> '^\w+$',		# object/s
+	'q'	=> 0, 			# quiet
+	't' => 0, 			# test 
+	'u'	=> 'perlbug',	# user (relate) 
+	'x'	=> '^\w+$',		# object/default
+);
+getopts('d:f:Fhi:m:o:qtu:x:', \%arg);
+use vars(qw($d $h $f $F $m $o $q $t $u $x));
+foreach my $switch (keys %arg) {
+	no strict 'refs';
+	$$switch = $arg{$switch};
+}
+
+my %TEMPLATES = (
+	'a'	=> {
+		'default'	=> {
+			'mail'	=> {
+				'description'	=> 'default for mail type objects where none given',
+			},
+			'flag'	=> {
+				'description'	=> 'default for flag type objects where none given',
+			},
+		},
+		'object'	=> {
+			'bug'	=> {
+				'wrap'			=> '75',
+				'description'	=> 'ascii bug template', 
+				'header'		=> "\n",
+				'body'			=> q#
+Bug: <{bugid}>  Created: <{created}>  Modified: <{created}>
+Subject: <{subject}>
+
+Status:   <{status_names}>
+OS:       <{osname_names}>
+Severity: <{severity_names}>
+Group:    <{group_names}>
+
+Message ids: <{patch_ids}>
+Patch ids:   <{patch_ids}>
+
+Header:   
+<{header}>
+
+Body:
+<{body}>
+				#,
+			},
+			'user' => {
+				'wrap'			=> '75',
+				'description'	=> 'ascii user template', 
+				'header'		=> "\n", 
+				'body'			=> q#
+userid:  <{userid}>   name: <{name}>
+created: <{created}>  modified: <{created}>
+address: <{address}>
+
+bug ids: <{bug_ids}>
+				#,
+			},
+		},
+	},
+	,
+	'h'	=> {
+		'default'	=> {
+			'mail'	=> {
+				'description'	=> 'default for mail type objects where none given',
+			},
+			'flag'	=> {
+				'description'	=> 'default for flag type objects where none given',
+			},
+		},
+		'object'	=> {
+			'bug'	=> {	
+				'repeat'		=> '7',
+				'description'	=> 'html bug template', 
+				'header'		=> q#
+<table>
+<tr><td>Bug</td> <td>Created></td> <td>Modified</td></tr>
+			#,
+			'body'			=> q#
+<tr><td><{bugid}></td> <td><{created}></td> <td><{created}></td></tr>
+</table>
+<pre>
+Header:   
+<{header}>
+
+Body:
+<{body}>
+</pre>
+<hr>
+				#,
+			},
+			'user'	=> {
+				'repeat'		=> '15',
+				'description'	=> 'html user template', 
+				'header'		=> q#
+<table border=1 width=100%>
+<tr>
+	<td><b>userid</b></td>
+	<td><b>name</b></td>
+	<td><b>address</b></td>
+	<td><b>created</b></td>
+	<td><b>modified</b></td>
+</tr>
+				#,
+				'body'			=> q#
+<tr>
+	<td><{userid}> &nbsp;</td>
+	<td><{name}> &nbsp;</td>
+	<td><{address}> &nbsp;</td>
+	<td><{created}> &nbsp;</td>
+	<td><{modified}> &nbsp;</td>
+</tr>
+</table>
+				#, 
+			},
+		},
+	},
+);
+
+my $err    = 0;
+my $test   = 0;
+my $i_inst = 0;
+my @oids   = ();
+my $i_wanted = scalar(keys %TEMPLATES);
+
+plan('tests' => $i_wanted);
+
+FORMAT:
+foreach my $format (sort keys %TEMPLATES) {					# 'a' => []
+	my $h_format = $TEMPLATES{$format};						# 'h' => []
+	next FORMAT unless ref($h_format) eq 'HASH'; 
+	$test++;
+	next FORMAT unless $format =~ /$f/;
+
+	DEFOBJ:
+	foreach my $defobj (sort keys %{$h_format}) {
+		my $h_defobj = $$h_format{$defobj};					# 'object'	=> {} or
+		next DEFOBJ unless ref($h_defobj) eq 'HASH';		# 'default'	=> {} 
+		next DEFOBJ unless $defobj =~ /$x/;
+
+		OBJECTTYPE:
+		foreach my $objtype (sort keys %{$h_defobj}) {		# 'bug'		=> {} object 
+			my $h_temp = $$h_defobj{$objtype};				# 'mail'	=> {} or default
+			next OBJECTTYPE unless ref($h_temp) eq 'HASH'; 
+			next OBJECTTYPE unless $objtype =~ /$o/;
+
+			my $i_ok   = 1;
+			my $o_tmp  = $o_pb->object('template');
+			my $pri    = $o_tmp->primary_key;
+			my $oid    = $o_tmp->new_id;
+			my ($object, $type) = ( ($defobj eq 'default')
+				? ('', $objtype)
+				: ($objtype, '')
+			);
+			my %data = (
+				'body'			=> 'no body', 
+				'description'	=> "$format $objtype template ($defobj)", 
+				'format' 		=> $format,
+				'header'		=> 'no header', 
+				'repeat'		=> '1',
+				'wrap'			=> '',
+				'object' 		=> $object,
+				'type' 			=> $type, 
+				%{$h_temp},
+				$pri     		=> $oid, 
+			);
+
+			my $cond = "format = '$format' AND object = '$object' AND type = '$type'";
+			my @exists = $o_tmp->col('templateid', $cond);
+			if (@exists) {
+				output("existing($cond) records(@exists)!");
+				if ($F) {
+					$i_ok = $o_tmp->delete(\@exists)->DELETED;
+					output("repeating insert deleted($i_ok)");
+				} else {
+					output("not repeating insert! -F ?");
+					$i_ok = 0;
+				}
+			}
+
+			$i_ok = $o_tmp->create(\%data)->CREATED if $i_ok;
+
+			if ($i_ok != 1) {
+				output("\tfailed to insert $o_tmp($i_ok)!"); 
+				$err++;
+			} else {	
+				my $oid = $o_tmp->oid;
+				push(@oids, $oid);
+				$i_ok = 0 unless $oid =~ /^\d+$/;
+				$o_tmp->delete([$oid]) if $t;	
+				output("\tinstalled => oid($oid)");
+				if ($i_ok == 1) { # !
+					$i_inst++;
+					my @users = split(':', $u);
+					my $i_rel = $o_tmp->relate({ 'user' => { 'ids' => \@users }, });
+					output("\trelated to user(@users)");
+					my $blank = '';
+					my $default = "INSERT INTO pb_template_user SET created = sysdate(), templateid = '$oid', userid = '$blank'";
+					my $i_defres = $o_tmp->base->exec($default); # special case while userid = ''
+					output("\trelated to user($blank)");
+				}
+			} 
+			ok(($i_ok == 1) ? $test : 0);
+		}
+	}
+}
+if ($err == 0) {	
+	output("...installed $i_inst templates(@oids)");
+} else {
+	output("...failed($err) of $i_wanted templates installation"); 
+}
+   
+# done.
+

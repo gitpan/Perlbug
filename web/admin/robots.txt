@@ -1,1 +1,4 @@
-../robots.txt
+# basic :-)
+User-agent: *
+Disallow: / 
+

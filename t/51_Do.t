@@ -1,24 +1,16 @@
 #!/usr/bin/perl 
 #
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 51_Do.t,v 1.3 2001/03/31 16:15:01 perlbug Exp $
+# $Id: 51_Do.t,v 1.4 2001/09/18 13:37:50 richardf Exp $
 #
-BEGIN {
-	use File::Spec; 
-	use lib File::Spec->updir;
-	use Perlbug::TestBed;
-	plan('tests' => 4);
-}
 use strict;
 use Data::Dumper;
+use Perlbug::Base;
+use Perlbug::Test;
+plan('tests' => 4);
 use lib qw(../);
 my $test = 0;
 my $context = 'not defined';
-
-
-# Libs
-# -----------------------------------------------------------------------------
-use Perlbug::Base;
 my $o_perlbug = '';
 
 # Tests

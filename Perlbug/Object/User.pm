@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: User.pm,v 1.26 2001/07/04 15:27:37 uid51918 Exp $
+# $Id: User.pm,v 1.31 2001/10/19 12:40:21 richardf Exp $
 #
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::Object::User - User class
 package Perlbug::Object::User;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.26 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_User_DEBUG'} || $Perlbug::Object::User::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.31 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -40,6 +39,8 @@ use Perlbug::Base;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new User object:
@@ -57,10 +58,8 @@ sub new {
 		'name'		=> 'User',
 		'match_oid'	=> '([a-zA-Z]+)',
 		'from'		=> [qw(group)],
-		'to'		=> [qw(bug)],
+		'to'		=> [qw(bug template)],
 	);
-
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
 
 	bless($self, $class);
 }
@@ -95,16 +94,16 @@ sub updatable {
 =item insertid
 
 Returns newly inserted id from recently created object.
-	
+
 	my $new_oid = $o_obj->insertid();
 
 =cut
 
-sub insertid {
+sub xinsertid {
 	my $self = shift;
 
 	my $oid = $self->data($self->attr('primary_key'));	
-	$self->debug(0, "newly inserted userid($oid)") if $DEBUG;
+	$self->debug(1, "newly inserted userid($oid)") if $Perlbug::DEBUG;
 
 	return $oid; 
 }
@@ -125,7 +124,7 @@ sub htmlify {
 	my $req  = shift || 'admin';
 	return undef unless ref($h_usr) eq 'HASH';
     my $cgi = $self->base->cgi();
-    my $url = $self->base->url;
+    my $url = $self->base->myurl;
     my %usr = %{$h_usr};
     my $userid  = $usr{'userid'};
 
@@ -146,10 +145,9 @@ sub htmlify {
 	    $usr{'address'}       = $cgi->textfield( -'name' => $userid.'_address',   -'value' => $address, -'size' => 35, -'maxlength' => 50, -'override' => 1);
 		$usr{'group_ids'} 	  = $o_grp->selector($userid.'_groupids', @mygids).$usr{'group_ids'};
         $usr{'match_address'} = $cgi->textfield( -'name' => $userid.'_match_address', -'value' => $match_address, -'size' => 45, -'maxlength' => 55, -'override' => 1);
-        $usr{'password_update'}= $cgi->checkbox( -'name'  =>$userid.'_password_update', -'checked' => '', -'value'=> 1, -'label' => '', -'override' => 1);
         $usr{'password'}      = $cgi->textfield( -'name' => $userid.'_password',  -'value' => $password, -'size' => 16, -'maxlength' => 16, -'override' => 1);
         $usr{'select'}        = $cgi->checkbox( -'name'  => 'userids', -'checked' => '', -'value'=> $userid, -'label' => '', -'override' => 1);
-        $usr{'select'}       .= "&nbsp;($userid)";
+        $usr{'select'}       .= "&nbsp;".$usr{'userid'};
     } else {
         $usr{'active'}        = ($active) ? '*' : '-';
 		my ($addr) = $self->parse_addrs([$address]);
@@ -163,12 +161,16 @@ sub htmlify {
 	# print '<pre>'.Dumper(\%usr).'</pre>';
     return \%usr;
 }
- 
+
+=pod
+
+=back
 
 =head1 FORMATS
 
 Formatters for all occasions...
 
+=over 4
 
 =item FORMAT_l
 
@@ -262,7 +264,7 @@ Groups:    @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 =item FORMAT_L
 
 Lean html format for users:
-	
+
 	my ($top, $format, @args) = $o_usr->FORMAT_L(\%data);
 
 =cut
@@ -276,7 +278,7 @@ sub FORMAT_L {
 =item FORMAT_h
 
 html format for users:
-	
+
 	my ($top, $format, @args) = $o_usr->FORMAT_h(\%data);
 
 =cut
@@ -285,7 +287,7 @@ sub FORMAT_h { #
 	my $self = shift;
 	my $x    = shift; # 
 	my @args = ( 
-		$$x{'select'},
+		$$x{'select'}, 
 		$$x{'name'}, 		$$x{'active'}, 		
 		$$x{'bug_count'},   $$x{'address'}, 	
 		$$x{'password'},	$$x{'match_address'},
@@ -310,7 +312,7 @@ sub FORMAT_h { #
 =item FORMAT_H
 
 HTML format for users:
-	
+
 	my ($top, $format, @args) = $o_usr->FORMAT_H(\%data);
 
 =cut
@@ -323,6 +325,9 @@ sub FORMAT_H {
 	return ($top, $format, @args);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

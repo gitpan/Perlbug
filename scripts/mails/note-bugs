@@ -1,0 +1,13 @@
+Message-Id: <note-bugs_20011027232256_4968@rfi.net>
+Received: from mimer.null.dk ([130.228.230.9]) by mailin02.sul.t-online.de
+        with smtp id 15qB8n-2L3qc4C; Sun, 7 Oct 2001 12:26:37 +0200
+To: note_19870502.007@bugs.perl.org
+From: perlbug-test@rfi.net
+Subject: just a note against 19870502.007
+
+Hmmm - perhaps ?
+
+	some comment
+
+---
+x

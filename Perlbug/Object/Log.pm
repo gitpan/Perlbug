@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Log.pm,v 1.5 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Log.pm,v 1.7 2001/08/20 18:57:31 mstevens Exp $
 #
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::Object::Log - Log class
 package Perlbug::Object::Log;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Log_DEBUG'} || $Perlbug::Object::Log::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -42,6 +41,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Log object:
@@ -63,11 +64,12 @@ sub new {
 		'track'		=> 0,
 	);
 
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
-
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

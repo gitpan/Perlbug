@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Severity.pm,v 1.8 2001/04/21 20:48:48 perlbug Exp $
+# $Id: Severity.pm,v 1.11 2001/10/19 12:40:20 richardf Exp $
 #
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::Object::Severity - bug severity handler
 package Perlbug::Object::Severity;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.8 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_Object_Severity_DEBUG'} || $Perlbug::Object::Severity::DEBUG || '';
+$VERSION = do { my @r = (q$Revision: 1.11 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -42,6 +41,8 @@ use Perlbug::Object;
 
 =head1 METHODS
 
+=over 4
+
 =item new
 
 Create new Severity object:
@@ -56,17 +57,18 @@ sub new {
 	my $o_base = (ref($_[0])) ? shift : Perlbug::Base->new;
 
 	my $self = Perlbug::Object->new( $o_base, 
-		'name'		=> 'Severity',
-		'from'		=> [qw(bug)],
-		'to'		=> [],
-		'type'		=> 'prejudicial',
+		'name'			=> 'Severity',
+		'from'			=> [qw(bug)],
+		'prejudicial' 	=> '1',
+		'to'			=> [],
 	);
-
-	$DEBUG = $Perlbug::DEBUG || $DEBUG; 
 
 	bless($self, $class);
 }
 
+=pod
+
+=back
 
 =head1 AUTHOR
 

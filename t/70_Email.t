@@ -1,105 +1,83 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: check email functions against config data
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 70_Email.t,v 1.11 2001/03/31 16:15:01 perlbug Exp $
+# $Id: 70_Email.t,v 1.12 2001/09/18 13:37:50 richardf Exp $
 #
-BEGIN {
-	use File::Spec; 
-	use lib File::Spec->updir;
-	use Perlbug::TestBed;
-	plan('tests' => 6);
-}
-use strict;
+
 use lib qw(../);
-my $test = 0;
-
-
-# Libs
-# -----------------------------------------------------------------------------
-use Perlbug::Interface::Email;
+use strict;
 use FileHandle;
 use Mail::Internet;
+use Perlbug::Test;
+use Perlbug::Interface::Email;
 use Sys::Hostname;
+
+plan('tests' => 6);
+
 my $o_mail = Perlbug::Interface::Email->new;
-my $o_test = Perlbug::TestBed->new;
-$o_mail->current('isatest', 1);
+my $o_test = Perlbug::Test->new($o_mail);
 
-$o_mail->current('admin', 'richardf');
-
-# Setup
-# -----------------------------------------------------------------------------
-my $err			= 0;
-my @tests		= ();
-my $context		= '';
+my $i_test = 0;
+my $i_err  = 0;
+my $context= '';
 
 # Tests
 # -----------------------------------------------------------------------------
 # 
 # SYSTEM
-$test++; # 1
-$err = 0;
+$i_test++; # 1
+$i_err = 0;
 $context = 'system';
 foreach my $tgt (qw(maintainer)) {
 	my $addr = $o_mail->system($tgt);
 	my $checked = $o_mail->ck822($addr);
 	if ($checked != 1) {
-		$err++;
-		output("$context $tgt address check ($test) failed -> '$addr'");
+		$i_err++;
+		output("$context $tgt address check ($i_test) failed -> '$addr'");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	ok(0);
-}
+output("$context -> err($i_err)") if $i_err;
+ok(($i_err == 0) ? $i_test : 0);
+
 
 # EMAIL
-$test++; # 2
-$err = 0;
+$i_test++; # 2
+$i_err = 0;
 $context = 'email';
 foreach my $tgt (qw(bugdb bugtron from help test)) {
 	my $addr = $o_mail->email($tgt);
 	my $checked = $o_mail->ck822($addr);
 	if ($checked != 1) {
-		$err++;
-		output("$context $tgt address check 822 ($test) failed -> '$addr'");
+		$i_err++;
+		output("$context $tgt address check 822 ($i_test) failed -> '$addr'");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	ok(0);
-}
+output("$context -> err($i_err)") if $i_err;
+ok(($i_err == 0) ? $i_test : 0);
 
 
 # TARGET/FORWARD
 foreach my $context (qw(target forward)) {
-	$test++; # 3, 4
-	$err = 0;
+	$i_test++; # 3, 4
+	$i_err = 0;
 	foreach my $tgt ($o_mail->get_keys($context)) {
 		my @addrs = $o_mail->$context($tgt);
 		foreach my $addr (@addrs) {
 			my $checked = $o_mail->ck822($addr); 
 			if ($checked != 1) {
-				$err++;
-				output("$context $tgt address check822 ($test) failed($addr)");
+				$i_err++;
+				output("$context $tgt address check822 ($i_test) failed($addr)");
 			}
 		}	
 	}
-	output("$context -> err($err)") if $err;
-	if ($err == 0) {	
-		ok($test);
-	} else {
-		ok(0);
-	}
+	output("$context -> err($i_err)") if $i_err;
+	ok(($i_err == 0) ? $i_test : 0);
 }
 
 
 # DUMMY
-$test++; # 5
-$err = 0;
+$i_test++; # 5
+$i_err = 0;
 $context = 'all_duff';
 my %map = (
 	'blank' 		=> '',
@@ -111,20 +89,17 @@ foreach my $tgt (keys %map) {
 	my $addr = $map{$tgt};
 	my $checked = $o_mail->ck822($addr);
 	if ($checked == 1) {
-		$err++;
-		output("$context $tgt ck822 check ($test) failed -> '$addr'");
+		$i_err++;
+		output("$context $tgt ck822 check ($i_test) failed -> '$addr'");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	ok(0);
-}
+output("$context -> err($i_err)") if $i_err;
+ok(($i_err == 0) ? $i_test : 0);
+
 
 # ALL_OK
-$test++; # 6
-$err = 0;
+$i_test++; # 6
+$i_err = 0;
 $context = 'all_ok';
 %map = (
 	'rpo' 		=> 'richard@perl.org',
@@ -136,16 +111,12 @@ foreach my $tgt (keys %map) {
 	my $addr = $map{$tgt};
 	my $checked = $o_mail->ck822($addr);
 	if ($checked != 1) {
-		$err++;
-		output("$context $tgt ck822 check ($test) failed -> '$addr'");
+		$i_err++;
+		output("$context $tgt ck822 check ($i_test) failed -> '$addr'");
 	}	
 }
-output("$context -> err($err)") if $err;
-if ($err == 0) {	
-	ok($test);
-} else {
-	ok(0);
-}
+output("$context -> err($i_err)") if $i_err;
+ok(($i_err == 0) ? $i_test : 0);
 
 # CLEAN_HEADER_CK822
 #

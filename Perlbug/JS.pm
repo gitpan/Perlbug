@@ -1,6 +1,6 @@
 # Perlbug javascript routines
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: JS.pm,v 1.6 2001/04/21 20:48:48 perlbug Exp $
+# $Id: JS.pm,v 1.10 2001/09/18 13:37:49 richardf Exp $
 #   
 
 =head1 NAME
@@ -12,8 +12,7 @@ Perlbug::JS - Object handler for Javascript methods
 package Perlbug::JS;
 use strict;
 use vars qw(@ISA $VERSION);
-$VERSION  = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_JS_DEBUG'} || $Perlbug::JS::DEBUG || '';
+$VERSION  = do { my @r = (q$Revision: 1.10 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
 use CGI;
@@ -30,7 +29,7 @@ Javascript wrapper for Perlbug modules usage
 
 	use Perlbug::JS;
 
-	print Perlbug::JS->new()->menu;
+	print Perlbug::JS->new()->menus;
 
 =cut
 
@@ -51,12 +50,7 @@ sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto; 
 
-	my $self  = {};
-	bless($self, $class);
-
-	$DEBUG = $Perlbug::DEBUG || $DEBUG;
-
-	return $self;
+	bless({}, $class);
 }
 
 
@@ -64,13 +58,16 @@ sub new {
 
 Return a popup, this will display the data and submit the form on the given frame/target/item.
 
-	my $control = $o_js->control('menu');
+	my $control = $o_js->control('menus');
 
 =cut
 
 sub control {
 	my $self = shift;
 	my $tgt  = shift;
+	my $dom  = shift;
+	my $cgi  = shift;
+	print "tgt($tgt) dom($dom) cgi($cgi)<hr>\n";
 
 	my %commands = (
 		'frames' => 'frames',
@@ -95,16 +92,16 @@ sub control {
 }
 
 
-=item menu
+=item menus
 
 menu suite
 
 =cut
 
-sub menu {
+sub menus {
 	my $self = shift;
 
-	my $func = q|// menu functions|
+	my $func = q|// function menus|
 		. $self->go()
 	;
 
@@ -195,6 +192,35 @@ sub sel {
 }
 
 
+=item admin
+
+Switch admin view on(1) or off(0)
+
+=cut
+
+sub admin {
+	my $self = shift;
+	my $dom  = shift;
+	my $cgi  = shift;
+	my $func = qq|
+		function admin (arg) {
+			var path = parent.perlbug.document.location.pathname;
+			var p = path.split("/admin");	
+			var noadmin = p.join("");
+			var newloc = noadmin;
+			if (arg == 1) {
+				newloc = "/admin" + noadmin;
+				//newloc = "/perlbug/admin/perlbug.cgi"; // rfi 
+			}
+			// confirm ("arg(" + arg + ") path(" + path + ") => newloc(" + newloc + ")");
+			parent.perlbug.document.location.pathname = newloc;
+			return false;
+		}
+	|;
+	return $func;
+}
+
+
 =item commands 
 
 commands suite
@@ -203,7 +229,10 @@ commands suite
 
 sub commands {
 	my $self = shift;
+	my $dom  = shift;
+	my $cgi  = shift;
 	my $func .= q|// commands functions|
+		. $self->admin($dom, $cgi)	
 		. $self->back()	
 		. $self->newcoms()
 		. $self->request()
@@ -355,6 +384,12 @@ sub parse {
 }
 
 1;
+
+=pod
+
+=back
+
+=cut
 
 __END__
 
@@ -542,6 +577,6 @@ function demo_obj (arg1, arg2, arg3, arg4) {
     alert("new Obj (blob)\n" + out);
 }
 
-                                                                                        
+
 =cut
 

@@ -1,6 +1,6 @@
 # Perlbug docs and placeholder
-# (C) 1999 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Perlbug.pm,v 2.78 2001/07/29 14:15:36 richardf Exp $
+# (C) 1999 2000 2001 Richard Foley RFI perlbug@rfi.net
+# $Id: Perlbug.pm,v 2.88 2001/10/19 12:40:20 richardf Exp $
 #
 # pod2text -la ~/Perlbug.pm > ~/docs/spec
 # pod2html ~/Perlbug.pm  > ~/docs/spec.html  
@@ -15,19 +15,13 @@ Perlbug - PerlBug DataBase specification
 package Perlbug;           
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 2.78 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-my $DEBUG = $ENV{'Perlbug_DEBUG'} || $Perlbug::DEBUG || '';
-$DEBUG = '' 				if $DEBUG =~ /^\s*$/;
-$DEBUG = '[0]'				if $DEBUG =~ /^0$/;
-$DEBUG = '[01xX]' 			if $DEBUG =~ /^1$/;
-$DEBUG = '[012sxX]' 			if $DEBUG =~ /^2$/;
-$DEBUG = '[0123cosSX]' 			if $DEBUG =~ /^3$/;
-$DEBUG = '[01234cCoOsSxXtT]' 	if $DEBUG =~ /^4$/;
-$ENV{'Perlbug_DEBUG'} = $Perlbug::DEBUG = $DEBUG;
-# print "Perlbug: Perlbug::DEBUG($Perlbug::DEBUG) -> ENV($ENV{'Perlbug_DEBUG'}) <- DEBUG($DEBUG)\n";
-# print (map { "$_=$ENV{$_}\n" } grep(/perl/i, keys %ENV))."\n" if $DEBUG;
-# $Devel::Trace::TRACE = 1 			if $DEBUG =~ /T/;
+push @INC, qw(/home/perlbug/locallibs);
+$VERSION = do { my @r = (q$Revision: 2.88 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
+
+$Perlbug::CONFIG = $ENV{'Perlbug_CONFIG'} || $Perlbug::CONFIG || '/home/perlbug/config/Configuration';
+$Perlbug::DEBUG  = $ENV{'Perlbug_DEBUG'}  || $Perlbug::DEBUG  || '0';
+$Perlbug::FATAl  = $ENV{'Perlbug_FATAL'}  || $Perlbug::FATAL  || '0';
 
 	# 0.00+ Original Perlbug 
 	# 1.00+ Brought under RCS, config file, cached db entries, improved logging etc
@@ -56,9 +50,14 @@ $|=1;
 	#
 	# 2.60+ prep'd for rcs->cvs and ~(richard|perlbug) -> 2.70+
 	# 2.70+ <--   we're here :-) migrated into perlbug.SourceForge.net
-	#  
-	# 3.00  Full test suite
-	# 3.50  Oracle support
+	# 2.80+ Oracle(ish) support, re-enabled debugging, admin switches, newid() etc.
+	#       Revamped test email suite away from directories into managable files
+	#       Tests run clean (no spurious redifined subs. etc.)
+	#       Consolidated all do() parameter parsing
+	#       bughist -E forwarding, template (layout) integration
+	#       fixed the errant cmd_<bugid>_var@domain parse, do(\w) and feedback 
+	# 
+	# 3.00  Full test suite and Oracle support
 	# 	    ...
 
 
@@ -74,14 +73,13 @@ For installation instructions see the INSTALL file.
 
 =head1 SYNOPSIS
 
-Note that the given addresses are configurable for individual sites, 
-treat these examples of current usage as defaults.
+Note that the given addresses are configurable for individual sites, treat these examples of current usage as defaults.
 
 New bugs are created by mailing perlbug@perl.org or perlbug@perl.com
 
 Said bug is entered in the database, and given a new bugid, the mail is then forwarded to perl5-porters with the bugid in the subject line..
 
-perl5-porters is continously tracked for relevant mails to attach to said bug.
+perl5-porters(p5p) is continously tracked for relevant mails to attach to said bug.
 
 There are web(http://bugs.perl.org), email(bugdb@perl.org and help@bugs.perl.org), command line(bugdb) and Tk (bugtk) frontends to query and administrate the bugs.  See B<scripts> below
 
@@ -89,7 +87,7 @@ Regular overviews are emailed to p5p, and outstanding bugs are mailed to active 
 
 All modules have perldocs embedded, to browse at your leisure.
 
-	perl -e "print Perlbug::Interface::Cmd->new()->object('bug')->read('19870502.007')->format('A')"
+	perl -MPerlbug::Base -e "print Perlbug::Interface::Cmd->new()->object('bug')->read('19870502.007')->format('A')"
 
 =cut
 
@@ -120,11 +118,13 @@ All modules have perldocs embedded, to browse at your leisure.
 
 	Robust, with test suites:
 
-      	All tests successful.
+    All tests successful.
+	Files=32,  Tests=218, 120 wallclock secs (33.67 cusr +  2.19 csys = 35.86 CPU)  
 
-		Files=28, Tests=143, 148 wallclock secs (59.27 cusr +  2.61 csys = 61.88 CPU) 
+	With better coverage and improved timing (more tests in less time and/or cpus :)
+    Files=28,  Tests=148, 148 wallclock secs (59.27 cusr +  2.61 csys = 61.88 CPU) 
 
-	Under RCS
+	Under CVS on sourceforge.net (previously stored under RCS)
 
 	Documented (in perldoc -> do what I say _and_ what I do :-)
 
@@ -186,7 +186,7 @@ All modules have perldocs embedded, to browse at your leisure.
 
         propose_close_<bugid>_@bugs.perl.org             -> bug admin proposal
 
-        note_<bugid>_@bugs.perl.org                      -> assign note
+        note_<bugid>_<bugid>_duplicate@bugs.perl.org     -> assign note and admin
 
         patch_<version>_<bugid>_<changeid>@bugs.perl.org -> assign a patch
 
@@ -224,7 +224,7 @@ All modules have perldocs embedded, to browse at your leisure.
 
 	Relationships between bugs (parent-child) are assignable.
 
-	Retrieval of database via email.
+	Retrieval of database via email and http and ftp and via rsync.
 
 	Logging of all activities, admin history tracking.
 
@@ -261,7 +261,9 @@ A parser of directories of archived mail (treated as per tron.pl).
 
 =item bugmail
 
-A query and administrative email front end, examining both Subject: and To: line for instructions.  Accepts mail for bugdb@perl.org and *@bugs.perl.org.
+A query and administrative email front end, examining both Subject: and To: line for instructions.  Accepts mail for bugdb@perl.org and *@bugs.perl.org. 
+
+Note - bugmail functionality is now incorporated within B<bugtron> below.
 
 =item bugtk
 
@@ -269,7 +271,7 @@ The Tk interface
 
 =item bugtron
 
-Tracks mailing lists, relying on header information to identify new bugs and replies to existing ones.  Accepts mail for perlbug@perl.org and perlbug@perl.com and relevant target mailing lists.
+Tracks mailing lists, relying on header information to identify new bugs and replies to existing ones.  Accepts mail for perlbug@perl.org and perlbug@perl.com and relevant target mailing lists.  See B<bugmail>
 
 =back
 
@@ -278,33 +280,38 @@ Tracks mailing lists, relying on header information to identify new bugs and rep
 
 =head1 CLASSES
 
-
 For those that are interested the Perlbug application module hierarchy goes something like this:
 
-    (ISA) Config  Do  TM    (HASA) Log Format 
-          |       |   |          
-          -------------            --- ------
+    (ISA) Do          (HASA) Config Database Log
+          |                  |      |        |  
+          -------     ------------------------
+                |_____|
                    |
-             (ISA) Base
-			 	Interface
-				   |
+                   Base [Interface] (HAS objects)
+                   |
                    ----------------------------------       - 
                             |                       |       |       
                             Cmd                     |       |
-                          -----------               |	    |
-                          |         |               |       |
-                          |         Email           Web     Tk
+                          ---------                 |	    |
+                          |       |                 |       |
+                          |       Email             Web     Tk
     -----------------------       ----------        ---     --- 
     |       |     |       |       |        |        |       | 
     bugcron bugdb bughist bugfix  bugtron bugmail   bugcgi  bugtk
 
 
-While the Perlbug Objects themselves hierarchy looks a bit like this:
+While the Perlbug Objects themselves look a bit like this:
 
-     (ISA) Object   (CAN) Format    and may have (HASA) Relation(s)
-          ------          ------                        --------
-		  |
-	Address  Bug  Group  Message  Note  Patch  Test  User  Status ...
+             Template
+			 --------
+			 |
+             Format
+             ------
+             |
+       (ISA) Object  (MAY) have Relation(s) with one another :-)
+             ------             --------
+             |
+    Address  Bug  Group  Message  Note  Patch  Test  User  Status ...
     -------  ---  -----  -------  ----  -----  ----  ----  ------
 
 Since moving B<status>, B<osname>, etc. over to being objects in their own 
@@ -316,8 +323,7 @@ tried to keep it as B<clean> as possible, and that meant being somewhat
 (ob|sub)jectively pedantic now and then - so there you have it :-)
 
 Anyone actually looking into this code will find the Objects are fairly clean 
-(I hope), where the Interfaces are not.  That's on the TODO list, now that the 
-background is firm.
+(I hope), and should reliably relate to each other.
 
 =cut
 
@@ -332,15 +338,54 @@ The code is currently stored under cvs on SourceForge:
 
 	https://sourceforge.net/projects/perlbug/
 
-It can also be retrieved from the CPAN at:
+Most recent release can also be retrieved from the CPAN at:
 
 	http://www.cpan.org/authors/id/R/RF/RFOLEY
 
-The live system is on tmtowtdi.perl.org under the ~perlbug account, talk to 
+The live system is on onion.perl.org under the ~perlbug account, talk to 
 gnat@frii.com or ask@valueclick.com for access.
 
 Note: the output of 'make test' should be 100% succesful before commiting
-any changes to the code!
+any changes to the code, please!
+
+=back
+
+
+=head1 VARIABLES
+
+There are several package variables which may be set, see the B<CONFIG> entry 
+below for how to do this.  Note the replacement of '::' with '_'.
+
+Environment variables take priority over code, which have priority over the 
+configuration file entries themselves, on initial setting.
+
+=over 4
+
+=item CONFIG
+
+The initial Perlbug Config(uration) file to use may be set at the top of this module:
+
+	$Perlbug::CONFIG = '/home/perlbug/config/Configuration';
+
+or as an environment variable (in bash):
+
+	export Perlbug_CONFIG = './my_config_file'
+
+=item DEBUG
+
+The debug level - see B<Perlbug::Base::debug()> for the options
+
+	export Perlbug_DEBUG=1
+
+=item FATAL
+
+Will cause the application to die on the first error if set to 1
+
+If set to 0, will merely produce a message, on screen or in the logs.
+
+	export Perlbug_FATAL=1
+
+=back
 
 
 =head1 DEVELOPMENT
@@ -359,7 +404,7 @@ method, or as a particular instance, where the object has been initialised.
 
 For example using Perlbug::Base or Perlbug::Interface::(Cmd|Email|Web)->new... 
 
-	my $o_base = Perlbug::Base->new();				# get an interface 
+	my $o_base = Perlbug::Interface::Cmd->new();	# get a basic interface 
 
 	my $o_bug = $o_base->object('bug');				# the appropriate object
 
@@ -371,7 +416,7 @@ For example using Perlbug::Base or Perlbug::Interface::(Cmd|Email|Web)->new...
 
 The object knows what relationships it has, so ask it:
 
-	print "Relations: ".join(', ', $o_bug->relations); 	# address, note, user...
+	print "Relations: ".join(', ', $o_bug->relations); 	# group, note, user...
 
 And so on:
 
@@ -379,7 +424,7 @@ And so on:
 
 There should be no need to directly query the db with hard-wired SQL, 
 everything should be do-able through the supplied object interfaces, 
-(if this is not the case, speak - I/we should fix it :-).  
+(if this is not the case, speak - I/we will fix it.
 
 Note that in the entire application there is only a single place where it has  
 proved necessary to refer directly to a database tablename and this is in the 
@@ -423,16 +468,16 @@ Or interact with it via the command line:
 
 	~/scripts/bugdb
 
-Send active admins unclosed bugs and an overview to master_list(p5p), 
-	dump current database for reference/backup:
+Send active admins unclosed bugs, remind open bug submitters their bug remains 
+	open, send an overview to master_list(p5p), backup current database:
 
     crontab -e 3 5 * * 1 ~/scripts/bugcron
 
 A couple of useful(?) command-lines:
 
-	perl -MPerlbug::Bug -e 'print map { "$_\n" } Perlbug::Bug->new->ids("subject=\"bug\"")'
+	perl -MPerlbug::Base -e 'print map { "$_\n" } Perlbug::Base->new->object('bug')->ids("subject like \"%strict%\"")';
 
-	perl -MPerlbug::Group -e 'print Perlbug::Group->new->_read("configure")->format("h")'
+	perl -MPerlbug::Base -e 'print Perlbug::Base->new->object('group')->_read("configure")->format("a")'; 
 
 =cut
 
@@ -441,7 +486,7 @@ A couple of useful(?) command-lines:
 
 What bugs ?-)
 
-You have a few choices, (with the output of 'make test TEST_VERBOSE=1'):
+You have a few choices, (with the output of 'make test TEST_VERBOSE=1' please):
 
 	1. Mail perlbug@perl.org which will assign a bugid.
 
@@ -460,9 +505,9 @@ You have a few choices, (with the output of 'make test TEST_VERBOSE=1'):
 
 Oracle support
 
-Comprehensive test suite (though 147+ isn't bad for a start?)
+Comprehensive test suite
 
-Overview rewrite
+and a few other things...
 
 =cut
 
@@ -497,6 +542,8 @@ There have been numerous suggestions, feedback and even patches from various peo
 	Andreas Koenig <andreas.koenig@anima.de>
 
 	Richard Soderberg <rs@oregonnet.com>
+	
+	Michael Stevens <mstevens@etla.org>
 
 	Hugo van der Sanden <hv@crypt0.demon.co.uk>
 
