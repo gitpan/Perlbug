@@ -1,7 +1,7 @@
 AuthType Basic
 AuthName Perlbug
 AuthUserFile /home/perlbug/config/.htpasswd
+AuthUserFile /dev/null
 AuthGroupFile /dev/null
-<Limit GET POST>
+PerlAuthenHandler Perlbug::Interface::Web
 require valid-user
-</Limit>         

@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Group.pm,v 1.28 2002/01/11 13:51:05 richardf Exp $
+# $Id: Group.pm,v 1.29 2002/01/25 16:12:59 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Group - Group class
 package Perlbug::Object::Group;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.28 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.29 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -79,10 +79,10 @@ sub create {
 	my $h_data = shift || $self->_oref('data');
 
 	my $proposed = $$h_data{'name'};
-	my ($extant) = $self->ids("name LIKE '$proposed'");
+	my ($extant) = $self->ids("name = '$proposed'");
 
 	if ($extant) {
-		$self->debug(0, 'disallowed group data: '.Dumper($h_data));
+		$self->debug(0, 'disallowed group data: '.Dumper($h_data)) if $Perlbug::DEBUG;
 		$h_data = undef;
 		print "<h3>\nCan't create a non-unique name($proposed) while extant($extant)!\n</h3><hr>\n";
 	}
@@ -150,7 +150,7 @@ sub webupdate {
 		$self->error("requires data hash ref($h_data) to update ".ref($self)." data via the web!");
 	} else {
 		if ($self->read($oid)->READ) {
-			$self->debug(0, "oid: ".$self->oid);
+			$self->debug(0, "oid: ".$self->oid) if $Perlbug::DEBUG;
 			my $pri = $self->attr('primary_key');
 			$$h_data{$pri} = $oid;
 			my $i_updated = $self->update($h_data)->UPDATED; # internal debugging
@@ -185,7 +185,7 @@ sub webupdate {
 					$o_grp->relation('user')->store(\@uids) if @uids;
 				}
 			}
-			print '<table border=1>', $self->groups(\@gids), '</table>'; 
+			print '<table border = 1>', $self->groups(\@gids), '</ table>'; 
 		}
 =cut
 

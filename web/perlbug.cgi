@@ -1,12 +1,12 @@
 #!/usr/bin/perl 
 # Perlbug web frontend
 # (C) 1999 Richard Foley RFI perlbug@rfi.net 
-# $Id: perlbug.cgi,v 1.2 2001/04/21 20:48:48 perlbug Exp $
+# $Id: perlbug.cgi,v 1.3 2002/01/25 16:12:59 richardf Exp $
 #
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
-# $| = 1;
+$VERSION = do { my @r = (q$Revision: 1.3 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$| = 1;
 
 use FindBin;
 use lib ("$FindBin::Bin/..", "$FindBin::Bin/../..");

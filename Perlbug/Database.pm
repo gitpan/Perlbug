@@ -1,6 +1,6 @@
 # Perlbug Bug support functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Database.pm,v 1.16 2001/12/01 15:24:41 richardf Exp $
+# $Id: Database.pm,v 1.18 2002/02/01 08:36:45 richardf Exp $
 #
 # Based on TicketMonger.pm: Copyright 1997 Christopher Masto, NetMonger Communications
 # Perlbug(::Database) integration: RFI 1998 -> 2001
@@ -15,8 +15,9 @@ Perlbug::Database - Bug support functions for Perlbug
 package Perlbug::Database;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.16 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.18 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
+use Benchmark;
 use Carp;
 use Data::Dumper;
 use DBI;
@@ -26,9 +27,9 @@ my $lasterror = '';
 my $o_Base = '';
 my %DB     = ();
 
-$Perlbug::Database::SQL = 0;
+$Perlbug::Database::CACHED = 0; $Perlbug::Database::CACHED = 0;
 $Perlbug::Database::HANDLE = 0;
-
+$Perlbug::Database::SQL    = 0;
 
 =head1 DESCRIPTION
 
@@ -43,7 +44,6 @@ Access to the database for Perlbug
 	my @tables = $sth->fetchrow_array; # yek (should move get_list|data() from Base to here)
 	
 	print "tables: @tables\n";
-
 
 =head1 METHODS
 
@@ -61,7 +61,8 @@ sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
 	%DB = @_;
-	# undef $o_DBH;
+
+	# undef $o_DBH; # get a new one
 
 	bless({}, $class);
 }
@@ -73,12 +74,6 @@ sub base {
 
 	return $o_Base;
 }
-
-sub error {
-	my $self = shift;
-	return $self->base->error($self, @_);
-}
-
 
 =item quote
 
@@ -109,6 +104,20 @@ sub quote {
 	return wantarray ? @quot : $quot[0];
 }
 
+=item comp 
+
+Return the appropriate comparison operator: B<LIKE> or B<=>
+
+	my $comp = $o_db->comp($str); 
+
+=cut
+
+sub comp { 
+	my $self = shift;
+	my $str  = shift || '';
+
+	return ($str =~ /\%/o) ? 'LIKE' : '=';
+}
 
 =item dbh
 
@@ -123,7 +132,7 @@ sub dbh {
 
 	$o_DBH = ref($o_DBH) ? $o_DBH : $self->DBConnect;
 
-	$self->error("dbh undefined database handle($o_DBH)\n") unless $o_DBH;
+	$self->base->error("dbh undefined database handle($o_DBH)\n") unless $o_DBH;
 
 	return $o_DBH;
 }
@@ -146,15 +155,15 @@ sub DBConnect {
 			: (qq|DBI:$DB{'engine'}:$DB{'database'};host=$DB{'sqlhost'}|)
 			, $DB{'user'}, $DB{'password'});
         $o_DBH = DBI->connect(@connect);
+		$self->base->debug(0, "new o_DBH($o_DBH) connection") if $Perlbug::DEBUG;
 		# use CGI; print CGI->new->header, '<pre>'.Dumper($self).'</pre>';
         if (!(defined($o_DBH))) {
-            $self->error("Can't connect to db($o_DBH): '$DBI::errstr'".Dumper(\%DB));
+            $self->base->error("Can't connect to db($o_DBH): '$DBI::errstr'".Dumper(\%DB));
         }
     }
 
     return $o_DBH;
 }
-
 
 =item query
 
@@ -169,17 +178,22 @@ sub query {
 	my $sql = shift;
     $Perlbug::Database::SQL++;    
     $o_DBH = $self->dbh; # or return undef;
+	my $beg = Benchmark->new if $Perlbug::DEBUG;
     my $sth = $o_DBH->prepare($sql) if $o_DBH;
 	if (!$sth) {
-		$self->error($self, "Couldn't prepare sql($sql): $DBI::errstr");
+		$self->base->error($self, "Couldn't prepare sql($sql): $DBI::errstr");
 	} else {
 		my $rv = $sth->execute;
-		# $self->error("failed sql query($sql)") ...?;
+		# $self->base->error("failed sql query($sql)") ...?;
+		if ($Perlbug::DEBUG) {
+			my $end = Benchmark->new; 
+			my $tim = timediff($end, $beg); # tell_time
+			$self->base->debug('S', "took @{[timestr($tim)]} <= $sql"); # $Perlbug::DEBUG above
+		}
     }
 
     return $sth;
 }
-
 
 =item case_sensitive
 
@@ -196,14 +210,13 @@ sub case_sensitive {
 	my $ret  = '';
 
 	if (!($col =~ /\w+/ && $str =~ /\w+/)) {
-		$self->debug(0, "no col($col) or str($str) given!");		
+		$self->base->debug(0, "no col($col) or str($str) given!") if $Perlbug::DEBUG; 
 	} else {
 		$ret = "STRCMP($col, '$str') = 0"; # mysql
 	}	
 
 	return $ret;
 }
-
 
 =back
 

@@ -1,0 +1,1712 @@
+[Tue Jan 29 09:51:26 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 09:51:27 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 09:57:00 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 09:57:02 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 09:58:24 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 09:58:27 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:00:31 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:00:34 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:00:57 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:00:59 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:00:59 2002] [error] [client 192.168.0.1] client denied by server configuration: /home/perlbug/web/admin/perlbug.cgi
+[Tue Jan 29 10:01:14 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:01:16 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:02:33 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:02:36 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:02:38 2002] [error] [client 192.168.0.1] client denied by server configuration: /home/perlbug/web/admin
+[Tue Jan 29 10:03:11 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:03:15 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:03:15 2002] [error] [client 192.168.0.1] client denied by server configuration: /home/perlbug/web/admin
+[Tue Jan 29 10:03:15 2002] [error] [client 192.168.0.1] client denied by server configuration: /home/perlbug/web/admin
+[Tue Jan 29 10:03:51 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:03:53 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:06:08 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:06:11 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:06:59 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:07:02 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:07:19 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:07:21 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:11:37 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:11:39 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:11:39 2002] [error] access to /home/perlbug/web/admin/index.html failed for 192.168.0.1, reason: Options ExecCGI is off in this directory
+[Tue Jan 29 10:12:05 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:12:07 2002] [error] access to /home/perlbug/web/admin/index.html failed for 192.168.0.1, reason: Options ExecCGI is off in this directory
+[Tue Jan 29 10:12:07 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:12:20 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:12:22 2002] [error] access to /home/perlbug/web/admin/index.html failed for 192.168.0.1, reason: Options ExecCGI is off in this directory
+[Tue Jan 29 10:12:22 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:12:23 2002] [error] access to /home/perlbug/web/admin/index.html failed for 192.168.0.1, reason: Options ExecCGI is off in this directory
+[Tue Jan 29 10:12:52 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:12:54 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:13:07 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:13:10 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:13:19 2002] [notice] caught SIGTERM, shutting down
+[Tue Jan 29 10:13:31 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:14:23 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:14:25 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:15:20 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:15:21 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:15:36 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:15:38 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:19:10 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:19:11 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:19:13 2002] [error] [Tue Jan 29 10:19:13 2002] null: Can't locate object method "passwd" via package "Apache::Connection" at /home/perlbug//Perlbug/Interface/Web.pm line 101.
+
+[Tue Jan 29 10:19:42 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:19:44 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:20:15 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:20:17 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(<br>
+pass(m0use1<br>
+user(<br>
+pass(m0use1<br>
+user(<br>
+pass(m0use1<br>
+[Tue Jan 29 10:23:22 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:23:24 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+pass(m0use1)<br>
+[Tue Jan 29 10:24:00 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:24:02 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+pass(m0use1)<br>
+user()<br>
+pass(m0use1)<br>
+user()<br>
+pass(m0use1)<br>
+user()<br>
+pass(m0use1)<br>
+[Tue Jan 29 10:26:03 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:26:05 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+pass(m0use1)<br>
+[Tue Jan 29 10:26:28 2002] [notice] SIGHUP received.  Attempting to restart
+user()<br>
+pass(m0use1)<br>
+[Tue Jan 29 10:26:30 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+pass(m0use1)<br>
+user()<br>
+pass(m0use1)<br>
+user()<br>
+pass(m0use1)<br>
+[Tue Jan 29 10:26:58 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:27:00 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+$VAR1 = bless( do{\(my $o = 206756736)}, 'Apache' );
+pass(m0use1)<br>
+[Tue Jan 29 10:27:17 2002] [notice] SIGHUP received.  Attempting to restart
+user()<br>
+$VAR1 = bless( do{\(my $o = 212257632)}, 'Apache::Connection' );
+pass(m0use1)<br>
+[Tue Jan 29 10:27:19 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:27:37 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:27:39 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+[Tue Jan 29 10:33:41 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:33:43 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+[Tue Jan 29 10:35:17 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:35:19 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'richardf';
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'richardf';
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'richardf';
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'richardf';
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'richardf';
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'richardf';
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'richardf';
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'richardf';
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+[Tue Jan 29 10:37:10 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:37:13 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'Basic';
+pass(m0use1)<br>
+user(richardf)<br>
+$VAR1 = 'Basic';
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+user()<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+[Tue Jan 29 10:38:51 2002] [notice] SIGHUP received.  Attempting to restart
+user()<br>
+conn(Apache::Connection=SCALAR(0xe4ae1e4))<br>
+$VAR1 = undef;
+pass(m0use1)<br>
+[Tue Jan 29 10:38:53 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:42:34 2002] [notice] SIGHUP received.  Attempting to restart
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9eee10))<br>
+$VAR1 = 'Basic';
+user(richardf), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9ff82c))<br>
+$VAR1 = 'Basic';
+user(richardf), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9ff880))<br>
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9ff82c))<br>
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9eee10))<br>
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9eee10))<br>
+[Tue Jan 29 10:42:36 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 10:43:59 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:44:01 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xef31c94))<br>
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xef31c94))<br>
+[Tue Jan 29 10:45:32 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:45:34 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xf473fe8))<br>
+[Tue Jan 29 10:45:57 2002] [error] [Tue Jan 29 10:45:57 2002] null: Can't locate object method "check_user" via package "Apache" at /home/perlbug//Perlbug/Interface/Web.pm line 104.
+
+[Tue Jan 29 10:46:48 2002] [notice] SIGHUP received.  Attempting to restart
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xf9b63ac))<br>
+[Tue Jan 29 10:46:49 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xf9b63ac))<br>
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xf9b63ac))<br>
+$VAR1 = 'Basic';
+user(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xf9b63ac))<br>
+[Tue Jan 29 10:54:02 2002] [notice] caught SIGTERM, shutting down
+[Tue Jan 29 10:54:22 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x8b4e35c))<br>
+user(richardf), type(Basic), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x8b4e41c))<br>
+user(richardf), type(Basic), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x8b61224))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x8b4e35c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x8b4e35c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x8b4e35c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x8b4e41c))<br>
+[Tue Jan 29 10:55:31 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:55:32 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x90910bc))<br>
+[Tue Jan 29 10:57:16 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:57:17 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x95d331c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x95d331c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x95d33ac))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x95d33ac))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x95d33ac))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x95d331c))<br>
+[Tue Jan 29 10:57:48 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:57:49 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b153bc))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b153bc))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0x9b1544c))<br>
+[Tue Jan 29 10:58:20 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 10:58:22 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xa05763c))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xa0576cc))<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xa05763c))<br>
+[Tue Jan 29 11:08:05 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 11:08:07 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xa59a708)) x( )<br>
+[Tue Jan 29 11:08:28 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 11:08:30 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 11:09:06 2002] [error] [client 127.0.0.1] (2)No such file or directory: Could not open password file: /home/perlbug/config/.htpasswd
+[Tue Jan 29 11:09:06 2002] [error] [client 127.0.0.1] user richardf not found: /admin/
+[Tue Jan 29 11:09:12 2002] [error] [client 127.0.0.1] (2)No such file or directory: Could not open password file: /home/perlbug/config/.htpasswd
+[Tue Jan 29 11:09:12 2002] [error] [client 127.0.0.1] user richardf not found: /admin/
+[Tue Jan 29 11:09:16 2002] [error] [client 127.0.0.1] (2)No such file or directory: Could not open password file: /home/perlbug/config/.htpasswd
+[Tue Jan 29 11:09:16 2002] [error] [client 127.0.0.1] user richardf not found: /admin/
+[Tue Jan 29 11:09:32 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 11:09:34 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xb01f690)), x( )<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xb01f720)), x( )<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xb01f720)), x( )<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xb01f720)), x( )<br>
+[Tue Jan 29 11:09:58 2002] [notice] SIGHUP received.  Attempting to restart
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xb561e50)), x( )<br>
+[Tue Jan 29 11:10:00 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xb561ee0)), x( )<br>
+user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xb561ee0)), x( )<br>
+[Tue Jan 29 11:10:21 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 11:10:23 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa3914)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa3914)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa3914)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa3914)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10679 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10681 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10680 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+10682 user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xbaa39a4)), x( )<br>
+[Tue Jan 29 11:24:53 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 11:24:55 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 11:26:12 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 11:26:14 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 11:28:37 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 11:28:39 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass(sdfsdf)<br>
+10763: user(), type(), code(0), pass(sdfsdf), conn(Apache::Connection=SCALAR(0xca6b234)), x( )<br>
+no user() or pass(sdfsdf)<br>
+10764: user(), type(), code(0), pass(sdfsdf), conn(Apache::Connection=SCALAR(0xca6b234)), x( )<br>
+[Tue Jan 29 11:31:34 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 11:31:36 2002] [error] [client 192.168.0.1] (2)No such file or directory: Could not open password file: /home/perlbug/config/.htpasswd
+[Tue Jan 29 11:31:36 2002] [error] [client 192.168.0.1] user richardf not found: /admin/
+[Tue Jan 29 11:31:36 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 11:31:39 2002] [error] [client 192.168.0.1] (2)No such file or directory: Could not open password file: /home/perlbug/config/.htpasswd
+[Tue Jan 29 11:31:39 2002] [error] [client 192.168.0.1] user richardf not found: /admin/
+[Tue Jan 29 11:31:41 2002] [error] [client 192.168.0.1] (2)No such file or directory: Could not open password file: /home/perlbug/config/.htpasswd
+[Tue Jan 29 11:31:41 2002] [error] [client 192.168.0.1] user richardf not found: /admin/
+[Tue Jan 29 11:32:53 2002] [error] [client 192.168.0.1] user richardf not found: /admin/
+[Tue Jan 29 11:33:26 2002] [error] [client 192.168.0.1] user richardf: authentication failure for "/admin/": password mismatch
+[Tue Jan 29 11:33:44 2002] [error] [client 127.0.0.1] user richardf: authentication failure for "/admin/": password mismatch
+[Tue Jan 29 11:33:48 2002] [error] [client 127.0.0.1] user richardf: authentication failure for "/admin/": password mismatch
+[Tue Jan 29 15:44:13 2002] [error] [client 192.168.0.1] (2)No such file or directory: Could not open password file: /home/perlbug/config/.htpasswd
+[Tue Jan 29 15:44:13 2002] [error] [client 192.168.0.1] user richardf not found: /admin/perlbug.cgi
+[Tue Jan 29 15:44:16 2002] [error] [client 192.168.0.1] (2)No such file or directory: Could not open password file: /home/perlbug/config/.htpasswd
+[Tue Jan 29 15:44:16 2002] [error] [client 192.168.0.1] user richardf not found: /admin/perlbug.cgi
+[Tue Jan 29 15:44:23 2002] [error] [client 192.168.0.1] user richardf: authentication failure for "/admin/perlbug.cgi": password mismatch
+[Tue Jan 29 15:44:26 2002] [error] [client 192.168.0.1] user richardf: authentication failure for "/admin/perlbug.cgi": password mismatch
+[Tue Jan 29 15:44:47 2002] [error] [client 192.168.0.1] user richardf: authentication failure for "/admin/perlbug.cgi": password mismatch
+[Tue Jan 29 15:44:52 2002] [error] [client 192.168.0.1] user richardf: authentication failure for "/admin/perlbug.cgi": password mismatch
+[Tue Jan 29 15:45:17 2002] [error] [client 192.168.0.1] user richardf: authentication failure for "/admin/perlbug.cgi": password mismatch
+[Tue Jan 29 15:46:09 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 15:46:11 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass(m0use1)<br>
+12304: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xd4f04ac)), w(Perlbug::Interface::Web=HASH(0xd4f03b0))<br>
+no user() or pass(m0use1)<br>
+12305: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xd4f04ac)), w(Perlbug::Interface::Web=HASH(0xd4f03b0))<br>
+[Tue Jan 29 15:47:05 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 15:47:07 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass(m0use1)<br>
+12315: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xda32dd4)), w(Perlbug::Interface::Web=HASH(0xda32cd8))<br>
+no user() or pass(m0use1)<br>
+12316: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xda32dd4)), w(Perlbug::Interface::Web=HASH(0xda32cd8))<br>
+[Tue Jan 29 15:47:12 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 15:47:14 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass(m0use1)<br>
+12322: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xdf75714)), w(Perlbug::Interface::Web=HASH(0xdf75618))<br>
+no user() or pass(m0use1)<br>
+12323: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xdf75714)), w(Perlbug::Interface::Web=HASH(0xdf75618))<br>
+[Tue Jan 29 15:47:32 2002] [notice] SIGHUP received.  Attempting to restart
+no user() or pass(m0use1)<br>
+12330: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe4b7f54)), w(Perlbug::Interface::Web=HASH(0xe4b7e58))<br>
+[Tue Jan 29 15:47:34 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+12330: user(richardf), type(Basic), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe0b305c)), w(Perlbug::Interface::Web=HASH(0xe0b3044))<br>
+12330: user(richardf), type(Basic), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe0b2474)), w(Perlbug::Interface::Web=HASH(0xe0b2d2c))<br>
+no user() or pass(m0use1)<br>
+no user() or pass(m0use1)<br>
+no user() or pass(m0use1)<br>
+12331: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe4b7f54)), w(Perlbug::Interface::Web=HASH(0xe4b7e58))<br>
+12332: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe4b7f54)), w(Perlbug::Interface::Web=HASH(0xe4b7e58))<br>
+12333: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe4b7f54)), w(Perlbug::Interface::Web=HASH(0xe4b7e58))<br>
+no user() or pass(m0use1)<br>
+12330: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe4b7f84)), w(Perlbug::Interface::Web=HASH(0xe4b7f60))<br>
+[Tue Jan 29 15:48:10 2002] [notice] SIGHUP received.  Attempting to restart
+no user() or pass(m0use1)<br>
+[Tue Jan 29 15:48:12 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+12342: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9fa9ec)), w(Perlbug::Interface::Web=HASH(0xe9fa8f0))<br>
+no user() or pass(m0use1)<br>
+12343: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9fa9ec)), w(Perlbug::Interface::Web=HASH(0xe9fa8f0))<br>
+no user() or pass(m0use1)<br>
+12344: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9fa9ec)), w(Perlbug::Interface::Web=HASH(0xe9fa8f0))<br>
+no user() or pass(m0use1)<br>
+12342: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9faa1c)), w(Perlbug::Interface::Web=HASH(0xe9fa9f8))<br>
+no user() or pass(m0use1)<br>
+12344: user(), type(), code(0), pass(m0use1), conn(Apache::Connection=SCALAR(0xe9faa1c)), w(Perlbug::Interface::Web=HASH(0xe9fa9f8))<br>
+[Tue Jan 29 15:48:41 2002] [notice] SIGHUP received.  Attempting to restart
+no user() or pass(m0use1)<br>
+[Tue Jan 29 15:48:43 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass(xxx)<br>
+no user() or pass(m0use1)<br>
+[Tue Jan 29 15:49:29 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 15:49:30 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass(sddsd)<br>
+[Tue Jan 29 15:49:40 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 15:49:42 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass(xxxx)<br>
+no user() or pass()<br>
+no user() or pass(asdf)<br>
+no user() or pass(xxx)<br>
+[Tue Jan 29 15:54:10 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 15:54:13 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass()<br>
+no user() or pass(sadfsdf)<br>
+no user() or pass(m0use1)<br>
+no user() or pass()<br>
+no user() or pass(radius)<br>
+no user() or pass(radius)<br>
+no user() or pass(radius)<br>
+no user() or pass()<br>
+no user() or pass(radius)<br>
+no user() or pass()<br>
+[Tue Jan 29 15:57:18 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 15:57:20 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+no user() or pass()<br>
+no user() or pass(x)<br>
+no user() or pass(x)<br>
+no user() or pass()<br>
+no user() or pass(x)<br>
+no user() or pass()<br>
+no user() or pass(x)<br>
+no user() or pass(x)<br>
+no user() or pass(radius)<br>
+no user() or pass(m0use1)<br>
+no user() or pass(x)<br>
+[Tue Jan 29 16:12:07 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:12:09 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 16:13:54 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:13:56 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 16:18:27 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:18:29 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 16:20:51 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:20:53 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 16:21:21 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:21:23 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 16:26:46 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:26:48 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 16:26:57 2002] [error] [Tue Jan 29 16:26:57 2002] null: Can't locate object method "conf" via package "Apache" at /home/perlbug//Perlbug/Base.pm line 1941.
+
+[Tue Jan 29 16:28:57 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:28:59 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+13173: user(), type(), code(0), pass(s), conn(Apache::Connection=SCALAR(0x12912a48)), w(Perlbug::Interface::Web=HASH(0x12912a54)) args()<br>
+13175: user(), type(), code(0), pass(s), conn(Apache::Connection=SCALAR(0x12912a48)), w(Perlbug::Interface::Web=HASH(0x12912a54)) args()<br>
+[Tue Jan 29 16:31:36 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:31:38 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+13251: user(richardf), type(Basic), code(0), pass(s), conn(Apache::Connection=SCALAR(0x12e553b8)), w(Perlbug::Interface::Web=HASH(0x12e553c4)) args()<br>
+13252: user(richardf), type(Basic), code(0), pass(s), conn(Apache::Connection=SCALAR(0x12e553b8)), w(Perlbug::Interface::Web=HASH(0x12e553c4)) args()<br>
+13253: user(richardf), type(Basic), code(0), pass(s), conn(Apache::Connection=SCALAR(0x12e553b8)), w(Perlbug::Interface::Web=HASH(0x12e553c4)) args()<br>
+13252: user(richardf), type(Basic), code(0), pass(s), conn(Apache::Connection=SCALAR(0x12e553e8)), w(Perlbug::Interface::Web=HASH(0x12e553dc)) args()<br>
+13254: user(richardf), type(Basic), code(0), pass(s), conn(Apache::Connection=SCALAR(0x12e553b8)), w(Perlbug::Interface::Web=HASH(0x12e553c4)) args()<br>
+13251: user(richardf), type(Basic), code(0), pass(s), conn(Apache::Connection=SCALAR(0x12e553e8)), w(Perlbug::Interface::Web=HASH(0x12e553dc)) args()<br>
+13251: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x129c6988)), w(Perlbug::Interface::Web=HASH(0x12e70450)) args()<br>
+13252: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x129c6988)), w(Perlbug::Interface::Web=HASH(0x12e70450)) args()<br>
+13332: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12e553b8)), w(Perlbug::Interface::Web=HASH(0x12e553c4)) args()<br>
+13251: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12a4f568)), w(Perlbug::Interface::Web=HASH(0x12e553e8)) args()<br>
+13254: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12e70450)), w(Perlbug::Interface::Web=HASH(0x12a50300)) args()<br>
+13253: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12e70450)), w(Perlbug::Interface::Web=HASH(0x12a50300)) args()<br>
+13332: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12e553e8)), w(Perlbug::Interface::Web=HASH(0x12e553dc)) args()<br>
+13254: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12fabf30)), w(Perlbug::Interface::Web=HASH(0x123dc118)) args()<br>
+13332: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12a3952c)), w(Perlbug::Interface::Web=HASH(0x1291ab04)) args()<br>
+13252: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12a4f568)), w(Perlbug::Interface::Web=HASH(0x12e553e8)) args()<br>
+13251: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12fae948)), w(Perlbug::Interface::Web=HASH(0x123dc118)) args()<br>
+13253: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12fb66c0)), w(Perlbug::Interface::Web=HASH(0x123dc118)) args()<br>
+[Tue Jan 29 16:36:42 2002] [error] [client 127.0.0.1] Invalid method in request G
+[Tue Jan 29 16:36:46 2002] [error] [client 127.0.0.1] Invalid method in request get /
+[Tue Jan 29 16:37:00 2002] [error] [client 127.0.0.1] Invalid URI in request GET admin
+[Tue Jan 29 16:37:51 2002] [error] [client 127.0.0.1] request failed: error reading the headers
+[Tue Jan 29 16:38:03 2002] [error] [client 127.0.0.1] Invalid method in request /
+[Tue Jan 29 16:38:24 2002] [error] [client 127.0.0.1] request failed: error reading the headers
+[Tue Jan 29 16:38:59 2002] [error] [client 127.0.0.1] request failed: error reading the headers
+13254: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12fbf228)), w(Perlbug::Interface::Web=HASH(0x123dc10c)) args()<br>
+13253: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12fdd978)), w(Perlbug::Interface::Web=HASH(0x12fda6f0)) args()<br>
+13252: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12fd4128)), w(Perlbug::Interface::Web=HASH(0x123dc118)) args()<br>
+13332: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12fb0ed4)), w(Perlbug::Interface::Web=HASH(0x12fb0e74)) args()<br>
+13251: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x12ec6f8c)), w(Perlbug::Interface::Web=HASH(0x12e52b8c)) args()<br>
+[Tue Jan 29 16:58:23 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 16:58:25 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 16:58:27 2002] [notice] caught SIGTERM, shutting down
+[Tue Jan 29 16:58:47 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 17:03:59 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:04:01 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x90a32e0)), w(Perlbug::Interface::Web=HASH(0x8c77c38)) args()<br>
+14013: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x90a34b8)), w(Perlbug::Interface::Web=HASH(0x8c77c38)) args()<br>
+14014: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x90a34b8)), w(Perlbug::Interface::Web=HASH(0x8c77c38)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x8c77c38)), w(Perlbug::Interface::Web=HASH(0x8b591b8)) args()<br>
+14013: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x8c77c38)), w(Perlbug::Interface::Web=HASH(0x8b591b8)) args()<br>
+14133: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x90922ec)), w(Perlbug::Interface::Web=HASH(0x90922f8)) args()<br>
+14013: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9126154)), w(Perlbug::Interface::Web=HASH(0x80abebc)) args()<br>
+14014: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x920df94)), w(Perlbug::Interface::Web=HASH(0x80abebc)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9132ca8)), w(Perlbug::Interface::Web=HASH(0x80abebc)) args()<br>
+14013: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x80abebc)), w(Perlbug::Interface::Web=HASH(0x80abeb0)) args()<br>
+14014: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x80abebc)), w(Perlbug::Interface::Web=HASH(0x80abeb0)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9254a3c)), w(Perlbug::Interface::Web=HASH(0x9132c54)) args()<br>
+14014: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9255f04)), w(Perlbug::Interface::Web=HASH(0x924b120)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9273788)), w(Perlbug::Interface::Web=HASH(0x9254d24)) args()<br>
+14013: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x8b55004)), w(Perlbug::Interface::Web=HASH(0x9126058)) args()<br>
+14014: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x924b120)), w(Perlbug::Interface::Web=HASH(0x9272bf8)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9276490)), w(Perlbug::Interface::Web=HASH(0x9273968)) args()<br>
+14014: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x928655c)), w(Perlbug::Interface::Web=HASH(0x9257098)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9254d54)), w(Perlbug::Interface::Web=HASH(0x8b55370)) args()<br>
+14013: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x92308d0)), w(Perlbug::Interface::Web=HASH(0x91f3af4)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9270f98)), w(Perlbug::Interface::Web=HASH(0x9254d84)) args()<br>
+14014: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9237314)), w(Perlbug::Interface::Web=HASH(0x923d240)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9266a4c)), w(Perlbug::Interface::Web=HASH(0x9254d24)) args()<br>
+14013: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9208f88)), w(Perlbug::Interface::Web=HASH(0x9259224)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9223b9c)), w(Perlbug::Interface::Web=HASH(0x9254c28)) args()<br>
+14013: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x922822c)), w(Perlbug::Interface::Web=HASH(0x92659f8)) args()<br>
+14012: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9271070)), w(Perlbug::Interface::Web=HASH(0x91fd2d4)) args()<br>
+[Tue Jan 29 17:10:46 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:10:48 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14187: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95d6130)), w(Perlbug::Interface::Web=HASH(0x95d613c)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+14189: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95d6130)), w(Perlbug::Interface::Web=HASH(0x95d613c)) args()<br>
+14188: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95d6130)), w(Perlbug::Interface::Web=HASH(0x95d613c)) args()<br>
+14187: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95d61c0)), w(Perlbug::Interface::Web=HASH(0x95d61b4)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+14189: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x909b048)), w(Perlbug::Interface::Web=HASH(0x909b198)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+14187: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x909b048)), w(Perlbug::Interface::Web=HASH(0x909b198)) args()<br>
+14188: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x909b048)), w(Perlbug::Interface::Web=HASH(0x909b198)) args()<br>
+14189: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x96f396c)), w(Perlbug::Interface::Web=HASH(0x8b5cfd8)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+14194: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95d6130)), w(Perlbug::Interface::Web=HASH(0x95d613c)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+[Tue Jan 29 17:12:25 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:12:28 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14199: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95e06c0)), w(Perlbug::Interface::Web=HASH(0x95e06cc)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+14201: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95e06c0)), w(Perlbug::Interface::Web=HASH(0x95e06cc)) args()<br>
+14200: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95e06c0)), w(Perlbug::Interface::Web=HASH(0x95e06cc)) args()<br>
+14199: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95e0750)), w(Perlbug::Interface::Web=HASH(0x95e0744)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+14203: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x95e06c0)), w(Perlbug::Interface::Web=HASH(0x95e06cc)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+[Tue Jan 29 17:12:45 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:12:47 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14210: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9b23520)), w(Perlbug::Interface::Web=HASH(0x9b2352c)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+14212: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9b23520)), w(Perlbug::Interface::Web=HASH(0x9b2352c)) args()<br>
+14211: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9b23520)), w(Perlbug::Interface::Web=HASH(0x9b2352c)) args()<br>
+14210: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0x9b235b0)), w(Perlbug::Interface::Web=HASH(0x9b235a4)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+[Tue Jan 29 17:13:17 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:13:19 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14220: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0xa0662fc)), w(Perlbug::Interface::Web=HASH(0xa066308)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+14221: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0xa0662fc)), w(Perlbug::Interface::Web=HASH(0xa066308)) args()<br>
+ids: aarond abigail ahmerm alanb alexg andreask andyd doughera artur bsugars caseyt chips chrism chrisn davidm gbarr gurusamys hmbrand hv ianp jand jarkkoh joem jone jong jonm joseo kevinf kurts larryw malcolmb marcov markj martinb mathiasn mschwern michaels natt nickc nicki omarr peterb philippec richardf richards roberts robinh russellm scottc simonc stefand stephenp timb tomc tomh tomp tonyp ulrichp
+invalid user(richardf) pass(x)!
+[Tue Jan 29 17:15:19 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:15:21 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14251: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0xaae19bc)), w(Perlbug::Interface::Web=HASH(0xaae19c8)) args()<br>
+ids: 
+valid user(richardf) pass(x) :-)
+14253: user(richardf), type(Basic), code(0), pass(x), conn(Apache::Connection=SCALAR(0xaae19bc)), w(Perlbug::Interface::Web=HASH(0xaae19c8)) args()<br>
+ids: 
+valid user(richardf) pass(x) :-)
+[Tue Jan 29 17:16:25 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:16:27 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14260: user(richardf), type(Basic), code(0), pass(x)
+ids: 
+valid user(richardf) pass(x) :-)
+14262: user(richardf), type(Basic), code(0), pass(x)
+14261: user(richardf), type(Basic), code(0), pass(x)
+14264: user(richardf), type(Basic), code(0), pass(x)
+ids: 
+valid user(richardf) pass(x) :-)
+ids: 
+valid user(richardf) pass(x) :-)
+ids: 
+valid user(richardf) pass(x) :-)
+[Tue Jan 29 17:19:04 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:19:06 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14277: user(richardf), type(Basic), code(0), pass(x), db()
+valid user(richardf) pass(x) :-)
+14277: user(richardf), type(Basic), code(0), pass(x), db()
+valid user(richardf) pass(x) :-)
+14278: user(richardf), type(Basic), code(0), pass(x), db()
+valid user(richardf) pass(x) :-)
+14279: user(richardf), type(Basic), code(0), pass(x), db()
+valid user(richardf) pass(x) :-)
+14282: user(richardf), type(Basic), code(0), pass(x), db()
+valid user(richardf) pass(x) :-)
+[Tue Jan 29 17:19:21 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:19:23 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14290: user(richardf), type(Basic), code(0), pass(x), db()
+valid user(richardf) pass(x) :-)
+14291: user(x), type(Basic), code(0), pass(xxxx), db()
+valid user(x) pass(xxxx) :-)
+14292: user(richardf), type(Basic), code(0), pass(x), db()
+valid user(richardf) pass(x) :-)
+14290: user(richardf), type(Basic), code(0), pass(m0use1), db()
+valid user(richardf) pass(m0use1) :-)
+[Tue Jan 29 17:20:31 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:20:33 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14299: user(richardf), type(Basic), code(0), pass(xx), db()
+valid user(richardf) pass(xx) db() :-)
+[Tue Jan 29 17:21:04 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:21:07 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14306: user(richardf), type(Basic), code(0), pass(s), db()
+INVALID user(richardf) pass(s) :-(
+14307: user(richardf), type(Basic), code(0), pass(sadfasdf), db()
+INVALID user(richardf) pass(sadfasdf) :-(
+[Tue Jan 29 17:22:57 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:22:59 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14316: user(richardf), type(Basic), code(0), pass(sadfasdf), db(m0use1)
+INVALID user(richardf) pass(sadfasdf) db(m0use1) :-(
+14317: user(richardf), type(Basic), code(0), pass(x), db(m0use1)
+INVALID user(richardf) pass(x) db(m0use1) :-(
+14318: user(richardf), type(Basic), code(0), pass(dasdfsdf), db(m0use1)
+INVALID user(richardf) pass(dasdfsdf) db(m0use1) :-(
+14317: user(richardf), type(Basic), code(0), pass(m0use1), db(m0use1)
+INVALID user(richardf) pass(m0use1) db(m0use1) :-(
+14316: user(richardf), type(Basic), code(0), pass(m0use1), db(VyXKeulUgRxTs)
+INVALID user(richardf) pass(m0use1) db(VyXKeulUgRxTs) :-(
+14318: user(richardf), type(Basic), code(0), pass(radius), db(VyXKeulUgRxTs)
+INVALID user(richardf) pass(radius) db(VyXKeulUgRxTs) :-(
+14317: user(richardf), type(Basic), code(0), pass(x), db(VyXKeulUgRxTs)
+INVALID user(richardf) pass(x) db(VyXKeulUgRxTs) :-(
+[Tue Jan 29 17:33:55 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:33:57 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14375: user(richardf), type(Basic), code(0), pass(xxxx), db(VyXKeulUgRxTs)
+INVALID user(richardf) pass(xxxx) db(VyXKeulUgRxTs) :-(
+14376: user(richardf), type(Basic), code(0), pass(xxxx), db(VyXKeulUgRxTs)
+INVALID user(richardf) pass(xxxx) db(VyXKeulUgRxTs) :-(
+14375: user(richardf), type(Basic), code(0), pass(radius), db(VyXKeulUgRxTs)
+INVALID user(richardf) pass(radius) db(VyXKeulUgRxTs) :-(
+14377: user(richardf), type(Basic), code(0), pass(radius), db(VyXKeulUgRxTs)
+INVALID user(richardf) pass(radius) db(VyXKeulUgRxTs) :-(
+14375: user(richardf), type(Basic), code(0), pass(radion), db(YNF.MD1bIINy2)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14377: user(richardf), type(Basic), code(0), pass(xxxx), db(YNF.MD1bIINy2)
+INVALID user(richardf) pass(xxxx) db(YNF.MD1bIINy2) :-(
+14375: user(richardf), type(Basic), code(0), pass(radion), db(YNF.MD1bIINy2)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:43:08 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:43:11 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14398: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14399: type(Basic), code(0)
+14400: type(Basic), code(0)
+14398: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14404: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14398: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14400: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14399: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14398: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14399: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:46:20 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:46:23 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14440: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14441: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:46:34 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:46:36 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+[Tue Jan 29 17:46:47 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:46:50 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14456: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14458: type(Basic), code(0)
+14457: type(Basic), code(0)
+14456: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14462: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14458: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14457: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14456: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14457: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14458: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+14457: type(Basic), code(0)
+valid user(richardf) pass(radion) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:49:39 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:49:41 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(xxx)
+14477: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx)
+14478: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:50:30 2002] [notice] SIGHUP received.  Attempting to restart
+type(xxx)
+[Tue Jan 29 17:50:32 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx)
+14486: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx)
+14487: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14486: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14487: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14487: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14486: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14487: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14486: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14487: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14485: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:54:38 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:54:40 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(xxx)
+14504: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx)
+14505: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx)
+14506: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:56:00 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:56:02 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(xxx)
+14514: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx)
+14516: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:56:58 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:57:00 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(xxx)
+14524: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx)
+14525: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx)
+14526: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14525: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14524: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14525: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14524: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14525: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:58:56 2002] [notice] SIGHUP received.  Attempting to restart
+type(xxx) $0(/home/perlbug/config/httpd.conf)
+[Tue Jan 29 17:58:58 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+14540: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(xxx) $0(/home/perlbug/config/httpd.conf)
+14541: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 17:59:17 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 17:59:19 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+14549: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+14550: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+14551: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14549: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14550: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14551: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14549: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+14578: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14549: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14551: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14550: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14549: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14550: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Tue Jan 29 18:02:10 2002] [notice] SIGHUP received.  Attempting to restart
+[Tue Jan 29 18:02:12 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - INVALID user(richardf) db(YNF.MD1bIINy2) :-(
+14583: type(Basic), code(0) - INVALID user(richardf) db(YNF.MD1bIINy2) :-(
+14584: type(Basic), code(0) - INVALID user(richardf) db(YNF.MD1bIINy2) :-(
+14583: type(Basic), code(0) - INVALID user(richardf) db(YNF.MD1bIINy2) :-(
+14584: type(Basic), code(0) - INVALID user(richardf) db(YNF.MD1bIINy2) :-(
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+21240: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Thu Jan 31 15:41:05 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:41:06 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:41:09 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:41:11 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:41:11 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:41:15 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:41:19 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:42:07 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:42:10 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:42:12 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:42:12 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:42:14 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:42:14 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:42:15 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 15:42:15 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 16:02:45 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+[Thu Jan 31 16:02:54 2002] [error] [client 127.0.0.1] File does not exist: /home/perlbug/web/server-status"
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+22933: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/web/perlbug.cgi)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27348: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14585: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14583: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+14584: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Fri Feb  1 08:37:07 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 08:37:10 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27370: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27372: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27371: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27370: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27372: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27370: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27371: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27370: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27372: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27370: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27371: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27370: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27372: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27371: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27370: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27371: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Fri Feb  1 08:42:36 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 08:42:38 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27389: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27390: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Fri Feb  1 08:43:46 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 08:43:48 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27397: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27398: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Fri Feb  1 08:44:58 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 08:45:01 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27426: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27427: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27428: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27427: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27426: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Fri Feb  1 08:48:03 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 08:48:05 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27438: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27439: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27440: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+27438: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Fri Feb  1 08:48:57 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 08:48:59 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27451: type(Basic), code(0) - valid user(richardf) db(YNF.MD1bIINy2) :-)
+[Fri Feb  1 08:49:01 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:49:01 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27452: type(Basic), code(0) - INVALID user(richardf) db(neTH2x6vB4Pas) :-(
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27453: type(Basic), code(0) - INVALID user(richardf) db(neTH2x6vB4Pas) :-(
+27452: type(Basic), code(0) - valid user(richardf) db(neTH2x6vB4Pas) :-)
+27453: type(Basic), code(0) - valid user(richardf) db(neTH2x6vB4Pas) :-)
+[Fri Feb  1 08:49:24 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:49:24 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27451: type(Basic), code(0) - INVALID user(richardf) db(etZG0UD/bBQng) :-(
+27452: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 08:49:32 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:49:32 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27452: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27452: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27452: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27451: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27452: type(Basic), code(0) - INVALID user(richardf) db(etZG0UD/bBQng) :-(
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27452: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27453: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27452: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27452: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27453: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27452: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27453: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 08:52:27 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:52:27 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27451: type(Basic), code(0) - INVALID user(richardf) db(ra4EbiK6scfgo) :-(
+27452: type(Basic), code(0) - valid user(richardf) db(ra4EbiK6scfgo) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(ra4EbiK6scfgo) :-)
+[Fri Feb  1 08:52:40 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:52:40 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27452: type(Basic), code(0) - INVALID user(richardf) db(xxiq0uEtog.ao) :-(
+27453: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27452: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+[Fri Feb  1 08:52:48 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:52:48 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27453: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27451: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27451: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27451: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27451: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27451: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27452: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27451: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27452: type(Basic), code(0) - INVALID user(richardf) db(etZG0UD/bBQng) :-(
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27453: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27452: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27453: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27453: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27452: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27453: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 08:54:14 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:54:14 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27453: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27452: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27452: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27453: type(Basic), code(0) - INVALID user(richardf) db(xx9CYCCe8fOLg) :-(
+27452: type(Basic), code(0) - INVALID user(richardf) db(etZG0UD/bBQng) :-(
+27453: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27452: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 08:54:50 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:54:50 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27451: type(Basic), code(0) - INVALID user(richardf) db(asZvhAtTX.i7g) :-(
+27453: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27451: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 08:55:02 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:55:02 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27453: type(Basic), code(0) - INVALID user(richardf) db(as.qh/BwDM4bI) :-(
+[Fri Feb  1 08:57:39 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 08:57:41 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27495: type(Basic), code(0) - INVALID user(richardf) db(etZG0UD/bBQng) :-(
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27496: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27497: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27495: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 08:58:17 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 08:58:17 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27496: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+[Fri Feb  1 08:59:24 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 08:59:26 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27506: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27507: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27508: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27506: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:01:33 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:01:35 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27538: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27540: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27539: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27538: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27540: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27538: type(Basic), code(0) - INVALID user(richardf) db(xxx) :-(
+27539: type(Basic), code(0) - INVALID user(richardf) db(xxx) :-(
+27538: type(Basic), code(0) - INVALID user(richardf) db(xxx) :-(
+27539: type(Basic), code(0) - INVALID user(richardf) db(xxx) :-(
+[Fri Feb  1 09:04:03 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:04:05 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27547: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27548: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27549: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27547: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27548: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+[Fri Feb  1 09:05:28 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:05:30 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27557: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27556: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27558: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27556: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+27557: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+27556: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+27557: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+27556: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+27557: type(Basic), code(0) - INVALID user(richardf) db(qqq) :-(
+27556: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27557: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27558: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27557: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27557: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27556: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27558: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27556: type(Basic), code(0) - INVALID user(richardf) db(aaa) :-(
+[Fri Feb  1 09:07:27 2002] [notice] SIGHUP received.  Attempting to restart
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+[Fri Feb  1 09:07:29 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+27568: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27569: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27570: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:07:34 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:07:34 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27568: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+[Fri Feb  1 09:07:50 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:07:52 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27578: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27579: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27580: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27578: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:08:23 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:08:23 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27579: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27580: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27579: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:12:05 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:12:05 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27578: type(Basic), code(0) - INVALID user(richardf) db(etACs6Q/Kbe9k) :-(
+27578: type(Basic), code(0) - INVALID user(richardf) db(etACs6Q/Kbe9k) :-(
+27580: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27578: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:14:44 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:14:46 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:15:19 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:15:19 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27597: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:19:25 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:19:25 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27595: type(Basic), code(0) - INVALID user(richardf) db(sswkXn47FN4zU) :-(
+27596: type(Basic), code(0) - valid user(richardf) db(sswkXn47FN4zU) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(sswkXn47FN4zU) :-)
+[Fri Feb  1 09:19:32 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:19:32 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27596: type(Basic), code(0) - INVALID user(richardf) db(etZG0UD/bBQng) :-(
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:22:28 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:22:28 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27597: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27596: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - INVALID user(richardf) db(etACs6Q/Kbe9k) :-(
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:25:56 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:25:56 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27595: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27597: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27596: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27595: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+[Fri Feb  1 09:27:18 2002] null: DBD::mysql::st execute failed: You have an error in your SQL syntax near '1' at line 1 at /home/perlbug//Perlbug/Database.pm line 186.
+[Fri Feb  1 09:27:18 2002] null: DBD::mysql::st fetchrow failed: fetch() without execute() at /home/perlbug//Perlbug/Base.pm line 1088.
+27596: type(Basic), code(0) - INVALID user(richardf) db(etws8VKvXKMj2) :-(
+[Fri Feb  1 09:27:58 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:28:00 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27643: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27642: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27644: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(etZG0UD/bBQng) :-)
+27643: type(Basic), code(0) - INVALID user(richardf) db(xxiq0uEtog.ao) :-(
+27644: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(xxiq0uEtog.ao) :-)
+27644: type(Basic), code(0) - INVALID user(richardf) db(asZvhAtTX.i7g) :-(
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27644: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27676: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27643: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27642: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:33:51 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:33:53 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27682: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27683: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27684: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27682: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27683: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27682: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27684: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27682: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:35:24 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:35:26 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27692: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27693: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27694: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27692: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27693: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27692: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:36:51 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:36:53 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27705: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27706: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:38:21 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:38:23 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27716: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27718: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:38:50 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:38:52 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27725: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27726: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:40:08 2002] [notice] SIGHUP received.  Attempting to restart
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+[Fri Feb  1 09:40:10 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+27737: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27738: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:42:13 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:42:15 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27747: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27748: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:43:11 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:43:13 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27759: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27761: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:45:00 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:45:02 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27797: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27799: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27798: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:54:57 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:54:59 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27830: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27831: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27832: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27830: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27831: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27830: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 09:58:51 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 09:58:54 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27849: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27850: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27851: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27849: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27850: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27849: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 10:01:27 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 10:01:29 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27883: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27884: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27885: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27883: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27884: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27883: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 10:03:36 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 10:03:37 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27896: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27898: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 10:04:32 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 10:04:34 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27909: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27910: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27911: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27909: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 10:09:38 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 10:09:40 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27927: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27929: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27928: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+27927: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 10:10:28 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 10:10:29 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27939: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27941: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 10:11:24 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 10:11:26 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27951: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27953: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 10:13:02 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 10:13:04 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27965: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+27967: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+[Fri Feb  1 10:18:22 2002] [notice] SIGHUP received.  Attempting to restart
+[Fri Feb  1 10:18:24 2002] [notice] Apache/1.3.12 (Unix)  (SuSE/Linux) mod_perl/1.24 configured -- resuming normal operations
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+type(cgi) $0(/home/perlbug/config/httpd.conf)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28002: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28004: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)
+28003: type(Basic), code(0) - valid user(richardf) db(asZvhAtTX.i7g) :-)

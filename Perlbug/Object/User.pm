@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: User.pm,v 1.34 2002/01/11 13:51:05 richardf Exp $
+# $Id: User.pm,v 1.36 2002/02/01 08:36:47 richardf Exp $
 #
 
 =head1 NAME
@@ -12,9 +12,8 @@ Perlbug::Object::User - User class
 package Perlbug::Object::User;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.34 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.36 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
-
 
 =head1 DESCRIPTION
 
@@ -29,13 +28,11 @@ use Perlbug::Object;
 use Perlbug::Base;
 @ISA = qw(Perlbug::Object); 
 
-
 =head1 SYNOPSIS
 
 	use Perlbug::Object::User;
 
 	print Perlbug::Object::User->read('richardf')->format('a');
-
 
 =head1 METHODS
 
@@ -63,7 +60,6 @@ sub new {
 
 	bless($self, $class);
 }
-
 
 =item updatable 
 
@@ -103,10 +99,10 @@ sub create {
 	my $h_data = shift || $self->_oref('data');
 
 	my $proposed = $$h_data{'userid'};
-	my ($extant) = $self->ids("userid LIKE '$proposed'");
+	my ($extant) = $self->ids("userid = '$proposed'");
 
 	if ($extant) {
-		$self->debug(0, 'disallowed user data: '.Dumper($h_data));
+		$self->debug(0, 'disallowed user data: '.Dumper($h_data)) if $Perlbug::DEBUG;
 		$h_data = undef;
 		print "<h3>\nCan't create a non-unique userid($proposed) while extant($extant)!\n</h3><hr>\n";
 	}
@@ -115,7 +111,6 @@ sub create {
 
     return $self;
 }
-
 
 
 =item new_id
@@ -132,7 +127,6 @@ sub new_id {
 	
 	return $newid;
 }
-
 
 =item htmlify 
 
@@ -200,20 +194,25 @@ sub update {
 
 	my $pri = $self->attr('primary_key');
 	my $uid = $$h_data{$pri};
+	$self->debug(1, "here($pri=$uid): ".Dumper($h_data)) if $Perlbug::DEBUG;
 
 	my $password = $$h_data{'password'} || '';
 	if ($password =~ /^(.+)$/) {
-		my $sql = $self->col('password', "userid = '$uid'");
-		my ($current) = $self->base->get_list($sql);
-		if ($current ne $password) { # been modified
+		my ($dbpass) = $self->col('password', "userid = '$uid'");
+		if ($dbpass ne $password) { # been modified
+			$self->debug(1, "given($password) ne dbpass($dbpass) updating...") if $Perlbug::DEBUG;
 			$$h_data{'password'} = crypt($password, substr($password, 0, 2));
-			my $i_ok = $self->base->htpasswd($uid, $password);
+			# my $i_ok = $self->base->htpasswd($uid, $password);
 		}
 	}
 
 	my $match = $$h_data{'match_address'} || '';
 	if ($match =~ /^(.+)$/) {
-		$$h_data{'match_address'} = $self->base->db->quote($match);
+		my ($dbmatch) = $self->col('match_address', "userid = '$uid'");
+		if ($dbmatch ne $match) { # been modified
+			$self->debug(1, "given($match) ne dbmatch($dbmatch) quoting...") if $Perlbug::DEBUG;
+			$$h_data{'match_address'} = $self->base->db->quote($match);
+		}
 	}
 
 	return $self->SUPER::update($h_data);
@@ -237,7 +236,7 @@ sub webupdate {
 		$self->error("requires data hash ref($h_data) to update ".ref($self)." data via the web!");
 	} else {
 		if ($self->read($oid)->READ) {
-			$self->debug(0, "oid: ".$self->oid);
+			$self->debug(1, "oid: ".$self->oid) if $Perlbug::DEBUG;
 			my $pri = $self->attr('primary_key');
 			$$h_data{$pri} = $oid;
 			my $i_updated = $self->update($h_data)->UPDATED; # internal debugging
@@ -264,8 +263,6 @@ sub webupdate {
 			}
 =cut
 
-1;
-
 =pod
 
 =back
@@ -276,168 +273,5 @@ Richard Foley perlbug@rfi.net 2000 2001
 
 =cut
 
-__END__
-
-=pod
-
-=back
-
-=head1 FORMATS
-
-Formatters for all occasions...
-
-=over 4
-
-=item FORMAT_l
-
-Lean (list) ascii format for users
-
-	my ($top, $format, @args) = $o_usr->FORMAT_l(\%data);
-
-=cut
-
-sub FORMAT_l { # 
-	my $self = shift;
-	my $x = shift; # 
-	my @args = ( 
-		$$x{'userid'}, 		$$x{'active'}, 		
-		$$x{'bug_count'}, 	$$x{'group_count'},	
-		$$x{'address'},
-	);
-	my $top = qq|
-User ID    Active Bugs  Groups Address |;
-	my $format = qq|
-@<<<<<<<<  @<<<<  @<<<  @<<<   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-|; 
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_a
-
-ascii format for users
-
-	my ($top, $format, @args) = $o_usr->FORMAT_a(\%data);
-
-=cut
-
-sub FORMAT_a { # 
-	my $self = shift;
-	my $x = shift; # 
-	my @args = ( 
-		$$x{'userid'}, 		$$x{'active'}, 		
-		$$x{'bug_count'}, 	$$x{'group_count'},	
-		$$x{'name'},
-		$$x{'created'},		$$x{'address'}, 	
-		$$x{'group_ids'},
-	);
-	my $top = qq|
-User ID    Active Bugs  Groups    Name 
---------------------------------------------------------------------------------|;
-	my $format = qq|
-@<<<<<<<<  @<<<<  @<<<  @<<<      @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-Created:   @<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-Groups:    @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-|; 
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_A
-
-ASCII format for users
-
-	my ($top, $format, @args) = $o_usr->FORMAT_A(\%data);
-
-=cut
-
-sub FORMAT_A {
-	my $self = shift;
-	my $x = shift; # 
-	my @args = ( 
-		$$x{'userid'}, 		$$x{'active'}, 		
-		$$x{'bug_count'}, 	$$x{'group_count'},	
-		$$x{'name'},
-		$$x{'created'},		$$x{'address'}, 	
-		$$x{'group_ids'},
-		$$x{'password'},	$$x{'match_address'},
-		$$x{'bug_ids'},
-	);
-	my $top = qq|
-User ID    Active Bugs  Groups    Name 
---------------------------------------------------------------------------------|;
-	my $format = qq|
-@<<<<<<<<  @<<<<  @<<<  @<<<      @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-Created:   @<<<<<<<<<<<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-Groups:    @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-@<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-@* 
-|; 
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_L
-
-Lean html format for users:
-
-	my ($top, $format, @args) = $o_usr->FORMAT_L(\%data);
-
-=cut
-
-sub FORMAT_L {
-	my $self = shift;
-	return $self->FORMAT_h(@_); # rjsf temp
-}
-
-
-=item FORMAT_h
-
-html format for users:
-
-	my ($top, $format, @args) = $o_usr->FORMAT_h(\%data);
-
-=cut
-
-sub FORMAT_h { # 
-	my $self = shift;
-	my $x    = shift; # 
-	my @args = ( 
-		$$x{'select'}, 
-		$$x{'name'}, 		$$x{'active'}, 		
-		$$x{'bug_count'},   $$x{'address'}, 	
-		$$x{'password'},	$$x{'match_address'},
-		$$x{'group_names'},
-	);
-	my $top = qq|<tr>
-<td width=35><b>&nbsp;</b></td>
-<td width=35><b>Name</b></td>
-<td width=15><b>Active?</b></td>
-<td><b>Bugs</b></td>
-<td><b>Address</b></td>
-<td><b>Password</b></td>
-<td><b>Match Address</b></td>
-<td><b>Groups</b></td>
-</tr>
-|;
-	my $format = '<tr><td>'.join('&nbsp;</td><td>', @args).'&nbsp;<td></tr>';	
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_H
-
-HTML format for users:
-
-	my ($top, $format, @args) = $o_usr->FORMAT_H(\%data);
-
-=cut
-
-sub FORMAT_H {
-	my $self = shift;
-	# my $x = shift;
-	my ($top, $format, @args) = $self->FORMAT_h(@_); # rjsf temp
-	# $format .= "<tr><td><b>Bug IDS</b></td><td>$$x{'bug_ids'}</td></tr>";
-	return ($top, $format, @args);
-}
+1;
 

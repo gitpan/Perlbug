@@ -1,8 +1,7 @@
 # (C) 2001 Richard Foley RFI perlbug@rfi.net
 # 
-# $Id: Email.pm,v 1.109 2002/01/14 10:14:48 richardf Exp $ 
+# $Id: Email.pm,v 1.111 2002/02/01 08:36:46 richardf Exp $ 
 # 
-
 
 =head1 NAME
 
@@ -13,7 +12,7 @@ Perlbug::Interface::Email - Email  interface to perlbug database.
 package Perlbug::Interface::Email;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.109 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.111 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -71,7 +70,6 @@ sub new {
 
 	return $self;
 }
-
 
 =item parse_input
 
@@ -208,7 +206,7 @@ sub input2args {
 	my $arg   = shift || '';
 	my $h_inf = shift;
 	
-	my $ret = $self->SUPER::input2args($cmd, $arg);
+	my $ret   = $self->SUPER::input2args($cmd, $arg);
 
 	my $wanted = $self->return_type($cmd);
 
@@ -799,7 +797,6 @@ sub remap {
     return @res;
 }
 
-
 =item send_mail
 
 Send a mail with protection.
@@ -929,7 +926,6 @@ sub addurls {
 
 	return $o_hdr;
 }
-
 
 =item defense
 
@@ -1117,7 +1113,6 @@ sub header2admin {
 	}
     return \%data;
 }
-
 
 =item switch
 
@@ -1482,10 +1477,10 @@ Send out reminders to relevant parties for given bugid
 =cut
 
 sub reminder {
-    my $self    = shift;
-    my $bid     = shift;
-	my @addrs   = @_;
-	my $ret     = 0;
+    my $self  = shift;
+    my $bid   = shift;
+	my @addrs = @_;
+	my $i_ok  = 0;
 
     if (!(scalar(@addrs) >= 1)) {
         $self->debug(0, "Duff addrs(@addrs) given to reminder") if $Perlbug::DEBUG; 
@@ -1494,19 +1489,22 @@ sub reminder {
 		if (!($o_bug->READ)) {
 			$self->debug(0, "Duff bid($bid) for reminder!") if $Perlbug::DEBUG;
 		} else { 
-			my $o_usr = $self->object('user');
-			my $o_grp = $self->object('group');
-			my ($title, $bugdb, $maintainer, $home) = 
-				($self->system('title'), $self->email('bugdb'), $self->system('maintainer'), $self->web('hard_wired_url'));
-			my ($statusid) = $o_bug->rel_ids('status');
-			my ($status) = $o_bug->object('status')->id2name([$statusid]);
+			my @addresses = $o_bug->parse_addrs(\@addrs);
+			if (scalar(@addresses) >= 1) {
+				my $o_usr = $self->object('user');
+				my $o_grp = $self->object('group');
+				my ($title, $bugdb, $maintainer, $domain) = 
+					($self->system('title'), $self->email('bugdb'), $self->system('maintainer'), $self->web('domain'));
+				my $home = 'http://'.$domain;
+				my ($statusid) = $o_bug->rel_ids('status');
+				my ($status) = $o_bug->object('status')->id2name([$statusid]);
 
-			my ($gid) = my @gids = $o_bug->rel_ids('group');
-			my ($group) = join(', ', $o_grp->id2name(\@gids));
-			 
-			# NOTICE
-			my $bugreport = $o_bug->format;
-			my $notice = qq|
+				my ($gid) = my @gids = $o_bug->rel_ids('group');
+				my ($group) = join(', ', $o_grp->id2name(\@gids));
+				 
+				# NOTICE
+				my $bugreport = $o_bug->format;
+				my $notice = qq|
 		This is a $title status($status) reminder for an outstanding 
 		bug, a report for which is appended at the base of this email.
 
@@ -1520,24 +1518,24 @@ sub reminder {
 		The group($group) of administrators responsible for this bug is:
 
 			$home/perlbug.cgi?req=group_id&group_id=$gids[0]
-		
+
 		For email help send an email to:
-		
+
 			To: $bugdb
 			Subject: -H
 
 		Bug report (current status) follows:
 		$bugreport
 			|;
-			my $o_hdr = $self->get_header;
-			$o_hdr->add('To' => $maintainer);
-			$o_hdr->add('Cc' => join(', ', @addrs)) if @addrs;
-			$o_hdr->add('Subject' => $self->system('title')." - reminder of bug($bid) status");
-			$ret = $self->send_mail($o_hdr, "$notice");
+				my $o_hdr = $self->get_header;
+				$o_hdr->add('To' => join(', ', @addresses)); 
+				$o_hdr->add('Subject' => $self->system('title')." - reminder of bug($bid) status");
+				$i_ok = $self->send_mail($o_hdr, "$notice");
+			}
 		}
 	}
 
-    return $ret;
+    return $i_ok;
 }
 
 

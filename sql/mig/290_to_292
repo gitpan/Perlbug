@@ -7,5 +7,26 @@
 # pb_template_user
 # pb_user
 #
-# ALTER TABLE pb_user ADD UNIQUE u_user_name (name);
+
+DELETE FROM pb_bug_message_count;
+
+ALTER TABLE pb_group ADD UNIQUE u_group_name (name);
+
+ALTER table pb_range ADD name char(25)
+DELETE FROM pb_range;
+
+ALTER TABLE pb_user  ADD fullname varchar2(128);
+ALTER TABLE pb_user  MODIFY name varchar(32) DEFAULT '' NOT NULL;
+ALTER TABLE pb_user  ADD UNIQUE u_user_name (name);
+
+DELETE FROM pb_bug_osname WHERE osnameid = '...');
+DELETE FROM pb_osname WHERE name like '%3d';
+
+SELECT versionid FROM pb_version WHERE name NOT LIKE '%.%';
+DELETE FROM pb_bug_version WHERE versionid IN (...);
+# DELETE FROM pb_version WHERE name NOT LIKE '%.%';
+
+SELECT fixedid FROM pb_fixed WHERE name NOT LIKE '%.%';
+DELETE FROM pb_bug_fixed WHERE fixedin IN (...);
+# DELETE FROM pb_fixed WHERE name NOT LIKE '%.%';
 

@@ -1,6 +1,6 @@
 # Perlbug docs and placeholder
 # (C) 1999 2000 2001 Richard Foley RFI perlbug@rfi.net
-# $Id: Perlbug.pm,v 2.91 2002/01/11 13:51:05 richardf Exp $
+# $Id: Perlbug.pm,v 2.93 2002/02/01 08:36:45 richardf Exp $
 #
 # pod2text -la ~/Perlbug.pm > ~/docs/spec
 # pod2html ~/Perlbug.pm  > ~/docs/spec.html  
@@ -16,7 +16,7 @@ package Perlbug;
 use strict;
 use vars qw($VERSION);
 push @INC, qw(/home/perlbug/locallibs);
-$VERSION = do { my @r = (q$Revision: 2.91 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 2.93 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 $Perlbug::CONFIG = $ENV{'Perlbug_CONFIG'} || $Perlbug::CONFIG || '/home/perlbug/config/Configuration';
@@ -59,6 +59,7 @@ $Perlbug::FATAl  = $ENV{'Perlbug_FATAL'}  || $Perlbug::FATAL  || '0';
 	#       indexes throughout, optimize tables, rr(rels)
 	# 2.90+ templates, Web has individual (pro object) search forms, doc mods. 
 	#       transfer of main object types to one another (message->patch, note->test, etc.)
+	#       mod_perl finally used in 2.92+, reenabled overview, reminders in bugcron
 	# 
 	# 3.00  Full test suite and Oracle support
 	# 	    ...
@@ -229,6 +230,8 @@ All modules have perldocs embedded, to browse at your leisure.
 	Relationships between bugs (parent-child) are assignable.
 
 	Retrieval of database via email and http and ftp and via rsync.
+
+	$ rsync ftp.perl.org/perlbug/archive/Perlbug.sql.tgz Perlbug.sql.tgz
 
 	Logging of all activities, admin history tracking.
 

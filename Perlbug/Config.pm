@@ -1,6 +1,6 @@
 # Perlbug configuration data
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Config.pm,v 1.52 2001/12/05 20:58:37 richardf Exp $
+# $Id: Config.pm,v 1.54 2002/02/01 08:36:45 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Config - Perlbug Configuration data handler
 package Perlbug::Config;
 use strict;
 use vars(qw($VERSION @ISA $AUTOLOAD));
-$VERSION = do { my @r = (q$Revision: 1.52 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.54 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 # print map { $_=$ENV{$_} . "\n" } grep(/Perlbug/i, keys %ENV);
 $|=1;
 
@@ -21,7 +21,6 @@ use Carp qw(carp cluck confess);
 use Data::Dumper;
 use FileHandle;
 use Perlbug; 
-
 
 =head1 DESCRIPTION
 
@@ -72,7 +71,6 @@ sub new {
 	return $self;
 }
 
-
 =item relog
 
 Redirect log output to STDOUT (if $Perlbug_DEBUG =~ /[dD]/
@@ -91,7 +89,6 @@ sub relog {
 		return print("[$Perlbug::i_LOG]", @_, "\n");
 	}
 }
-
 
 =item error
 
@@ -121,7 +118,6 @@ sub error {
 	$i_ok;
 }
 
-
 =item get_config_data
 
 Retrieve data from site configuration file
@@ -150,7 +146,6 @@ sub get_config_data {
 	return $h_data;
 }
 
-
 =item update_data
 
 Update config data structure for current/local environment
@@ -164,6 +159,8 @@ sub update_data (\%) {
 	my $prefs = shift;
 	my $TYPE  = ($0 =~ /\W_{0,1}(?:perl)*bug\.{0,1}(cgi|cron|db|fix|graph|hist|mail|obj|tk|tron)$/o)
 		? $1 : 'xxx';	
+	$TYPE = 'cgi' if $0 =~ /httpd/io;
+	print STDERR "type($TYPE) \$0($0)\n"; # apache ?
 
 	my $DATE = &get_date;
 	my $spooldir = $$prefs{'DIRECTORY'}{'spool'};
@@ -174,14 +171,21 @@ sub update_data (\%) {
 	$$prefs{'CURRENT'}{'admin'}    = '';    
 	$ENV{'PATH'} = $$prefs{'SYSTEM'}{'path'};
 	# $ENV{'PERL5LIB'} = $$prefs{'DIRECTORY'}{'root'} unless $ENV{'PERL5LIB'};
-
+=pod
+	$self->set_debug(
+		($TYPE =~ /(cgi|xxx)/io && $$prefs{'WEB'}{'debug'} == 0 
+			? 0 
+			: $Perlbug::DEBUG || $$prefs{'CURRENT'}{'debug'}
+		)
+	); # quicker for the web
+=cut
 	$self->set_debug($Perlbug::DEBUG || $$prefs{'CURRENT'}{'debug'});
+
 	$Perlbug::FATAL = $$prefs{'CURRENT'}{'fatal'};
 	$prefs = $self->set_env($prefs);
 
 	return $prefs;
 }
-
 
 =item set_debug
 
@@ -214,7 +218,6 @@ sub set_debug {
 	return $Perlbug::DEBUG;
 }
 
-
 =item set_env
 
 Sets ENVIRONMENT and PACKAGE variables in config hash for reference
@@ -243,7 +246,6 @@ sub set_env {
 	return $prefs;
 }
 
-
 =item prime_data
 
 Prime config data structure
@@ -264,7 +266,6 @@ sub prime_data (\%) {
 	
     return $data;
 }
-
 
 =item set_alarm
 

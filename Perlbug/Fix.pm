@@ -1,4 +1,4 @@
-# $Id: Fix.pm,v 1.38 2001/12/05 20:58:37 richardf Exp $ 
+# $Id: Fix.pm,v 1.40 2002/02/01 08:36:45 richardf Exp $ 
 # 	
 
 =head1 NAME
@@ -10,7 +10,7 @@ Perlbug::Fix - Command line interface to fixing perlbug database.
 package Perlbug::Fix;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.38 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.40 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -47,7 +47,7 @@ Most calls take an integer as the maximimum number of records to process, or def
 	
 	> H		# Helpful help
 
-	> k 125	# set Perlbug_Max (number of records to fix) to 125
+	> k 125	1 # set Perlbug_Max (number of records to fix) to 125, and force
 
 	> s		# scan for correctable relationships
 
@@ -77,9 +77,10 @@ sub new {
     bless($self, $class);
 }
 
-my $FIX = 0;
-my $MAX = $ENV{'Perlbug_Max'} || 33;
-my %MAP = ( # a=pb_address bu=pb_bug_user l=pb_log...
+my $FIX   = 0;
+my $FORCE = $ENV{'Perlbug_Force'} || 0;
+my $MAX   = $ENV{'Perlbug_Max'} || 33;
+my %MAP   = ( # a=pb_address bu=pb_bug_user l=pb_log...
 	'a' 	=> 'address      [bugid%]',		'ah' 	=> 'trawls for in/valid addresses - see also "r (bug|group) address"',
 	'b' 	=> 'scan_body    [bugid%]',    	'bh' 	=> 'scan bug bodies (see <s>)',
 	'c'		=> 'change       [filename',  	'ch'	=> 'trawls given file for bugid=>patchid=>changid relations',
@@ -88,7 +89,7 @@ my %MAP = ( # a=pb_address bu=pb_bug_user l=pb_log...
 	'f'		=> 'trim_flags   [flag%]',		'fh'	=> 'trim flags where dupes',
 	'h' 	=> 'help         []',			'hh' 	=> 'more detailed help',
 	'i' 	=> 'scan_ids     [bugid%]',		'ih' 	=> 'trawls for email Message-Ids', 
-	'k' 	=> 'kick         [Perlbug_Max]','kh' 	=> 'kick Perlbug_Max value to n',
+	'k' 	=> 'kick         [Perlbug_Max Perlbug_Force]','kh' 	=> 'kick Perlbug_Max value to n, and turn Perlbug_Force on|off',
     'l' 	=> 'ubl          [userid%]',	'lh'	=> 'updates user_bug table via log entries',
 	'm'		=> 'message      [messageid%]',	'mh'	=> 'message fix for subject lines',
 	'q' 	=> 'doq          [sql]',    	'qh' 	=> 'query the database (Q for the schema)',
@@ -123,7 +124,11 @@ sub help { # h
 	my $self = shift;
 	my $i_ok = 1;
 	my $help = qq|Fix help:\nlowercase reports, UPPERCASE eFFects it!
-ENV{Perlbug_Max} (currently $MAX) may be set for loop control.
+
+Env vars:
+	set ENV{Perlbug_Max} (currently $MAX) for loop control
+	set ENV{Perlbug_Force} (currently $FORCE) to overwrite prejudicial scans
+
 Most commands accept an argument, a bugid or something, as indicated.
 Modification feedback takes the form of, where object_type is uppercase
 where the database was actually changed:
@@ -147,23 +152,30 @@ sub doq { # q rewrapper :-\
 	return $self->$query($sql);
 }
 
-
-
 =item kick
 
 Kick Perlbug_Max value ...
 
+Kick Perlbug_Force value ...  
+
+	my $ret = $o_fix->kick($i_max, $i_force);
+
 =cut
 
 sub kick { # k 
-	my $self = shift;
-	my $newval = shift;
+	my $self     = shift;
+	my $newmax   = defined($_[0]) ? shift : $MAX;
+	my $newforce = defined($_[0]) ? shift : $FORCE;
 	
-	my $ret = "Perlbug_Max($newval) must be a digit!\n";	
+	my $ret = "Perlbug_Max($newmax) and Perlbug_Force($newforce) must be digits!\n";	
 
-	if ($newval =~ /^\d+$/o) {
-		$MAX = $newval;
+	if ($newmax =~ /^(\d+)$/o) {
+		$MAX = $1;
 		$ret = "set Perlbug_Max($MAX)\n";	
+	}
+	if ($newforce =~ /^(\d+)$/o) {
+		$FORCE = $1;
+		$ret = $ret."set Perlbug_Force($FORCE)\n";	
 	}
 
 	return $ret;
@@ -361,7 +373,8 @@ sub src_address { # address
 		}
 		last BID if $fnd >= $MAX;
 	} 
-	print ($fnd >= 1) ? "fixed $cnt $reftable records\n" : ".\n";
+
+	print (($fnd >= 1) ? "fixed $cnt $reftable records\n" : ".\n");
 
 	return $ret;
 }
@@ -415,7 +428,6 @@ sub change { # c
 	print "fixing($FIX) $bc_table file($file) max($i_max)\n";
 
 	my ($i_cnt, $i_fnd, $i_nindb, $i_rec) = (0, 0, 0, 0);
-	my $o_bug = $self->object('bug');
 	my @bids = $o_bug->ids;
 	
 	if (!(-f $file && -r _)) {
@@ -500,7 +512,6 @@ sub change { # c
 	return $ret;
 }
 
-
 =item message 
 
 Fix message subject lines where empty
@@ -554,7 +565,6 @@ sub message { # m
 
 	return $ret;
 }
-
 
 =item header_body 
 
@@ -649,7 +659,6 @@ sub _log {
 	return $ret;
 }
 
-
 =item users
 
 Correct users table, currently only looks for blank passwords
@@ -691,7 +700,6 @@ sub users { # u
 	return $ret;
 }
 
-
 =item execute 
 
 Process action on behalf user 
@@ -726,7 +734,6 @@ sub execute { # x
 		
 	return $ret;
 }
-
 
 =item ubl 
 
@@ -778,7 +785,6 @@ sub ubl { # ubl user_bug_log
 	
 	return $ret;
 }
-
 
 =item forward 
 
@@ -846,7 +852,6 @@ sub forward { # e
 	return $ret;
 }
 
-
 =item scan_header
 
 Scan only the header portion of the bug
@@ -869,7 +874,6 @@ sub scan_body {
 	return $self->scan_bugs('body', @_);
 }
 
-
 =item scan_bugs
 
 Trawls and updates bug group, osname, versions etc.
@@ -878,7 +882,7 @@ Trawls and updates bug group, osname, versions etc.
 
 =cut
 
-sub scan_bugs { # s 
+sub scan_bugs { # b s 
 	my $self 	= shift;
 	my $which   = shift;
 	my $bugid   = shift || '';
@@ -899,12 +903,13 @@ sub scan_bugs { # s
 		print "[$i_seen] <$i_cnt> $bid: ";		
 		$i_seen++;
 		$o_bug->read($bid);
+		my $i_ok   = $o_bug->READ ? 1 : 0;
 		my $body   = $o_bug->data('body');
 		my $header = $o_bug->data('header');
 		my $o_int  = $self->setup_int($header);
 		my @cc     = ();	
 
-		if (ref($o_int) and $which eq 'header') {
+		if ($i_ok == 1 and ref($o_int) and $which eq 'header') {
 			my $o_hdr  = $o_int->head; 
 			@cc        = $o_hdr->get('Cc');
 			my $from   = $o_hdr->get('From');
@@ -913,34 +918,55 @@ sub scan_bugs { # s
 			my $to     = $o_hdr->get('To');
 			chomp(@cc, $from, $subject, $to);
 
+			my $i_counted = 0;
 			my $wanted = '^(no\-[a-z]+\-given|\s*)$';
 			if ($o_bug->data('email_msgid') =~ /$wanted/) {
 				$o_bug->update({'email_msgid'	=> $msgid});
 				print "fixed(".$o_bug->UPDATED.") was($1) => msgid($msgid)\n";
+				$i_counted++;
 			}
 			if ($o_bug->data('sourceaddr') =~ /$wanted/) {
 				$o_bug->update({'sourceaddr'	=> $from});
 				print "fixed(".$o_bug->UPDATED.") was($1) => from($from)\n";
+				$i_counted++;
 			}
 			if ($o_bug->data('subject') =~ /$wanted/) {
 				$o_bug->update({'subject'	=> $subject});
 				print "fixed(".$o_bug->UPDATED.") was($1) => subject($subject)\n";
+				$i_counted++;
 			}
 			if ($o_bug->data('toaddr') =~ /$wanted/) {
 				$o_bug->update({'toaddr'	=> $to});
 				print "fixed(".$o_bug->UPDATED.") was($1) => to($to)\n";
+				$i_counted++;
 			}
+			$i_cnt++ if $i_counted;
 		}
 
-		if ($which eq 'body') {
+		if ($i_ok == 1 and $which eq 'body') {
 			if (length($body) >= 1) {
 				print '... ';
 				my $h_scan = $self->scan($body);
-				# don't modify any that have already been set?!
+				print 'scanned('.length($body).")...\n"; # .(Dumper($h_scan));		
 				$$h_scan{'address'}{'names'} = \@cc if scalar(@cc) >= 1;
-				print 'scanned('.length($body).') '; # .(Dumper($h_scan));		
+				REL:
+				foreach my $rel ($o_bug->rels) {
+					if (ref($$h_scan{$rel})) {
+						my $prej = $o_bug->object($rel)->attr('prejudicial');
+						if ($prej == 1 and $o_bug->rel_ids($rel)) {
+							print "  forcable $rel ids: @{$$h_scan{$rel}{'ids'}}\n"     if ref($$h_scan{$rel}{'ids'});
+							print "  forcable $rel names: @{$$h_scan{$rel}{'names'}}\n" if ref($$h_scan{$rel}{'names'});
+							unless ($FORCE) {	# don't overwrite unless told to
+								delete $$h_scan{$rel}; 
+							}
+						}
+					}
+				}
 				my $i_rels = my @rels = $o_bug->relate($h_scan);
-				print "-> fixed $i_rels rels(@rels)\n";
+				# print ".. fixed $rel ids: @{$$h_scan{$rel}{'ids'}}\n"     if ref($$h_scan{$rel}{'ids'});
+				# print "... fixed $rel names: @{$$h_scan{$rel}{'names'}}\n" if ref($$h_scan{$rel}{'names'});
+				print "... fixed $i_rels rels(@rels) "; #.Dumper($h_scan);
+				$i_cnt++ if $i_rels;
 			}
 		}
 		print "\n";		

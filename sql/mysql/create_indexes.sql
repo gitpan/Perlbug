@@ -133,36 +133,5 @@ ALTER TABLE pb_bug_version ADD INDEX(versionid);
 
 ALTER TABLE pb_bug_user ADD INDEX(bugid);
 ALTER TABLE pb_bug_user ADD INDEX(userid);
- 
-# General
-OPTIMIZE TABLE pb_address;
-OPTIMIZE TABLE pb_bug;
-OPTIMIZE TABLE pb_logs;
-OPTIMIZE TABLE pb_message;
-OPTIMIZE TABLE pb_note;
-OPTIMIZE TABLE pb_patch;
-OPTIMIZE TABLE pb_range;
-OPTIMIZE TABLE pb_test;
-OPTIMIZE TABLE pb_user;
-OPTIMIZE TABLE pb_version;
-
-# relations
-OPTIMIZE TABLE pb_address_bug;
-OPTIMIZE TABLE pb_bug_change;
-OPTIMIZE TABLE pb_bug_child;
-OPTIMIZE TABLE pb_bug_fixed;
-OPTIMIZE TABLE pb_bug_group;
-OPTIMIZE TABLE pb_bug_message;
-OPTIMIZE TABLE pb_bug_note;
-OPTIMIZE TABLE pb_bug_osname;
-OPTIMIZE TABLE pb_bug_parent;
-OPTIMIZE TABLE pb_bug_patch;
-OPTIMIZE TABLE pb_bug_project;
-OPTIMIZE TABLE pb_bug_range;
-OPTIMIZE TABLE pb_bug_severity;
-OPTIMIZE TABLE pb_bug_status;
-OPTIMIZE TABLE pb_bug_test;
-OPTIMIZE TABLE pb_bug_version;
-OPTIMIZE TABLE pb_bug_user;
 
 # done

@@ -1,6 +1,6 @@
 # Perlbug base class 
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Base.pm,v 1.95 2002/01/14 10:14:48 richardf Exp $
+# $Id: Base.pm,v 1.97 2002/02/01 08:36:45 richardf Exp $
 # 
 # TODO
 # see scan
@@ -21,7 +21,7 @@ see L<Perlbug::Interface::Cmd>, L<Perlbug::Interface::Web> etc.
 package Perlbug::Base;
 use strict; 
 use vars qw($AUTOLOAD @ISA $VERSION); 
-$VERSION = do { my @r = (q$Revision: 1.95 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.97 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
 @ISA = qw(Perlbug::Do Perlbug::Utility); 
 $| = 1; 
 
@@ -36,7 +36,7 @@ use Perlbug::Utility;
 #use Perlbug::Relation;
 
 # external utilities
-use Benchmark;
+# use Benchmark;
 use Carp; 
 use CGI qw(:standard);
 use Data::Dumper;
@@ -52,7 +52,6 @@ my %CACHE_BUGIDS = ();
 my $o_CONF = undef;
 my $o_DB   = undef;
 my $o_LOG  = undef;
-my %DB     = ();
 
 $Perlbug::i_LOG = 0;
 
@@ -105,7 +104,6 @@ sub new {
 	return $self;
 }
 
-
 =item init
 
 Initialize Base object
@@ -117,14 +115,14 @@ Initialize Base object
 sub init {
 	my $self = shift;
 
-	$self->clean_cache([], 'force');
+	# $self->clean_cache([], 'force');
+	$self->clean_cache([]);
 
-	$o_CONF = $self->conf(@_); 
-
-	$CACHE_TIME{'INIT'} = Benchmark->new if $Perlbug::DEBUG;
+	# $o_CONF = $self->conf(@_); 
+	# $CACHE_TIME{'INIT'} = Benchmark->new if $Perlbug::DEBUG;
 	$Perlbug::i_LOG = 0;
-	%DB 	= $o_CONF->get_all('database');
-	$o_DB   = Perlbug::Database->new(%DB);
+	# %DB 	= $o_CONF->get_all('database');
+	# $o_DB = Perlbug::Database->new(%DB); - always through->db()
 	$o_LOG  = Perlbug::File->new($self->current('log_file'));
 
 	$self->set_user($self->system('user'));	
@@ -133,7 +131,7 @@ sub init {
     if (!($enabler)) {     # OK 
         croak($self, "Enabler($enabler) disabled($Perlbug::VERSION) - not OK ($$ - $0) - cutting out!");
     } else {
-		$CACHE_TIME{'PREP'} = Benchmark->new if $Perlbug::DEBUG; 
+		# $CACHE_TIME{'PREP'} = Benchmark->new if $Perlbug::DEBUG; 
 		my $version = $self->version;
 		my $userid  = $self->isadmin;
 		$self->debug(0, "INIT $version ($$) debug($Perlbug::DEBUG) scr($0)  user($userid)") if $Perlbug::DEBUG; 
@@ -149,12 +147,11 @@ sub init {
 				$self->debug(3, "Base: $title $version loaded($i_obj) $obj object($o_obj)") if $Perlbug::DEBUG; 
 			}
 		}
-		$CACHE_TIME{'LOAD'} = Benchmark->new if $Perlbug::DEBUG;
+		# $CACHE_TIME{'LOAD'} = Benchmark->new if $Perlbug::DEBUG;
 	}
 
     return $self;
 }
-
 
 =item conf
 
@@ -171,7 +168,6 @@ sub conf {
 
 	return $o_CONF;
 }
-
 
 =item cgi
 
@@ -190,7 +186,7 @@ sub cgi {
 	}
 
 	unless (ref($cgi)) {
-		$req = '-nodebug' unless $0 =~ /cgi$/; # context eq 'http'
+		$req = '-nodebug' unless $0 =~ /cgi/; # context eq 'http'
 		$cgi = $self->{'_cgi'} = CGI->new($req, @_);
 	}
 		
@@ -206,7 +202,7 @@ get database object
 sub db { 
 	my $self = shift; 
 	
-	$o_DB = ref($o_DB) ? $o_DB : Perlbug::Database->new(%DB); 
+	$o_DB = ref($o_DB) ? $o_DB : Perlbug::Database->new($o_CONF->get_all('database'));
 
 	return $o_DB;
 }
@@ -224,7 +220,6 @@ sub log {
 
 	return $o_LOG;
 }
-
 
 =item debug
 
@@ -279,7 +274,6 @@ sub debug {
 	return $DATA;
 }
 
-
 =item _debug
 
 Quiet form of B<debug()>, just calls the file method, and will never carp or confess, 
@@ -291,7 +285,6 @@ sub _debug {
 	my $self = shift;
 	return $self->logg(@_);
 }
-
 
 =item logg
 
@@ -305,14 +298,13 @@ sub logg {
     my $self = shift if ref($_[0]);
     my @args = @_;
     my $data = "[$Perlbug::i_LOG] ".join(' ', @_, "\n"); 
-    if (length($data) >= 25600) {
+    if (length($data) >= 13500) {
         $data = "Excessive data length(".length($data).") called!\n"; 
     }
 	$self->log->append($data);
 	# print $data if $0 =~ /bugdb/;
     $Perlbug::i_LOG++;
 }
-
 
 =item get_rand_msgid
 
@@ -337,7 +329,6 @@ sub get_rand_msgid {
 
 	return $msgid;
 }
-
 
 =item splice
 
@@ -365,7 +356,6 @@ sub splice {
 
 	return @data;
 }
-
 
 =item object
 
@@ -434,7 +424,6 @@ sub object {
 	return $o_obj;
 }
 
-
 =item version
 
 Get Perlbug::Version
@@ -492,7 +481,6 @@ sub summary {
 	return $sum;
 }
 
-
 =item isframed
 
 Simple wrapper
@@ -527,7 +515,6 @@ sub myurl { #
     }
     return $self->current('url');
 }
-
 
 =item href
 
@@ -617,7 +604,6 @@ sub mypost {
 	return $ret;
 }
 
-
 =item objects 
 
 Return list of names of objects in application, by type 
@@ -632,11 +618,12 @@ sub objects { #
 	my $self = shift;
 	my $type = shift || '_%';
 
-	my @names = $self->object('object')->col('name', "type LIKE '$type'");
+	my $cmp  = $self->db->comp($type);
+
+	my @names = $self->object('object')->col('name', "type $cmp '$type'");
 
 	return @names;
 }
-
 
 =item flags
 
@@ -689,7 +676,6 @@ sub all_flags {
     return %flags;
 }
 
-
 =item date_hash
 
 Returns convenient date hash structure with sql query for values
@@ -713,7 +699,6 @@ sub date_hash {
 	);
     return %dates;
 }
-
 
 =item help
 
@@ -743,7 +728,6 @@ sub help {
 
     return $help;
 }
-
 
 =item spec
 
@@ -785,7 +769,6 @@ or the email interface:
     return $info;
 }
 
-
 =item check_user
 
 Checks given user is registered in the database as an admin.  
@@ -801,33 +784,30 @@ sub check_user {
 	my $self = shift;
 	my $user = shift || 'generic';
 	$self->debug(2, "check_user($user)") if $Perlbug::DEBUG;
+
 	my $o_usr = $self->object('user');
     if ($self->system('restricted')) {
-		$self->debug(2, "restricted...") if $Perlbug::DEBUG;
 		my @ids = $o_usr->ids("userid = '$user' AND active IN ('1', '0')");
-		$self->debug(2, "ids(@ids)") if $Perlbug::DEBUG;
+		$self->debug(2, "restricted ids(@ids)") if $Perlbug::DEBUG;
 	    ID:
 	    foreach my $id (@ids) {
 			next if $id =~ /generic/io;
 	        if (($id =~ /^\w+$/o) && ($id =~ /$user/)) {
 				$self->current({'admin', $id});
-	            # $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
-	            $self->debug(1, "given param ($user) taken as admin id ($id)"); # , switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
+	            $self->debug(1, "given param ($user) taken as admin id ($id)");
 	            last ID;
 	        } else {
-				$self->debug(1, "unrecognised user($user) id($id)") if $Perlbug::DEBUG;
+				$self->debug(3, "unrecognised user($user) id($id)") if $Perlbug::DEBUG;
 			}
         }
 	} else {
-		$self->debug(2, "unrestricted...") if $Perlbug::DEBUG;
         $self->current({'admin', $user});
-        # $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
-	    $self->debug(1, "Non-restricted user($user) taken as admin id"); # , switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
+	    $self->debug(1, "Non-restricted user($user) taken as admin id"); 
 	}
 	$self->debug(1, "check_user($user)->'".$self->isadmin."'") if $Perlbug::DEBUG;
+
 	return $self->isadmin;
 }
-
 
 =item isadmin
 
@@ -844,7 +824,7 @@ sub isadmin { # retrieve admin flag (and id)
 		? grep(!/generic/i, $self->current('admin')) 
 		: $self->current('admin');
 
-	$self->debug(2, "user($user)") if $Perlbug::DEBUG;
+	$self->debug(3, "user($user)") if $Perlbug::DEBUG;
 
     return $user;
 }
@@ -899,7 +879,6 @@ sub switches { # admin|user
     return @switches;
 }
 
-
 =item create_file
 
 Create new file with this data:
@@ -930,7 +909,6 @@ sub create {
     return $o_file;
 }
 
-
 =item prioritise
 
 Set priority nicer by given integer, or by 12.
@@ -947,7 +925,6 @@ sub xprioritise {
 	$self->debug(2, "Priority($priority): pre ($pre), post ($post)") if $Perlbug::DEBUG;
 	return $self;
 }
-
 
 =item set_user
 
@@ -967,7 +944,6 @@ sub set_user {
 	$self->debug(2, "pre($original) current($post)") if $Perlbug::DEBUG;
 	return $self;
 }
-
 
 =item read
 
@@ -1019,7 +995,6 @@ sub target2file {
 	return $file;
 }
 
-
 =item clean_cache
 
 Application objects/methods may call this to clean the sql and/or object cache, particularly useful when objects or their relationships are being created or deleted:
@@ -1062,7 +1037,6 @@ sub clean_cache {
     return $self;
 }
 
-
 =item get_list
 
 Returns a simple list of items (column values?), from a sql query.
@@ -1080,7 +1054,6 @@ sub get_list {
 
 	return $self->get_data($sql, $refresh, 'list');
 }
-
 
 =item get_data
 
@@ -1101,11 +1074,13 @@ sub get_data {
 	my $a_info = [];
 	my $a_cache = $CACHE_SQL{$sql}; # unless $refresh;
 
-	if (defined($a_cache) && ref($a_cache) eq 'ARRAY' && $refresh eq '') { 
+	if (defined($a_cache) && ref($a_cache) eq 'ARRAY' && $refresh !~ /\w+/o) { 
 		$a_info = $a_cache;
-		$self->debug('s', "reusing CACHED SQL: $sql => $a_cache") if $Perlbug::DEBUG;
+		$Perlbug::Database::CACHED++;
+		$self->debug('s', "sql:  cached($a_cache) <= SQL($sql)") if $Perlbug::DEBUG;
 	} else {
-		$self->debug('s', "SQL: $sql") if $Perlbug::DEBUG;
+		$a_cache = ' ' x 16; 
+		$self->debug('s', "sql: initial($a_cache) <= SQL($sql)") if $Perlbug::DEBUG;
 		my $sth = $self->db->query($sql);
  		if (!defined($sth)) {
         	$self->error("undefined cursor for get_data: '$DBI::errstr'");
@@ -1121,6 +1096,7 @@ sub get_data {
 			}
 			# $self->rows($sth);
 			$CACHE_SQL{$sql} = $a_info if $self->system('cachable');
+			$self->debug('S', "sql:  stored($a_cache) <= SQL($sql)") if $Perlbug::DEBUG;
     		$self->debug('S', 'found '.$sth->rows." rows($a_info): ".Dumper($a_info)) if $Perlbug::DEBUG;
     	}
 		undef $sth;
@@ -1128,7 +1104,6 @@ sub get_data {
 	# $self->debug('S', $a_info) if $Perlbug::DEBUG;
 	return @{$a_info}; 
 }    
-
 
 =item exec
 
@@ -1157,7 +1132,6 @@ sub exec {
 	return $sth;
 }
 
-
 =item extant
 
 Track bugids from this session
@@ -1175,7 +1149,6 @@ sub extant {
 	return keys %CACHE_BUGIDS;
 }
 
-
 =item exists
 
 Does this bugid exist in the db?
@@ -1190,7 +1163,6 @@ sub exists {
 
 	return $i_ok;
 }
-
 
 =item notify
 
@@ -1222,7 +1194,7 @@ sub notify {
 				my $o_int = $self->setup_int($header, $body);
 				my ($o_hdr, $header, $body) = $self->splice($o_int);
 				if (!ref($o_hdr)) {
-					$self->debug(0, "no header($o_hdr) for notification!");
+					$self->debug(0, "no header($o_hdr) for notification!") if $Perlbug::DEBUG;
 				} else {
 					my ($from, $orig, $replyto, $subject, $to) = ('', '', '', '', '');
 					my @cc   = $o_hdr->get('Cc'); @cc = () unless @cc;
@@ -1259,9 +1231,7 @@ sub notify {
 						$o_hdr  = $o_email->addurls($o_hdr, $obj, $oid);
 						$o_hdr->replace('Subject', $subject);
 						my $type = ($subject =~ /^\s*OK/io) ? 'ok' : 'remap';
-	$DB::single=2;
 						my $o_notify = $o_email->get_header($o_hdr, $type);	
-	$DB::single=2;
 						$o_notify->replace('Cc', join(', ', @ccs));
 						$i_ok = $o_email->send_mail($o_notify, $body); # auto
 					}
@@ -1272,7 +1242,6 @@ sub notify {
 
 	return $i_ok;
 }
-
 
 =item setup_int
 
@@ -1288,7 +1257,7 @@ or
 
 sub setup_int {
 	my $self   = shift;
-	my $header = shift;
+	my $header = shift || '';
 	my $body   = shift || 'no-body-given';
 	my $o_int  = undef;
 	
@@ -1297,7 +1266,7 @@ sub setup_int {
 		%header = %{$header};
 	} else {
 		if ($header =~ /^([^:]+:\s*\w+.*)/mo) { 
-			$header =~ s/\r?\n\s+/ /sog; # unfold
+			$header =~ s/\r?\n\s+/ /gos; # unfold
 			%header = ($header =~ /^([^:]+):(.*)$/gmo);	
 		} else { 
 			$self->debug(0, "Can't setup int from invalid header($header)!");
@@ -1305,28 +1274,35 @@ sub setup_int {
 	}
 
 	if (keys %header) {
-		my $o_hdr    = Mail::Header->new;
+		my $o_hdr = Mail::Header->new;
 		TAG:
 		foreach my $tag (keys %header) {
 			my @tags = (ref($header{$tag})) eq 'ARRAY' ? @{$header{$tag}} : ($header{$tag});
-			$tag =~ s/^\s*//o; $tag =~ s/\s*$//o; # stray newlines creeping in?
-			$o_hdr->add($tag, @tags);
+			$tag =~ tr/\n/ /d; # strays
+			if ($tag =~ /^\w+(\-\w+)*/) {
+				$o_hdr->add($tag, @tags);
+			} else {
+				$self->debug(0, "*** problem with tag($tag)!");
+			}
 		}
 		$o_hdr->add('Message-Id', $self->get_rand_msgid) unless $o_hdr->get('Message-Id'); 
 		$o_hdr->add('Subject', q|some irrelevant subject|) unless $o_hdr->get('Subject'); 
 
-		$o_int = Mail::Internet->new('Header' => $o_hdr, 'Body' => [map { "$_\n" } split("\n", $body)]);
+		$o_int = Mail::Internet->new(
+			'Header' => $o_hdr, 
+			'Body' => [map { "$_\n" } split("\n", $body)]
+		);
 		my $to   = $o_int->head->get('To') || '';
 		my $from = $o_int->head->get('From') || ''; 
 		if (!($to =~ /\w+/o && $from =~ /\w+/o)) { 
-			$self->error("Invalid mail($o_int) via header: ".Dumper(\%header));
+			$self->debug(0, "Invalid mail($o_int) via header: ".Dumper(\%header));
+			$self->debug(0, "to($to) from($from)".Dumper($o_int->head));
 			undef $o_int;
 		}
 	}
 
 	return $o_int;
 }
-
 
 =item notify_cc
 
@@ -1383,7 +1359,6 @@ To see this (and more) data on the web, visit:
 	return $i_ok;
 }
 
-
 sub todo {
 	my $self  = shift;
 	my $todo  = shift;
@@ -1409,7 +1384,6 @@ sub todo {
 
 	return $i_ok
 }
-
 
 =item track
 
@@ -1445,7 +1419,6 @@ sub track {
 
 	return $sth;
 }
-
 
 =item ck822
 
@@ -1531,7 +1504,6 @@ sub htpasswd { #
     return $i_ok; # (wantarray ? @data : $i_ok);
 }
 
-
 =item help_ref
 
 Creates something of the form: C<<a href="http://bugs.per.org/perlbug.cgi?req=webhelp\#item_note">Note</a>>
@@ -1551,7 +1523,8 @@ sub help_ref {
 	my $hint = "click for $with";
 	my $help = qq|<a 
 			href="$url?req=webhelp$sect"
-			onMouseOver="window.status='$hint'; return true;"
+			onMouseOver="window.status='$hint';" 
+			onClick="return go('webhelp$sect');"
 			onMouseOut="window.status='';"
 		>$title</a>
 	|;
@@ -1619,7 +1592,6 @@ sub clean_up {
 	return ();
 }
 
-
 =item tell_time
 
 Put runtime info in log file, if $Perlbug::DEBUG 
@@ -1654,16 +1626,16 @@ sub tell_time {
 		Loaded : @{[timestr($loaded)]}
 		Runtime: @{[timestr($runtime)]}
 		Alltook: @{[timestr($total)]}
-			including $Perlbug::Database::SQL SQL statements 
-			using $Perlbug::Database::HANDLE database handle/s
+			with $Perlbug::Database::SQL SQL statements 
+			used $Perlbug::Database::HANDLE database handle/s
+			cach $Perlbug::Database::CACHED queries
 		|
 			: '';
-		$self->debug(1, $feedback); 
+		$self->debug(1, $feedback) if $Perlbug::DEBUG;
 	}
 
 	return $feedback;
 } 
-
 
 =item parse_str
 
@@ -1737,7 +1709,6 @@ sub parse_str {
 	return %cmds;
 }
 
-
 =item scan
 
 Scan for perl relevant data putting found or default switches in $h_data.
@@ -1774,9 +1745,9 @@ sub scan { # ids/names
 			foreach my $indb (@setindb) {                   	# open closed onhold, core docs patch, linux aix...
 				next SETINDB unless $indb =~ /\w+/o;
 				next SETINDB if $type eq 'version' && $indb !~ /\d$/;
-				if ($line =~ /\s*$type\s*=\s*(3d)*$indb\s*/i) {			# osname=(3d)*winnt|macos|aix|linux|...
-					$data{$type}{$indb}++;
-					$self->debug(2, "Bingo: flag($type=$indb)") if $Perlbug::DEBUG;
+				if ($line =~ /\s*$type\s*=\s*(?:3d){0,1}\s*($indb)\s*/i) {			# osname=(3d)*winnt|macos|aix|linux|...
+					$data{$type}{lc($1)}++;
+					$self->debug(2, "Bingo: flag($type=$1)") if $Perlbug::DEBUG;
 					# next TYPE; tut tut - we want all we can get
 				}	
 			} 
@@ -1804,7 +1775,7 @@ sub scan { # ids/names
 						next MATCH unless $line =~ /=/o;		# short circuit
 						my $target = $self->$type($match);  	# open, closed, etc.
 						if (grep(/^$target/i, @setindb)) {  	# do we have an assignation?
-							$data{$type}{$target}++;
+							$data{$type}{lc($target)}++;
 							$self->debug(1, "Bingo: target($target) -> next LINE") if $Perlbug::DEBUG;
 							next TYPE;
 						}
@@ -1836,7 +1807,6 @@ sub scan { # ids/names
 
     return \%rel;
 }
-
 
 =item bugid_2_addresses
 
@@ -1892,17 +1862,15 @@ sub bugid_2_addresses {
 					}
 				}
 			}
-			if ($feedback =~ /sourceaddr/o) { # always
-				my ($srcaddr) = $o_bug->sourceaddr;	
+			if ($feedback =~ /source/o) { # always
+				my ($srcaddr) = $o_bug->data('sourceaddr');	
 				push(@addrs, $srcaddr);
 			}
 		}
     }
 
-
     return @addrs;
 }
-
 
 =item compare
 
@@ -1922,7 +1890,6 @@ sub compare {           #
 	}
 	return 1;
 }
-
 
 sub AUTOLOAD {
 	my $self = shift;
@@ -1944,7 +1911,6 @@ $SIG{'INT'} = sub {
 	carp "Perlbug interupted: bye bye!";
 	exit(1);	
 };
-
 
 =back
 

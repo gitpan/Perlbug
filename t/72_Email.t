@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: check the bugtron scan($mailbody) for category, etc.
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 72_Email.t,v 1.12 2002/01/11 13:51:06 richardf Exp $
+# $Id: 72_Email.t,v 1.13 2002/01/25 16:12:59 richardf Exp $
 #
 
 use lib qw(../);
@@ -126,8 +126,22 @@ STATUS  =  opEN
 		generated with the help of perlbug 1.27 running under perl 5.0503.
 		|, 
 	},
-);
+	{ # 10 - quote -> 3d 
+		'expected'	=> { 
+			'group'		=> [qw(utilities)],
+			'osname'	=> [qw(aix mac macos)],
+			'severity'	=> [qw(medium)],
+			'status'	=> [qw(open)],
+		},
+		'body'		=> qq|
+ Flags:
+     osname= 3Dmacos osname=3daix
+     category=3Dutilities
+     severity=3Dmedium
+		|,
+	},
 
+);
 
 # How many?
 plan('tests' => scalar(@tests));
@@ -137,6 +151,9 @@ TEST:
 foreach my $h_test (@tests) {
 	$i_test++; 
 	last TEST unless $i_err == 0;
+	if ($ARGV[0] =~ /^\d+$/) {
+		next TEST unless $i_test == $ARGV[0];
+	}
 	my %expected = %{$$h_test{'expected'}}; 
 	my $body     = $$h_test{'body'};
 	my %scanned  = %{$o_mail->scan($body)};

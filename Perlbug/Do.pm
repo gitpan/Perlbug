@@ -1,6 +1,6 @@
 # Perlbug functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Do.pm,v 1.68 2002/01/11 13:51:05 richardf Exp $
+# $Id: Do.pm,v 1.69 2002/01/25 16:12:58 richardf Exp $
 #
 # TODO 
 # see doh
@@ -16,7 +16,7 @@ package Perlbug::Do;
 use Data::Dumper;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.68 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.69 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
 
@@ -84,7 +84,7 @@ sub parse_input {
 
     if ($line !~ /\-\w+/) {
 		$cmds{'h'} = "invalid command($line)";
-		$self->debug(0, "requires a valid command($line)!");
+		$self->debug(0, "requires a valid command($line)!") if $Perlbug::DEBUG;
     } else {
 		%cmds = %{$self->parse_line($line)};
 		COMMANDS:
@@ -117,7 +117,7 @@ sub parse_line {
 
     if ($line !~ /\-\w+/) {
 		$cmds{'h'} = "invalid command($line)";
-		$self->debug(0, "requires a valid command($line)!");
+		$self->debug(0, "requires a valid command($line)!") if $Perlbug::DEBUG;
     } else {
 		CHUNK: {
 			$cmds{$1} = '',	redo CHUNK if $line =~ /\G\s*-([a-zA-Z])\s*$/ciog;			# -h
@@ -532,7 +532,6 @@ sub dod {
 	return $res;
 }
 
-
 =item doD
 
 Dumps database for backup and recovery.
@@ -543,23 +542,21 @@ Dumps database for backup and recovery.
 
 sub doD { # Dump Database (for recovery)
     my $self  = shift;
-	my $since = shift;
+	my $since = shift || $self->current('date');
     my $i_ok  = 1;
 	my $res   = '';
 
-    $self->debug(2, "DB dump($since) requested by '".$self->isadmin."'") if $Perlbug::DEBUG;
+    $self->debug(1, "DB dump($since) requested by '".$self->isadmin."'") if $Perlbug::DEBUG;
 
 	my $adir = $self->directory('arch');
-	my $date = $self->current('date');
 	my $tdir = $self->directory('spool').'/temp';
 	my $pdir = $self->directory('perlbug');
 	my $target = File::Spec->canonpath($tdir.'/'.$self->database('latest'));
-	my $tgt  = ($since =~ /\d+/o) ? "from_$since" : $date;
-	$target =~ s/^(.+?\.)gz/${1}$tgt\.gz/;
+	$target =~ s/^(.+?\.)gz/${1}from_$since\.gz/;
 	my $dage = $self->database('backup_interval');
 
 	if (($since !~ /\d+/) && (-e $target) && (-M _ >= $dage)) {
-		$res ="Recent($date) non-incremental database dump($target) found less than $dage days old";
+		$res ="Recent($since) non-incremental database dump($target) found less than $dage days old";
 	} else {
 		my $dump = $self->database_dump_command($target, $since);
 		if (!(defined($dump))) {
@@ -572,7 +569,7 @@ sub doD { # Dump Database (for recovery)
 				if (!($i_ok == 1 && -f $target)) {
 					$res = "Looks like database backup failed: $? $!";
 				} else {
-					my $arch = File::Spec->canonpath($adir."/Perlbug.sql.${date}.gz");
+					my $arch = File::Spec->canonpath($adir."/Perlbug.sql.${since}.gz");
 					my $lach = File::Spec->canonpath($adir.'/'.$self->database('latest'));
 					$i_ok = $self->copy($target, $arch);
 					$res = "Database backup copy($i_ok)";
@@ -1408,7 +1405,7 @@ sub doP {
 			'email_msgid'	=> 'no-msgid-given',
 			%args,
 		});	
-		$self->debug(0, "patch created(".$o_obj->CREATED.")?");
+		$self->debug(0, "patch created(".$o_obj->CREATED.")?") if $Perlbug::DEBUG;
 		if ($o_obj->CREATED) {
 			$id = $o_obj->oid;
 			my %cmds = $self->parse_str($args{'opts'} || $args{'_opts'});
@@ -1757,12 +1754,12 @@ sub doU { # rjsf
 		my %user = %{$h_args};
 		my $orig_password = $user{'password'};
 		$user{'password'} = crypt($user{'password'}, 'pb'); # encrypted
-		my @exists = $o_usr->ids("UPPER(userid) LIKE UPPER('$user{'userid'}')");
-		push(@exists, $o_usr->ids("UPPER(name) LIKE UPPER('$user{'name'}')"));
+		my @exists = $o_usr->ids("UPPER(userid) = UPPER('$user{'userid'}')");
+		push(@exists, $o_usr->ids("UPPER(name) = UPPER('$user{'name'}')"));
         if (scalar(@exists) >= 1) {
             $self->error("User already defined in db(@exists)");
 		} else {
-            $self->debug(0, "User not defined in db(@exists)");
+            $self->debug(0, "User not defined in db(@exists)") if $Perlbug::DEBUG;
 			$o_usr->create(\%user);
 			if (!($o_usr->CREATED)) {
 				$self->error("Admin db insertion failure");
@@ -1818,7 +1815,7 @@ Welcome $user{'name'} as a new $title administrator:
 			}
 		}
     }
-	$self->debug(1, "user creation($uid)");
+	$self->debug(1, "user creation($uid)") if $Perlbug::DEBUG;
 
     return $uid;
 }  
@@ -2441,10 +2438,9 @@ sub FORMAT_O_h {
 </TR>>
 <TR>
 	<td><b>Versions:</b>  &nbsp;
-	</td><td><b>5.002.*:</b> &nbsp;
-	$fmt{'version'}{'5.2.%'} ($fmt{'version'}{'Open'}{'5.2.%'})
+	</td><td>&nbsp;
 	</td><td><b>5.003.*:</b> &nbsp;
-	$fmt{'version'}{'5.3.%'} ($fmt{'version'}{'Open'}{'5.3.%'})
+	</td><td>&nbsp;
 	</td><td><b>5.004.*:</b> &nbsp;
 	$fmt{'version'}{'5.4.%'} ($fmt{'version'}{'Open'}{'5.4.%'})
 	</td><td><b>5.005*</b> &nbsp;
@@ -2459,13 +2455,11 @@ sub FORMAT_O_h {
 	$fmt{'version'}{'5.9.%'} ($fmt{'version'}{'Open'}{'5.9.%'})
 	</td>
 </TR>
-
 </table>
 |;
 
 	return ($top, $format, ());
 }
-
 
 =item FORMAT_O_H
 
@@ -2520,7 +2514,6 @@ sub FORMAT_O_H {
 
 	return ($top, $format, @args);
 }
-
 
 =back
 

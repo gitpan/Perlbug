@@ -1,6 +1,6 @@
 # Perlbug object attribute handler
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Object.pm,v 1.51 2002/01/14 10:14:48 richardf Exp $
+# $Id: Object.pm,v 1.53 2002/02/01 08:36:45 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Object;
 use strict;
 use vars(qw($VERSION @ISA $AUTOLOAD));
 @ISA = qw(Perlbug::Format); 
-$VERSION = do { my @r = (q$Revision: 1.51 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.53 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Carp;
@@ -32,7 +32,6 @@ my $o_Perlbug_Base = '';
 		'field'	=> 'VARCHAR',
 	},
 );
-
 
 =head1 DESCRIPTION
 
@@ -56,9 +55,6 @@ Methods included to recognise objects by their id or by their also unique name.
 	my @patchids	= $o_obj->rel_ids('patch');	# relids 
 
 	print = $o_obj->format('h');		
-
-=cut
-
 
 =head1 METHODS
 
@@ -138,13 +134,11 @@ sub new { # table, key
 			'updated'	=> 0,				#  -"-
 		},
 	};
-	# push(@{$self->{'_attr'}{'to'}}, 'template');
 
 	$self = bless($self, $class);
 
 	$self->data; $self->attr; $self->flag; # prime
 	$self = $self->reinit; # inc. check()
-	# print "rjsf: Object::new($name) -> ".sprintf('%-15s', $self)."...\n";
 
 	return $self;
 }
@@ -175,6 +169,8 @@ sub init_data { # generic attr from db
 		my $type  = 'VARCHAR'; # default
 		$type = 'DATETIME' if $$f{'Type'} =~ /^DATE(TIME)*$/io;
 		$type = 'INTEGER'  if $$f{'Type'} =~ /^(BIG|SMALL)*INT(EGER)*(\(\d+\))*/io;
+		# $Perlbug::Object{'_data'}{$field} = '';
+		# $Perlbug::Object{'_type'}{$field} = $type;
 		$self->{'_data'}{$field} = ''; 		# init	
 		$self->{'_type'}{$field} = $type; 	# init	
 		# $self->_gen_field_handler($field);# don't call 
@@ -182,7 +178,6 @@ sub init_data { # generic attr from db
 
 	return $self;
 }
-
 
 =item init_types
 
@@ -207,7 +202,6 @@ sub init_types { # generic attr from db
 
 	return @rels;
 }
-
 
 =item reinit 
 
@@ -246,7 +240,6 @@ sub reinit {
 	return $self;
 }
 
-
 =item refresh_relations
 
 Refresh relation data, optionally restricted to only those given, others are cleared.
@@ -258,29 +251,28 @@ Refresh relation data, optionally restricted to only those given, others are cle
 sub refresh_relations {
 	my $self = shift;
 	my @args = my @rels = @_;
+	my $obj  = $self->key;
 
 	my $rellies = join('|', my @rellies = $self->rels);
 	@rels = grep(/($rellies)/, @args);
 	$self->debug(2, ref($self).": args(@args) rellies($rellies) => rels(@rels)") if $Perlbug::DEBUG;
 
-	my $obj  = $self->key;
 	$self->{'_relation'} = {};	
 
 	REL:
 	foreach my $rel (@rels) {
 		next REL if $rel =~ /^$obj$/i; # no recurse
 		my @rids  = $self->rel_ids($rel, '', 'refresh');		# if ids	
-		my @names = $self->rel_names($rel, '', 'refresh');		# if ids	
-		# my @names = $self->id2name(\@rids);		# if names
-		$self->{'_relation'}{$rel}{'ids'}   = \@rids; 
+		# my @names = $self->rel_names($rel, '', 'refresh');	# 
+		my @names = $self->object($rel)->id2name(\@rids);		# if names
 		$self->{'_relation'}{$rel}{'count'} =  @rids;	
+		$self->{'_relation'}{$rel}{'ids'}   = \@rids; 
 		$self->{'_relation'}{$rel}{'names'} = \@names;	
 	}
 	$self->debug(3, 'relations: '.Dumper($self->{'_relation'})) if $Perlbug::DEBUG;
 
 	return $self;
 }
-
 
 =item check
 
@@ -309,7 +301,6 @@ sub check {
 	return $i_ok;
 }
 
-
 =item REINIT 
 
 Returns 0|1 depending on whether object has been reinit 
@@ -328,7 +319,6 @@ sub REINIT {
 
 	return $i_flag;	
 }
-
 
 =item exists
 
@@ -353,14 +343,14 @@ sub exists {
 		my $ids = join("', '", @{$a_oids});
 		my $pri = $self->attr('primary_key');
 		my $sql = "SELECT DISTINCT $pri FROM ".$self->attr('table'). 
-				  " WHERE $pri LIKE '_%' AND $pri IN ('$ids')"
+				  # " WHERE $pri Like '_%' AND $pri IN ('$ids')"
+				  " WHERE $pri IN ('$ids')"
 		;
 		@IDS = $self->base->get_list($sql);
 	}
 
 	return @IDS;
 }
-
 
 =item _exists
 
@@ -383,14 +373,14 @@ sub _exists {
 		my $ids = join("', '", @{$a_ids});
 		my $pri = $self->identifier;
 		my $sql = "SELECT DISTINCT $pri FROM ".$self->attr('table'). 
-				  " WHERE $pri LIKE '_%' AND $pri IN ('$ids')"
+				  # " WHERE $pri Like '_%' AND $pri IN ('$ids')"
+				  " WHERE $pri IN ('$ids')"
 		;
 		@IDS = $self->base->get_list($sql);
 	}
 
 	return @IDS;
 }
-
 
 =item fields
 
@@ -409,7 +399,6 @@ sub fields {
 
 	return @fields;
 }
-
 
 =item str2ids
 
@@ -435,7 +424,6 @@ sub str2ids {
 
 	return @ids;
 }
-
 
 =item ok_ids 
 
@@ -476,7 +464,6 @@ sub ok_ids {
 	return @ok;
 }
 
-
 =item primary_key 
 
 Wrapper to only get primary_key.
@@ -492,7 +479,6 @@ sub primary_key {
 
 	return $pri;
 }
-
 
 =item key 
 
@@ -515,10 +501,9 @@ sub key {
 	return $key;
 }
 
-
 =item objectid 
 
-Wrapper to get and set objectid, (and data(<objectid>) at the same time. 
+Wrapper to get and set objectid, and data(<objectid>) at the same time. 
 
 	my $oid = $o_obj->objectid($id);
 
@@ -611,7 +596,7 @@ sub ids {
 	my $sql   = "SELECT DISTINCT $prime FROM $table ";
 
 	if (ref($input)) {				# OBJECT with ids, etc.
-		$sql .= " WHERE $prime LIKE '".$input->oid()."'";		
+		$sql .= " WHERE $prime = '".$input->oid()."'";		
 		$sql .= " AND $extra" if $extra;
 	} elsif ($input =~ /\w+/o) { 	# SQL where clause
 		$input =~ s/^\s*WHERE\s*//io;	
@@ -624,7 +609,6 @@ sub ids {
 
 	return @ids;
 }
-
 
 =item names
 
@@ -648,7 +632,7 @@ sub names {
 	if ($self->identifier eq 'name') {
 		my $sql = "SELECT DISTINCT name FROM ".$self->attr('table');
 		if (ref($input)) {				# OBJECT with ids, etc.
-			$sql .= ' WHERE '.$input->attr('primary_key')." LIKE '".$input->oid()."'";		
+			$sql .= ' WHERE '.$input->attr('primary_key')." = '".$input->oid()."'";		
 			$sql .= " AND $extra" if $extra;
 		} elsif ($input =~ /\w+/o) { 	# SQL where clause
 			$input =~ s/^\s*WHERE\s*//io;	
@@ -660,7 +644,6 @@ sub names {
 
 	return @names;
 }
-
 
 =item col 
 
@@ -685,7 +668,7 @@ sub col {
 	} else {	
 		my $sql = "SELECT DISTINCT $col FROM ".$self->attr('table');
 		if (ref($input)) {				# OBJECT with ids, etc.
-			$sql .= ' WHERE '.$input->attr('primary_key')." LIKE '".$input->oid()."'";		
+			$sql .= ' WHERE '.$input->attr('primary_key')." = '".$input->oid()."'";		
 		} elsif ($input =~ /\w+/o) { 	# SQL where clause
 			$input =~ s/^\s*WHERE\s*//io;	
 			$sql  .= " WHERE $input";	
@@ -696,7 +679,6 @@ sub col {
 	$self->debug(3, "col($col), input($input) -> cols(@cols)") if $Perlbug::DEBUG;
 	return @cols;
 }
-
 
 =item identifier
 
@@ -716,7 +698,6 @@ sub identifier {
 	return $ident;
 }
 
-
 =item id2name 
 
 Convert ids to names
@@ -731,7 +712,7 @@ sub id2name {
 	my @output  = ();
 
 	if (!ref($a_input)) {
-		$self->debug(0, "no input ids given to convert($a_input)");
+		$self->debug(0, "no input ids given to convert($a_input)") if $Perlbug::DEBUG;
 	} else {
 		if ($self->identifier ne 'name') {
 			$self->debug(3, "identifier ne 'name'!") if $Perlbug::DEBUG;
@@ -751,7 +732,6 @@ sub id2name {
 
 	return @output;
 }
-
 
 =item name2id
 
@@ -781,7 +761,6 @@ sub name2id {
 	return @output;
 }
 
-
 =item count
 
 Return number of objects, optionally restrained by argument given
@@ -790,7 +769,7 @@ Return number of objects, optionally restrained by argument given
 
 	my $i_cnt = $o_obj->count($o_rel); # uses o_rel(objectid) 
 
-	my $i_cnt = $o_obj->count("$objectid LIKE '$criteria'");
+	my $i_cnt = $o_obj->count("$objectid Like '$criteria'");
 
 =cut
 
@@ -803,7 +782,7 @@ sub count {
 	
 	my $sql = "SELECT COUNT(".$self->attr('primary_key').") FROM ".$self->attr('table');
 	if (ref($input)) {				# OBJECT with ids, etc.
-		$sql .= ' WHERE '.$input->attr('primary_key')." LIKE '".$input->oid()."'";		
+		$sql .= ' WHERE '.$input->attr('primary_key')." = '".$input->oid()."'";		
 		$sql .= " AND $extra" if $extra;
 	} elsif ($input =~ /\w+/o) { 	# SQL where clause
 		$input =~ s/^\s*WHERE\s*//io;	
@@ -815,7 +794,6 @@ sub count {
 
 	return $i_cnt;
 }
-
 
 =item trim
 
@@ -870,7 +848,6 @@ sub keys_sorted_by_value {
 	return @sort;
 }
 
-
 # HTTP specific methods
 # -----------------------------------------------------------------------------
 
@@ -898,7 +875,6 @@ sub link {
 	return @link;
 }
 
-
 =item choice
 
 Returns appropriate B<popup()> or B<selector()> for object, based on B<prejudicial> setting.
@@ -912,7 +888,7 @@ sub choice {
 
 	my $choice = ($self->attr('prejudicial') == 1) ? 'popup' : 'selector';
 
-	$self->debug(3, "choice($choice)...");
+	$self->debug(3, "choice($choice)...") if $Perlbug::DEBUG;
 
 	return $self->$choice(@_);
 }
@@ -941,17 +917,10 @@ sub popup {
 	# my $col = (grep(/^name$/i, $self->data_fields)) ? 'name' : $pri;
 	my ($col) = map { ($_ =~ /^name$/o ? $_ : $pri ) } $self->data_fields ? 'name' : $pri;
 
-	if (1) { # all - better than foreach id -> SQL 
-		my @ids = $self->col("CONCAT($pri, ':', $col)", $where); 
-		foreach my $id (@ids) {
-			my ($pre, $post) = split(':', $id);
-			$map{$pre} = $post;
-		}
-	} else { # rjsf: redundant
-		my @ids = $self->ids; # all
-		foreach my $id (@ids) {
-			($map{$id}) = $self->col($col, "WHERE $pri = '$id'");
-		}
+	my @ids = $self->col("CONCAT($pri, ':', $col)", $where); 
+	foreach my $id (@ids) {
+		my ($pre, $post) = split(':', $id);
+		$map{$pre} = $post;
 	}
 
 	my @sorted = $self->keys_sorted_by_value(\%map);
@@ -971,7 +940,6 @@ sub popup {
 
 	return $pop;
 }
-
 
 =item selector
 
@@ -994,18 +962,11 @@ sub selector {
 	# my $col = (grep(/^name$/i, $self->data_fields)) ? 'name' : $pri;
 	my ($col) = map { ($_ =~ /^name$/o ? $_ : $pri ) } $self->data_fields ? 'name' : $pri;
 
-	if (1) { # all - better than foreach id -> SQL 
-		my @ids = $self->col("CONCAT($pri, ':', $col)"); 
-		foreach my $id (@ids) {
-			my ($pre, $post) = split(':', $id);
-			$map{$pre} = $post;
-		}
-	} else {
-		my @ids = $self->ids; # all
-		foreach my $id (@ids) {
-			($map{$id}) = $self->col($col, "WHERE ".$self->attr('primary_key')." LIKE '$id'");
-		}
-1	}
+	my @ids = $self->col("CONCAT($pri, ':', $col)"); 
+	foreach my $id (@ids) {
+		my ($pre, $post) = split(':', $id);
+		$map{$pre} = $post;
+	}
 
 	my @sorted = $self->keys_sorted_by_value(\%map);
 
@@ -1118,12 +1079,12 @@ sub htmlify {
 		my $OPTIONAL = $self->base->help_ref('optional', 'Optional');
 		my $TRANSFER = $self->base->help_ref('transfer', 'Transfer');
 		my $transfer = '<td>&nbsp;</td><td>&nbsp;</td>';
-		if (grep(/^$obj$/, $self->base->objects('mail')) and $obj ne 'bug') { 
+		if (grep(/^$obj$/, $self->base->objects('mail'))) {
 			$transfer = qq|<td><b>$TRANSFER type:</b>&nbsp;</td>|.
 				'<td>'.
 				$self->object('object')->popup("${oid}_transfer", $obj, 
 				"UPPER(type) = 'MAIL' 
-				AND name IN('message', 'note', 'patch', 'test') AND NAME NOT LIKE '$obj'", 
+				AND name IN('message', 'note', 'patch', 'test') AND NAME != '$obj'", 
 				# -'onChange'	=> "pick(this); return newcoms('read');",
 			) . '</td>';
 		}
@@ -1266,7 +1227,7 @@ sub initform {
 		<tr><td>$FMT:     	</td><td>$format</td></tr> 
 		<tr><td>$SHOWSQL: 	</td><td>$sqlshow</td></tr> 
 		<tr><td>$RESTRICT:	</td><td>$restrict</td></tr> 
-		</table>\n
+		</ table>\n
 		<input type=hidden name=req value="${obj}_query">\n
 	|;
 =cut
@@ -1319,7 +1280,6 @@ sub x_gen_field_handler { # AUTOLOAD'd
     $self;
 }
 
-
 =item base
 
 Return application specific Perlbug::Base object, given as $o_obj->new($o_base) or new object altogether. 
@@ -1336,6 +1296,13 @@ sub base {
 } 
 '; }
 
+{ $^W=0; eval ' 
+sub db {
+	my $self = shift;
+
+	return $self->base->db;
+} 
+'; }
 
 =item _oref
 
@@ -1414,8 +1381,6 @@ Returns 1|0 dependant on whether relation($rel), is of given type (or any), or n
 	print "yup\n" if $o_obj->isarel($rel);
 
 eg:
-
-	print "patch is related to a bug\n" if $o_pat->isarel('bug');
 
 	print "patch is related to a bug\n" if $o_pat->isarel('bug');
 
@@ -1637,10 +1602,8 @@ sub relate {
 			}
 			my %track = ();
 			$self->debug(1, 'oid: '.$self->oid.' relatable: '.Dumper($h_ships)) if $Perlbug::DEBUG;
-			$DB::single=2;
 			RELATE:
 			foreach my $rel ($self->rels) {
-			# foreach my $rel (keys %{$h_ships}) {
 				next RELATE unless $rel =~ /\w+/o;
 				my $prej  = ($self->object($rel)->attr('prejudicial') == 1) ? 1 : 0;
 				my $o_rel = $self->rel($rel);
@@ -1667,7 +1630,6 @@ sub relate {
 
 	return @rels;
 }
-
 
 =item appropriate
 
@@ -1704,11 +1666,7 @@ sub appropriate {
 	return @bugids;
 }
 
-
-=pod
-
 =back
-
 
 # =============================================================================
 
@@ -1744,18 +1702,18 @@ sub read {
 
 	$self->reinit(''); # always want a fresh one
 	if ($self->ok_ids([$oid]) != 1) {
-		$self->debug(0, "$self requires a valid id($oid) to read against!");
+		$self->debug(0, "$self requires a valid id($oid) to read against!") if $Perlbug::DEBUG;
 	} else {
 		my $pri	  = $self->attr('primary_key');
 		my $table = $self->attr('table');
-		my $sql = "SELECT * FROM $table WHERE $pri LIKE '$oid'"; # SQL
+		my $sql = "SELECT * FROM $table WHERE $pri = '$oid'"; # SQL
 		my ($h_data) = $self->base->get_data($sql);
 		$h_data = '' unless $h_data;
 		if (ref($h_data) ne 'HASH') {
-			$self->debug(0, "failed to retrieve data($h_data) with $pri = '$oid' in table($table)"); 
+			$self->debug(0, "failed to retrieve data($h_data) with $pri = '$oid' in table($table)") if $Perlbug::DEBUG;
 		} else {
 			$self->debug(2, $self->key." oid($oid)") if $Perlbug::DEBUG;
-			$DB::single=2;
+			# $DB::single=2;
 			my $res = $self->data($h_data); 			# set
 			my $xoid = $self->oid($oid);				# set
 			# $self = $self->object($self->attr('key'), $self); # cache
@@ -1766,7 +1724,6 @@ sub read {
 
 	$self;
 } 
-
 
 =item READ 
 
@@ -1787,7 +1744,6 @@ sub READ {
 	return $i_flag;	
 }
 
-
 =item _read
 
 Wrap B<read()> call to operate by name (if possible)
@@ -1804,7 +1760,6 @@ sub _read {
 
 	return $self->read($oid);
 }
-
 
 =item column_type
 
@@ -1832,7 +1787,6 @@ sub column_type {
 	return $type;	
 }
 
-
 =item to_date
 
 Currently redundant, because Mysql takes care of this, but Oracle may want to do more than this...
@@ -1845,7 +1799,6 @@ sub to_date {
 	my $self = shift || '';
 	return "'@_'";
 }
-
 
 =item prep 
 
@@ -1940,7 +1893,6 @@ sub massage {
 	return \%ret;
 }
 
-
 =item minimal_create_info
 
 Pad out data for new object creation, only B<adds> to data if nothing found.
@@ -1957,7 +1909,7 @@ sub minimal_create_info {
 	if (!(ref($h_data) eq 'HASH')) {
 		$self->error("requires hash ref($h_data) minimally!");
 	} else {
-		$self->debug(2, "mci given: ".Dumper($h_data));
+		$self->debug(2, "mci given: ".Dumper($h_data)) if $Perlbug::DEBUG;
 		my $admin = $self->base->isadmin;
 		if ($admin !~ /\w+/) {
 			$self->error("shouldn't get here?"); # web create only for admins
@@ -1986,7 +1938,7 @@ sub minimal_create_info {
 			$ret{'sourceaddr'} 	= $from;
 			$ret{'toaddr'}	= $to;
 		}
-		$self->debug(2, "mci return: ".Dumper(\%ret));
+		$self->debug(2, "mci return: ".Dumper(\%ret)) if $Perlbug::DEBUG;
 	}
 
 	return \%ret;
@@ -2019,10 +1971,10 @@ sub query {
 					push(@sql, "$key IN ('$params')")
 				}
 			} elsif ($param =~ /(.+)/) {
-				$param = "'$param'";
-				my $cmp = 'LIKE';
+				$param = "'$1'";
+				my $cmp = $self->db->comp($param);
 				if ($key =~ /^(created|modified)$/) {	
-					$key = "TO_DAYS($1)";
+					$key = "TO_DAYS($key)";
 					$cmp = '>='; 
 					$param = "TO_DAYS($param)"; # nice and open via mysql
 					# TO_DAYS(modified) >= TO_DAYS('TO_DATE(2001-01-10)')
@@ -2051,7 +2003,7 @@ sub query {
 				'range'		=> $o_rng->rangeify(\@ids),
 				# $o_rng->relation('bug')->assign(\@bids); # ouch!
 			});
-			$#ids = ($trim - 1) if $trim >= scalar(@ids);
+			$#ids = ($trim - 1) if scalar(@ids) > $trim;
 			$self->base->{'_range'} = $o_rng->oid if $o_rng->CREATED; 
 		}
 	} 
@@ -2103,7 +2055,7 @@ sub create {
 					$self->error("Failed($oid) to create sql($sql)!");
 				} else {	
 					$oid = $self->insertid($sth, $oid); # 
-					$self->debug(2, "sql($sql) -> insertid($oid)");
+					$self->debug(2, "sql($sql) -> insertid($oid)") if $Perlbug::DEBUG;
 					if (!$oid) {
 						$self->error("Failed to fetch new oid($oid) from sql($sql)");
 					} else {
@@ -2242,13 +2194,14 @@ sub transfer { # webtransfer
 				$self->error("failed to transfer oid($oid) data from ".ref($self)." -> to($targ)"); 
 			} else {
 				my $targoid = $o_tgt->oid;
-				$self->debug(0, 'transferred '.ref($self)."($oid) -> target($targ) oid($targoid)");
+				$self->debug(0, 'transferred '.ref($self)."($oid) -> target($targ) oid($targoid)") if $Perlbug::DEBUG;
 				# my $t_ref = $self->href($targ.'_id', [$targoid], $targoid, 'click ', '', "return go('${targ}_id&${targ}_id=$targoid&commands=write');");
 				my $t_ref = $self->href($targ.'_id', [$targoid], $targoid, 'click ', '', "return go('${targ}_id&${targ}_id=$targoid');");
 				print "<h3>New $targ: $t_ref</h3>\n";
 				my $opts = $cgi->param($oid.'_opts') || $cgi->param('_opts') || '';
 				my $pars = join(' ', $opts);
 				my %update = $self->base->parse_str($pars);
+				# scan subject, etc.?
 
 				my @curr = ();
 				REL:
@@ -2287,7 +2240,7 @@ sub webupdate {
 		$self->error("requires data hash ref($h_data) to update ".ref($self)." data via the web!");
 	} else {
 		if ($self->read($oid)->READ) {
-			$self->debug(0, "oid: ".$self->oid);
+			$self->debug(0, "oid: ".$self->oid) if $Perlbug::DEBUG;
 			# my $pri = $self->attr('primary_key'); 
 			# $$h_data{$pri} = $oid;
 			# my $i_updated = $self->update($h_data)->UPDATED; # called separately
@@ -2300,7 +2253,7 @@ sub webupdate {
 						? $self->id2name([$self->rel_ids($rel)]) 
 						: $self->rel_ids($rel);
 					push(@curr, join(' ', @idents));
-					$self->debug(0, ref($self)."($oid) rel($rel) -> idents(@idents)");
+					$self->debug(0, ref($self)."($oid) rel($rel) -> idents(@idents)") if $Perlbug::DEBUG;
 				}
 				my $pars = join(' ', $opts, @curr);
 				my %cmds = $self->base->parse_str($pars);
@@ -2361,7 +2314,6 @@ sub update {
 	return $self;
 }
 
-
 =item UPDATED 
 
 Returns 0|1 depending on whether object has been succesfully updated 
@@ -2380,7 +2332,6 @@ sub UPDATED {
 
 	return $i_flag;	
 }
-
 
 =item delete
 
@@ -2407,7 +2358,7 @@ sub delete {
 	} else {
 		foreach my $oid (@{$a_oids}) {
 			if (!($self->exists([$oid]))) {	# DOIT 
-				$self->debug(0, "Can't delete non-existing objectid($oid)!");	
+				$self->debug(0, "Can't delete non-existing objectid($oid)!") if $Perlbug::DEBUG;	
 			} else { # recursion handled by application (foreach rel)
 				my $sql = "DELETE FROM ".$self->attr('table')." WHERE ".$self->primary_key." = '$oid'";
 				my $sth = $self->base->exec($sql);	# DOIT
@@ -2427,7 +2378,6 @@ sub delete {
 	return $self;
 }
 
-
 =item DELETED 
 
 Returns 0|1 depending on whether object has been succesfully deleted 
@@ -2446,7 +2396,6 @@ sub DELETED {
 
 	return $i_flag;	
 }
-
 
 =item updatable 
 
@@ -2468,7 +2417,6 @@ sub updatable {
 	
     return @ids;
 }
-
 
 =item insertid
 
@@ -2496,7 +2444,6 @@ sub insertid {
 
 	return $newid;
 }
-
 
 =item new_id
 
@@ -2530,7 +2477,6 @@ Convenient wrappers for the following methods are supported, for more details se
 
 =over 4
 
-
 =item error
 
 Wrapper for $o_obj->base->error()
@@ -2545,7 +2491,6 @@ sub error {
 	return $self->base->error("$hint - @_");
 }
 
-
 =item debug
 
 Wrapper for $o_obj->base->method()
@@ -2557,7 +2502,6 @@ sub debug {
 	$self->base->debug(@_) if $Perlbug::DEBUG;
 }
 
-
 =item object
 
 Wrapper for $o_obj->base->method()
@@ -2568,7 +2512,6 @@ sub object {
 	my $self = shift;
 	return $self->base->object(@_);
 }
-
 
 =item format
 
@@ -2590,7 +2533,6 @@ sub format { # return $o_fmt->FORMAT(@_)
 		return $self->template($fmt);
 	}
 }
-
 
 =item template
 
@@ -2616,7 +2558,7 @@ sub template { # return $o_template->merge($self, $fmt);
 		my $i_res = $i_printing % $i_rep;
 		$i_rep = 0 unless $i_res == 1;
 	}
-	$self->debug(3, "i_printing($i_printing) % orig($i_reporig) => rep($i_rep)") if $Perlbug::DEBUG;
+	$self->debug(2, "i_printing($i_printing) % orig($i_reporig) => rep($i_rep)") if $Perlbug::DEBUG;
 
 	$str = $hdr.$str.$ftr if $i_rep;
 
@@ -2680,7 +2622,6 @@ sub diff {
 
 	return $diff;
 }
-
 
 =item rtrack 
 
@@ -2794,18 +2735,18 @@ sub AUTOLOAD {
 			my @ret  = ();
 
 			if (!defined($get)) {
-				@ret = keys %{$self->{"_$meth"}}; 			# ref
+				@ret = keys %{$self->{"_$meth"}}; 						# ref
 			} else {
-				if (ref($get) ne 'HASH') { 					# get
+				if (ref($get) ne 'HASH') { 								# get
 					@ret = ref($self->{"_$meth"}{$get}) eq 'ARRAY' 
 						? @{$self->{"_$meth"}{$get}} 
 						:  ($self->{"_$meth"}{$get});
-				} else {									# set the hashref
-					my $keys = join('|', keys %{$self->{"_$meth"}}); 	# ref
+				} else {												# set the hashref
+					my $keys = join('|', keys %{$self->{"_$meth"}});	# ref
 					SET:
 					foreach my $key (keys %{$get}) {
 						if ($key =~ /^($keys)$/) {
-							$self->{"_$meth"}->{$key} = $$get{$key}; # SET
+							$self->{"_$meth"}->{$key} = $$get{$key};	# SET
 							push(@ret, $$get{$key});
 						} else {
 							$self->debug(2, "$pkg has no such $meth key($key) valid($keys)") if $Perlbug::DEBUG;
@@ -2820,14 +2761,13 @@ sub AUTOLOAD {
 	return wantarray ? @ret : $ret[0];
 }
 
-
 =pod
 
 =back
 
 =head1 AUTHOR
 
-Richard Foley perlbug@rfi.net 2000 2001
+Richard Foley perlbug@rfi.net 2000 2001 2002
 
 =cut
 

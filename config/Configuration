@@ -1,6 +1,6 @@
 # Perlbug site configuration
 # (C) 2000 2001 Richard Foley RFI richard.foley@rfi.net
-# $Id: Configuration,v 1.15 2002/01/14 10:14:48 richardf Exp $
+# $Id: Configuration,v 1.17 2002/02/01 08:36:47 richardf Exp $
 #
 
 my $h_Config = {
@@ -21,8 +21,9 @@ my $h_Config = {
 	},
 	'DATABASE'	=> {								# 
 		# -t(no create statements) -d(no data) -c(all create and data) -w(where...)
+		# 'attributes'     => [qw(AutoCommit 0)],	    # commit, print, etc.
 		'backup_args'  	 => '-opt',      	        # default all data and create statements
-		# 'backup_args'  	 => '-l',              	# default all data and create statements
+		# 'backup_args'  => '-l',               	# default all data and create statements
 		'backup_command' => '/usr/bin/mysqldump',   # backup tool
 		'backup_interval'=> 7, 			      		# auto backup interval in days
 		'connect' 	     => '', 				  	# use this if set
@@ -151,7 +152,8 @@ my $h_Config = {
 	'WEB'	=> { 
 		'bgcolor'       => 'white',			               	   	# of all pages 
 		'cgi'           => 'perlbug.cgi',               	   	# base script
-		'domain'        => 'bugs.perl.org',                    	# top level domain
+		'debug'         => 0,               	   	            # a tad quicker (overrides current)
+		'domain'        => 'bugs.perl.org',                     # top level domain
 		'home'          => 'index.html',                       	# home address page
 		'hard_wired_url'=> 'http://localhost/perlbug/index.html',	# hard-wired-url
 		'htpasswd'      => '.htpasswd',                        	# in config dir!

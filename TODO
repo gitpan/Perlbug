@@ -1,17 +1,22 @@
+perl -pi.bak -e \ 's/^([a-z]+):(.+)$/
+	UPDATE pb_user SET password = "$2" WHERE userid = "$1";
+/'
+htpasswd
+mysql -p perlbug < htpasswd
 
-sql/mig/288_to_290
+scripts/bugfix B 2002% # open!
 
-./scripts/bugtemplates -F
+blank .htaccess
 
 # ============================================================================
+# use %Perlbug::Object::Table, so it doesn't need to be reinit()'d all the time
+
 # assign(), _store(), etc. => relate() ... 
 # relate() packages up small report on this modification 
 # into a trackable item against discrete objects
-# 
+ 
 # parse log file into relate()
-#
 # trim log file
-# 
 # pb_log hash redo track->history
 
 # userid i_num + name + fullname

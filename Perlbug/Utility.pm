@@ -1,6 +1,6 @@
 # Perlbug javascript routines
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Utility.pm,v 1.1 2001/12/01 15:24:42 richardf Exp $
+# $Id: Utility.pm,v 1.2 2002/01/25 16:12:58 richardf Exp $
 #   
 
 =head1 NAME
@@ -14,7 +14,7 @@ use Data::Dumper;
 use HTML::Entities;
 use strict;
 use vars qw(@ISA $VERSION);
-$VERSION  = do { my @r = (q$Revision: 1.1 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION  = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
 use CGI;
@@ -79,7 +79,6 @@ sub dump {
 	return $res;
 }
 
-
 =item html_dump
 
 Encodes and dumps given args
@@ -102,7 +101,6 @@ sub html_dump {
 
 	return $res;
 }
-
 
 =cut
 

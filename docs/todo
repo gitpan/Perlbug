@@ -1,5 +1,5 @@
 #
-# $Id: todo,v 1.4 2001/12/05 20:58:38 richardf Exp $
+# $Id: todo,v 1.5 2002/01/25 16:12:59 richardf Exp $
 #
 
 =head1 NAME
@@ -7,7 +7,6 @@
 TODO - Perlbug TODO list
 
 =cut
-
 
 =head1 DESCRIPTION
 
@@ -20,6 +19,8 @@ Speed improvements are probably the highest priority
 I wonder if AUTOLOAD routines are a benefit while they're tidy and save lots 
 of drossy code, they are the slowest methods and use up the most time (%), 
 even when aliased into the symbol table and primed?
+
+Partially done - major test increases alongside similar final combined speed.
 
 =item ID
 
@@ -41,7 +42,7 @@ Time related links on web overview, and check ratios
 
 =item tests
 
-Full test suite
+Full test suite - partially completed
 
 =item oracle
 
@@ -49,11 +50,11 @@ v3.5 Oracle support
 
 =item templates
 
-Configurable template support dependent on context, object and user choice
+Configurable template support dependent on context, object and user choice - done
 
 =item web_search_by_object
 
-Search functions for all discrete objects (currently it's all very bug oriented).
+Search functions for all discrete objects (currently it's all very bug oriented) - done
 
 =item security
 
@@ -69,7 +70,7 @@ migrate userid from varchar->int
 
 =item pod2html
 
-generate link from each section base to index/name/etc.
+generate link from each section base to index/name/etc
 
 =item trim
 
@@ -77,7 +78,7 @@ trim logs and ranges of unnecessary data
 
 =item Fix
 
-rationalise output -> 
+rationalise output (internal) -> 
 
 	initial call with args...
 
@@ -94,7 +95,7 @@ rationalise output ->
 	
 	a = things('mail')->check to and from's and cc's
 
-	remove 5.6.0. versions -> 5.6.0
+	remove 5.6.0. versions -> 5.6.0 - done
 
 	trim redundant log and range info
 
@@ -105,8 +106,7 @@ done
 
 =item bugwatch
 
-script watches incoming mails reports if any 
-bug, test, etc. don't land in p5p within one hour
+script watches incoming mails reports if any bug, test, etc. don't land in p5p within one hour - done
 
 done
 
@@ -114,21 +114,43 @@ done
 
 message->reply, etc.
 
+=item scripts
+
+	bughist -F - done
+
+	bugwatch - done
+
+=item Database
+
+	indexes throughout - done
+
+=item Email
+
+	cmd_[cmds]+_<bugid>@bugs.perl.org fixes and tests - done
+
+	osname=3d... - done
+
 =item Web
 
-	fixed in field is dodgy
+	fixed in field is dodgy - done
 	
-	templates and search forms for each object
+	templates and search forms for each object - done
 
-	'new' form for each object
+	'new' form for each object - done
+
+	javascript controls flakey and need fixing - done
+
+	find a message/bug/etc. and reclassify it as a test/patch/note/bug/etc. with relations etc.
+
+	mod_perl 
 
 consistency:
 
-	bug_ids, bug_headers, bug_search...
+	bug_ids, bug_headers, bug_search... - done
 
-	status_ids, status_search
+	status_ids, status_search - done
 
-	user_ids, user_search
+	user_ids, user_search - done
 
 =back
 

@@ -1,6 +1,6 @@
 # Perlbug format handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Format.pm,v 1.71 2002/01/14 10:14:48 richardf Exp $
+# $Id: Format.pm,v 1.72 2002/01/25 16:12:58 richardf Exp $
 #
 # TODO
 # formats in db
@@ -15,7 +15,7 @@ Perlbug::Format - Format class
 package Perlbug::Format;
 use strict;
 use vars qw($VERSION); 
-$VERSION = do { my @r = (q$Revision: 1.71 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.72 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Carp;
@@ -28,7 +28,6 @@ my $o_Perlbug_Base = undef;
 my $i_CNT = 0;
 my $i_MAX = 1;
 my $i_TOP = 1;
-
 
 =head1 DESCRIPTION
 
@@ -89,7 +88,6 @@ Html:
 
 	print $o_fmt->object('patch')->read('123')->format('l');
 
-
 =head1 METHODS
 
 =over 4
@@ -113,7 +111,6 @@ sub new {
 
 	bless($self, $class);
 }
-
 
 =back
 
@@ -178,7 +175,6 @@ sub FORMAT {
 	return $str;
 }
 
-
 =item format_fields
 
 Format individual entries for output, handles all available objects
@@ -221,7 +217,6 @@ sub format_fields {
 			
     return $h_ret;
 }
-
 
 =item normalize 
 
@@ -272,7 +267,6 @@ sub normalize {
 	return \%ret;
 }
 
-
 =item asciify 
 
 Returns args generically wrapped for ascii presentation 
@@ -307,7 +301,6 @@ sub asciify {
 
 	return \%ret;
 }
-
 
 =item htmlify
 
@@ -408,7 +401,6 @@ sub htmlify { # rjsf - hopelessly long
 	return \%ret;
 }
 
-
 =item parse_addrs
 
 Parse email address given into RFC-822 compatible format, also removes duplicates.
@@ -442,7 +434,6 @@ sub parse_addrs {
 	$self->debug(3, "a_addrs($a_addrs), type($type) -> parsed(".join(', ', keys %parsed).")") if $Perlbug::DEBUG;
 	return keys %parsed;
 }
-
 
 =item href
 
@@ -520,6 +511,7 @@ sub href { #
 			}
 		}
 	}
+	$self->debug(3, "key($key)") if $Perlbug::DEBUG;
 
 	return wantarray ? @links : $links[0];
 }
@@ -560,491 +552,5 @@ Richard Foley perlbug@rfi.net 2000 2001
 
 =cut
 
-1;
-
-__END__
-
-# 
-# FROM HERE IS NOW REDUNDANT - SEE Perlbug::Object::Template
-# ===================================
-# 
-
-
-=item xpopup
-
-Returns appropriate (cached) popup with optional default value inserted.
-
-    my $popup = $o_fmt->popup('status', $unique_id, $default);
-
-	$tkt{'group'}      = $self->popup('group', 	$tkt{'group'}, $id.'_group');
-	$tkt{'osname'}     = $self->popup('osname', 	$id.'_osname',    $tkt{'osname'});
-	$tkt{'select'}     = $cgi->checkbox(-'name'=>'bugid', -'checked' => '', -'value'=> $id);
-	$tkt{'severity'}   = $self->popup('severity', 	$id.'_severity',   $tkt{'severity'});
-	$tkt{'status'}     = $self->popup('status', 	$id.'_status',     $tkt{'status'});
-
-=cut
-
-sub xpopup {
-    my $self 	= shift;
-    my $flag 	= shift;
-	my $uqid	= shift;
-	my $default = shift || '';
-	my $onchange= shift || '';
-
-	my $ok 		= 1;
-    $self->debug(3, "popup: typeofflag($flag), uniqueid($uqid), default($default)") if $Perlbug::DEBUG;
-	if (($flag !~ /^\w+$/) || ($uqid !~ /\w+/)) {
-		$ok = 0;
-		$self->error("popup($flag, $uqid, [$default]) given invalid args!");
-	}
-	my $cgi   = $self->cgi();
-	my %flags = $self->base->all_flags;
-	my @flags = keys %flags;
-    if (!grep(/^$flag$/, @flags)) {
-		$ok = 0;
-		$self->error("popup-flag($flag) not found amongst available flag types: '@flags'");
-    }
-    my $popup = '';
-	if ($ok == 1) {
-		$self->{'popup'}{$flag} = ''; # for now
-		my @options = ('', sort($self->base->flags($flag)));
-		$popup = $cgi->popup_menu( 
-			-'name' => $uqid, 
-			-'values' => \@options, 
-			-'default' => $default
-		);
-    	$self->{'popup'}{$flag} = $popup;   # store the current version (without name, and without selection
-	}
-
-    return $self->{'popup'}{$flag};     # return it
-}
-
-=item FORMAT_ascii
-
-Default format, and args, for any object
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_ascii(\%data);
-
-=cut
-
-sub FORMAT_ascii { # defaults to 80 chars where format or method missing!
-	my $self = shift;
-	my $data = shift; # h
-
-	my $key  = ucfirst($self->attr('key'));
-	my @args = ( values %{$data}, 'a'..'z', );
-	my ($top, $pre, $post) = ('', $$data{'_pre'}, $$data{'_post'});
-	my $format = qq|
-$key @{[ref($self)]} format:
-------------------------------------------------------------------------------- 
-|.(('@'.("<" x 76)."\n") x scalar(@args)).qq|
-|; # @* will go off the end (good for messages :) ...
-
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_html
-
-Default html format, and args, for any object
-
-	my ($format, @args) = $o_fmt->FORMAT_html(\%data);
-
-=cut
-
-sub FORMAT_html { # default where format or method missing!
-	my $self = shift;
-	my $href = shift; # h
-
-	my $key  = ucfirst($self->attr('key'));
-	my @args = map { "$_<br>" } (values %{$href}, 'a'..'z');
-	my $top = '';
-	my $format = qq|
-<hr>
-<h3>$key @{[ref($self)]} format:</h3>
-<br>
-|.(('@*'."\n") x scalar(@args)).qq|
-|; # @* will go off the end (good for messages :) ...
-
-	return ($top, $format, @args);
-}
-
-
-=item max
-
-Wrapper for i_MAX access
-
-	my $i_max = $o_fmt->max;
-
-=cut
-
-sub max {
-	my $self = shift;
-
-	$i_MAX   = shift || $i_MAX;
-
-	return $i_MAX;
-}
-
-
-=item cnt 
-
-Wrapper for i_CNT access
-
-	my $i_counted = $o_fmt->cnt;
-
-=cut
-
-sub cnt {
-	my $self = shift;
-	$i_CNT  += shift || 0;
-
-	if ($i_CNT >= $i_MAX) {
-		$i_CNT = 0;
-		$i_TOP = 1;
-	} else {
-		$i_TOP = 0;
-	}
-
-	return $i_CNT;
-}
-
-
-=back
-
-=head1 FORMATTING_STYLES
-
-The following formatting styles are supported, b<a> is the default
-
-These methods here may be used directly against any basic table, each object is expected to provide more relevant formatting where required.
-
-For supported types (/[ahilx]/i) see B<DESCRIPTION>
-
-=over 4
-
-=cut
-
-
-=item FORMAT_i
-
-ID ascii format, no header or body.
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_i(\%data);
-
-=cut
-
-
-sub FORMAT_i { # 
-	my $self = shift;
-
-	my $x    = shift; # 
-	my $pri  = $self->attr('primary_key');
-	my @args = ( $$x{$pri} );
-	my $top = '';
-	my $format = qq|@<<<<<<<<<<<\n|; 
-
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_I
-
-ID HTML format, no header or body.
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_I(\%data);
-
-=cut
-
-
-sub FORMAT_I { # 
-	my $self = shift;
-
-	my $x    = shift; # 
-	my $pri  = $self->attr('primary_key');
-	my @args = ();
-	my $top = '';
-	my $format = qq|$$x{$pri}<br>\n|; 
-
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_l
-
-Default Lean (list) ascii format, no header or body.
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_l(\%data);
-
-=cut
-
-
-sub FORMAT_l { # 
-	my $self = shift;
-
-	my $x    = shift; # 
-	my $obj_key_oid = ucfirst($self->attr('key')).' ID';
-	$obj_key_oid .= (' ' x (12 - length($obj_key_oid)));
-	my $pri  = $self->attr('primary_key');
-	my @args = ( 
-		$$x{$pri}, $$x{'name'}, $$x{'bug_count'}, $$x{'created'}, $$x{'subject'},
-	);
-	my $top = qq|
-$obj_key_oid  Name           Bugids  Created            Subject|;
-	my $format = qq|
-@<<<<<<<<<<<  @<<<<<<<<<<<<< @<<<<<  @<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<<<<<<
-|;
-
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_a
-
-Default ascii format, inc. message body
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_a(\%data);
-
-=cut
-
-sub FORMAT_a { # default where format or method missing!
-	my $self = shift;
-	my $x    = shift; # 
-
-	my $obj_key_oid = ucfirst($self->attr('key')).' ID';
-	$obj_key_oid .= (' ' x (12 - length($obj_key_oid)));
-	my $pri  = $self->attr('primary_key');
-	my @args = ( 
-		$$x{$pri}, $$x{'name'}, $$x{'created'}, $$x{'ts'}, $$x{'subject'},
-	);
-	my $top = qq|
-$obj_key_oid    Name           Created                  Modified|;
-	my $format = qq|
-@<<<<<<<<<<<    @<<<<<<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<
-Subject: @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-|;
-	foreach my $key (keys %{$x}) {
-		if ($key =~ /^([a-z]+)_ids$/o) {
-			push(@args, $$x{"${1}_count"}, $$x{$key});
-			$format .= sprintf('%-16s', $key.': ').'@<<<<<< @'.('<' x 55)."...\n";
-		}
-	}
-	push(@args, $$x{'body'});	
-	$format .= "\n\@\*\n";
-
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_A
-
-Default ASCII format inc. message header and body
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_A(\%data);
-
-=cut
-
-sub FORMAT_A { # default where format or method missing!
-	my $self = shift;
-
-	my $x    = shift; # 
-	my $obj_key_oid = ucfirst($self->attr('key')).' ID';
-	$obj_key_oid .= (' ' x (12 - length($obj_key_oid)));
-	my $pri  = $self->attr('primary_key');
-	my @args = ( 
-		$$x{$pri}, $$x{'name'}, $$x{'bug_count'}, $$x{'created'}, $$x{'subject'},
-		$$x{'header'}, $$x{'body'}, $$x{'bug_ids'}
-	);
-	my $top = qq|
-$obj_key_oid  Name           Bugids  Createdx            Subject|;
-	my $format = qq|
--------------------------------------------------------------------------------
-@<<<<<<<<<<<  @<<<<<<<<<<<<< @<<<<<  @<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<<<<<<
-@*
-
-@*
-
-@*
-|;
-
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_L
-
-Default Lean html format 
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_L(\%data);
-
-=cut
-
-sub FORMAT_L { # List(html)
-	my $self = shift;
-
-	my $x    = shift; # 
-	my $key  = ucfirst($self->attr('key'));
-	my $pri  = $self->attr('primary_key');
-	my $top = qq|
-</table><table border=1 width=100%>
-<tr>
-	<td width=25%><b>$key ID</b></td><td><b>Bug ID</b></td>
-	<td><b>Source address</b></td><td><b>Created</b></td><td><b>Subject</b></td>
-</tr>
-|;
-	my $format = qq|
-<tr><td>$$x{'select'} $$x{'name'} &nbsp; $$x{$pri} </td>
-<td>$$x{'bug_count'}</td>
-<td>$$x{'sourceaddr'}</td>
-<td>$$x{'created'}</td>
-<td>$$x{'subject'}</td>
-</tr>
-</table>
-|;
-
-	return ($top, $format, ());
-}
-
-
-=item FORMAT_h
-
-Default html format 
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_h(\%data);
-
-=cut
-
-sub FORMAT_h { # html
-	my $self = shift;
-	my $x    = shift; # 
-
-	my $key  = ucfirst($self->attr('key'));
-	my $pri  = $self->attr('primary_key');
-
-	$^W = 0;
-
-	my $top = qq|<table border=1 width=100%>
-<tr>
-	<td width=25%><b>$key ID &nbsp; $$x{'name'}</b></td>
-	<td><b>Bug IDs</b></td>
-	<td><b>Name</b></td>
-	<td><b>Created</b></td>
-	<td><b>Modified</b></td>
-</tr>|;
-	my $format = qq|<tr>
-	<td>$$x{$pri} &nbsp;</td>
-	<td>$$x{'bug_ids'} &nbsp;</td>
-	<td>$$x{'name'} &nbsp;</td>
-	<td>$$x{'created'} &nbsp;</td>
-	<td>$$x{'modified'} &nbsp;</td>
-</tr>
-<tr>
-	<td><b>Subject:</b></td>
-	<td colspan=5>$$x{'subject'} &nbsp;</td>
-</tr>
-</table>
-<table border=1 width=100%><tr><td colspan=4><b>Message body:</b></td></tr><tr><td colspan=4>
-$$x{'body'} &nbsp;
-</td></tr></table>|;
-
-	return ($top, $format, ());
-}
-
-
-=item FORMAT_H
-
-Default format in block html format. 
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_H(\%data);
-
-=cut
-
-sub FORMAT_H { # HTML
-	my $self = shift;
-	my $x    = shift; # 
-
-	my $key  = ucfirst($self->attr('key'));
-	my $pri  = $self->attr('primary_key');
-	my $top = qq|
-<table border=1 width=100%>
-<tr>
-	<td width=25%><b>$key ID</b></td>
-	<td><b>Bug IDs</b></td>
-	<td><b>Name</b></td>
-	<td><b>Created</b></td>
-	<td><b>Modified</b></td>
-	<td><b>&nbsp;</b></td>
-</tr>
-|;
-	my $format = qq|
-<tr>
-	<td>$$x{$pri} &nbsp; $$x{'name'}</td>
-	<td>$$x{'bug_ids'} &nbsp;</td>
-	<td>$$x{'name'} &nbsp;</td>
-	<td>$$x{'created'} &nbsp;</td>
-	<td>$$x{'modified'} &nbsp;</td>
-	<td>&nbsp;</td>
-</tr>
-<tr>
-	<td><b>Subject:</b></td>
-	<td colspan=7>$$x{'subject'} &nbsp;</td>
-</tr>
-</table>
-<table border=1 width=100%>
-<tr><td colspan=4><b>Message body:</b></td></tr>
-<tr><td colspan=4> $$x{'body'} &nbsp; </td></tr>
-</table>|;
-
-	return ($top, $format, ());
-}
-
-
-=item FORMAT_x
-
-Default XML format, currently just wraps L<FORMAT_a()>
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_x(\%data);
-
-=cut
-
-sub FORMAT_x { # default where format or method missing!
-	my $self = shift;
-	my $x    = shift; # 
-	
-	my ($top, $format, @args) = $self->FORMAT_a; # default behaviour
-
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_X
-
-Default XML format, currently just wraps L<FORMAT_a()>
-
-	my ($top, $format, @args) = $o_fmt->FORMAT_X(\%data);
-
-=cut
-
-sub FORMAT_X { # default where format or method missing!
-	my $self = shift;
-	my $x    = shift; # 
-	
-	my ($top, $format, @args) = $self->FORMAT_A; # default behaviour
-
-	return ($top, $format, @args);
-}
-
-
-=pod
-
-=back
-
-=head1 AUTHOR
-
-Richard Foley perlbug@rfi.net 2000 2001
-
-=cut
-
-
-# 
 1;
 

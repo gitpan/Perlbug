@@ -1,4 +1,4 @@
-# $Id: Bug.pm,v 1.43 2002/01/14 10:14:48 richardf Exp $
+# $Id: Bug.pm,v 1.44 2002/01/25 16:12:59 richardf Exp $
 #
 
 =head1 NAME
@@ -10,11 +10,10 @@ Perlbug::Object::Bug - Bug class
 package Perlbug::Object::Bug;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.43 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.44 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 my %fmt = ();
-
 
 =head1 DESCRIPTION
 
@@ -30,13 +29,11 @@ use Perlbug::Base;
 use Perlbug::Object;
 @ISA = qw(Perlbug::Object); 
 
-
 =head1 SYNOPSIS
 
 	use Perlbug::Object::Bug;
 
 	print Perlbug::Object::Bug->new()->read('19990127.003')->format('a');
-
 
 =head1 METHODS
 
@@ -72,7 +69,6 @@ sub new {
 	bless($self, $class);
 }
 
-
 =item new_id
 
 Generate new_id for perlbug bug
@@ -104,7 +100,6 @@ sub new_id {
     return $newid;
 }
 
-
 =item get_id
 
 Determine if the string contains a valid bug ID.
@@ -125,7 +120,6 @@ sub get_id {
     $self->debug(3, "str($str) -> $ok ($id)") if $Perlbug::DEBUG;
     return ($ok, $id);
 }
-
 
 =item htmlify 
 
@@ -219,7 +213,6 @@ sub htmlify {
 	return \%bug;
 }
 
-
 =item webupdate
 
 Update bug via web interface
@@ -298,7 +291,6 @@ sub webupdate {
 	return $oid;
 }
 
-
 =pod
 
 =back
@@ -311,324 +303,4 @@ Richard Foley perlbug@rfi.net 2000
 
 # 
 1;
-
-# ================================================================================ 
-
-__END__
-
-REDUNDANT from here down!
-
-=pod
-
-=back
-
-=head1 FORMATS
-
-Bug formatters for all occasions...
-
-=over 4
-
-=item FORMAT_l
-
-Lean (list) ascii format for bugs:
-
-	my ($top, $format, @args) = $o_bug->FORMAT_l(\%data);
-
-=cut
-
-
-sub FORMAT_l { # 
-	my $self = shift;
-	my $d    = shift; # 
-	my @args = ( 
-		$$d{'bugid'}, 
-		$$d{'status_names'}, $$d{'severity_names'}, $$d{'group_names'}, $$d{'osname_names'},
-		$$d{'fixed'}, $$d{'user_count'}, $$d{'message_count'},
-		$$d{'note_count'}, $$d{'patch_count'}, $$d{'test_count'},
-	);
-	my $top = qq|
-Bug id         Status   Severity Group     Os      Fixd Adms Msgs Nts Pchs Tsts
--------------------------------------------------------------------------------
-|;
-	my $format = qq|
-@<<<<<<<<<<<<  @<<<<<<< @<<<<<<  @<<<<<<<< @<<<<<< @<<< @<<< @<<< @<< @<<< @<<<
-|; 
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_a
-
-Default ascii format
-
-	my ($top, $format, @args) = $o_bug->FORMAT_a(\%data);
-
-=cut
-
-sub FORMAT_a { # default where format or method missing!
-	my $self = shift;
-	my $x = shift; # 
-	my @args = ( 
-		$$x{'subject'}, 
-		$$x{'bugid'}, 		    $$x{'status_names'},	
-		$$x{'created'}, 		$$x{'group_names'}, 
-		$$x{'version_names'},	$$x{'severity_names'},
-		$$x{'fixed'}, 			$$x{'osname_names'}, 
-		$$x{'user_count'}, 		$$x{'user_names'},
-		$$x{'sourceaddr'}, 
-		$$x{'message_count'}, 	$$x{'message_ids'},
-		$$x{'note_count'}, 		$$x{'note_ids'},
-		$$x{'patch_count'},		$$x{'patch_ids'}, 
-		$$x{'change_count'}, 	$$x{'change_names'}, 
-		$$x{'test_count'}, 		$$x{'test_ids'},
-		$$x{'parent_count'}, 	$$x{'parent_ids'},
-		$$x{'child_count'}, 	$$x{'child_ids'},
-	);
-	my $top = '';
-	my $format = qq|   
-------------------------------------------------------------------------------- 
-Subject:    @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-BugID  :    @<<<<<<<<<<<<<<<          Status:   @<<<<<<<<<<<<<<<<<<<<<<<<<<<... 
-Created:    @<<<<<<<<<<<<<<<<<<<<     Group:    @<<<<<<<<<<<<<<<<<<<<<<<<<<<...   
-Version:    @<<<<<<<<<<<<<<<<<<<<     Severity: @<<<<<<<<<<<<<<<<<<<<<<<<<<<...                  
-Fixed in:   @<<<<<<<<<<<<<<<<<<<<     Osname:   @<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-Admins:     @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-Sourceaddr: @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-MessageIDs: @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-NoteIDs:    @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-PatchIDs:   @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-ChangeIDs:  @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-TestIDs:    @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-ParentID:   @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-ChildIDs:   @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-	|;
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_B_A
-
-Default ASCII format for bugs:
-
-	my ($top, $format, @args) = $o_bug->FORMAT_A(\%data);
-
-=cut
-
-sub FORMAT_A { # 
-	my $self = shift;
-	my $x    = shift; # 
-	my @args = ( 
-		$$x{'subject'}, 
-		$$x{'bugid'}, 			$$x{'status_names'},
-		$$x{'created'}, 		$$x{'group_names'}, 
-		$$x{'version_names'},	$$x{'severity_names'},
-		$$x{'fixed'}, 			$$x{'osname_names'}, 
-		$$x{'user_count'}, 		$$x{'user_names'},
-		$$x{'sourceaddr'}, 
-		$$x{'message_count'}, 	$$x{'message_ids'},
-		$$x{'note_count'}, 		$$x{'note_ids'},
-		$$x{'patch_count'},		$$x{'patch_ids'}, 
-		$$x{'change_count'}, 	$$x{'change_names'}, 
-		$$x{'test_count'}, 		$$x{'test_ids'},
-		$$x{'parent_count'}, 	$$x{'parent_ids'},
-		$$x{'children_count'}, 	$$x{'children_ids'},
-		$$x{'address_count'},	$$x{'address_names'}, 
-		$$x{'body'},
-	);
-	my $top    = '';
-	my $format = qq|
-------------------------------------------------------------------------------- 
-Subject:    @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-BugID  :    @<<<<<<<<<<<<<<<            Status:  @<<<<<<<<<<<<<<<<<<<<<<<<<<... 
-Created:    @<<<<<<<<<<<<<<<<<<<<       Groups:  @<<<<<<<<<<<<<<<<<<<<<<<<<<...
-Version:    @<<<<<<<<<<<<<<<<<<<<     Severity:  @<<<<<<<<<<<<<<<<<<<<<<<<<<...
-Fixed in:   @<<<<<<<<<<<<<<<<<<<<           Os:  @<<<<<<<<<<<<<<<<<<<<<<<<<<...
-Admins:     @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-Sourceaddr: @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-MessageIDs: @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-NoteIDs:    @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-PatchIDs:   @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-ChangeIDs:  @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-TestIDs:    @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-ParentIDs:  @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-ChildrenIDs:@<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-Ccs:        @<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<...
-Message Header :
-@*
-Message body :  
-@*
-	|;
-	return ($top, $format, @args);
-}
-
-
-=item FORMAT_L
-
-Lean html format for bugs:
-
-	my ($top, $format, @args) = $o_bug->FORMAT_L(\%data);
-
-=cut
-
-sub FORMAT_L { # 
-	my $self = shift;
-	my $x    = shift; # 
-	my @args = ( 
-		$$x{'select'},
-		$$x{'bugid'}, 			
-		$$x{'status_names'},
-		$$x{'version_names'},	
-		$$x{'group_names'}, 
-		$$x{'severity_names'},	
-		$$x{'osname_names'},	
-		$$x{'fixed_names'}, 
-		$$x{'message_count'}, 	
-		$$x{'patch_count'},		
-		$$x{'change_names'}, 	
-		$$x{'test_count'}, 		
-		$$x{'note_count'}, 		
-	);
-	my $top = q|<tr>
-	<td>&nbsp;</td>
-	<td>BugID</td>
-	<td>Status</td>
-	<td>Version</td>
-	<td>Group</td>
-	<td>Severity</td>
-	<td>Osname</td>
-	<td>Fixed</td>
-	<td>Message IDs</td>
-	<td>Patch IDs</td>
-	<td>Change IDs</td>
-	<td>Test IDs</td>
-	<td>Note IDs</td>
-</tr>|;
-	my $format = '<tr><td>'.join('&nbsp;</td><td>', @args).'&nbsp;<td></tr>';	
-	return ($top, $format, ());
-}
-
-
-=item FORMAT_h
-
-html format for bugs:
-
-	my ($top, $format, @args) = $o_bug->FORMAT_h(\%data);
-
-=cut
-
-sub FORMAT_h { # 
-	my $self = shift;
-	my $x    = shift; # 
-	my @args = ( 
-		$$x{'select'},
-		$$x{'bugid'}, 			
-		$$x{'status_names'},
-		$$x{'version_names'}, 		
-		$$x{'group_names'}, 
-		$$x{'severity_names'},
-		$$x{'osname_names'}, 
-		$$x{'fixed'}, 			
-		$$x{'subject'}, 
-		$$x{'user_names'}, 		
-		$$x{'sourceaddr'}, 
-		$$x{'message_count'}, 	
-		$$x{'note_count'}, 		
-		$$x{'patch_count'}, 	
-		$$x{'change_count'}, 
-		$$x{'test_count'}, 	
-		$$x{'address_count'}
-	);
-	my $top = qq|<tr>
-<td>&nbsp;</td>
-<td><b>BugID  </b></td>
-<td><b>Status</b></td>
-<td><b>Version</b></td>
-<td><b>Group</b></td>
-<td><b>Severity</b></td>
-<td><b>OS</b></td>
-<td><b>Fixed in</b></td>
-<td><b>Subject</b></td>
-<td><b>Admins</b></td>
-<td><b>Source address</b></td>
-<td><b>Messages</b></td>
-<td><b>Notes</b></td>
-<td><b>Patches</b></td>
-<td><b>Changes</b></td>
-<td><b>Tests</b></td>
-<td><b>Cc's</b></td>
-</tr>|;
-	my $format = '<tr><td>'.join('&nbsp;</td><td>', @args).'&nbsp;<td></tr>';	
-	return ($top, $format, ());
-}
-
-
-=item FORMAT_H
-
-HTML format for bugs:
-
-	my ($top, $format, @args) = $o_bug->FORMAT_H(\%data);
-
-=cut
-
-sub FORMAT_H { # 
-	my $self = shift;
-	my $x    = shift; # 
-	my $top    = '';
-	my $format = qq|<table border=1 width=100%><tr>
-<td><b>BugID</b></td><td><b>Version</b></td><td><b>Created</b></td><td><b>Fixed In</b></td>
-</tr>
-<tr>
-<td> 
-$$x{'select'} &nbsp; $$x{'bugid'} &nbsp; $$x{'history'}</td>
-<td>
-$$x{'version_names'} &nbsp;</td>
-<td>
-$$x{'created'} &nbsp;</td>
-<td>
-$$x{'fixed'}
-&nbsp;</td>
-</tr>
-<tr>
-<td><b>Status:</b>
-$$x{'status_names'} &nbsp;</td>
-<td><b>Group:</b>
-$$x{'group_names'} &nbsp;</td>
-<td><b>Severity:</b> $$x{'severity_names'} &nbsp;</td>
-<td><b>OS:</b> $$x{'osname_names'} &nbsp;</td>
-</tr>
-<tr>
-<td><b>Sourceaddr:</b></td><td colspan=3> $$x{'sourceaddr'} &nbsp;</td>
-</tr>
-<tr>
-<td><b>Subject:</b></td> <td colspan=3> $$x{'subject'} &nbsp;</td>
-</tr>
-<tr>
-<td><b>Administrators:</b></td><td colspan=3> $$x{'user_names'} &nbsp;</td>
-</tr>
-<tr>
-<td><b>Parent IDs:</b></td><td> $$x{'parent_ids'} &nbsp;</td>
-<td><b>Child IDs:</b></td>
-<td> $$x{'child_ids'} &nbsp;</td>
-</tr>
-<tr>
-<td><b>Message IDs:</b></td> <td colspan=3> $$x{'message_ids'} &nbsp;</td>
-</tr>
-<tr>
-<td><b>Ccs:</b></td><td colspan=3> $$x{'address_names'} &nbsp;</td>
-</tr>
-<tr>
-<td><b>Note Ids:</b> $$x{'note_ids'} &nbsp;</td>
-<td><b>Patch IDs:</b> $$x{'patch_ids'} &nbsp;</td>
-<td><b>Change IDs:</b> $$x{'change_names'} &nbsp;</td>
-<td><b>Test Ids:</b> $$x{'test_ids'} &nbsp;</td>
-</tr>
-<tr><td colspan=4> $$x{'help'} </td></tr>
-<tr><td>$$x{'new_note'}</td><td colspan=2>$$x{'new_patch'}</td><td>$$x{'new_test'}</td></tr>
-</table>
-<table border=1 width=100%>
-<tr> <td colspan=4> $$x{'body'}</td></tr>
-</table>|;
-	return ($top, $format, ());
-}
-
 
