@@ -15,7 +15,7 @@ use lib qw(../);
 my $test 	= 0;
 my $fname 	= 'res';
 my $format 	= 'FORMAT_B_a';
-my $max 	= 220;
+my $max 	= 2201;
 
 # Libs
 # -----------------------------------------------------------------------------
@@ -24,8 +24,8 @@ my $o_fmt = Perlbug::Base->new;
 
 # Tests
 # -----------------------------------------------------------------------------
-my ($TID) = $o_fmt->get_list("SELECT MAX(ticketid) FROM tm_tickets");
-my $is_ok = $o_fmt->dob($TID);
+my ($BID) = $o_fmt->get_list("SELECT MAX(bugid) FROM tm_bug");
+my $is_ok = $o_fmt->dob($BID);
 
 my $h_data = $o_fmt->_current_target;
 # print Dumper($h_data);

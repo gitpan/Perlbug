@@ -81,7 +81,7 @@ if ($stats{'bugs'} >= 1) {
 # 6
 $test++;
 $context = 'admin_of_bug';
-my $get_test = q|SELECT ticketid FROM tm_tickets WHERE sourceaddr LIKE '%perlbug_test@rfi.net%'|;
+my $get_test = q|SELECT bugid FROM tm_bug WHERE sourceaddr LIKE '%perlbug_test@rfi.net%'|;
 my ($TID) = $o_perlbug->get_list($get_test);
 my $isadmin = $o_perlbug->$context($TID, ''); 
 if ($TID =~ /\w+/ and $isadmin == 0) { 

@@ -1,4 +1,4 @@
-# $Id: Test.pm,v 1.4 2000/08/10 10:49:38 perlbug Exp perlbug $ 
+# $Id: Test.pm,v 1.4 2000/08/10 10:49:38 perlbug Exp $ 
 
 =head1 NAME
 
@@ -15,7 +15,7 @@ use File::Spec;
 use lib File::Spec->updir;
 use strict;
 use vars qw($VERSION);
-$VERSION = 1.01
+$VERSION = 1.05
 
 
 =head1 DESCRIPTION

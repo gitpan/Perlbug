@@ -25,12 +25,12 @@ my $o_perlbug = Perlbug::Base->new;
 # -----------------------------------------------------------------------------
 
 my %tgt = ( # 
-	'c'		=> 'unknow ope', 
-	'l'		=> '',
-	'o'		=> '', # 
-    'q'		=> 'SELECT * FROM tm_id',
-	'r'		=> 'here perl etc...', 
-	's'		=> 'realclean',
+	'c'		=> 'unknow clo', 			# category
+	'l'		=> '',						# logs
+	'o'		=> '', 						# overview
+    'q'		=> 'SELECT * FROM tm_id', 	# sql query
+	'r'		=> 'not much data',  		# retrieve by body
+	's'		=> 'realclean',				# subject
 );
 
 # 1..6

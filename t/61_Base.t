@@ -24,38 +24,38 @@ my $o_base = Perlbug::Base->new;
 
 # Setup
 # -----------------------------------------------------------------------------
-my ($TID) = $o_base->get_list("SELECT MAX(ticketid) FROM tm_tickets");
+my ($BID) = $o_base->get_list("SELECT MAX(bugid) FROM tm_id");
 my %matches = (
 	'bugids' => { 
-		"close_mac_5.5_${TID}_nocc_33" 		=> [$TID],
-		"close_open_${TID}_${TID}1_nocc" 	=> [$TID],
-		"close_open_1${TID}_${TID}_nocc" 	=> [$TID],
-		"${TID}_nocc" 						=> [$TID],
-		$TID 								=> [$TID],
+		"close_mac_5.5_${BID}_nocc_33" 		=> [$BID],
+		"close_open_${BID}_${BID}1_nocc" 	=> [$BID],
+		"close_open_1${BID}_${BID}_nocc" 	=> [$BID],
+		"${BID}_nocc" 						=> [$BID],
+		$BID 								=> [$BID],
 	},
 	'changeids' => { 
-		"close_mac_5.5_${TID}_x_nocc_33"=> [qw(33)],
-		"noc_${TID}_32_x_n21occ" 		=> [qw(32)],
-		"${TID}1123_88" 				=> [qw(88)],
+		"close_mac_5.5_${BID}_x_nocc_33"=> [qw(33)],
+		"noc_${BID}_32_x_n21occ" 		=> [qw(32)],
+		"${BID}1123_88" 				=> [qw(88)],
 		"nox  22222_ide atall_11_919 "  => [qw(11 22222 919)],
 	},
 	'flags' => { # str => match
-		"close_mac_5.5_${TID}_nocc_33" 	=> [qw(mac close)],
-		"win_onho_5.5_${TID}" 			=> [qw(win onho)],
-		"${TID}_nocc_123_close" 		=> [qw(close)],
+		"close_mac_5.5_${BID}_nocc_33" 	=> [qw(mac close)],
+		"win_onho_5.5_${BID}" 			=> [qw(win onho)],
+		"${BID}_nocc_123_close" 		=> [qw(close)],
 		"patch_inst" 					=> [qw(patch inst)],
 	},
 	'versions' => { 
-		"close_mac_5.5_${TID}_nocc_33" 	=> [qw(5.5)],
-		"333335.5_${TID}_nocc" 			=> [qw(333335.5)],
-		"close_mac_${TID}_3.4.4.4.4.4" 	=> [qw(3.4.4.4.4.4)],
+		"close_mac_5.5_${BID}_nocc_33" 	=> [qw(5.5)],
+		"333335.5_${BID}_nocc" 			=> [qw(333335.5)],
+		"close_mac_${BID}_3.4.4.4.4.4" 	=> [qw(3.4.4.4.4.4)],
 		"1.2.3.4.5.6.7.8._9" 			=> [qw(1.2.3.4.5.6.7.8.)],
 	},
 	'unknown' => { 
-		"close_mac_5.5_${TID}_x_nocc_33" => [qw(x nocc)],
-		"noc_${TID}_x_nocc" 			=> [qw(noc x nocc)],
-		"${TID}1" 						=> ["${TID}1"],
-		"1${TID}" 						=> ["1${TID}"],
+		"close_mac_5.5_${BID}_x_nocc_33" => [qw(x nocc)],
+		"noc_${BID}_x_nocc" 			=> [qw(noc x nocc)],
+		"${BID}1" 						=> ["${BID}1"],
+		"1${BID}" 						=> ["1${BID}"],
 		"ope_cloooooooooooooose" 		=> [qw(cloooooooooooooose)],
 		"nox ide atall" 				=> [qw(nox ide atall)],
 	},

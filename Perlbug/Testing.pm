@@ -1,4 +1,4 @@
-# $Id: Testing.pm,v 1.1 2000/08/10 10:48:27 perlbug Exp perlbug $ 
+# $Id: Testing.pm,v 1.1 2000/08/10 10:48:27 perlbug Exp $ 
 
 =head1 NAME
 

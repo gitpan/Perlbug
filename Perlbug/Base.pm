@@ -1,6 +1,6 @@
 # Perlbug base class 
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Base.pm,v 1.37 2000/08/10 10:44:30 perlbug Exp perlbug $
+# $Id: Base.pm,v 1.40 2000/09/01 11:49:42 perlbug Exp $
 # 
 
 =head1 NAME
@@ -30,13 +30,27 @@ use strict;
 use vars qw($AUTOLOAD $VERSION);
 $| = 1; 
 
-$VERSION = 1.37;
+$VERSION = 1.41;
 
-eval { alarm(($0 =~ /.+?bugdb$/) ? 1200 : 124) }; 
+my $set = ($0 =~ /.+?bugdb$/) ? 1200 : 360; # 20 or 6 mins
+eval { alarm($set) }; 
 $SIG{'ALRM'} = sub { 
-    my $alert = "Perlbug ($$) timing out: (124) $0 (@_)!";
+    my $alert = "Perlbug ($$) timing out: ($set) $0 (@_)!";
     print "$alert<br>\n";
-	carp($alert);
+    carp($alert);
+    my $mail = 
+    q||From: Perlbugtron <perlbug\@bugs.perl.org>
+To: Richard Foley <perlbug\@rfi.net>
+Subject: Perlbug(tron) timing out!
+
+Timed out for some reason:
+	\$0($0)
+	ARGV(@ARGV)
+Ciao
+|;
+    open(SENDMAIL, "|/usr/lib/sendmail -t") or croak("Timeout can't fork for sendmail: $!\n);
+    print SENDMAIL $mail;
+    close(SENDMAIL) or croak("Timeout sendmail didn't close nicely :-(");      
     kill('HUP', -$$);
     croak($alert);
 };
@@ -314,11 +328,11 @@ sub can_update {
                 $self->debug(3, "bugid($item)->($i_ok)");
             } elsif ($item =~ /^(\d+)$/) {          # messageID or testID or patchID
                 my %map = (
-					'm' => 'tm_messages',
-					'p' => 'tm_patches',
-					't' => 'tm_tests',
+					'm' => 'tm_message',
+					'p' => 'tm_patch',
+					't' => 'tm_test',
 				);
-				my ($bugid) = $self->get_list("SELECT ticketid FROM tm_messages WHERE messageid = '$1'");
+				my ($bugid) = $self->get_list("SELECT bugid FROM tm_message WHERE messageid = '$1'");
                 $i_ok = 1 if $self->admin_of_bug($bugid, $user) or $self->isadmin or $self->local_conditions($1, $user);
                 $self->debug(3, "messageid($item)->($i_ok)");
             } else {                                # unknown type
@@ -519,7 +533,7 @@ Returns active admins from db.
 
 sub active_admins {
     my $self = shift;
-    my @active = $self->get_list("SELECT DISTINCT userid FROM tm_users WHERE active = '1'");
+    my @active = $self->get_list("SELECT DISTINCT userid FROM tm_user WHERE active = '1'");
     return @active;
 }
 
@@ -534,7 +548,7 @@ Returns active admin addresses from db.
 sub active_admin_addresses {
     my $self = shift;
 	my $active = join("', '", $self->active_admins);
-    my @active = $self->get_list("SELECT DISTINCT address FROM tm_users WHERE userid IN ('$active')");
+    my @active = $self->get_list("SELECT DISTINCT address FROM tm_user WHERE userid IN ('$active')");
     return @active;
 }
 
@@ -563,7 +577,7 @@ sub user_data {
             if ($$h_cache{'name'} =~ /\w+/) {
                 # store it for later
                 $self->{'users'}{$user} = $h_cache;
-				my ($tkts) = $self->get_list("SELECT count('ticketid') FROM tm_claimants WHERE userid = '$user'"); 
+				my ($tkts) = $self->get_list("SELECT count('bugid') FROM tm_bug_user WHERE userid = '$user'"); 
 				$$h_cache{'bugs'} = $tkts;
                 $self->debug(3, "New data for user: '$user': $h_cache");
             } else {
@@ -663,9 +677,9 @@ sub spec {
 	    $data .= sprintf('%-15s', ucfirst($key).':')."$vals\n";
 	}
 	my $ehelp= $self->email('help');
-	my $bids = my @bids = $self->get_list("SELECT ticketid FROM tm_tickets");
-	my $open = my @open = $self->get_list("SELECT ticketid FROM tm_tickets WHERE status = 'open'");
-	my $admins = my @admins = $self->get_list("SELECT userid FROM tm_users WHERE active = '1'");
+	my $bids = my @bids = $self->get_list("SELECT bugid FROM tm_bug");
+	my $open = my @open = $self->get_list("SELECT bugid FROM tm_bug WHERE status = 'open'");
+	my $admins = my @admins = $self->get_list("SELECT userid FROM tm_user WHERE active = '1'");
 	my ($bugdb, $cgi, $title) = ($self->email('bugdb'), $self->web('hard_wired_url'), $self->system('title'));
     # my @targets = $self->get_list("SELECT DISTINCT flag FROM tm_flags WHERE type = 'osname' AND flag != 'unix'");
 	my @targets = $self->get_keys('target');
@@ -761,7 +775,7 @@ Features:
         -c category search
 		-s subject_search
         -r retrieval by original message body search criteria
-        -q select * from tm_tickets
+        -q select * from tm_bug
         -H -d2 -l -A close <bugid>+ lib -c patch -e some\@one.net 
         -c pa cl wi -m77 812 1 21 -b 33 -B 34 35 -o -l -d2 -a clo inst <bugid>+ -fA
         etc...
@@ -875,7 +889,7 @@ sub check_user {
 	my $user = shift || 'generic';
 	$self->debug(2, "check_user($user)");
     if ($self->system('restricted')) {
-        my $sql = "SELECT userid FROM tm_users WHERE userid = '$user' AND active IS NOT NULL";
+        my $sql = "SELECT userid FROM tm_user WHERE userid = '$user' AND active IS NOT NULL";
 	    my @ids = grep(!/generic/i, $self->get_list($sql));
 	    ID:
 	    foreach my $id (@ids) {
@@ -1070,7 +1084,7 @@ sub get_results {
 
 Returns a simple list of items (column values?), from a sql query.
 
-	my @list = $pb->get_data('SELECT ticketid FROM tm_tickets');
+	my @list = $pb->get_data('SELECT bugid FROM tm_bug');
 
 =cut
 
@@ -1101,7 +1115,7 @@ sub get_list {
 
 Returns a list of hash references, from a sql query.
 
-	my @hash_refs = $pb->get_data('SELECT * FROM tm_tickets');
+	my @hash_refs = $pb->get_data('SELECT * FROM tm_bug');
 
 =cut
 
@@ -1171,21 +1185,21 @@ sub exists {
 		$i_ok = 0;
 		$self->debug(0, "bugid($bid) doesn't look good!");
 	} else {
-		($i_ok) = $self->get_list("SELECT ticketid FROM tm_tickets WHERE ticketid = '$bid'");
-		$self->debug(2, "bugid($bid)? -> $i_ok($i_ok)");
+		$i_ok = my @bugids = $self->get_list("SELECT bugid FROM tm_bug WHERE bugid = '$bid'");
+		$self->debug(2, "bugid($bid)? -> $i_ok(@bugids)");
 	}
 	$self->debug('OUT', $i_ok);
 	return $i_ok;
 }
 
 
-=item tm_parents_children
+=item tm_parent_child
 
 Assign to given bugid, given list of parent and child bugids
 
 =cut
 
-sub tm_parents_children {
+sub tm_parent_child {
 	my $self = shift;
     $self->debug('IN', @_);
     $self->debug(0, "TPC: @_");
@@ -1220,7 +1234,7 @@ sub tm_parents_children {
 			next PARENT unless $p =~ /\b\d{8}\.\d{3}\b/;
 			next PARENT if $p eq $bid;
 			next PARENT if grep(/^$p$/, @children);
-			my ($ok) = $self->get_list("SELECT ticketid FROM tm_tickets WHERE ticketid = '$p'");
+			my ($ok) = $self->get_list("SELECT bugid FROM tm_bug WHERE bugid = '$p'");
     		if ($ok) {
 				my @pexists = $self->get_list("SELECT parentid FROM tm_parent_child WHERE parentid = '$p' and childid = '$bid'");
 				my @cexists = $self->get_list("SELECT childid FROM tm_parent_child WHERE childid = '$p' and parentid = '$bid'");
@@ -1237,7 +1251,7 @@ sub tm_parents_children {
 			next CHILD unless $c =~ /\b\d{8}\.\d{3}\b/;
 			next CHILD if $c eq $bid;
 			next PARENT if grep(/^$c$/, @parents);
-			my ($ok) = $self->get_list("SELECT ticketid FROM tm_tickets WHERE ticketid = '$c'");
+			my ($ok) = $self->get_list("SELECT bugid FROM tm_bug WHERE bugid = '$c'");
     		$self->debug(0, "TPC 3: c($c) -> ok($ok)");
 			if ($ok) {
 				my @pexists = $self->get_list("SELECT parentid FROM tm_parent_child WHERE parentid = '$bid' and childid = '$c'");
@@ -1269,7 +1283,7 @@ sub tm_cc {
 	my @cc = @_;
 	my @ccs = ();
 	my $i_ok = 1;
-	my $get_cc = qq|SELECT DISTINCT address FROM tm_cc WHERE ticketid = '$bid'|;
+	my $get_cc = qq|SELECT DISTINCT address FROM tm_cc WHERE bugid = '$bid'|;
 	if (!$self->exists($bid)) {
 		$i_ok = 0;
 		$self->debug(2, "tm_cc requires a valid bugid($bid) for an update");
@@ -1285,7 +1299,7 @@ sub tm_cc {
 			next CC if grep(/^$cc$/i, @targets);
 			next CC if grep(/^$cc$/i, @ccs);
 			next CC unless $self->ck822($cc);
-			my $insert = "INSERT INTO tm_cc values (NULL, '$bid', '$cc')";
+			my $insert = "INSERT INTO tm_cc values ('$bid', '$cc')";
 			my $sth = $self->exec($insert);
 			my $ok = $self->track('c', $bid, "assigned cc($cc)");
 			$self->debug(0, "Assigned($bid) <- cc($cc)");	
@@ -1297,34 +1311,68 @@ sub tm_cc {
 	return ($i_ok, @ccs);
 }
 
+=item current_status
+
+Get's current status of bug for reference.
+
+=cut
+
+sub current_status {
+	my $self = shift;
+    $self->debug('IN', @_);
+	my $bid = shift;
+	my $data = '';
+	my $i_ok = 1;
+	my $get_cc = qq|SELECT * FROM tm_bug WHERE bugid = '$bid'|;
+	if (!$self->exists($bid)) {
+		$i_ok = 0;
+		$self->debug(2, "requires a valid bugid($bid) to read");
+	} else {
+		my ($h_data) = $self->get_data("SELECT * FROM tm_bug WHERE bugid = '$bid'");
+		if (ref($h_data) eq 'HASH') {
+			my %data = %{$h_data};
+			$data = qq|
+	Version:  $data{'version'}  
+	Status:   $data{'status'}
+	Category: $data{'category'} 
+	Severity: $data{'severity'} 
+	Os:       $data{'osname'} 
+	Fixed in: $data{'fixed'}
+|;		} else {
+			$self->debug(0, "retrieved duff data($h_data) with bugid($bid)");	
+		}
+	}
+	$self->debug('OUT', $data);
+	return $data;
+}
 
 
-=item tm_patch_ticket
+=item tm_bug_patch
 
 Assign to given bugid, given list of patchids, return valid, @pids
 
 =cut
 
-sub tm_patch_ticket {
+sub tm_bug_patch {
 	my $self = shift;
     $self->debug('IN', @_);
 	my $bid = shift;
 	my @patches = @_;
 	my @pids = ();
 	my $i_ok = 1;
-	my $get_pids = qq|SELECT DISTINCT patchid FROM tm_patch_ticket WHERE ticketid = '$bid'|;
+	my $get_pids = qq|SELECT DISTINCT patchid FROM tm_bug_patch WHERE bugid = '$bid'|;
 	if (!$self->exists($bid)) {
 		$i_ok = 0;
-		$self->debug(2, "tm_patch_ticket requires a valid bugid($bid) for an update");
+		$self->debug(2, "tm_bug_patch requires a valid bugid($bid) for an update");
 	} else {
 		my @current = $self->get_list($get_pids);
-		my @exists = $self->get_list("SELECT patchid FROM tm_patches");
+		my @exists = $self->get_list("SELECT patchid FROM tm_patch");
 		PID:
 		foreach my $pid (@patches) {
 			next PID unless $pid =~ /^\d+$/;
 			next PID unless grep(/^$pid$/, @exists);
 			next PID if grep(/^$pid$/, @current);
-			my $insert = "INSERT INTO tm_patch_ticket values (NULL, now(), '$pid', '$bid')";
+			my $insert = "INSERT INTO tm_bug_patch values ('$bid', '$pid')";
 			my $sth = $self->exec($insert);
 			my $ok = $self->track('x', $bid, "assigned patchid($pid)");
 			$self->debug(0, "Assigned($bid) <- patchid($pid)");	
@@ -1336,32 +1384,71 @@ sub tm_patch_ticket {
 	return ($i_ok, @pids);
 }
 
-=item tm_tests
+=item tm_bug_note
+
+Assign to given bugid, given list of note ids, return valid, @nids
+
+=cut
+
+sub tm_bug_note {
+	my $self = shift;
+    $self->debug('IN', @_);
+	my $bid = shift;
+	my @nids = @_;
+	my @tids = ();
+	my $i_ok = 1;
+	my $get_tids = qq|SELECT DISTINCT noteid FROM tm_bug_note WHERE bugid = '$bid'|;
+	if (!$self->exists($bid)) {
+		$i_ok = 0;
+		$self->debug(2, "tm_bug_note requires a valid bugid($bid) for an update");
+	} else {
+		my @current = $self->get_list($get_tids);
+		my @exists = $self->get_list("SELECT noteid FROM tm_note");
+		TID:
+		foreach my $nid (@nids) {
+			next TID unless $nid =~ /^\d+$/;
+			next TID unless grep(/^$nid$/, @exists);
+			next TID if grep(/^$nid$/, @current);
+			my $insert = "INSERT INTO tm_bug_note values ('$bid', '$nid')";
+			my $sth = $self->exec($insert);
+			my $ok = $self->track('x', $bid, "assigned noteid($nid)");
+			$self->debug(0, "Assigned($bid) <- noteid($nid)");	
+			push(@current, $nid);
+		}
+	}
+	@nids = $self->get_list($get_tids);
+	
+	$self->debug('OUT', $i_ok, @nids);
+	return ($i_ok, @nids);
+}
+
+
+=item tm_bug_test
 
 Assign to given bugid, given list of testids, return valid, @tids
 
 =cut
 
-sub tm_tests {
+sub tm_bug_test {
 	my $self = shift;
     $self->debug('IN', @_);
 	my $bid = shift;
 	my @tests = @_;
 	my @tids = ();
 	my $i_ok = 1;
-	my $get_tids = qq|SELECT DISTINCT testid FROM tm_tests WHERE ticketid = '$bid'|;
+	my $get_tids = qq|SELECT DISTINCT testid FROM tm_bug_test WHERE bugid = '$bid'|;
 	if (!$self->exists($bid)) {
 		$i_ok = 0;
-		$self->debug(2, "tm_tests requires a valid bugid($bid) for an update");
+		$self->debug(2, "tm_bug_test requires a valid bugid($bid) for an update");
 	} else {
-		my @current = $self->get_list("SELECT DISTINCT testid FROM tm_test_ticket WHERE ticketid = '$bid'");
-		my @exists = $self->get_list("SELECT testid FROM tm_tests");
+		my @current = $self->get_list($get_tids);
+		my @exists = $self->get_list("SELECT testid FROM tm_test");
 		TID:
 		foreach my $tid (@tests) {
 			next TID unless $tid =~ /^\d+$/;
 			next TID unless grep(/^$tid$/, @exists);
 			next TID if grep(/^$tid$/, @current);
-			my $insert = "INSERT INTO tm_test_ticket values (NULL, now(), '$tid', '$bid')";
+			my $insert = "INSERT INTO tm_bug_test values ('$tid', '$bid')";
 			my $sth = $self->exec($insert);
 			my $ok = $self->track('x', $bid, "assigned testid($tid)");
 			$self->debug(0, "Assigned($bid) <- testid($tid)");	
@@ -1374,6 +1461,8 @@ sub tm_tests {
 	return ($i_ok, @tids);
 }
 
+
+
 =item notify_cc
 
 Notify tm_cc addresses of changes, current status of bug.
@@ -1385,6 +1474,7 @@ sub notify_cc {
     $self->debug('IN', @_);
 	my $bid   = shift;
 	my $cmds  = shift;
+	my $orig  = shift || '';
 	my $i_ok  = 1;
 	if (!($self->ok($bid) and $self->exists($bid))) {
 		$i_ok = 0;
@@ -1400,10 +1490,14 @@ sub notify_cc {
 		$self->{'o_log'}->setresult($self->directory('spool').'/temp/'.$self->current('tmp_file'));
 		$self->dob([$bid]); # a bit less more data :-)
 		my $status = qq|The status of bug($bid) has been updated:
-		|;
+Original status:
+$orig
+
+Current status:
+|;
 		$status .= $self->get_results;
 		$status .= qq|
-To see all data on this bug($bid) send an email of the following form:
+To see current data on this bug($bid) send an email of the following form:
 
 	To: $bugdb
 	Subject: -B $bid
@@ -1416,13 +1510,13 @@ Or to see this data on the web, visit:
 		$self->{'o_log'}->setresult;
 		$self->context($fmt);
 
-		my ($addr) = $self->get_list("SELECT sourceaddr FROM tm_tickets WHERE ticketid = '$bid'");
+		my ($addr) = $self->get_list("SELECT sourceaddr FROM tm_bug WHERE bugid = '$bid'");
 		my ($o_to) = Mail::Address->parse($addr);
 		my ($to) = (ref($o_to)) ? $o_to->address : $self->system('maintainer');
 		my ($i_cc, @ccs) = $self->tm_cc($bid);
-		my @uids = $self->get_list("SELECT userid FROM tm_claimants WHERE ticketid = '$bid'");
+		my @uids = $self->get_list("SELECT userid FROM tm_bug_user WHERE bugid = '$bid'");
 		my $claimants = join("', '", @uids);
-		my @claimants = $self->get_list("SELECT address FROM tm_users WHERE userid IN ('$claimants')");
+		my @claimants = $self->get_list("SELECT address FROM tm_user WHERE userid IN ('$claimants')");
 		require Perlbug::Email; # yek
 		my $o_email = Perlbug::Email->new;
 		$o_email->_original_mail($o_email->_duff_mail); # dummy
@@ -1484,7 +1578,7 @@ sub track {
 	my $quoted  = $self->quote($entry);
 	$self->debug(3, "type($type), id($id), entry($entry)->quoted($quoted), userid($userid)");
     my $i_ok 	= 1;
-	my $insert = qq|INSERT INTO tm_log values (NULL, NULL, $quoted, '$userid', 'x', '$id', '$type')|;	
+	my $insert = qq|INSERT INTO tm_log values (now(), NULL, $quoted, '$userid', '$id', '$type')|;	
 	my $res  = $self->query($insert);
   	if (!ref($res)) {
 		$i_ok = 0;
@@ -1608,45 +1702,37 @@ Modify, add, delete, comment out entries in .htpasswd
 
 =cut
 
-sub htpasswd {
+sub htpasswd { #
     my $self = shift;
     my $user = shift;
     my $pass = shift; 
     my $htpw = $self->directory('config').'/.htpasswd';
     $self->debug(1, "htpasswd($user, $pass) with($htpw)");
-    my @data = $self->copy($htpw, $htpw.'.bak'); # backitup
+    my @data = $self->copy($htpw, $htpw.'.bak', '0660'); # backitup
     my $i_ok = 1;
     if (($i_ok == 1) or (scalar(@data) >= 1)) {
-        open HTP, "> $htpw" or $i_ok = 0;
-    	if ($i_ok == 1) {
-            flock(HTP, 2);
-            my $htpass = join('', @data);
-            $self->debug(3, "Existing htpasswd file: '$htpass'");
-            if (($user =~ /^\w+$/) && ($pass =~ /\w+/)) {
-                $self->debug(1, "HTP: working with user($user) and pass($pass)");
-                if ($htpass =~ /^$user:(.+)$/m) {    # modify?
-                    my $found = $1;
-                    $self->debug(0, "found($found)");
-                    if ($found ne $pass) {
-                        $htpass =~ s/^$user:(.+)?$/$user:$pass\n/gms;
-                        $self->debug(1, "HTP: changing user($user) found($found) to pass($pass)");
-                    } else {
-                        $self->debug(1, "Not changing user($user) or pass($pass) with found($found)");
-                    }
-                } else {                        # add!
-                    $htpass .= "$user:$pass\n";
-                    $self->debug(1, "HTP: adding new user($user) / pass($pass)");
-                } 
-                $htpass =~ s/^\s*$//mg;
-                truncate HTP, 0;
-                seek HTP, 0, 0;  
-    	        print HTP $htpass or $self->debug(0, "Can't print new htpass($htpass) to htp(HTP)");
-                $self->debug(3, "Modified htpasswd file: '$htpass'");
-            }
-            @data = split("\n", $htpass);
-            flock(HTP, 8);
-    	    close HTP;
+		my $htpass = join('', grep(/\w+/, @data));
+        $self->debug(2, "Existing htpasswd file: '$htpass'");
+        if (($user =~ /^\w+$/) && ($pass =~ /\w+/)) {
+            $self->debug(1, "HTP: working with user($user) and pass($pass)");
+            if ($htpass =~ /^$user:(.+)$/m) {	# modify?
+                my $found = $1;
+                $self->debug(0, "found($found)");
+                if ($found ne $pass) {
+                    $htpass =~ s/^$user:(.+)$/$user:$pass/m;
+                    $self->debug(1, "HTP: changing user($user) found($found) to pass($pass)");
+                } else {
+                    $self->debug(1, "Not changing user($user) or pass($pass) with found($found)");
+                }
+            } else {                        	# add!
+                $htpass .= "$user:$pass\n";
+                $self->debug(1, "HTP: adding new user($user) / pass($pass)");
+            } 
+            $htpass =~ s/^\s*$//mg; 
+			$i_ok = $self->create($htpw, $htpass, '0660');
+            $self->debug(3, "Modified($i_ok) htpasswd file: '$htpass'");
         } else {
+			$i_ok = 0;
             my $err = "Can't open htpasswd file($htpw)! $!";
             $self->result($err);
             $self->debug(0, $err);
@@ -1654,7 +1740,7 @@ sub htpasswd {
     } else {
         $self->debug(0, "copy($htpw, $htpw.'.bak') must have failed?");
     }
-    return (wantarray ? @data : $i_ok);
+    return $i_ok; # (wantarray ? @data : $i_ok);
 }
 
 
@@ -1751,21 +1837,18 @@ sub insert_bug { # into db
         ($ok, $bid) = $self->bug_new({ 
             'subject'     => $subject,
             'sourceaddr'  => $from,
-            'destaddr'    => $to, 
+            'toaddr'      => $to, 
         });
         if ($ok != 1) {
             $err = 'NEW_TKT failure';
         }
     }
     if ($ok == 1) {
-        # Add the message
-        # $body =~ s/^(.*)\n---\n$title: .*$/$1/m; 
         $self->debug(2, "Adding message ($ok, $bid).");
-        ($ok, $mid) = $self->message_add($bid,{  
-            'author'    => $from,
-            'msgheader' => $header,
-            'msgbody'   => $body,
-        });
+        $mid = $self->doM(
+			$bid, $body, $header, $subject, $from, $to
+		);
+		$ok = ($mid >= 1) ? 1 : 0;
         if ($ok != 1) {
             $err = 'NEW_MSG failure';
         }
@@ -1777,7 +1860,7 @@ sub insert_bug { # into db
 
 =item parse_flags
 
-Return the 'AND ...' or 'SET ...' condition for a tm_ticket query given the 
+Return the 'AND ...' or 'SET ...' condition for a tm_bug query given the 
 flags from the status, category and severity columns WITHOUT the leading 'AND' 
 or a leading ', ' separator.
 
@@ -1787,7 +1870,7 @@ or a leading ', ' separator.
     # or 
     my $stuff = $pb->parse_flags([('o', 'build')], 'SET'); 
     # $stuff is now "status = 'open', category = 'build'"
-    my $sql = "UPDATE tm_tickets SET $stuff WHERE ticketid = 'xyz'";
+    my $sql = "UPDATE tm_bug SET $stuff WHERE bugid = 'xyz'";
     
 =cut
 
@@ -1802,15 +1885,15 @@ sub parse_flags {
     my %seen = ();
 	FLAG: 
 	foreach my $f (@tm_flags) {
-        $self->debug(3, "Parsing flag ($f)");
-        my @opts = $self->get_list("SELECT flag FROM tm_flags WHERE type = '$f'");
+		$self->debug(3, "Parsing flag ($f)");
+        my @opts = $self->get_list("SELECT DISTINCT LOWER(flag) FROM tm_flags WHERE type = '$f'");
         OPT: 
 		foreach my $opt (@opts) {
             $self->debug(4, "Comparing str ($str) and opt ($opt)");
             STR: 
-			foreach my $bit (split ' ', $str) {
+			foreach my $bit (split ' ', lc($str)) {
                 next unless $bit =~ /\w/;
-                if ($opt =~ /\b$bit/i) {
+				if ($opt =~ /\b$bit/i) {
                     my $line = " $this $f = '$opt' ";
 					$seen{$opt}++;
                     $self->debug(4, "Flag ($f) matched, line ($line) made.");
@@ -1826,7 +1909,7 @@ sub parse_flags {
 	$sql =~ s/^(.+)?$type\s*$/$1/;
 	$sql =~ s/^[\,\s]+(\w.+)$/ $1/;
 	if (!(scalar(keys %seen) >= 1)) {
-		$sql .= " AND ticketid = 'non-plaus_ible bug id!' AND ticketid = 'no flag found protector :-)' ";
+		$sql .= " AND bugid = 'non-plaus_ible bug id!' AND bugid = 'no flag found protector :-)' ";
 		$self->debug(0, "Setting duff flag to protect against all bugs being returned: '$sql': ".Dumper(\%seen));
 	}
     # $sql = (length($sql) > 4) ? substr($sql, 4) : $sql; #   start
@@ -1856,7 +1939,7 @@ sub parse_str {
 	);
 	my $i_ok = 1;
 	
-	my @tids = $self->get_list("SELECT DISTINCT ticketid FROM tm_tickets");
+	my @tids = $self->get_list("SELECT DISTINCT bugid FROM tm_bug");
 	my @flags = $self->get_list("SELECT DISTINCT flag FROM tm_flags");
 	
 	ARG:
@@ -1864,7 +1947,7 @@ sub parse_str {
 		next ARG unless $arg =~ /\w+/;
 		if ($self->ok($arg) and length($arg) == 12) {	# bugid
 			push(@{$cmds{'bugids'}}, $arg);
-		} elsif (grep(/^$arg/, @flags)) {				# flag
+		} elsif (grep(/^$arg/i, @flags)) {				# flag
 			push(@{$cmds{'flags'}}, $arg);
 		} elsif ($arg =~ /^(\d\d+)$/) {					# changeid			
 			push(@{$cmds{'changeids'}}, $arg);								

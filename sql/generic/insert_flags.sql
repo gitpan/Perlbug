@@ -1,3 +1,4 @@
+use perlbug;
 
 INSERT INTO tm_flags VALUES ('category','bounce');
 INSERT INTO tm_flags VALUES ('category','core');

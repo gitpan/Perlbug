@@ -12,7 +12,7 @@ User-Agent: Mutt/1.0i
 Mime-Version: 1.0
 Date: Fri, 19 Nov 1999 16:17:04 -0500
 Message-Id: <19991119161704.ABCDE@bugs.perl.org>
-X-Matches:  os\=macoss
+X-Matches:  osname\=macos
 
 For some reason, Perl accepts a while loop with an empty conditional.
 	while ( ) { print "TRUE";  sleep 1;  }
@@ -56,7 +56,7 @@ PS  This problem occurs under 5.005_03 and 5.005_62
 
 Summary of my perl5 (5.0 patchlevel 5 subversion 3) configuration:
   Platform:
-    osname=win32, osvers=2.2.7, archname=i686-linux
+    osname=macos, osvers=2.2.7, archname=i686-linux
     uname='linux athens 2.2.7 #2 smp mon may 10 23:17:01 edt 1999 i686 unknown '
     hint=recommended, useposix=true, d_sigaction=define
     usethreads=undef useperlio=undef d_sfio=undef

@@ -2,9 +2,9 @@ Perlbug README
 
 Short instructions:
 
-    unpack Perlbug_2.22.tar.gz
+    unpack Perlbug_2.26.tar.gz
     
-    cd ./Perlbug_2.22
+    cd ./Perlbug_2.26
     
 	modify ./config/Configuration
 	

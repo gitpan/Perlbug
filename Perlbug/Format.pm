@@ -1,9 +1,8 @@
 # Perlbug Formatter of tickets, messages, overview, etc.
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Format.pm,v 1.27 2000/08/10 10:45:37 perlbug Exp perlbug $
+# $Id: Format.pm,v 1.32 2000/09/14 10:54:53 perlbug Exp perlbug $
 #
 # 
-
 
 =head1 NAME
 
@@ -18,7 +17,7 @@ use HTML::Entities;
 use Data::Dumper;
 use FileHandle;
 use vars qw($VERSION);
-$VERSION = 1.27;
+$VERSION = 1.33;
 $|=1;
 
 my $DEBUG   = 2;
@@ -102,7 +101,7 @@ sub context {
 	if (defined($arg) and $arg =~ /^(a|h|l)$/i) {
 		$self->debug(1, "setting context($arg)");
 		$self->current('format', $arg);
-		if ($arg =~ /h/i) { # h H
+		if ($arg =~ /^[hHL]$/) { # h H L
 			$self->{'_line_break'} = "<br>\n";
 			$self->{'_pre'}  = '<pre>';
 			$self->{'_post'} = '</pre>';
@@ -249,30 +248,30 @@ sub format_data {
     $self->debug('IN', @_);
     my $h_ref  = shift;
     return undef unless ref($h_ref) eq 'HASH';
-    my $format = $shift || $self->current('format') || 'a'; 
+    my $format = shift || $self->current('format') || 'a'; 
+	$self->current('format', $format);
 	my %tgt = %{$h_ref};
-	my %map = ( 
-		'bug'       => 'B', # bug :-\
-		'ticketid'	=> 'B', 
-		'status'	=> 'B', 
-		'severity'  => 'B',
-		'category'  => 'B',
-		'osname'    => 'B',
-		'destaddr'  => 'B', 
-		'messageid' => 'M', # messageid
-		'userid'    => 'U', # userid
-		'patchid'   => 'P', # patchid
-		'noteid'    => 'N', # noteid
-		'testid'    => 'T', # testid
-		# 'overview'  => 'O', # 
-		# 'schema'    => 'S', # table
+	my %map = (
+		'bug'		=> 'B', # bug
+		'bugid'		=> 'B', #  "  
+		'status'	=> 'B', #  " 
+		'severity'  => 'B', #  "
+		'category'  => 'B', #  "
+		'osname'    => 'B', #  "
+		'messageid' => 'M', # message
+		'noteid'    => 'N', # note
+		'patchid'   => 'P', # patch
+		'testid'    => 'T', # test
+		'userid'    => 'U', # user
+	  # 'overview'  => 'O', # -
+	  # 'schema'    => 'S', # -
 	);
 	my $tgt = '';
 	MAP:
 	foreach my $key (keys %map) {
 		if (defined($tgt{$key})) {
 			if ($tgt{$key} =~ /\w+/) {
-				$tgt = ($key =~ /status|severity|category|osname|destaddr/i) ? 'bug' : $key;
+				$tgt = ($key =~ /status|severity|category|osname|toaddr/i) ? 'bug' : $key;
 				$self->debug(3, "found target($tgt)");
 				last MAP;
 			}
@@ -289,16 +288,17 @@ sub format_data {
 		if ($format =~ /^[hHL]$/) { # 
 			my $targ = $tgt; $targ =~ s/id//gi;
 			my $target = "format_${targ}_fields";
-			%fmt = %{ $self->$target($h_ref) };
+			%fmt = %{ $self->$target($h_ref, $format) };
 			foreach my $k (keys %fmt) {
 				if ($k =~ /msgbody|msgheader|subject/i) {
-					$fmt{$k} = $self->pre.encode_entities($fmt{$k}).$self->post;
+					$fmt{$k} = encode_entities($fmt{$k});
+					$fmt{$k} = $self->pre.$fmt{$k}.$self->post unless $k eq 'subject';
 				}
 			}
 		} else { # ascii
-			%fmt = %{ $self->format_fields($h_ref) };
+			%fmt = %{ $self->format_fields($h_ref, $format) };
 		}
-		if ($ok == 1) {
+        if ($ok == 1) {
         	my $FORMAT = "FORMAT_$map{${tgt}}_$format"; 
 			my $data = $fmt{'msgbody'} || "\n" x 700; # message|patch|note
 			my $max = $data =~ tr/\n/\n/;
@@ -361,7 +361,7 @@ sub schema {
 	if ($format =~ /^[aAhH]$/) { 
         #shouldn't be handled here!
         my ($pre, $post) = ($format =~ /^h|H$/) ? ('<pre>', '</pre>') : ('', '');
-	    foreach my $t (keys %table) { #tm_users...
+	    foreach my $t (keys %table) { #tm_user...
 	        my $top = qq(\nTABLENAME ($t) 
 FieldName       Type                Null    Key     Default
 -------------------------------------------------------------------------------
@@ -484,7 +484,7 @@ sub format_this {
             # carp("format_this($format_file, $format_name, $max) write failure: $@");
         } else {
             my $pos = $fh->tell;
-            # $ok = ($pos >= 1) ? 1 : 0;
+            $ok = ($pos >= 0) ? 1 : 0;
 			$self->debug(4, "Format write($pos) OK?($ok)"); # hint as to stored or not.
         }
     } else {
@@ -572,20 +572,20 @@ Format individual bug entries for placement
 sub format_bug_fields {
     my $self = shift;
     my $h_tkt= shift;
-    return undef unless ref($h_tkt) eq 'HASH';
+	return undef unless ref($h_tkt) eq 'HASH';
     $self->debug(3, $self->dump($h_tkt));
     my $cgi = $self->{'CGI'};
     my $url = $self->url;
     my %tkt = %{$h_tkt};
-    my $bid = $tkt{'ticketid'}; # save for tid usage
-    # ------------------
+    my $bid = $tkt{'bugid'}; # save for tid usage
 	
     # admins
     my @f_admins = ();
     my @admins = @{$tkt{'admins'}} if ref($tkt{'admins'}) eq 'ARRAY';
     $self->debug(3, "admins: '@admins'");
     my @active = $self->active_admins;
-    if ($self->current('format') eq 'H') {
+    my %seen = ();
+	if ($self->current('format') eq 'H') {
 	    if (scalar @admins >= 1) {
         	foreach my $adm (@admins) {      
 		    	next unless grep(/^$adm$/, @active); 
@@ -594,8 +594,9 @@ sub format_bug_fields {
 				# my $o_addr = Mail::Address->parse($admin{'address'});
 				# my $addr = ref($o_addr) ? $o_addr->format : $admin{'address'};
 		    	my $admin = qq|<a href="mailto:$admin{'address'}">$admin{'name'}</a>|;
-				push(@f_admins, $admin);
-            }
+				push(@f_admins, $admin) unless $seen{$admin} >= 1;
+            	$seen{$admin}++;
+			}
 	    }
     }
     $tkt{'admins'} = join(', ', @f_admins);
@@ -607,41 +608,21 @@ sub format_bug_fields {
     } else {
 		$tkt{'messageids'} = ''; 
 	}
-    ($tkt{'history'}) = $self->href('hist', [$tkt{'ticketid'}], 'History');
+    ($tkt{'history'}) = $self->href('hist', [$tkt{'bugid'}], 'History');
 
-	# notes
-    my @nids = (ref($tkt{'notes'}) eq 'ARRAY') ? @{$tkt{'notes'}} : ($tkt{'notes'});
-	$tkt{'notes'} = ''; 
-    if (scalar @nids >= 1) {
-   	    ($tkt{'notes'})  = join(', ', $self->href('nid', \@nids));
-		# NOTE:
-		my @notes = $self->get_data("SELECT * FROM tm_notes WHERE ticketid = '$bid'");
-		#foreach my $n (@notes) {
-		#	next NOTE unless ref($n) eq 'HASH';
-		#	my %n = %$n;
-		#	my ($href) = $self->href('nid', [$n{'noteid'}]);
-		#	$tkt{'notes'} .= $href;
-		#	$tkt{'notes'} .= "<pre>: ".$n{'msgbody'}.'</pre>' if $self->current('format') eq 'H';
-		#}
-	} 
-	
     # all messages
     my $cnt = @mids;
     my $msgs = (@mids == 1) ? "$cnt msg" : "$cnt msgs";
-    ($tkt{'allmsgs'}) = $self->href('bidmids', [$tkt{'ticketid'}], $msgs);
+    ($tkt{'allmsgs'}) = $self->href('bidmids', [$tkt{'bugid'}], $msgs);
     
-    # $tkt{'msgbody'} = '<pre>'.encode_entities($tkt{'msgbody'}).'</pre>';
-	# $tkt{'msgbody'} = encode_entities($tkt{'msgbody'});
-	# $tkt{'subject'} = encode_entities($tkt{'subject'});
-	
 	# sourceaddr
     $tkt{'sourceaddr'} =~ tr/\"/\'/;
     $tkt{'sourceaddr'}      = qq|<a href="mailto:$tkt{'sourceaddr'}">$tkt{'sourceaddr'}</a>|;
 
-    # ticketid
-    ($tkt{'ticketid'})  = $self->href('bid', [$bid], $bid, $tkt{'subject'});
-	$tkt{'ticketid'}    =~ s/format=h/format=H/;
-    $tkt{'ticketid'}   .= "<br> &nbsp;&nbsp;($tkt{'allmsgs'})";
+    # bugid
+    ($tkt{'bugid'})  = $self->href('bid', [$bid], $bid, $tkt{'subject'});
+	$tkt{'bugid'}    =~ s/format=h/format=H/;
+    $tkt{'bugid'}   .= " &nbsp;&nbsp;($tkt{'allmsgs'})";
 	
 	# patches
     my @pats = (ref($tkt{'patches'}) eq 'ARRAY') ? @{$tkt{'patches'}} : ($tkt{'patches'});
@@ -650,6 +631,14 @@ sub format_bug_fields {
 		# map to changeid		
     } else {
  		$tkt{'patches'} = '';
+	}
+	
+	# notes
+    my @nids = (ref($tkt{'notes'}) eq 'ARRAY') ? @{$tkt{'notes'}} : ($tkt{'notes'});
+    if (scalar @nids >= 1) {
+   	    ($tkt{'notes'})  = join(', ', $self->href('nid', \@nids));
+    } else {
+ 		$tkt{'notes'} = '';
 	}
 	
 	# tests
@@ -684,14 +673,21 @@ sub format_bug_fields {
  		$tkt{'children'} = '';
 	}
 	
+	$tkt{'newstuff'} = '';
+	
 	# admin?
-    if ($self->isadmin) { 
+    if ($self->isadmin && $self->current('format') ne 'L') { # LEAN for browsing...
 	    $self->debug(3, "Admin of bug($bid) called.");
-		$tkt{'ccs'}        = $cgi->textfield(-'name' => $bid.'_ccs', -'value' => '', -'size' => 22, -'maxlength' => 55, -'override' => 1).$tkt{'ccs'};
+		my $help = 'Enter new data to create new note, patch or test';
+		$tkt{'ccs'}        = $cgi->textfield(-'name' => $bid.'_ccs', -'value' => '', -'size' => 70, -'maxlength' => 55, -'override' => 1).$tkt{'ccs'};
 		$tkt{'category'}   = $self->popup('category', 	$bid.'_category', 	$tkt{'category'});
         $tkt{'children'}   = $cgi->textfield(-'name' => $bid.'_children', -'value' => '', -'size' => 22, -'maxlength' => 55, -'override' => 1).$tkt{'children'};
 		$tkt{'fixed'}	   = $cgi->textfield(-'name' => $bid.'_fixed', -'value' => $tkt{'fixed'}, -'size' => 10, -'maxlength' => 12, -'override' => 1);
-		$tkt{'notes'}      = $tkt{'notes'}.$cgi->textarea(-'name' => $bid.'_notes', -'value' => '', -'rows' => 3, -'cols' => 45, -'override' => 1);
+		$tkt{'newnote'}    = $cgi->textarea(-'name'  => $bid.'_newnote',  -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1);
+		$tkt{'newpatch'}   = $cgi->textarea(-'name'  => $bid.'_newpatch', -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1);
+		$tkt{'newtest'}    = $cgi->textarea(-'name'  => $bid.'_newtest',  -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1);
+		$tkt{'newstuff'}   = "<tr><td>$tkt{'newnote'}</td><td>$tkt{'newpatch'}</td><td>$tkt{'newtest'}</td><td>$help</td></tr>";
+		$tkt{'notes'}	   = $cgi->textfield(-'name' => $bid.'_notes', -'value' => '', -'size' => 10, -'maxlength' => 12, -'override' => 1).$tkt{'notes'};
 		$tkt{'osname'}     = $self->popup('osname', 	$bid.'_osname',      $tkt{'osname'});
 		$tkt{'parents'}	   = $cgi->textfield(-'name' => $bid.'_parents', -'value' => '', -'size' => 22, -'maxlength' => 55, -'override' => 1).$tkt{'parents'};
 		$tkt{'patches'}	   = $cgi->textfield(-'name' => $bid.'_patches', -'value' => '', -'size' => 10, -'maxlength' => 12, -'override' => 1).$tkt{'patches'};
@@ -700,8 +696,8 @@ sub format_bug_fields {
         $tkt{'status'}     = $self->popup('status', 	$bid.'_status',     	$tkt{'status'});
     	$tkt{'select'}     = $cgi->checkbox(-'name'=>'bugids', -'checked' => '', -'value'=> $bid, -'label' => '', -'override' => 1);
         $tkt{'version'}	   = $cgi->textfield(-'name' => $bid.'_version', -'value' => $tkt{'version'}, -'size' => 10, -'maxlength' => 10, -'override' => 1);
-	} 
-	# print '<pre>'.Dumper(\%tkt).'</pre>';
+	}
+	# print '<pre>'.encode_entities(Dumper(\%tkt)).'</pre>'; 
 	return \%tkt;
 }
 
@@ -720,26 +716,21 @@ sub format_message_fields {
     return undef unless ref($h_msg) eq 'HASH';
     my $cgi = $self->{'CGI'};
     my %msg = %{$h_msg};
-    # ------------------
-    my $author = $msg{'author'};
+
+    my $sourceaddr = $msg{'sourceaddr'};
 			
-    # $msg{'msgbody'} = '<pre>'.encode_entities($msg{'msgbody'}).'</pre>';
-	# $msg{'msgbody'} = encode_entities($msg{'msgbody'});
-	
     my $mid = $msg{'messageid'};
     my $src = $msg{'sourceaddr'};
-    my $tid = $msg{'ticketid'};
+    my $tid = $msg{'bugid'};
     
-    # ticketid
-    ($msg{'ticketid'})  = $self->href('bid', [$msg{'ticketid'}], $msg{'ticketid'}, '');
+    ($msg{'bugid'})  = $self->href('bid', [$msg{'bugid'}], $msg{'bugid'}, '');
 
-    # messageid
     ($msg{'headers'}) = $self->href('mheader', [$msg{'messageid'}], '(message headers)');
     # $msg{'headers'} = qq|<a href="perlbug.cgi?req=headers&headers=$msg{'messageid'}">Headers</a>|;
 
     ($msg{'messageid'}) = $self->href('mid', [$msg{'messageid'}]);
-    $msg{'author'} =~ tr/\"/\'/;
-    $msg{'sourceaddr'} = qq|<a href="mailto:$msg{'author'}">$msg{'author'}</a>|;
+    $msg{'sourceaddr'} =~ tr/\"/\'/;
+    $msg{'sourceaddr'} = qq|<a href="mailto:$msg{'sourceaddr'}">$msg{'sourceaddr'}</a>|;
     $msg{'select'}     = $cgi->checkbox(-'name'=>'messageids', -'checked' => '', -'value'=> $mid, -'label' => '', -'override' => 1);
     return \%msg;
 }
@@ -760,26 +751,24 @@ sub format_patch_fields {
     my $cgi = $self->{'CGI'};
     my %pat = %{$h_pat};
 	
-	# patch
     my $patchid = $pat{'patchid'};
     ($pat{'patchid'})  = $self->href('pid', [$pat{'patchid'}], $pat{'patchid'}, '');
 	$pat{'patchid'} =~ s/format\=h/format\=H/gi;
-	# $pat{'msgbody'} = '<pre>'.encode_entities($pat{'msgbody'}).'</pre>';
-	## $pat{'msgbody'} = encode_entities($pat{'msgbody'});
 	
 	($pat{'headers'}) = $self->href('pheader', [$patchid], '(patch headers)');
 
     $pat{'toaddr'} = qq|<a href="mailto:$pat{'toaddr'}">$pat{'toaddr'}</a>|;
-    $pat{'sourceaddr'} = qq|<a href="mailto:$pat{'author'}">$pat{'author'}</a>|;
-    # $pat{'subject'} = encode_entities($pat{'subject'});
-	
-	# strange behaviour! 
-	# print "<hr>".Dumper($pat{'bugids'})."</hr>";
-	($pat{'bugids'}) = join(', ', $self->href('bid', \@{$pat{'bugids'}}));
-    # print "<hr>$pat{'bugids'}</hr>";
+    $pat{'sourceaddr'} = qq|<a href="mailto:$pat{'sourceaddr'}">$pat{'sourceaddr'}</a>|;
+
+	my @bids = (ref($pat{'bugids'}) eq 'ARRAY') ? @{$pat{'bugids'}} : ($pat{'bugids'});
+    if (scalar @bids >= 1) {
+   	    ($pat{'bugids'}) = join(', ', $self->href('bid', \@bids));
+    } else {
+ 		$pat{'bugids'} = '';
+	}
 	
 	$pat{'select'}     = $cgi->checkbox(-'name'=>'patches', -'checked' => '', -'value'=> $patchid, -'label' => '', -'override' => 1);
-    if ($self->isadmin) {
+    if ($self->isadmin && $self->current('format') ne 'L') {
 		# ...
 	}
 	# print '<pre>'.Dumper(\%pat).'</pre>';
@@ -801,26 +790,24 @@ sub format_test_fields {
     my $cgi = $self->{'CGI'};
     my %test = %{$h_test};
 	
-	# test
     my $testid = $test{'testid'};
     ($test{'testid'})  = $self->href('tid', [$test{'testid'}], $test{'testid'}, '');
 	$test{'testid'} =~ s/format\=h/format\=H/gi;
-	# $test{'msgbody'} = '<pre>'.encode_entities($test{'msgbody'}).'</pre>';
-	## $test{'msgbody'} = encode_entities($test{'msgbody'});
 	
 	($test{'headers'}) = $self->href('theader', [$testid], '(test headers)');
 
     $test{'toaddr'} = qq|<a href="mailto:$test{'toaddr'}">$test{'toaddr'}</a>|;
-    $test{'sourceaddr'} = qq|<a href="mailto:$test{'author'}">$test{'author'}</a>|;
-    # $test{'subject'} = encode_entities($test{'subject'});
+    $test{'sourceaddr'} = qq|<a href="mailto:$test{'sourceaddr'}">$test{'sourceaddr'}</a>|;
 	
-	# strange behaviour! 
-	# print "<hr>".Dumper($test{'bugids'})."</hr>";
-	($test{'bugids'}) = join(', ', $self->href('bid', \@{$test{'bugids'}}));
-    # print "<hr>$test{'bugids'}</hr>";
+	my @bids = (ref($test{'bugids'}) eq 'ARRAY') ? @{$test{'bugids'}} : ($test{'bugids'});
+    if (scalar @bids >= 1) {
+   	    ($test{'bugids'}) = join(', ', $self->href('bid', \@bids));
+    } else {
+ 		$test{'bugids'} = '';
+	}
 	
 	$test{'select'}     = $cgi->checkbox(-'name'=>'tests', -'checked' => '', -'value'=> $testid, -'label' => '', -'override' => 1);
-    if ($self->isadmin) {
+    if ($self->isadmin && $self->current('format') ne 'L') {
 		# ...
 	}
 	# print '<pre>'.Dumper(\%test).'</pre>';
@@ -842,13 +829,23 @@ sub format_note_fields {
     return undef unless ref($h_note) eq 'HASH';
     my $cgi = $self->{'CGI'};
     my %note = %{$h_note};
-	# $note{'msgbody'} = '<pre>'.encode_entities($note{'msgbody'}).'</pre>';
-	# $note{'msgbody'} = encode_entities($note{'msgbody'});
+
 	($note{'headers'}) = $self->href('nheader', [$note{'noteid'}], '(note headers)');
 
-	($note{'ticketid'})  = $self->href('bid', [$note{'ticketid'}], $note{'ticketid'}, '');
+    my @bids = (ref($note{'bugids'}) eq 'ARRAY') ? @{$note{'bugids'}} : ($note{'bugids'});
+    if (scalar @bids >= 1) {
+   	    ($note{'bugids'}) = join(', ', $self->href('bid', \@bids));
+    } else {
+ 		$note{'bugids'} = '';
+	}
+	
+	# ($note{'bugid'})  = $self->href('bid', [$note{'bugid'}], $note{'bugid'}, '');
 	($note{'noteid'}) = $self->href('nid', [$note{'noteid'}]);
-    $note{'author'} =~ tr/\"/\'/;
+    $note{'sourceaddr'} =~ tr/\"/\'/;
+	if ($self->isadmin && $self->current('format') ne 'L') {
+		# ...
+	}
+	
     return \%note;
 }
 
@@ -874,7 +871,7 @@ sub format_user_fields {
     my $userid  = $usr{'userid'};
     my $match_address = $usr{'match_address'};
     my $password = $usr{'password'};
-    if ($self->can_update($userid)) { 
+    if ($self->can_update($userid) && $self->current('format') ne 'L') { 
 		my @status = qw(1 0); push(@status, 'NULL') if $self->isadmin eq $self->system('bugmaster');
         $usr{'active'}        = $cgi->popup_menu(-'name' => $userid.'_active',    -'values' => \@status, -'labels' => {1 => 'Yes', 0 => 'No'}, -'default' => $active, -'override' => 1);
         $usr{'name'}          = $cgi->textfield( -'name' => $userid.'_name',      -'value' => $name, -'size' => 25, -'maxlength' => 50, -'override' => 1);
@@ -920,12 +917,12 @@ sub href {
     return undef unless (ref($a_items) eq 'ARRAY');
     my $cgi = $self->url;
     my @links = ();
- 	my $fmt = $self->current('format') || 'h';
+ 	my $fmt = 'H' || $self->current('format') || 'h'; # ?
     ITEM:
 	foreach my $val (@{$a_items}) {
 		next ITEM unless defined($val) and $val =~ /\w+/;
         my $vis = ($title =~ /\w+/) ? $title : $val;
-	    # Params
+	    $subject =~ s/'/\\'/g;
 		my $status = ($subject =~ /\w+/) ? qq|onMouseOver="status='$subject'"| : '';
 		$self->debug(3, "status($status), cgi($cgi), key($key), val($val), format($fmt), status($status), vis($vis)");
 		my $link = qq|<a href="$cgi?req=$key&$key=$val&range=$$&format=$fmt" $status>$vis</a>|;
@@ -973,7 +970,7 @@ Returns appropriate (cached) popup with optional default value inserted.
 	$self->debug(3, "Admin ($1) of bug ($id) called.");
 	$tkt{'category'}   = $self->popup('category', 	$tkt{'category'}, $id.'_category');
 	$tkt{'osname'}     = $self->popup('osname', 	$id.'_osname',    $tkt{'osname'});
-	$tkt{'select'}     = $cgi->checkbox(-'name'=>'ticketid', -'checked' => '', -'value'=> $id);
+	$tkt{'select'}     = $cgi->checkbox(-'name'=>'bugid', -'checked' => '', -'value'=> $id);
 	$tkt{'severity'}   = $self->popup('severity', 	$id.'_severity',   $tkt{'severity'});
 	$tkt{'status'}     = $self->popup('status', 	$id.'_status',     $tkt{'status'});
 
@@ -984,6 +981,7 @@ sub popup {
     my $flag 	= shift;
 	my $uqid	= shift;
 	my $default = shift || '';
+	my $onchange= shift || '';
 	my $ok 		= 1;
     $self->debug(3, "popup: typeofflag($flag), uniqueid($uqid), default($default)");
 	if (($flag !~ /^\w+$/) || ($uqid !~ /\w+/)) {
@@ -1000,35 +998,8 @@ sub popup {
     my $popup = '';
 	if ($ok == 1) {
 		$self->{'popup'}{$flag} = ''; # for now
-=pod
-		if ($self->{'popup'}{$flag} =~ /SELECT\sNAME\=\"([.\w]+)\"\$flag>/i) { # we are going to use the existing base data
-        	$popup = $self->{'popup'}{$flag};
-        	$popup =~ s/\s*selected\s*/ /i;              # trash previous selection
-        	if ($default =~ /\w+/) {       
-            	my $selected = q|$default" selected|;  # "  
-            	$popup =~ s/^(.*)\b$default\b\"(.*)$/${1}${selected}$2/m; # replace default value
-        	} else {
-            	# $popup =~ s/^(.*)\b$default\b\"(.*)$/${1}${selected}$2/m; # replace default blank
-        	}
-        	$self->debug(3, "Cached popup ($popup) reused");
-    	} else {
-        	# generate a new one
-        	my @flags = ('', $self->flags($flag));
-        	$popup = $cgi->popup_menu( -'name' => $uqid, -'values' => \@flags, -'default' => $default, -'override' => 1);
-        	$self->debug(3, "Generated popup ($popup)");
-    	}
-[253]  Generated popup (<SELECT NAME="19991103.005_severity">
-<OPTION  VALUE="">
-<OPTION  VALUE="fatal">fatal
-<OPTION  VALUE="high">high
-<OPTION SELECTED VALUE="medium">medium
-<OPTION  VALUE="low">low
-<OPTION  VALUE="wishlist">wishlist
-</SELECT>
-)
-=cut		
-	my @options = ('', sort($self->flags($flag)));
-        $popup = $cgi->popup_menu( -'name' => $uqid, -'values' => \@options, -'default' => $default);
+		my @options = ('', sort($self->flags($flag)));
+		$popup = $cgi->popup_menu( -'name' => $uqid, -'values' => \@options, -'default' => $default);
         # $self->debug(3, "Generated popup ($popup)");
     	$self->{'popup'}{$flag} = $popup;   # store the current version (without name, and without selection
 	}
@@ -1060,7 +1031,7 @@ format FORMAT_B_l =
 @<<<<<<
 $fmt{'_pre'}                                   
 @<<<<<<<<<<<<< @<<<<<<<<<<< @<<<<<<<<<<< @<<<<<<<<<<< @<<<<<<<<< @<<<<<<<< @<<<<
-$fmt{'ticketid'}, $fmt{'status'}, $fmt{'severity'}, $fmt{'category'}, $fmt{'osname'}, $fmt{'fixed'}, $fmt{'i_mids'}
+$fmt{'bugid'}, $fmt{'status'}, $fmt{'severity'}, $fmt{'category'}, $fmt{'osname'}, $fmt{'fixed'}, $fmt{'i_mids'}
 @<<<<<<
 $fmt{'_post'}
 .
@@ -1074,16 +1045,16 @@ $fmt{'_pre'}
 ------------------------------------------------------------------------------- 
 Subject:    @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'subject'}                          
-BugID  :    @<<<<<<<<<<<<<<<                            Patch Ids:  @<<<<<<<<<<<   
-			$fmt{'ticketid'},                                      $fmt{'patches'}
-Created:    @<<<<<<<<<<<<<<<<<<<<                       Status:    @<<<<<<<<<<<   
-            $fmt{'created'},                                       $fmt{'status'}
-Version:    @<<<<<<<<<<<<<<<<<<<<                       Category:  @<<<<<<<<<<<                  
-            $fmt{'version'},                                       $fmt{'category'}
-Fixed in:   @<<<<<<<<<<<<<<<<<<<<                       Severity:  @<<<<<<<<<<<
-            $fmt{'fixed'},                                         $fmt{'severity'}
-                                                        Os:        @<<<<<<<<<<<
-                                                                   $fmt{'osname'} 
+BugID  :    @<<<<<<<<<<<<<<<                            Status:    @<<<<<<<<<<< 
+			$fmt{'bugid'},                                         $fmt{'status'}
+Created:    @<<<<<<<<<<<<<<<<<<<<                       Category:  @<<<<<<<<<<<   
+            $fmt{'created'},                                       $fmt{'category'}
+Version:    @<<<<<<<<<<<<<<<<<<<<                       Severity:  @<<<<<<<<<<<                  
+            $fmt{'version'},                                       $fmt{'severity'}
+Fixed in:   @<<<<<<<<<<<<<<<<<<<<                       Os:        @<<<<<<<<<<<
+            $fmt{'fixed'},                                         $fmt{'osname'}
+Patch Ids:  @<<<<<<<<<<<                                
+            $fmt{'patches'}                                        
 Admins:     ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<     
             $fmt{'admins'},                                                   
 ~           ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1098,6 +1069,8 @@ MessageIDs: ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'messageids'}    
 NoteIDs:    ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'notes'}    
+PatchIDs:   ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            $fmt{'patches'}    
 TestIDs:    ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'tests'}  
 @<<<<<<
@@ -1123,17 +1096,17 @@ $fmt{'_pre'}
 ------------------------------------------------------------------------------- 
 Subject:    @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'subject'}                          
-BugID  :    @<<<<<<<<<<<<<<<                            Patch Ids: @<<<<<<<<<<<   
-			$fmt{'ticketid'},                                      $fmt{'patches'}
-Created:    @<<<<<<<<<<<<<<<<<<<<                       Status:    @<<<<<<<<<<<   
-            $fmt{'created'},                                       $fmt{'status'}
-Version:    @<<<<<<<<<<<<<<<<<<<<                       Category:  @<<<<<<<<<<<                  
-            $fmt{'version'},                                       $fmt{'category'}
-Fixed in:   @<<<<<<<<<<<<<<<<<<<<                       Severity:  @<<<<<<<<<<<
-            $fmt{'fixed'},                                         $fmt{'severity'}
-                                                        Os:        @<<<<<<<<<<<
-                                                                   $fmt{'osname'} 
-Admins:     ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
+BugID  :    @<<<<<<<<<<<<<<<                            Status:    @<<<<<<<<<<< 
+			$fmt{'bugid'},                                         $fmt{'status'}
+Created:    @<<<<<<<<<<<<<<<<<<<<                       Category:  @<<<<<<<<<<<   
+            $fmt{'created'},                                       $fmt{'category'}
+Version:    @<<<<<<<<<<<<<<<<<<<<                       Severity:  @<<<<<<<<<<<                  
+            $fmt{'version'},                                       $fmt{'severity'}
+Fixed in:   @<<<<<<<<<<<<<<<<<<<<                       Os:        @<<<<<<<<<<<
+            $fmt{'fixed'},                                         $fmt{'osname'}
+Patch Ids:  @<<<<<<<<<<<                                
+            $fmt{'patches'} 
+Admins:     ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'admins'}   
 ~           ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'admins'}   
@@ -1156,11 +1129,9 @@ Ccs:        ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ~           ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'ccs'}     
 NotesIDs:   ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-            $fmt{'notes'}    
-~           ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-            $fmt{'notes'}   
-~           ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'notes'}  
+PatchIDs:   ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            $fmt{'patches'}   
 TestIDs:   ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             $fmt{'tests'} 
 Messagebody:
@@ -1168,6 +1139,51 @@ Messagebody:
 $fmt{'msgbody'}
 @<<<<<<
 $fmt{'_post'}
+.
+
+=item FORMAT_B_L
+
+Lean html format for tickets:
+
+=cut
+
+format FORMAT_B_L_TOP =
+<tr>
+<td>BugID</td><td>Status</td><td>Severity</td><td>Category</td><td>Osname</td><td>Fixed</td><td>PatchIDs</td><td>TestIds</td><td>NoteIDs</td>
+</tr>
+.
+
+
+format FORMAT_B_L =  
+<tr><td>
+@*
+$fmt{'bugid'}
+&nbsp;</td><td>
+@*
+$fmt{'status'}
+&nbsp;</td><td>
+@*
+$fmt{'severity'}
+&nbsp;</td><td>
+@*
+$fmt{'category'}
+&nbsp;</td><td>
+@*
+$fmt{'osname'}
+&nbsp;</td><td>
+@*
+$fmt{'fixed'}
+&nbsp;</td><td>
+@*
+$fmt{'patches'}
+&nbsp;</td><td>
+@*
+$fmt{'tests'}
+&nbsp;</td><td>
+@*
+$fmt{'notes'}
+&nbsp;</td>
+</tr>
 .
 
 
@@ -1187,22 +1203,22 @@ format FORMAT_B_h_TOP =
 <td><b>Category</b></td>
 <td><b>Severity</b></td>
 <td><b>OS</b></td>
-<td><b>Patch</b></td>
+<td><b>Subject</b></td>
+<td><b>Patches</b></td>
 <td><b>Tests</b></td>
 <td><b>Notes</b></td>
 <td><b>Fixed in</b></td>
-<td><b>Subject</b></td>
 </tr>
 .
 
 
 format FORMAT_B_h =
-<tr><td>&nbsp;
+<tr><td colspan=2 width=70>&nbsp;
 @*
 $fmt{'select'}
-</td><td>&nbsp;
+&nbsp;
 @*
-$fmt{'ticketid'}
+$fmt{'bugid'}
 @*
 $fmt{'history'}
 </td><td>&nbsp;
@@ -1222,6 +1238,9 @@ $fmt{'severity'}
 $fmt{'osname'}
 </td><td>&nbsp;
 @*
+$fmt{'subject'}
+</td><td>&nbsp;
+@*
 $fmt{'patches'}
 </td><td>&nbsp;
 @*
@@ -1232,13 +1251,12 @@ $fmt{'notes'}
 </td><td>&nbsp;
 @*
 $fmt{'fixed'}
-</td><td>&nbsp;
-@*
-$fmt{'subject'}
 </td>
 </tr>
+
 .
 
+# <tr><td colspan=16><hr></td></tr>
 
 
 =item FORMAT_B_H
@@ -1255,15 +1273,14 @@ format FORMAT_B_H_TOP =
 
 format FORMAT_B_H =
 <table border=1 width=100%><tr>
-<td><b>BugID  </b></td><td><b>History</b></td><td><b>Version</b></td><td><b>Created</b></td><td><b>Fixed In</b></td>
+<td><b>BugID</b></td><td><b>Version</b></td><td><b>Created</b></td><td><b>Fixed In</b></td>
 </tr>
 <tr><td> 
 @*
 $fmt{'select'}
 &nbsp;
 @*
-$fmt{'ticketid'}
-</td><td>
+$fmt{'bugid'}
 @*
 $fmt{'history'}
 &nbsp;
@@ -1289,51 +1306,58 @@ $fmt{'severity'}
 &nbsp;</td><td><b>OS:</b><br>
 @*
 $fmt{'osname'};
-&nbsp;</td><td><b>Patches:</b><br>
-@*
-$fmt{'patches'}
 &nbsp;</td></tr>
-<tr><td><b>Sourceaddr:</b></td><td colspan=5>
+<tr><td><b>Sourceaddr:</b></td><td colspan=3>
 @*
 $fmt{'sourceaddr'}
 &nbsp;<td></tr>
-<tr><td><b>Subject:</b></td><td colspan=5>
+<tr><td><b>Subject:</b></td><td colspan=3>
 @*
 $fmt{'subject'}
 &nbsp;</td></tr>
-<tr><td><b>Administrators:</b></td><td colspan=5>
+<tr><td><b>Administrators:</b></td><td colspan=3>
 @*
 $fmt{'admins'}
 &nbsp;</td></tr>
-<tr><td><b>Parent IDs:</b></td><td colspan=2>
+<tr><td><b>Parent IDs:</b></td><td>
 @*
 $fmt{'parents'}
-&nbsp;</td><td><b>Child IDs:</b></td><td colspan=2>
+&nbsp;</td><td><b>Child IDs:</b></td><td>
 @*
 $fmt{'children'}
 &nbsp;</td></tr>
-<tr><td><b>Message IDs:</b></td><td colspan=5>
+<tr><td><b>Message IDs:</b></td><td colspan=3>
 @*
 $fmt{'messageids'}
 &nbsp;</td></tr>
-<tr><td><b>Ccs:</b></td><td colspan=5>
+<tr><td><b>Ccs:</b></td><td colspan=3>
 @*
 $fmt{'ccs'}
 &nbsp;</td></tr>
-<tr><td><b>Notes:</b></td><td colspan=5>
+<tr>
+<td><b>Note Ids:</b><br>
 @*
 $fmt{'notes'}
-&nbsp;</td></tr>
-<tr><td><b>Tests:</b></td><td colspan=5>
+&nbsp;</td>
+<td><b>Patch IDs:</b><br>
+@*
+$fmt{'patches'}
+&nbsp;</td>
+<td><b>Test Ids:</b><br>
 @*
 $fmt{'tests'}
+&nbsp;</td>
+<td>&nbsp;</td></tr>
+<tr><td colspan=4>
+@*
+$fmt{'newstuff'}
 &nbsp;</td></tr>
-<tr></table>
-<table border=1 width=100%><tr><td colspan=6>
+</table>
+<table border=1 width=100%><tr><td colspan=4>
 @*
 $fmt{'msgbody'}
 &nbsp;</td></tr>
-<tr><td colspan=6>
+<tr><td colspan=4>
 @*
 $fmt{'buttons'}
 </td></tr></table>
@@ -1374,8 +1398,8 @@ Category:   Install    Library    Patch      Core       Docs       Utilities
 Severity:   Fatal      High       Medium     Low        Wishlist
             @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< 
             $fmt{'fatal'}, $fmt{'high'}, $fmt{'medium'}, $fmt{'low'}, $fmt{'wishlist'}
-OS:         Generic     Linux       Win32       MacOS    Solaris     Hpux        Aix     
-            @<<<<<<<<<< @<<<<<<<<<< @<<<<<<<<<< @<<<<<<< @<<<<<<<<<< @<<<<<<<<<< @<<<<<<<<<<
+OS:         Generic    Linux      Win32      MacOS      Solaris    Hpux      Aix     
+            @<<<<<<<<< @<<<<<<<<< @<<<<<<<<< @<<<<<<    @<<<<<<<<< @<<<<<<<< @<<<<<<<<
             $fmt{'generic'}, $fmt{'linux'}, $fmt{'mswin32'}, $fmt{'macos'}, $fmt{'solaris'}, $fmt{'hpux'}, $fmt{'aix'}, 
 @<<<<<<
 $fmt{'_post'}
@@ -1617,7 +1641,7 @@ format FORMAT_M_l =
 @<<<<<<
 $fmt{'_pre'}
 @<<<<<<<<<  @<<<<<<<<<<<<<
-$fmt{'messageid'}, $fmt{'ticketid'} 
+$fmt{'messageid'}, $fmt{'bugids'} 
 @<<<<<<
 $fmt{'_post'}
 .
@@ -1639,8 +1663,8 @@ $fmt{'_pre'}
 MessageID   BugID     
 -------------------------------------------------------------------------------
 @<<<<<<<<<  @<<<<<<<<<<<<<
-$fmt{'messageid'}, $fmt{'ticketid'} 
-Messagebody:
+$fmt{'messageid'}, $fmt{'bugids'} 
+
 @*
 $fmt{'msgbody'}
 @<<<<<<
@@ -1666,8 +1690,11 @@ $fmt{'_pre'}
 MessageID   BugID     
 -------------------------------------------------------------------------------
 @<<<<<<<<<  @<<<<<<<<<<<<<    
-$fmt{'messageid'}, $fmt{'ticketid'} 
-Messagebody:
+$fmt{'messageid'}, $fmt{'bugids'} 
+
+@*
+$fmt{'msgheader'}
+
 @*
 $fmt{'msgbody'}
 @<<<<<<
@@ -1696,7 +1723,7 @@ $fmt{'messageid'}
 $fmt{'headers'}
 </td><td>     
 @*
-$fmt{'ticketid'}
+$fmt{'bugids'}
 </td><td>
 @*
 $fmt{'sourceaddr'}
@@ -1732,7 +1759,7 @@ $fmt{'messageid'}
 $fmt{'headers'}
 </td><td>     
 @*
-$fmt{'ticketid'}
+$fmt{'bugids'}
 </td><td>
 @<<<<<<<<<<<<<<<<<<<<<<<<<
 $fmt{'created'}
@@ -1924,7 +1951,7 @@ Note lean format.
 format FORMAT_N_l_TOP =
 @<<<<<<
 $fmt{'_pre'}
-NoteID      Created         BugID     
+NoteID      Created         BugID                 
 @<<<<<<
 $fmt{'_post'}
 .
@@ -1932,8 +1959,8 @@ $fmt{'_post'}
 format FORMAT_N_l =
 @<<<<<<
 $fmt{'_pre'}
-@<<<<<<<<<  @<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<
-$fmt{'noteid'}, $fmt{'created'}, $fmt{'ticketid'} 
+@<<<<<<<<<  @<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<   
+$fmt{'noteid'}, $fmt{'created'}, $fmt{'bugids'}
 @<<<<<<
 $fmt{'_post'}
 .
@@ -1952,11 +1979,11 @@ format FORMAT_N_a_TOP =
 format FORMAT_N_a =
 @<<<<<<
 $fmt{'_pre'}
-NoteID      Created         BugID     
+NoteID      Created         BugID                 
 -------------------------------------------------------------------------------
-@<<<<<<<<<  @<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<
-$fmt{'noteid'}, $fmt{'created'}, $fmt{'ticketid'} 
-Messagebody:
+@<<<<<<<<<  @<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<   
+$fmt{'noteid'}, $fmt{'created'}, $fmt{'bugids'}
+
 @*
 $fmt{'msgbody'}
 @<<<<<<
@@ -1982,7 +2009,8 @@ $fmt{'_pre'}
 NoteID      Created         BugID     
 -------------------------------------------------------------------------------
 @<<<<<<<<<  @<<<<<<<<<<<<<  @<<<<<<<<<<  
-$fmt{'noteid'}, $fmt{'created'}, $fmt{'ticketid'} 
+$fmt{'noteid'}, $fmt{'created'}, $fmt{'bugids'} 
+
 @*
 $fmt{'msgheader'}
 
@@ -2005,7 +2033,7 @@ format FORMAT_N_h_TOP =
 
 format FORMAT_N_h =
 <table border=1 width=100%>
-<tr><td width=25%><b>Note ID</b></td><td><b>Bug ID</b></td><td><b>Admin</b></td><td><b>Created</b></td></tr>
+<tr><td width=25%><b>Note ID</b></td><td><b>Bug ID</b></td><td><b>Created</b></td></tr>
 <tr><td>&nbsp;
 @*
 $fmt{'noteid'}
@@ -2013,14 +2041,11 @@ $fmt{'noteid'}
 $fmt{'headers'}
 </td><td> &nbsp;    
 @*
-$fmt{'ticketid'}
-</td><td>&nbsp;
-@*
-$fmt{'author'}
+$fmt{'bugids'}
 </td><td>&nbsp;
 @*
 $fmt{'created'}
-</td></tr><tr><tr><td colspan=4>
+</td></tr><tr><tr><td colspan=3>
 @*
 $fmt{'msgbody'}
 </td></tr></table><br><p>
@@ -2039,19 +2064,16 @@ format FORMAT_N_H_TOP =
 
 format FORMAT_N_H =
 <table border=1 width=100%>
-<tr><td width=25%><b>Note ID</b></td><td><b>Bug ID</b></td><td><b>Created</b></td><td><b>Admin</b></td></tr>
+<tr><td width=25%><b>Note ID</b></td><td><b>Bug ID</b></td><td><b>Created</b></td></tr>
 <tr><td>&nbsp;
 @*
 $fmt{'noteid'}
 </td><td>&nbsp;
 @*
-$fmt{'ticketid'}
+$fmt{'bugids'}
 </td><td>&nbsp;
 @<<<<<<<<<<<<<<<<<<<<<<<<<
 $fmt{'created'}
-</td><td>&nbsp;
-@*
-$fmt{'author'}
 </td></tr><tr><td colspan=4>
 &nbsp;
 @*
@@ -2072,7 +2094,7 @@ Patch lean format.
 format FORMAT_P_l_TOP =
 @<<<<<<
 $fmt{'_pre'}
-PatchID      BugIDs                    ChangeID         
+PatchID      BugIDs                                ChangeID       Version   
 @<<<<<<
 $fmt{'_post'}    
 .
@@ -2080,8 +2102,8 @@ $fmt{'_post'}
 format FORMAT_P_l =
 @<<<<<<
 $fmt{'_pre'}
-@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  
-$fmt{'patchid'}, $fmt{'bugids'}, $fmt{'changeid'}
+@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  @<<<<<<<<<<<<
+$fmt{'patchid'}, $fmt{'bugids'}, $fmt{'changeid'}, $fmt{'fixed'}
 @<<<<<<
 $fmt{'_post'}
 .
@@ -2100,11 +2122,11 @@ format FORMAT_P_a_TOP =
 format FORMAT_P_a =
 @<<<<<<
 $fmt{'_pre'}
-PatchID      BugIDs                    ChangeID               
+PatchID      BugIDs                                ChangeID       Version                
 -------------------------------------------------------------------------------
-@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  
-$fmt{'patchid'}, $fmt{'bugids'}, $fmt{'changeid'}
-Patch:
+@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  @<<<<<<<<<<<<
+$fmt{'patchid'}, $fmt{'bugids'}, $fmt{'changeid'}, $fmt{'version'}
+
 @*
 $fmt{'msgbody'}
 @<<<<<<
@@ -2125,10 +2147,11 @@ format FORMAT_P_A_TOP =
 format FORMAT_P_A =
 @<<<<<<
 $fmt{'_pre'}
-PatchID      BugIDs                    ChangeID           
+PatchID      BugIDs                                ChangeID       Version                
 -------------------------------------------------------------------------------
-@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  
-$fmt{'patchid'}, $fmt{'bugids'}, $fmt{'changeid'}
+@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  @<<<<<<<<<<<<
+$fmt{'patchid'}, $fmt{'bugids'}, $fmt{'changeid'}, $fmt{'fixed'}
+
 @*
 $fmt{'msgheader'}
 
@@ -2151,7 +2174,7 @@ format FORMAT_P_h_TOP =
    
 format FORMAT_P_h =
 <table border=1 width=100%>
-<tr><td width=25%><b>Patch ID</b></td><td><b>Bug IDs</b></td><td><b>Change ID</b></td><td><b>&nbsp;</b></td></tr>
+<tr><td width=25%><b>Patch ID</b></td><td><b>Bug IDs</b></td><td><b>Change ID</b></td><td><b>Version</b></td></tr>
 <tr><td>&nbsp;
 @*
 $fmt{'patchid'}
@@ -2166,7 +2189,7 @@ $fmt{'changeid'}
 </td><td>&nbsp;
 @*
 $fmt{'fixed'}
-</td></tr><tr><td colspan=5>&nbsp;
+</td></tr><tr><td colspan=4>&nbsp;
 @*
 $fmt{'msgbody'}
 </td></tr></table><br><p>
@@ -2185,26 +2208,26 @@ format FORMAT_P_H_TOP =
 
 format FORMAT_P_H =
 <table border=1 width=100%>
-<tr><td width=25%><b>Patch ID</b></td><td><b>Bug IDs</b></td><td><b>&nbsp;</b></td><td><b>Change ID</b></td><td><b>Created</b></td></tr>
+<tr><td width=25%><b>Patch ID</b></td><td><b>Bug IDs</b></td><td><b>Change ID</b></td><td><b>Version</b></td><td><b>Created</b></td></tr>
 <tr><td>&nbsp;
 @*
 $fmt{'patchid'} 
 </td><td>&nbsp;
 @*
-$fmt{''}
-</td><td>&nbsp;
-@*
-$fmt{'fixed'}
+$fmt{'bugids'}
 </td><td>&nbsp;
 @*
 $fmt{'changeid'}
 </td><td>&nbsp;
 @*
+$fmt{'fixed'}
+</td><td>&nbsp;
+@*
 $fmt{'created'}
-</td></tr><tr><td colspan=6>
+</td></tr><tr><td colspan=5>&nbsp;
 @*
 $fmt{'msgheader'}
-</td></tr><tr><td colspan=6>&nbsp;
+</td></tr><tr><td colspan=5>&nbsp;
 @*
 $fmt{'msgbody'}
 </td></tr></table><br><p>
@@ -2220,7 +2243,7 @@ Test lean format.
 format FORMAT_T_l_TOP =
 @<<<<<<
 $fmt{'_pre'}
-TestID       BugIDs                    ChangeID       
+TestID      BugIDs                                Version      
 @<<<<<<
 $fmt{'_post'}    
 .
@@ -2228,8 +2251,8 @@ $fmt{'_post'}
 format FORMAT_T_l =
 @<<<<<<
 $fmt{'_pre'}
-@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  
-$fmt{'testid'}, $fmt{'bugids'}, $fmt{'changeid'}
+@<<<<<<<<<  @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  
+$fmt{'testid'}, $fmt{'bugids'}, $fmt{'version'}
 @<<<<<<
 $fmt{'_post'}
 .
@@ -2247,11 +2270,13 @@ format FORMAT_T_a_TOP =
 
 format FORMAT_T_a =
 @<<<<<<
-$fmt{'_pre'}
-TestID       BugIDs                    ChangeID               
+$fmt{'_pre'} 
+TestID      BugIDs                                Version                 
 -------------------------------------------------------------------------------
-@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  
-$fmt{'testid'}, $fmt{'bugids'}, $fmt{'changeid'}
+@<<<<<<<<<  @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<
+$fmt{'testid'}, $fmt{'bugids'}, $fmt{'version'}
+
+@*
 $fmt{'msgbody'}
 @<<<<<<
 $fmt{'_post'}
@@ -2271,10 +2296,11 @@ format FORMAT_T_A_TOP =
 format FORMAT_T_A =
 @<<<<<<
 $fmt{'_pre'}
-TestID       BugIDs                    ChangeID          
+TestID      BugIDs                                Version                 
 -------------------------------------------------------------------------------
-@<<<<<<<<<   @<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<  
-$fmt{'testid'}, $fmt{'bugids'}, $fmt{'changeid'}
+@<<<<<<<<<  @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<
+$fmt{'testid'}, $fmt{'bugids'}, $fmt{'version'}
+
 @*
 $fmt{'msgheader'}
 
@@ -2297,7 +2323,7 @@ format FORMAT_T_h_TOP =
    
 format FORMAT_T_h =
 <table border=1 width=100%>
-<tr><td width=25%><b>Test ID</b></td><td><b>Bug IDs</b></td><td><b>Change ID</b></td><td><b>&nbsp;</b></td></tr>
+<tr><td width=25%><b>Test ID</b></td><td><b>Bug IDs</b></td><td><b>Version</b></td></tr>
 <tr><td>&nbsp;
 @*
 $fmt{'testid'}
@@ -2308,12 +2334,9 @@ $fmt{'headers'}
 $fmt{'bugids'}
 </td><td>&nbsp;
 @*
-$fmt{'changeid'}
-</td><td>&nbsp;
-@*
-$fmt{'fixed'}
+$fmt{'version'}
 </td></tr>
-<tr><td colspan=5>&nbsp;
+<tr><td colspan=3>&nbsp;
 @*
 $fmt{'msgbody'}
 </td></tr></table><br><p>
@@ -2332,7 +2355,7 @@ format FORMAT_T_H_TOP =
 
 format FORMAT_T_H =
 <table border=1 width=100%>
-<tr><td width=25%><b>Test ID</b></td><td><b>Bug IDs</b></td><td><b>&nbsp;</b></td><td><b>Change ID</b></td><td><b>Created</b></td></tr>
+<tr><td width=25%><b>Test ID</b></td><td><b>Bug IDs</b></td><td><b>Version</b></td><td><b>Created</b></td></tr>
 <tr><td>&nbsp;
 @*
 $fmt{'testid'} 
@@ -2341,21 +2364,15 @@ $fmt{'testid'}
 $fmt{'bugids'}
 </td><td>&nbsp;
 @*
-$fmt{''}
-</td><td>&nbsp;
-@*
-$fmt{'fixed'}
-</td><td>&nbsp;
-@*
-$fmt{'changeid'}
+$fmt{'version'}
 </td><td>&nbsp;
 @*
 $fmt{'created'}
 </td></tr>
-<tr><td colspan=5>
+<tr><td colspan=4>&nbsp;
 @*
 $fmt{'msgheader'}
-</td></tr><tr><td colspan=6>&nbsp;
+</td></tr><tr><td colspan=4>&nbsp;
 @*
 $fmt{'msgbody'}
 </td></tr></table><br><p>

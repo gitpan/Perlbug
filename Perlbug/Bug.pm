@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Bug.pm,v 1.1 2000/08/09 08:27:41 perlbug Exp perlbug $
+# $Id: Bug.pm,v 1.2 2000/09/01 11:50:02 perlbug Exp perlbug $
 #
 
 package Perlbug::Bug;

@@ -1,6 +1,6 @@
 # Perlbug Logging and file accessor
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Log.pm,v 1.30 2000/08/10 10:47:08 perlbug Exp perlbug $
+# $Id: Log.pm,v 1.31 2000/08/21 05:32:28 perlbug Exp $
 # 
 
 =head1 NAME
@@ -291,12 +291,13 @@ sub append {
 	warn "Perlbug::Log::append(@_)" if $Perlbug::Debug >= 4;
     my $file = shift;
     my $data = shift;
-    my $pos  = '';
+    my $perm = shift || '0766';
+	my $pos  = '';
 	if ($file !~ /^\w{3,4}$/) { # log res rng todo
         $self->debug(0, "Can't append to unrecognised key: '$file'");
    	} else {
 	    $self->debug(4, 'result storing '.$data); 
-	    my $fh = $self->fh($file, '+>>', 0766);
+	    my $fh = $self->fh($file, '+>>', $perm);
 	    if (defined $fh) {
 			flock($fh, 2);
 	        $fh->seek(0, 2);
@@ -391,8 +392,8 @@ Set priority nicer by given integer, or by 12.
 sub prioritise {
     my $self = shift;
 	warn "Perlbug::Log::prioritise(@_)" if $Perlbug::Debug >= 4;
-    return "";  # disable
-    my ($priority) = ($_[0] =~ /^\d+$/) ? $_[0] : 5;
+    # return "";  # disable
+    my ($priority) = ($_[0] =~ /^\d+$/) ? $_[0] : 12;
 	$self->debug(2, "priority'ing ($priority)");
 	my $pre = getpriority(0, 0);
 	setpriority(0, 0, $priority);
@@ -436,14 +437,15 @@ sub copy {
 	warn "Perlbug::Log::copy(@_)" if $Perlbug::Debug >= 4;
     my $orig = shift;
     my $targ = shift;
+	my $perm = shift || '0766';
     my @data = ();
     my $ok   = 1;
     
-    $self->debug(0, "copy called with orig($orig) and target($targ)");
+    $self->debug(0, "copy called with orig($orig) and target($targ) and perms($perm)");
     
     # FILEHANDLES
     my $oldfh = new FileHandle($orig, '<');
-	my $newfh = new FileHandle($targ, '+>', 0766);
+	my $newfh = new FileHandle($targ, '+>', $perm);
 	if (!(defined($oldfh)) || (!defined($newfh))) {
 	    $ok = 0;
 	    $self->debug(0, "Filehandle failures for copy: orig($orig -> '$oldfh'), targ($targ -> '$newfh')");
@@ -536,19 +538,20 @@ sub create {
 	warn "Perlbug::Log::create(@_)" if $Perlbug::Debug >= 4;
     my $file = shift;
     my $data = shift;
+	my $perm = shift || '0766';
     my $ok = 1;
     
     # ARGS
     if (($file =~ /\w+/) && ($data =~ /\w+/)) {
-        $self->debug(0, "create called with file($file) and data(".length($data).")");
+        $self->debug(0, "create called with file($file) and data(".length($data).", perm($perm))");
     } else {
         $ok = 0;
-        $self->debug(0, "Duff args given to create($file, $data)");
+        $self->debug(0, "Duff args given to create($file, $data, $perm)");
     }
     
     # OPEN
     if ($ok == 1) {
-    	my $fh = new FileHandle($file, '+>>', 0766);
+    	my $fh = new FileHandle($file, '>', $perm);
         if (defined ($fh)) {
 			flock($fh, 2);
             print $fh $data;

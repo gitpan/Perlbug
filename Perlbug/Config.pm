@@ -1,6 +1,6 @@
 # Perlbug configuration data
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Config.pm,v 1.22 2000/08/02 06:13:24 perlbug Exp perlbug $
+# $Id: Config.pm,v 1.23 2000/09/01 11:50:02 perlbug Exp perlbug $
 #
 
 =head1 NAME
@@ -28,7 +28,7 @@ my $CONFIG = $ENV{'Perlbug_Config'} || '/home/perlbug/config/Configuration';
 
 Configuration data for the Perlbug bug tracking system.
 
-Be sure to set the 'Perlbug_SiteConfig' environment variable to the correct site configuration file, or fix the line above.
+Be sure to set the 'Perlbug_SiteConfig' environment variable to the correct site configuration file, and/or fix the line above.
 
 Set methods are provided only for L<current()> parameters, the rest are all gettable only, and settable from the configuration file.
 
@@ -310,9 +310,9 @@ sub current {
 			undef $self->{'CURRENT'}{$1.'_fh'};
 		}
 		$self->{'CURRENT'}{$args} = $val;
-		# print "setting val($val): (".$self->{'CURRENT'}{$args}.")\n";
+		# warn "setting current key($args) and val($val): (".$self->{'CURRENT'}{$args}.")";
     } 
-	# print "returning(".$self->{'CURRENT'}{$args}.")\n";
+	# warn "returning(".$self->{'CURRENT'}{$args}.")\n";
     return $self->{'CURRENT'}{$args};
 }
 

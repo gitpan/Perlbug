@@ -1,6 +1,6 @@
 # Perlbug docs and placeholder - nickname=Joy
 # (C) 1999 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Perlbug.pm,v 2.22 2000/08/04 07:29:03 perlbug Exp $
+# $Id: Perlbug.pm,v 2.27 2000/10/16 10:20:26 perlbug Exp perlbug $
 #
 
 =head1 NAME
@@ -11,16 +11,19 @@ Perlbug - PerlBug DataBase
 
 package Perlbug;           
 use vars qw($VERSION);
-$VERSION = '2.22';
+$VERSION = '2.27';
 				   	# 0.00+ Original Perlbug 
                     # 1.00+ Brought under RCS, config file, cached db entries, improved logging etc
                     # 2.00  Command line interface, history mechanism, bugid parent/child relations
 					#       auto-registration, multiple test suites etc
 					#       patches, notes, tm_cc
 					#       Fix data structure interface
+					#       bug tests support
+					#       migrate tables and code (ticket->bug, etc.)
+					# 		tentative Tk support
 					# <--   we're here :-)
 					# 
-					# 2.5   Full test suite, patch-ids
+					# 2.5   Full test suite
 					# 3.00  Oracle support
 					# 3.5   ...
 					# 4.00  perlTK?
@@ -36,7 +39,7 @@ For installation instructions see the INSTALL file.
 
 New bugs are created by mailing perlbug@perl.org or perlbug@perl.com
 
-Said bug is entered in the database, and given a new ticketid, the mail is then forwarded to perl5-porters with the ticketid in the subject line..
+Said bug is entered in the database, and given a new bugid, the mail is then forwarded to perl5-porters with the bugid in the subject line..
 
 perl5-porters is continously tracked for relevant mails to attach to said bug.
 
@@ -111,7 +114,7 @@ Or via the command line:
 	
 	./bugdb
 	        
-Send active admins unclosed tickets and an overview to master_list(p5p), 
+Send active admins unclosed bugs and an overview to master_list(p5p), 
 	dump current database for reference/backup:
 
     crontab -e 3 5 * * 1 ./cron.cmd
@@ -123,27 +126,49 @@ What bugs ?-)
 
 You have a couple of choices, (with the output of 'make test TEST_VERBOSE=1'):
 
-	1. Mail perlbug@perl.org which will assign a plain ticketid.
+	1. Mail perlbug@perl.org which will assign a bugid.
 	
-	2. If that doesn't work, mail the author (richard@perl.org) directly.
+	2. Mail the author (richard@perl.org) directly.
 	
-	3. Or mail admins@bugs.perl.org which will Cc: to all active admins.
-
-	4. Or try perl5-porters@perl.org for a more generic solution.
-
-
-=head1 COPYRIGHT
-
-	Copyright (c) 1999 2000 Richard Foley richard@rfi.net. All rights reserved.
+	3. Mail admins@bugs.perl.org which will Cc: to all active admins.
 	
-	This program is free software; you can redistribute it and/or
-	
-	modify it under the same terms as Perl itself.
+	4. Subscribe to bugmongers@perl.org (a mailing list for those interested in perl bugs).
+
+	4. Or try perl5-porters@perl.org (p5p) for a more generic solution.
 
 
 =head1 AUTHOR
 
 Richard Foley richard@perl.org perlbug@rfi.net (c) 1999 2000
+
+
+=head1 CONTRIBUTORS
+
+The system was given a kick start by Christopher Masto, NetMonger Communications <chris@netmonger.net>.
+
+
+It's development has been overseen originally by Chip Salzenburg <chip@perlsupport.com> and later by Nathan Torkington <gnat@frii.com>.
+
+
+There have been numerous suggestions, feedback and patches from various people, in particular (in alphabetical order):
+
+Mike Guy <mjtg@cam.ac.uk>
+
+Richard Soderberg <rs@oregonnet.com>
+
+Robert Spier <rspier@pobox.com>
+
+Hugo van der Sanden <hv@crypt0.demon.co.uk>
+
+
+Special thanks to Tom Phoenix <rootbeer@redcat.com>.
+
+
+=head1 COPYRIGHT
+
+Copyright (c) 1999 2000 Richard Foley richard@rfi.net. All rights reserved.
+	
+This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 
 =cut
 

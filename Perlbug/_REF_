@@ -1,0 +1,82 @@
+hints: Correctly name source/dbdumps?
+
+update:
+	ascii to mail
+	web to server
+
+# -----------------------------------------------------------------------------
+
+#/bin/bash
+cd
+echo "cd ~/Perlbug-$Perlbug_New"
+echo "config/Configuration isatest=2 -> make test?"
+echo "  dbdump"
+echo "  dbgz"
+echo -n "Perlbug versions and date($DATE) correct? -> $Perlbug_Versions [y|n]: "
+
+read OK
+if [ "x$OK" = "xy" ]; then
+        echo "OK($OK)"
+else
+        echo "NOT OK($OK)"
+        exit 1
+fi
+
+# config
+perl -pi.bak -e 's/perlbug/richard/' ~/Perlbug-$Perlbug_New/web/admin/.htaccess
+perl -pi.bak -e 's|home/perlbug/config|home/richard/config|' ~/Perlbug-$Perlbug_New/Perlbug/Config.pm
+cp -r ~/config ~/archive/config-$Perlbug_Old
+cp ~/Perlbug-$Perlbug_New/config/tmtowtdi_Configuration ~/config/Configuration
+
+# links
+rm ~/Live
+ln -sf ~/Perlbug-$Perlbug_New ~/Live
+ln -sf ~/archive/Perlbug.sql.$DATE ~/archive/Perlbug.sql.gz
+ln -sf ~/archive/Perlbug-$Perlbug_New.tar.gz ~/archive/Perlbug.tar.gz
+ln -sf ~/archive ~/Live/web/archive
+ln -sf ~/archive ~/Live/web/admin/archive
+
+echo "to reverse migration from $Perlbug_New to $Perlbug_Old: "
+echo "  rm ~/Live
+echo "  ln -sf ~/Perlbug-$Perlbug_Old ~/Live"
+echo "  mv ~/config/Configuration.$Perlbug_Old ~/config/Configuration"
+echo "  ln -sf ~/archive/Perlbug-$Perlbug_Old.tar.gz ~/archive/Perlbug.tar.gz"
+echo "done"
+exit 0
+
+# ln -s ~/Live ~/Perlbug 
+# ln -sf ~/p5p_list ~/config/p5p_list
+# cat ~/archive/.htpasswd | mail ref_$Perlbug_New@rfi.net
+
+# -----------------------------------------------------------------------------
+
+To: <qmails@rfi.net>
+From: <richard@tmtowtdi.perl.org>
+Date: 28 Jul 2000 14:03:35 -0000
+
+..qmail-bug:1:|/home/richard/Perlbug/scripts/mail.pl
+..qmail-bug:2:/home/richard/Maildir/
+..qmail-bug-default:1:|/home/richard/Perlbug/scripts/mail.pl
+..qmail-bug-default:2:/home/richard/Maildir/
+..qmail-bug-forward:1:|/home/richard/Perlbug/scripts/tron.pl
+..qmail-bug-forwardtest:1:|/home/richard/Perlbug/scripts/tron.pl
+..qmail-bug-forwardtest:2:/home/richard/Testdir/
+..qmail-bug-incoming:1:/home/richard/Incomingdir/
+..qmail-bug-mailtest:1:|/home/richard/Perlbug/scripts/mail.pl
+..qmail-bug-mailtest:2:/home/richard/Testdir/
+..qmail-bug-target:1:|/home/richard/Perlbug/scripts/tron.pl
+..qmail-bug-targettest:1:|/home/richard/Perlbug/scripts/tron.pl
+..qmail-bug-targettest:2:/home/richard/Testdir/
+..qmail-bug-test:1:|/home/richard/Perlbug/scripts/mail.pl
+..qmail-bug-test:2:/home/richard/Maildir/
+..qmail-bug-trontest:1:|/home/richard/Perlbug/scripts/tron.pl
+..qmail-bug-trontest:2:/home/richard/Testdir/
+..qmail-bugdb:1:|/home/richard/Perlbug/scripts/mail.pl
+..qmail-bugdb:2:/home/richard/Maildir/
+..qmail-bugtron:1:|/home/richard/Perlbug/scripts/tron.pl
+..qmail-bugtron:2:/home/richard/Trondir/
+..qmail-incoming:1:/home/richard/incoming/
+..qmail-perlbug:1:|/home/richard/Perlbug/scripts/tron.pl
+..qmail-perlbug:2:/home/richard/Trondir/
+
+# -----------------------------------------------------------------------------

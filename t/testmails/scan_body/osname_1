@@ -12,7 +12,7 @@ User-Agent: Mutt/1.0i
 Mime-Version: 1.0
 Date: Fri, 19 Nov 1999 16:17:04 -0500
 Message-Id: <19991119161704.ABCDE@bugs.perl.org>
-X-Matches:  os\=macos
+X-Matches:  osname\=macos
 
 For some reason, Perl accepts a while loop with an empty conditional.
 	while ( ) { print "TRUE";  sleep 1;  }

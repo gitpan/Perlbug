@@ -7,7 +7,7 @@ BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
 	use Perlbug::Testing;
-	plan('tests' => 12);
+	plan('tests' => 14);
 }
 use strict;
 use lib qw(../);
@@ -19,28 +19,30 @@ my $o_perlbug = Perlbug::Base->new;
 $o_perlbug->current('admin', 'richardf');
 $o_perlbug->current('isatest', 1);
 
-my $get_tests = "SELECT ticketid FROM tm_tickets WHERE sourceaddr LIKE '%perlbug_test\@rfi.net%'";
+my $get_tests = "SELECT bugid FROM tm_bug WHERE sourceaddr LIKE '%perlbug_test\@rfi.net%'";
 my @testids = $o_perlbug->get_list($get_tests);
 my $testids = join("', '", @testids);
 
 my %map = ( # WHERE
 	'tm_cc' 			=> "address LIKE '%perlbug_test\@rfi.net%'",
-	'tm_claimants'		=> "userid = 'perlbug_test'",
+	'tm_bug_user'		=> "userid = 'perlbug_test'",
   # 'tm_flag'			=> 'a b c', 
   # 'tm_id'				=> 'x y z',
-    'tm_log'			=> "userid = 'perlbug_test' OR ticketid IN ('$testids')",
-	'tm_messages'		=> "msgheader LIKE '%perlbug_test\@rfi.net%' OR ticketid IN ('$testids')",
-  	'tm_notes'			=> "ticketid IN ('$testids')",
-	'tm_patches'		=> "sourceaddr LIKE '%perlbug_test\@rfi.net%'",
-	'tm_patch_ticket'	=> "ticketid IN ('$testids')",
+    'tm_log'			=> "userid = 'perlbug_test' OR objectid IN ('$testids')",
+	'tm_message'		=> "msgheader LIKE '%perlbug_test\@rfi.net%'",
+	'tm_bug_message'	=> "bugid IN ('$testids')",
+  	'tm_note'			=> "sourceaddr LIKE '%perlbug_test\@rfi.net%'",
+	'tm_bug_note'		=> "bugid IN ('$testids')",
+	'tm_patch'			=> "sourceaddr LIKE '%perlbug_test\@rfi.net%'",
+	'tm_bug_patch'		=> "bugid IN ('$testids')",
 	'tm_parent_child'	=> "parentid IN ('$testids') OR childid IN ('$testids')", 
-	'tm_tickets'		=> "sourceaddr LIKE '%perlbug_test\@rfi.net%' OR ticketid IN ('$testids')",
-	'tm_tests'			=> "sourceaddr LIKE '%perlbug_test\@rfi.net%'",
-	'tm_test_ticket'	=> "ticketid IN ('$testids')",
-	'tm_users'			=> "userid = 'perlbug_test'",	
+	'tm_bug'			=> "sourceaddr LIKE '%perlbug_test\@rfi.net%' OR bugid IN ('$testids')",
+	'tm_test'			=> "sourceaddr LIKE '%perlbug_test\@rfi.net%'",
+	'tm_bug_test'		=> "bugid IN ('$testids')",
+	'tm_user'			=> "userid = 'perlbug_test'",	
 );
 
-# 1-12
+# 1-14
 # REMOVE perlbug_test installed data from database
 $test++; 
 foreach my $table (keys %map) {

@@ -7,7 +7,7 @@ BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
 	use Perlbug::Testing;
-	plan('tests' => 8);
+	plan('tests' => 9);
 }
 use strict;
 use lib qw(../); 
@@ -67,19 +67,19 @@ X-UIDL:  !!!!01JROPXND8ZK8Y7ZAG0
 my $PATCH = q#
 	This is a patch of some sort...
 	
-	:-)
+	:-|
 #;
 
 my $NOTE = q#
 	This is a note of some sort...
 	
-	:-)
+	:-/
 #;
 
 my $TEST = q#
 	This is a test of some sort...
 	
-	:-)
+	:-\
 #;
 
 my $QHEADER = $o_perlbug->quote($HEADER);
@@ -91,7 +91,7 @@ my $QHEADER = $o_perlbug->quote($HEADER);
 # INSERT for testing
 $test++; 
 $err = 0;
-$context = 'tm_tickets';
+$context = 'tm_bug';
 if (1 == 1) { # container	
 	my $subject = ' [PATCH] "make realclean" eats my patches :-) ';
 	my $from = '"Richard. J. S. Foley" <perlbug_test@rfi.net>';
@@ -133,9 +133,9 @@ if ($err == 0) {
 # 3
 $test++;
 $err = 0;
-$context = 'tm_users';
+$context = 'tm_user';
 if (1 == 1) {
-	my $insert = qq|INSERT INTO tm_users VALUES ('$UID', PASSWORD(password), 'perlbug_test\@rfi.net', 'Perlbug Test User', 'perlbug_test\@rfi\.net', '1')|;
+	my $insert = qq|INSERT INTO tm_user VALUES (now(), NULL, '$UID', PASSWORD(password), 'perlbug_test\@rfi.net', 'Perlbug Test User', 'perlbug_test\@rfi\.net', '1')|;
     my $sth = $o_perlbug->exec($insert);
     $err++ unless defined($sth);
 	output("$context -> $insert -> err($err)?") if $err;
@@ -150,13 +150,13 @@ if ($err == 0) {
 # 4 
 $test++;
 $err = 0;
-$context = 'tm_patches';
+$context = 'tm_patch';
 if (1 == 1) {
 	my $QPATCH = $o_perlbug->quote($PATCH);
-	my $insert = qq|INSERT INTO tm_patches VALUES (NULL, now(), NULL, 'Patch against a ticket($BID)', 'perlbug_test\@rfi.net', 'patch_${BID}_5.06.02\@bugs.perl.org', 'C net 33', '5.06.02', $QHEADER, $QPATCH)|;
+	my $insert = qq|INSERT INTO tm_patch VALUES (now(), NULL, NULL, 'Patch against a bug($BID)', 'perlbug_test\@rfi.net', 'patch_${BID}_5.06.02_cnet33\@bugs.perl.org', $QHEADER, $QPATCH)|;
     my $sth = $o_perlbug->exec($insert);
 	$err++ unless defined($sth);
-	($PID) = $o_perlbug->get_list("SELECT MAX(patchid) FROM tm_patches WHERE msgheader = $QHEADER"); # toaddr LIKE '%$BID%'");
+	($PID) = $sth->insertid;
 	output("$context -> $insert -> err($err)?") if $err;
 }
 if ($err == 0) {
@@ -169,9 +169,9 @@ if ($err == 0) {
 # 5 
 $test++;
 $err = 0;
-$context = 'tm_patch_ticket';
+$context = 'tm_bug_patch';
 if ($PID =~ /\w+/) {
-	my $insert = qq|INSERT INTO tm_patch_ticket VALUES (NULL, now(), '$PID', '$BID')|;
+	my $insert = qq|INSERT INTO tm_bug_patch VALUES ('$BID', '$PID')|;
     my $sth = $o_perlbug->exec($insert);
     $err++ unless defined($sth);
 	output("$context -> $insert -> err($err)?") if $err;
@@ -191,10 +191,10 @@ $err = 0;
 $context = 'tm_tests';
 if (1 == 1) {
 	my $QTEST = $o_perlbug->quote($TEST);
-	my $insert = qq|INSERT INTO tm_tests VALUES (NULL, now(), NULL, 'Test against a ticket($BID)', 'perlbug_test\@rfi.net', 'test_${BID}_5.06.02\@bugs.perl.org', 'C net 33', '5.06.02', $QHEADER, $QTEST)|;
+	my $insert = qq|INSERT INTO tm_test VALUES (now(), NULL, NULL, 'Test against a bug($BID)', 'perlbug_test\@rfi.net', 'test_${BID}_5.06.02\@bugs.perl.org', $QHEADER, $QTEST)|;
     my $sth = $o_perlbug->exec($insert);
 	$err++ unless defined($sth);
-	($TID) = $o_perlbug->get_list("SELECT MAX(testid) FROM tm_tests WHERE msgheader = $QHEADER"); 
+	($TID) = $sth->insertid;
 	output("$context -> $insert -> err($err)?") if $err;
 }
 if ($err == 0) {
@@ -207,15 +207,15 @@ if ($err == 0) {
 # 7
 $test++;
 $err = 0;
-$context = 'tm_test_ticket';
-if ($PID =~ /\w+/) {
-	my $insert = qq|INSERT INTO tm_test_ticket VALUES (NULL, now(), '$TID', '$BID')|;
+$context = 'tm_bug_test';
+if ($TID =~ /\w+/) {
+	my $insert = qq|INSERT INTO tm_bug_test VALUES ('$BID', '$TID')|;
     my $sth = $o_perlbug->exec($insert);
     $err++ unless defined($sth);
 	output("$context -> $insert -> err($err)?") if $err;
 } else {
 	$err++;
-	output("no patchid($PID) found!");
+	output("no patchid($TID) found!");
 }
 if ($err == 0) {
     ok($test);
@@ -226,13 +226,13 @@ if ($err == 0) {
 # 8
 $test++;
 $err = 0;
-$context = 'tm_notes';
+$context = 'tm_note';
 if (1 == 1) {
 	my $QNOTE = $o_perlbug->quote($NOTE);
-	my $insert = qq|INSERT INTO tm_notes VALUES (NULL, NULL, $BID, now(), '', '$0', 'Test against a ticket($BID)', $QHEADER)|;
+	my $insert = qq|INSERT INTO tm_note VALUES (now(), NULL, NULL, 'Note against a bug($BID)', 'perlbug_test\@rfi.net', 'test_${BID}_5.06.02\@bugs.perl.org', $QHEADER, $QNOTE)|;
     my $sth = $o_perlbug->exec($insert);
 	$err++ unless defined($sth);
-	($NID) = $o_perlbug->get_list("SELECT MAX(noteid) FROM tm_notes WHERE msgheader = $QHEADER"); 
+	($NID) = $sth->insertid;
 	output("$context -> $insert -> err($err)?") if $err;
 }
 if ($err == 0) {
@@ -241,5 +241,25 @@ if ($err == 0) {
 } else {
     notok($test);
 }    
+
+# 9
+$test++;
+$err = 0;
+$context = 'tm_bug_note';
+if ($NID =~ /\w+/) {
+	my $insert = qq|INSERT INTO tm_bug_note VALUES ('$BID', '$NID')|;
+    my $sth = $o_perlbug->exec($insert);
+    $err++ unless defined($sth);
+	output("$context -> $insert -> err($err)?") if $err;
+} else {
+	$err++;
+	output("no patchid($NID) found!");
+}
+if ($err == 0) {
+    ok($test);
+} else {
+    notok($test);
+}    
+
 # done.
 # 

@@ -1,7 +1,9 @@
 # Perlbug WWW interface
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Web.pm,v 1.60 2000/08/10 10:42:17 perlbug Exp perlbug $
+# $Id: Web.pm,v 1.66 2000/10/30 16:21:57 perlbug Exp perlbug $
 #
+# TODO: newnote, newtest, newpatch
+# 
 
 =head1 NAME
 
@@ -26,7 +28,7 @@ use URI::Escape;
 use strict;
 $| = 1; 
 
-$VERSION = 1.57;
+$VERSION = 1.64;
 
 =head1 SYNOPSIS
 
@@ -73,7 +75,7 @@ Setup Perlbug::Web
 sub setup {
     my $self = shift;
     my $cgi  = $self->{'CGI'};
-    
+	
     # Ranges
     my $rngpar = $self->{'attr'}{'current_range'} = $cgi->param('range') || '';
 	my $src = $self->directory('spool')."/ranges/${rngpar}.rng";
@@ -86,14 +88,13 @@ sub setup {
     
     # Vars    
 	$self->current('debug',  $cgi->param('debug')  ||  0);
-	$self->current('format', $cgi->param('format') || 'h');
     $self->context('h');
+	$self->current('format', $cgi->param('format') || 'h');
 	
     # Context
     $self->{'attr'}{'current_buttons'} = '';
     $self->{'attr'}{'PRE'} = '';
     $self->{'attr'}{'POST'} = '';
-    
     return $self;
 }
 
@@ -121,13 +122,6 @@ sub check_user {
 	return $user; 
 }
 
-sub pre {
-	return '<pre>';
-}
-
-sub post {
-	return '</pre>';
-}
 
 =item header
 
@@ -145,7 +139,7 @@ sub header { #web
     if ($cgi->param('req') eq 'graph') {
 		$hdr = $self->{'CGI'}->header('image/png');	
     } else {
-		my $head = $self->{'CGI'}->header(); # (-'expires'=>'+10m');
+		my $head = $self->{'CGI'}->header(-'expires'=>'+10m');
 		my $url  = $self->url;
 		my $header = $self->read('header');
 		$header =~ s/Perlbug::VERSION/ - v$Perlbug::VERSION/i;
@@ -356,6 +350,8 @@ sub pid {
     $self->result('</table>');
     return $ok;
 }
+
+
 =item bid
 
 Wrapper for dob bugid access
@@ -440,7 +436,7 @@ sub hist {
         <tr><td colspan=3 width=500><b>$title bug ($bik) history</td/></tr>
         <tr><td><b>Admin</b></td><td><b>Entry</b></td><td><b>Modification</b></td></tr>
     |;
-    my $sql = "SELECT *, from_unixtime(unix_timestamp(ts)) FROM tm_log WHERE objecttype = 't' AND objectid = '$bid' ORDER BY ts DESC"; 
+    my $sql = "SELECT *, from_unixtime(unix_timestamp(ts)) FROM tm_log WHERE objecttype = 'b' AND objectid = '$bid' ORDER BY ts DESC"; 
     my @data = $self->get_data($sql);
     foreach my $data (@data) {
 	next unless ref($data) eq 'HASH';
@@ -489,7 +485,7 @@ sub headers {
     	my $headers = qq|<table border=1>
         	<tr><td colspan=3 width=500><b>$title $hdr{$obj} ($item) headers</td/></tr>
     	|;
-		my $table = ($obj eq 'p') ? 'patches' : "$hdr{$obj}s";
+		my $table = $hdr{$obj};
     	my $sql = "SELECT msgheader FROM tm_$table WHERE $hdr{$obj}id = '$id'";
     	my @data = $self->get_list($sql);
     	$headers .= "<tr><td colspan=3>&nbsp;";
@@ -694,7 +690,7 @@ sub web_query {	# results
     my $sql = $self->format_web_query($cgi);
     my @bids = $self->get_list($sql);
     my $found = scalar @bids;
-    $self->result("Found: '$found' bugs");
+    $self->result("Found $found bugs");
 	if ($found >= 10) {
         my $trim = $cgi->param('trim');
         $self->result(" showing '$trim'<br>") if $trim =~ /\d+/ and $trim <= $found;
@@ -732,8 +728,8 @@ sub current_buttons {
     my $span = shift || 8;  # number of bug fields
 	my $cgi  = $self->{'CGI'};
     my @keys = (ref($akeys) eq 'ARRAY') ? @{$akeys} : split $akeys;
-	$self->debug(2, "current_buttons(@keys, $items, $span)");
-	if ((scalar(@keys) >= 1) && ($items >= 1)) { 
+	$self->debug(2, "current_buttons args: keys(@keys), items($items), span($span)");
+	if ((scalar(@keys) >= 1) && ($items >= 1) && ($self->current('format') !~ /^[aAL]$/)) { 
 		my %map = (
 			'delete'    => $cgi->submit(-'name' => 'req', -'value' => 'delete'),
             'reset'     => $cgi->defaults('reset'),
@@ -748,7 +744,6 @@ sub current_buttons {
     	} 
         $self->{'attr'}{'current_buttons'} = qq|<table border=0><tr><td colspan="$span"><br>$buttons &nbsp;</td></tr></table>|;
 	}   
-    $self->debug(2, "current_buttons -> ".$self->{'attr'}{'current_buttons'});
 	$self->debug('OUT', $self->{'attr'}{'current_buttons'});
 	return $self->{'attr'}{'current_buttons'};
 }
@@ -795,7 +790,7 @@ sub administrators {
     my $url   = $self->url;
     my $title = $self->system('title');
     $self->result(qq|<table border=0><tr><td colspan=2><b>$title administrators:</td/></tr>|);
-    my $get = "SELECT userid FROM tm_users";
+    my $get = "SELECT userid FROM tm_user";
 	$get .= " WHERE active != 'NULL'" unless $self->isadmin eq $self->system('bugmaster');
 	my @admins = $self->get_list($get);
     
@@ -834,7 +829,7 @@ sub spec {
 	$perlbug_spec =~ s/\</&lt;/g;
 	$perlbug_spec =~ s/\>/&gt;/g;
 	$perlbug_spec =~ s/\b(http\:.+?perlbug\.cgi)\b/<a href="$1">$1<\/a>/gi;
-	$perlbug_spec =~ s/\b([\<\w+\-\_\.\>|\&.t\;]+\@.+?\.(?:com|org|net|edu))\b/<a href="mailto:$1">$1<\/a>/gi;
+	$perlbug_spec =~ s/\b([\<\w+\-_\.\>|\&.t\;]+\@.+?\.(?:com|org|net|edu))\b/<a href="mailto:$1">$1<\/a>/gi;
 	my $spec = "<table align=center><tr><td><pre>$perlbug_spec</pre></td></tr></table>";
 	$self->result($spec);
     return 1;
@@ -855,9 +850,9 @@ sub help { #web help
 	my $email = $self->email('domain');
 	my $bugdb = $self->email('bugdb');
 	my ($perlbug_help) = $self->SUPER::help; # Base
-	my ($total) = $self->get_list("SELECT COUNT(*) FROM tm_tickets");
+	my ($total) = $self->get_list("SELECT COUNT(*) FROM tm_bug");
 	$perlbug_help =~ s/\b(http\:.+?perlbug\.cgi(?:\?.+)*)*\b/<a href="$1">$1<\/a>/gi;
-	$perlbug_help =~ s/\b([\<\w+\-\_\.\>]+\@.+?\.(?:com|org|net|edu))\b/<a href="mailto:$1">$1<\/a>/gi;
+	$perlbug_help =~ s/\b([\<\w+\-_\.\>]+\@.+?\.(?:com|org|net|edu))\b/<a href="mailto:$1">$1<\/a>/gi;
 	my $help = qq#<table align=center><tr><td><pre>$perlbug_help</pre><hr></td></tr></table>
 <table border=0 align=center><tr><td>
 <b>Searching:</b><br>
@@ -890,7 +885,7 @@ The list format is designed for quickly moving around a list of bugs, while the 
 The bug minimally displays it's <b>status</b>, <b>category</b>, <b>OS</b>, <b>severity</b>, which <b>version</b> it was filed against, and the subject of the initial mail.<br><br>
 Additionally links are provided to find each individual <b>message</b> attributed to each bug, (including the relevant mail headers), which <b>administrator</b> is assigned and what the command <b>history</b> has been.  <br><br>
 
-There are also links to other (<b>parent/child</b>) bugs, all email addresses appearing on the <b>Cc:</b> list of the bug, and <b>notes</b> from when an administrator closed or otherwise dealt with the bug.<br>
+There are also links to other (<b>parent/child</b>) bugs, all email addresses appearing on the <b>Cc:</b> list of the bug, <b>Tests</b> against each bug and <b>notes</b> from when an administrator closed or otherwise dealt with the bug.<br>
 <b>Patches</b> may be attributed to bugs which are then downloadable.<br>
 <p>
 <b>Hints:</b>
@@ -902,7 +897,7 @@ For further information, check out <a href="$url?req=spec">specs</a> and for hel
 <hr>
 <table border=0 width=100%>
 <b>Administration:</b><br>
-bugs must be selected using the checkbox before modifications are accepted - otherwise we wouldn't know which bug to modify :-)  Updated bugs are returned for inspection.
+Bugs must be selected using the checkbox before modifications are accepted - otherwise we wouldn't know which bug to modify :-)  Updated bugs are returned for inspection.
 <p>
 Bug status may be modified using the web frontend (remember the <b>/admin/</b> bit of the address), or the email interface at:<pre>
 	<b>close_&lt;bugID&gt;_win32\@$email</b></pre>
@@ -915,9 +910,9 @@ Notes may be assigned from the web front end or be mailed against a given bug:<p
 <p>
 <b>NB:</b>
 When using the email interface, keywords need to be at the beginning of the address, ie:<pre>
-	<b>/^(patch|note|help|Help)_xyz\@$email</b></pre>
+	<b>/^(patch|note|test|help|Help)_xyz\@$email</b></pre>
 <p>
-Don't delete any bugs unless you have to, when in doubt: use the '<b>notabug</b>' category.
+Don't delete any bugs unless you have to, when in doubt: use the '<b>notabug</b>' category and '<b>close</b>' it.
 <p>
 More helpful hints to come...
 <p>
@@ -1012,59 +1007,63 @@ sub search {
 	my @categories = ('any', $self->get_list("SELECT DISTINCT flag FROM tm_flags WHERE type = 'category'"));
 	my @severities = ('any', $self->get_list("SELECT DISTINCT flag FROM tm_flags WHERE type = 'severity'"));
 	my @osnames    = ('any', $self->get_list("SELECT DISTINCT flag FROM tm_flags WHERE type = 'osname'"));
-	my @userids    = ('any', $self->get_list("SELECT DISTINCT userid FROM tm_claimants"));
-	my @sourceaddr = $self->get_list("SELECT DISTINCT sourceaddr FROM tm_tickets");
-	my @bugs    = $self->get_list("SELECT ticketid FROM tm_tickets");
+	my @userids    = ('any', $self->get_list("SELECT DISTINCT userid FROM tm_bug_user"));
+	my @sourceaddr = $self->get_list("SELECT DISTINCT sourceaddr FROM tm_bug");
+	my @bugs    = $self->get_list("SELECT bugid FROM tm_bug");
 	my %admins = ();
 	foreach my $uid (@userids) {
-		my ($name) = $self->get_list("SELECT DISTINCT name FROM tm_users WHERE userid = '$uid'");
+		my ($name) = $self->get_list("SELECT DISTINCT name FROM tm_user WHERE userid = '$uid'");
 		$admins{$uid} = $name;
 	}
     $self->debug(3, "Setting search form elements...");   
 	# Elements
-	my $body     = $cgi->textfield(-'name'  => 'body',   	-'default' => '', -'size' => 45, -'maxlength' => 45);
-	my $bugid = $cgi->textfield(-'name'  => 'bugid',  -'default' => '', -'size' => 14, -'maxlength' => 14);
-    my $version  = $cgi->textfield(-'name'  => 'version',   -'default' => '', -'size' => 10, -'maxlength' => 10);
-	my $patchid  = $cgi->textfield(-'name'  => 'patchid',   -'default' => '', -'size' => 10, -'maxlength' => 10);
-	my $patch    = $cgi->textfield(-'name'  => 'patch',     -'default' => '', -'size' => 25, -'maxlength' => 10);
-	my $noteid   = $cgi->textfield(-'name'  => 'noteid',    -'default' => '', -'size' => 10, -'maxlength' => 10);
-	my $note     = $cgi->textfield(-'name'  => 'note',      -'default' => '', -'size' => 25, -'maxlength' => 10);
-	my $testid   = $cgi->textfield(-'name'  => 'testid',    -'default' => '', -'size' => 10, -'maxlength' => 10);
-	my $test     = $cgi->textfield(-'name'  => 'test',      -'default' => '', -'size' => 25, -'maxlength' => 10);
-	my $changeid = $cgi->textfield(-'name'  => 'changeid',  -'default' => '', -'size' => 10, -'maxlength' => 10);
-    my $msgid    = $cgi->textfield(-'name'  => 'messageid', -'default' => '', -'size' => 10, -'maxlength' => 10);
-	my $subject  = $cgi->textfield(-'name'  => 'subject',   -'default' => '', -'size' => 25, -'maxlength' => 25);
-	my $sourceaddr= $cgi->textfield(-'name' => 'sourceaddr',-'default' => '', -'size' => 55);
-	my $fixedin  = $cgi->textfield(-'name'  => 'fixedin',   -'default' => '', -'size' => 10, -'maxlength' => 10);
-	my $admins   = $cgi->popup_menu(-'name' => 'admin',     -'values' => \%admins,     -'default' => 'any');
-	my $status   = $cgi->popup_menu(-'name' => 'status',    -'values' => \@status,     -'default' => 'any');
-    my $category = $cgi->popup_menu(-'name' => 'category',  -'values' => \@categories, -'default' => 'any');
-    my $severity = $cgi->popup_menu(-'name' => 'severity',  -'values' => \@severities, -'default' => 'any');
-	my $osnames  = $cgi->popup_menu(-'name' => 'osname',    -'values' => \@osnames,    -'default' => 'any');
+	my $body     = $cgi->textfield(-'name'  => 'body',   	-'default' => '', -'size' => 45, -'maxlength' => 45, -'override' => 1);
+	my $bugid = $cgi->textfield(-'name'  => 'bugid',  -'default' => '', -'size' => 14, -'maxlength' => 14, -'override' => 1);
+    my $version  = $cgi->textfield(-'name'  => 'version',   -'default' => '', -'size' => 10, -'maxlength' => 10, -'override' => 1);
+	my $patchid  = $cgi->textfield(-'name'  => 'patchid',   -'default' => '', -'size' => 10, -'maxlength' => 10, -'override' => 1);
+	my $patch    = $cgi->textfield(-'name'  => 'patch',     -'default' => '', -'size' => 25, -'maxlength' => 10, -'override' => 1);
+	my $noteid   = $cgi->textfield(-'name'  => 'noteid',    -'default' => '', -'size' => 10, -'maxlength' => 10, -'override' => 1);
+	my $note     = $cgi->textfield(-'name'  => 'note',      -'default' => '', -'size' => 25, -'maxlength' => 10, -'override' => 1);
+	my $testid   = $cgi->textfield(-'name'  => 'testid',    -'default' => '', -'size' => 10, -'maxlength' => 10, -'override' => 1);
+	my $test     = $cgi->textfield(-'name'  => 'test',      -'default' => '', -'size' => 25, -'maxlength' => 10, -'override' => 1);
+	my $changeid = $cgi->textfield(-'name'  => 'changeid',  -'default' => '', -'size' => 10, -'maxlength' => 10, -'override' => 1);
+    my $msgid    = $cgi->textfield(-'name'  => 'messageid', -'default' => '', -'size' => 10, -'maxlength' => 10, -'override' => 1);
+	my $subject  = $cgi->textfield(-'name'  => 'subject',   -'default' => '', -'size' => 25, -'maxlength' => 25, -'override' => 1);
+	my $sourceaddr= $cgi->textfield(-'name' => 'sourceaddr',-'default' => '', -'size' => 55, -'override' => 1);
+	my $fixedin  = $cgi->textfield(-'name'  => 'fixedin',   -'default' => '', -'size' => 10, -'maxlength' => 10, -'override' => 1);
+	my $admins   = $cgi->popup_menu(-'name' => 'admin',     -'values' => \%admins,     -'default' => 'any', -'override' => 1);
+	my $status   = $cgi->popup_menu(-'name' => 'status',    -'values' => \@status,     -'default' => 'any', -'override' => 1);
+    my $category = $cgi->popup_menu(-'name' => 'category',  -'values' => \@categories, -'default' => 'any', -'override' => 1);
+    my $severity = $cgi->popup_menu(-'name' => 'severity',  -'values' => \@severities, -'default' => 'any', -'override' => 1);
+	my $osnames  = $cgi->popup_menu(-'name' => 'osname',    -'values' => \@osnames,    -'default' => 'any', -'override' => 1);
 	my %dates    = $self->date_hash; # 'labels' => \%dates ?
 	my @dates    = keys %dates;
-	my $date     = $cgi->popup_menu(-'name' => 'dates',     -'values' => \@dates,      -'default' => 'any');
+	my $date     = $cgi->popup_menu(-'name' => 'dates',     -'values' => \@dates,      -'default' => 'any', -'override' => 1);
 	# no case sensitivity in mysql?
     # my $case     = '';
     #if ($self->isadmin eq $self->system('bugmaster')) {
     #    $case     = 'Case: '.$cgi->popup_menu(-'name' => 'case',      -'values' => ['Sensitive', 'Insensitive'], -'default' => 'Insensitive');
     #}
     my $andor_def = ($cgi->param('andor') =~ /^(AND|OR)$/) ? $1 : 'AND';
-    my $andor    = $cgi->radio_group(-'name'=> 'andor',     -'values' => ['AND', 'OR'], -'default' => $andor_def);
+    my $andor    = $cgi->radio_group(-'name'=> 'andor',     -'values' => ['AND', 'OR'], -'default' => $andor_def, -'override' => 1);
     my $restrict_def = ($cgi->param('trim') =~ /^(\d+)$/) ? $1 : 25;
-    my $restrict = $cgi->popup_menu(-'name' => 'trim',      -'values' => ['All', '5', '10', '25', '50', '100'],  -'default' => $restrict_def);
-    # my %format   = ( 'h' => 'Html list', 'H' => 'Html block', 'L' => 'Html lean', 'a' => 'Ascii list', 'A' => 'Ascii block', 'l' => 'Ascii lean'); 
-	my %format   = ( 'h' => 'Html list', 'H' => 'Html block', 'a' => 'Ascii list', 'A' => 'Ascii block', 'l' => 'Ascii lean'); 
-	my $format   = $cgi->radio_group(-'name' => 'format',  -values => \%format, -'default' => 'h');
+    my $restrict = $cgi->popup_menu(-'name' => 'trim',      -'values' => ['All', '5', '10', '25', '50', '100'],  -'default' => $restrict_def, -'override' => 1);
+    my %format   = ( 'h' => 'Html list', 'H' => 'Html block', 'L' => 'Html lean', 'a' => 'Ascii list', 'A' => 'Ascii block', 'l' => 'Ascii lean',); 
+	# my %format   = ( 'h' => 'Html list', 'H' => 'Html block', 'a' => 'Ascii list', 'A' => 'Ascii block', 'l' => 'Ascii lean', -'override' => 1); 
+	my $format   = $cgi->radio_group(-'name' => 'format',  -values => \%format, -'default' => 'h', -'override' => 1);
     my $sqlshow_def = ($cgi->param('sqlshow') =~ /^(Yes|No)$/i) ? $1 : 'No';
-    my $sqlshow  = $cgi->radio_group(-'name' => 'sqlshow',	-'values' => ['Yes', 'No'], -'default' => $sqlshow_def);
+    my $sqlshow  = $cgi->radio_group(-'name' => 'sqlshow',	-'values' => ['Yes', 'No'], -'default' => $sqlshow_def, -'override' => 1);
     my $url = $cgi->url;
-    my $search = '';
-    $self->current_buttons([qw(search reset)], 1);
+   $self->current_buttons([qw(search reset)], 1);
     # Form <form name="bugquery" method="post" action="$url"> 
+	my $withbug  = $cgi->radio_group(-'name' => 'withbug',	-'values' => ['Yes', 'No'], -'default' => 'Yes', -'override' => 1); 
+	my $order  = $cgi->radio_group(-'name' => 'order',	-'values' => ['Asc', 'Desc'], -'default' => 'Desc', -'override' => 1); 
 	my $plus = qq|
-	<tr><td><b>PatchID</b>&nbsp; $patchid<br>$patch</td><td><b>TestID</b>&nbsp; $testid<br>$test</td><td><b>NoteID</b>&nbsp;$noteid<br>$note</td></tr>
+		<tr><td><b>NoteID</b>&nbsp;$noteid<br>$note</td><td><b>PatchID</b>&nbsp; $patchid<br>$patch</td><td><b>TestID</b>&nbsp; $testid<br>$test</td><td><b>Asc\/Desc (by bugid):</b><br>$order</td></tr>
 	| if 1; 
+	$plus = qq|
+		<tr><td><b>NoteID</b>&nbsp;$noteid<br>$note</td><td><b>PatchID</b>&nbsp; $patchid<br>$patch</td><td><b>TestID</b>&nbsp; $testid<br>$test</td><td><b>Must relate to a bugid?</b><br>$withbug</td></tr>
+	| if 0; 
 	my $form = qq|
 	    <table border=1><tr><td colspan=5><i>
 	    Select from the options (see <a href="$url?req=help">help</a>) available, then click the query button.<br>  
@@ -1075,9 +1074,8 @@ sub search {
 	    <tr><td><b>Source address:</b></td><td colspan=4>$sourceaddr</td></tr>
 	    <tr><td><b>Dates:</b><br>$date</td><td colspan=2><b>Administrator</b><br>$admins</td><td><b>Restrict returns to</b>:<br> $restrict</td></tr>
 	    <tr><td colspan=2><b>Format:<br></b>$format</td><td><b>Show SQL:<br></b>$sqlshow</td><td><b>Boolean:</b><br>$andor</td></tr>
-	    <tr><td colspan=3>$search</td></tr>
-		$plus
-	    </table>
+	    $plus
+		</table>
     |;
 	my $input = $cgi->textarea(-'name' => 'sql_query', -'default' => 'your select query here', -'rows' => 5, -'columns' => 50);
     my $sqlquery = $self->current_buttons('sql_query reset');
@@ -1127,26 +1125,28 @@ sub format_web_query {
     my $admin       = ($cgi->param('admin') eq 'any') ? '' : $cgi->param('admin');
     my $andor       = $cgi->param('andor') || 'AND';
     my $body	    = $cgi->param('body') || '';
+    my $bugid    = $self->wildcard($cgi->param('bugid')) || '';
     my $case        = $cgi->param('case') || '';
     my $category    = ($cgi->param('category') eq 'any') ? '' : $cgi->param('category');
     my $changeid    = $cgi->param('changeid') || '';
 	my $date        = ($cgi->param('dates') eq 'any') ? '' : $cgi->param('dates');
     my $fixed		= $cgi->param('fixedin') || '';
-	#my $msgid      = $self->wildcard($cgi->param('messageid')) || '';
+	# my $msgid      = $self->wildcard($cgi->param('messageid')) || '';
     my $noteid      = $cgi->param('noteid') || '';
 	my $note        = $cgi->param('note') || '';
     my $testid      = $cgi->param('testid') || '';
 	my $test        = $cgi->param('test') || '';
     my $patchid     = $cgi->param('patchid') || '';
 	my $patch       = $cgi->param('patch') || '';
+	my $order       = $cgi->param('order') || 'DESC';
 	my $osname      = ($cgi->param('osname') eq 'any') ? '' : $cgi->param('osname');
-    my $bugid    = $self->wildcard($cgi->param('bugid')) || '';
     my $severity    = ($cgi->param('severity') eq 'any') ? '' : $cgi->param('severity');
     my $sourceaddr  = $self->wildcard($cgi->param('sourceaddr')) || '';
     my $sqlshow	    = $cgi->param('sqlshow') || '';
     my $status      = ($cgi->param('status') eq 'any') ? '' : $cgi->param('status');
     my $subject     = $self->wildcard($cgi->param('subject')) || '';
     my $version     = $self->wildcard($cgi->param('version')) || '';
+    my $withbug     = $cgi->param('withbug') || '';
 	#
     # case inoperative on mysql
 	if ($case =~ /Insensitive/) {
@@ -1157,94 +1157,100 @@ sub format_web_query {
 	my $fnd = 0;
 	
     # Work through parameters given above to generate appropriate sql.
-    my $sql = 'SELECT ticketid FROM tm_tickets WHERE ';
+    my $sql = 'SELECT bugid FROM tm_bug WHERE ';
     if ($date =~ /\w+/) {
         my $crit = $dates{$date};
         $sql .= " $crit ";
     } else {
         # let's default to all of them :-)
-        $sql .= " ticketid IS NOT NULL ";
+        $sql .= " bugid IS NOT NULL ";
     }
     # 
     if ($admin =~ /^(\w+)$/) {
 		$wnt++;
-        my $get_tids = "SELECT ticketid FROM tm_claimants WHERE userid = '$1'";
+        my $get_tids = "SELECT bugid FROM tm_bug_user WHERE userid = '$1'";
         $fnd += my @tids = $self->get_list($get_tids);
-		$self->result("Found ".@tids." user_ticket relations from claimants($1)");
+		$self->result("Found ".@tids." bug_user relations from claimants($1)");
         my $found = join("', '", @tids);	
-        $sql .= " $andor ticketid IN ('$found') " if scalar(@tids) >= 1;
+        $sql .= " $andor bugid IN ('$found') " if scalar(@tids) >= 1;
     }
 	if ($patchid =~ /^(\w+)$/) {
 		$wnt++;
-        my $get_tids = "SELECT ticketid FROM tm_patch_ticket WHERE patchid LIKE '$1'";
+        my $get_tids = "SELECT bugid FROM tm_bug_patch WHERE patchid LIKE '$1'";
         $fnd += my @tids = $self->get_list($get_tids);
-		$self->result("Found ".@tids." patch_ticket relations from patchid($1)");
+		$self->result("Found ".@tids." bug_patch relations from patchid($1)");
         my $found = join("', '", @tids);	
-        $sql .= " $andor ticketid IN ('$found') " if scalar(@tids) >= 1;
+        $sql .= " $andor bugid IN ('$found') " if scalar(@tids) >= 1;
     }
 	if ($testid =~ /^(\w+)$/) {
 		$wnt++;
-        my $get_tids = "SELECT ticketid FROM tm_test_ticket WHERE testid LIKE '$1'";
+        my $get_tids = "SELECT bugid FROM tm_bug_test WHERE testid LIKE '$1'";
         $fnd += my @tids = $self->get_list($get_tids);
-		$self->result("Found ".@tids." test_ticket relations from testid($1)");
+		$self->result("Found ".@tids." bug_test relations from testid($1)");
         my $found = join("', '", @tids);	
-        $sql .= " $andor ticketid IN ('$found') " if scalar(@tids) >= 1;
+        $sql .= " $andor bugid IN ('$found') " if scalar(@tids) >= 1;
     }
 	if ($noteid =~ /^(\w+)$/) {
 		$wnt++;
-        my $get_tids = "SELECT ticketid FROM tm_notes WHERE noteid LIKE '$1'";
+        my $get_tids = "SELECT bugid FROM tm_bug_note WHERE noteid LIKE '$1'";
         $fnd += my @tids = $self->get_list($get_tids);
-		$self->result("Found ".@tids." note_ticket relations from noteid($1)");
+		$self->result("Found ".@tids." bug_note relations from noteid($1)");
         my $found = join("', '", @tids);	
-		$sql .= " $andor ticketid IN ('$found') " if scalar(@tids) >= 1;
+		$sql .= " $andor bugid IN ('$found') " if scalar(@tids) >= 1;
     }
 	if ($patch =~ /(.+)/) {
 		$wnt++;
-		my $get_ids = "SELECT patchid FROM tm_patches WHERE msgbody like '%$1%'";
+		my $get_ids = "SELECT patchid FROM tm_patch WHERE msgbody like '%$1%'";
 		my @ids = $self->get_list($get_ids);
 		my $ids = join("', '", @ids);
-		$fnd += my @tids = $self->get_list("SELECT ticketid FROM tm_patch_ticket WHERE patchid IN ('$ids')");
-		$self->result("Found ".@tids." patch_ticket relations from patch content($1)");
+		$fnd += my @tids = $self->get_list("SELECT bugid FROM tm_bug_patch WHERE patchid IN ('$ids')");
+		$self->result("Found ".@tids." bug_patch relations from patch content($1)");
 		my $found = join("', '", @tids);	
-        $sql .= " $andor ticketid IN ('$found') ";
+        $sql .= " $andor bugid IN ('$found') ";
     }
 	if ($test =~ /(.+)/) {
 		$wnt++;
-		my $get_ids = "SELECT testid FROM tm_tests WHERE msgbody like '%$1%'";
+		my $get_ids = "SELECT testid FROM tm_test WHERE msgbody like '%$1%'";
 		my @ids = $self->get_list($get_ids);
 		my $ids = join("', '", @ids);
-		$fnd += my @tids = $self->get_list("SELECT ticketid FROM tm_test_ticket WHERE testid IN ('$ids')");
-		$self->result("Found ".@tids." test_ticket relations from test content($1)");
+		$fnd += my @tids = $self->get_list("SELECT bugid FROM tm_bug_test WHERE testid IN ('$ids')");
+		$self->result("Found ".@tids." bug_test relations from test content($1)");
 		my $found = join("', '", @tids);	
-        $sql .= " $andor ticketid IN ('$found') ";
+        $sql .= " $andor bugid IN ('$found') ";
     }
 	if ($note =~ /(.+)/) {
 		$wnt++;
-		my $get_ids = "SELECT ticketid FROM tm_notes WHERE msgbody like '%$1%'";
-		$fnd += my @tids = $self->get_list($get_ids);
-		$self->result("Found ".@tids." note_ticket relations from note content($1)");
-		my $found = join("', '", @tids);	
-        $sql .= " $andor ticketid IN ('$found') ";
-    }
+		my $get_ids = "SELECT noteid FROM tm_note WHERE msgbody like '%$1%'";
+		$fnd += my @ids = $self->get_list($get_ids);
+		$self->result("Found ".@ids." bug_note relations from note content($1)");
+		my $found = join("', '", @ids);	
+		$fnd += my @tids = $self->get_list("SELECT bugid FROM tm_bug_note WHERE noteid IN ('$found')");
+       	 	$found = join("', '", @tids);	
+		$sql .= " $andor bugid IN ('$found') " if scalar(@tids) >= 1;
+    	}
 	if ($changeid =~ /^(\w+)$/) {
 		$wnt++;
-        my $get_tids = "SELECT patchid FROM tm_patches WHERE changeid LIKE '$1'";
-        $fnd += my @tids = $self->get_list($get_tids);
-        $self->result("Found ".@tids." change_ticket relations from changeid($1)");
-		my $found = join("', '", @tids);	
-		my $tids = $self->get_list("SELECT ticketid FROM tm_patch_ticket WHERE patchid IN ('$found')");
-        $sql .= " $andor ticketid IN ('$tids') " if scalar(@tids) >= 1;
+        	my $get_pids = "SELECT patchid FROM tm_patch_change WHERE changeid LIKE '$1'";
+        	my @ids = $self->get_list($get_pids);
+        	$self->result("Found ".@ids." change relations from changeid($1)");
+		my $found = join("', '", @ids);	
+		$fnd += my @tids = $self->get_list("SELECT bugid FROM tm_bug_patches WHERE patchid IN ('$found')");
+        	$found = join("', '", @tids);	
+		$sql .= " $andor bugid IN ('$found') " if scalar(@tids) >= 1;
     }
 	if ($body =~ /(.+)/) {
 		$wnt++;
-		my $get_tids = "SELECT ticketid FROM tm_messages WHERE msgbody like '%$1%'";
-		$fnd += my @tids = $self->get_list($get_tids);
-		$self->result("Found ".@tids." message_ticket relations from message content($1)");
+		my $get_mids = "SELECT messageid FROM tm_message WHERE msgbody like '%$1%'";
+		my @mids = $self->get_list($get_mids);	
+		$self->result("Found ".@mids." messageids from body($1)");
+		my $mids = join("', '", @mids);	
+		$fnd += my @tids = $self->get_list("SELECT bugid FROM tm_bug_message WHERE messageid IN ('$mids')");
+		$self->result("Found ".@tids." message_bug relations from message content($1)");
 		my $found = join("', '", @tids);	
-        $sql .= " $andor ticketid IN ('$found') ";
+        $sql .= " $andor bugid IN ('$found') ";
     }
     if ($bugid =~ /^\s*(.*\w+.*)\s*$/) {
-        $sql .= " $andor ticketid LIKE '$1' ";
+        $sql .= " $andor bugid LIKE '$1' ";
     }
 	if ($version =~ /.+/) {
         $sql .= " $andor version LIKE '$version' ";
@@ -1270,11 +1276,16 @@ sub format_web_query {
     if ($sourceaddr =~ /.+/) {
         $sql .= " $andor sourceaddr LIKE '%".$self->case($sourceaddr)."%' ";
     }    
-	if ($wnt >= 1 && $fnd == 0 && $andor eq 'AND') {
-		$self->debug(1, "appear to want($wnt) unfound($fnd) andor($andor) data!");
+	# 
+	if ($wnt >= 1 && $fnd == 0 && $andor eq 'AND') { #  && $withbug eq 'Yes') {
+		$self->debug(1, "appear to want($wnt) unfound($fnd) andor($andor) withbug($withbug) data!");
 		$sql .= " $andor 1 = 0 "; 
 	} 
-	$sql .= ' ORDER BY created, ticketid DESC'; #?
+	# ref
+	# $self->result("want($wnt) fnd($fnd) andor($andor) withbug($withbug)");
+	# $self->result("SQL: $sql<hr>"); 
+	
+	$sql .= " ORDER BY bugid $order"; #?
 	$self->result("SQL: $sql<hr>") if $sqlshow =~ /y/i;
 	$self->debug(2, "SQL built: '$sql'");
 	return $sql;
@@ -1320,27 +1331,30 @@ sub web_update {
             next BUG unless $ok == 1;
 			$self->debug(0, "calling dok($bid)");
         	$self->dok([$bid]) unless $self->admin_of_bug($bid, $self->isadmin);
-        	my $status   = $cgi->param($bid.'_status') || '';
+        	my $orig = $self->current_status($bid);
+			my $status   = $cgi->param($bid.'_status') || '';
         	my $category = $cgi->param($bid.'_category') || '';
         	my $severity = $cgi->param($bid.'_severity') || '';
         	my $version  = $cgi->param($bid.'_version') || '';
         	my $osname   = $cgi->param($bid.'_osname') || '';
         	my $fixed    = $cgi->param($bid.'_fixed') || '';
         	my $commands = "status='$status', category='$category', severity='$severity', version='$version', osname='$osname', fixed='$fixed'";
-			my $update   = "UPDATE tm_tickets SET $commands WHERE ticketid='$bid'";
+			my $update   = "UPDATE tm_bug SET $commands WHERE bugid='$bid'";
         	my $sth = $self->exec($update);
 			# $self->doa("a $bid @cmds"); # !
 			$ok = $self->track('b', $bid, join(':', $status, $category, $severity, $version, $osname));
-			my $ix = $self->notify_cc($bid) unless $nocc eq 'nocc';
-	    	# update the rest
-	    	if (defined($sth)) { # do the rest
+	    	if (defined($sth)) { # do the rest: relationships, notes, patches, tests
+				my $ix = $self->notify_cc($bid, '', $orig) unless $nocc eq 'nocc';
 				my @parents  = split(/\s+/, $cgi->param($bid.'_parents'));
 				my @children = split(/\s+/, $cgi->param($bid.'_children'));
-				my $pcs 		= $self->tm_parents_children($bid, \@parents, \@children);
+				my $pcs 		= $self->tm_parent_child($bid, \@parents, \@children);
 				my ($x, @xccs) 	= $self->tm_cc($bid, split(/\s+/, $cgi->param($bid.'_ccs')));
-				my ($n, @notes)	= $self->doN($bid, $cgi->param($bid.'_notes'));
-				my ($t, @xtests) = $self->tm_tests($bid, split(/\s+/, $cgi->param($bid.'_tests')));
-				my ($p, @patches) = $self->tm_patch_ticket($bid, split(/\s+/, $cgi->param($bid.'_patches')));
+				my ($note, @notes)	 = $self->doN($bid, $cgi->param($bid.'_newnote'),  '');
+				my ($patch,@patches) = $self->doP($bid, $cgi->param($bid.'_newpatch'), '');
+				my ($test, @tests)	 = $self->doT($bid, $cgi->param($bid.'_newtest'),  '');
+				my ($n, @xnotes)   = $self->tm_bug_note( $bid, split(/\s+/, $cgi->param($bid.'_notes')   ));
+				my ($p, @xpatches) = $self->tm_bug_patch($bid, split(/\s+/, $cgi->param($bid.'_patches') ));
+				my ($t, @xtests)   = $self->tm_bug_test( $bid, split(/\s+/, $cgi->param($bid.'_tests')   ));
 				my $ref = "<p>Bug ($bid) updated $Mysql::db_errstr<p>";
 	    		$self->debug(2, $ref);
 		    } else {
@@ -1349,8 +1363,8 @@ sub web_update {
 		    }
     	}
         $self->result('<table border=1>');
-		$ok = $self->dob(\@bugids);
-		$self->result('</table>');
+		$ok = $self->dob(\@bugids); 
+		$self->result('</table>'); 
     } else {
 		my $err = "No bugids (@bugids) selected for update?";
 		$self->result($err) unless scalar(@userids) >= 1;
@@ -1380,12 +1394,12 @@ sub web_update {
             $self->debug(0, "REF: $ref");
             my ($sql, $commands) = ('', '');
             if ($ok == 1) {
-                my $exists = $self->get_list("SELECT userid FROM tm_users WHERE userid = '$uid'");
+                my $exists = $self->get_list("SELECT userid FROM tm_user WHERE userid = '$uid'");
                 if (($uid eq 'newAdmin') && (!$exists))  {
                     # $uid = $userid; # only relevant for new data?
-                    $commands = "'$userid', '$password', '$address', '$name', $match_address, $active";
+                    $commands = "now(), NULL, '$userid', '$password', '$address', '$name', $match_address, $active";
 	    	        if ($self->isadmin eq $self->system('bugmaster')) {
-                        $sql = "INSERT INTO tm_users values ($commands)";
+                        $sql = "INSERT INTO tm_user values ($commands)";
                         push(@userids, $userid);
                     } else {
                         $ok = 0;
@@ -1394,7 +1408,7 @@ sub web_update {
                 } else {
 					$active = $self->quote($active) unless $active eq 'NULL';
                     $commands = "password='$password', address='$address', name='$name', match_address=$match_address, active=$active";
-	    	        $sql = "UPDATE tm_users SET $commands WHERE userid='$uid'";
+	    	        $sql = "UPDATE tm_user SET $commands WHERE userid='$uid'";
                 }
             }
             if ($ok == 1) {
@@ -1415,7 +1429,7 @@ sub web_update {
     	}
         $self->result('<table border=1>');
         $ok = $self->dou(\@userids);
-		$self->result('</table>');
+		$self->result('</table>'); 
     } else {
 		my $err = "No userids (@userids) selected for update?";
 		$self->result($err) unless scalar(@bugids) >= 1;

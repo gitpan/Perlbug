@@ -1,5 +1,5 @@
 From: perlbug_test@rfi.net
-To: CLOSE_20000717.001@bugs.perl.org
+To: CLOSE_20000717.001_5.6.1@bugs.perl.org
 Subject: close bugid
 X-Header: some stuff
 Message-Id: getabug@fromdb.pc 

@@ -1,0 +1,16 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Subject: register request
+Sender: schwern@athens.arena-i.com
+To: close_this_19990727.045@bugs.perl.org
+From: "The man in the moon" <cc_perlbug_INTEREST@rfi.net>
+Content-Type: text/plain; charset=us-ascii_---User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+X-Matches:  ((?msi).+)
+
+Should be OK
+
+---
+x@y.z
+

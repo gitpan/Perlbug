@@ -1,6 +1,6 @@
 # Perlbug Installation instructions 
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: INSTALL,v 1.7 2000/08/04 13:14:22 perlbug Exp perlbug $
+# $Id: INSTALL,v 1.9 2000/10/05 13:27:15 perlbug Exp perlbug $
 #
 
 SHORT:
@@ -33,10 +33,12 @@ PREREQUISITES:
     Perl :-)
     
     MySQL installation from TCX
-    
-    DBI::* suite from Tim Bunce 
 	
-    Mail::* suite from GBarr
+	URI-1.09 or up from Gisle Aas
+	
+    HTML-Parser-3.03 or up originaly from Gisle Aas
+	
+	MailTools-1.13 or up from GBarr
 
     
 INSTALLATION:
@@ -63,12 +65,22 @@ INSTALLATION:
 	Configure the ./config/Configuration file which should be fairly 
 	self-explanatory, but in particular ensure that:
 	
+		database(username & password) are correct
+		
+		directory entries all point to the correct locations
+		
+		system::user is a real user on your system
 		system::user is a real user on your system
 	
-		system::dirs spool/(logs & ranges & results & temp) 
-		exist and are writable by the system user.
-		
-		database(username & password) are correct
+		directory::arch, spool(logs & ranges & results & temp) etc. 
+		exist and are writable by the appropriate user/s. 
+		eg:
+			
+			mkdir -p /home/perlbug/spool archive 
+			mkdir -p /home/perlbug/spool logs 
+			mkdir -p /home/perlbug/spool results 
+			# etc. 
+			chmod -R 777 /home/perlbug/spool
 	
 	Modify config/Matches to map patterns to targets categories/status, 
 	if the defaults are not suitable.
@@ -85,13 +97,14 @@ INSTALLATION:
         
 	Ensure perlbug.cgi is executable by the webserver.
 	
-	You'll also want to modify the config/.htpasswd web/.htaccess entries to 
-	enable the administration side of things via www. 
+	You'll also want to modify the config/.htpasswd and web/.htaccess entries 
+	to enable the administration side of things via www, unless you're using 
+	this in system::restricted=0 mode. 
 	
 	Create admins via the admins page at your config::web::domain
 		http://your.web.server/admin/perlbug.cgi?req=administrators page
 	
-		or directly utilise the tm_users inserts in t/00_Test.t
+		or adapt the ./sql/generic/create_admin.sql script
 
 	For the default source and database data downloads to be operational 
 	links or files will need to be installed from archive to web/archive 

@@ -31,7 +31,7 @@ $Data::Dumper::Indent=1;
 # -----------------------------------------------------------------------------
 my $err			= 0;
 my $dir			= './t/testmails/head_to_head';
-my @expected	= (qw(splice check_header in_master_list admin_of_ticket)); 
+my @expected	= (qw(splice check_header in_master_list admin_of_bug)); 
 my %installed	= ();
 my $context		= '';
 
@@ -128,14 +128,14 @@ foreach my $context (qw(in_master_list)) {
 	}
 }
 
-# 4 ADMIN_OF_TICKET (tm_claimants, tm_cc, tm_tickets)
+# 4 ADMIN_OF_bugid (tm_claimants, tm_cc, tm_bugids)
 $err = 0;
 $o_mail->current('admin', ''); # !
-foreach my $context (qw(admin_of_ticket)) {
+foreach my $context (qw(admin_of_bugid)) {
 	$test++; 
 	ok(1);
 	next; # rjsf - temp!
-	my ($tid) = $o_mail->get_list("SELECT MAX(ticketid) FROM tm_tickets WHERE sourceaddr LIKE '%perlbug_test\@rfi.net%'");
+	my ($tid) = $o_mail->get_list("SELECT MAX(bugid) FROM tm_bug WHERE sourceaddr LIKE '%perlbug_test\@rfi.net%'");
 	foreach my $test (grep(/^$context/, @tests)) {
 		my ($ok, $o_hdr) = &get_data($test);
 		if ($ok == 1) {

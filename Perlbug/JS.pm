@@ -1,6 +1,6 @@
 # Perlbug javascript routines
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: JS.pm,v 1.1 2000/04/13 13:10:07 perlbug Exp perlbug $
+# $Id: JS.pm,v 1.1 2000/04/13 13:10:07 perlbug Exp $
 #   
 # Placeholder for javascript routines for Perlbug::Web
 #  

@@ -1,4 +1,4 @@
-# $Id: Cmd.pm,v 1.15 2000/08/10 10:47:36 perlbug Exp perlbug $ 
+# $Id: Cmd.pm,v 1.16 2000/09/01 11:50:02 perlbug Exp perlbug $ 
 
 =head1 NAME
 
@@ -134,7 +134,7 @@ sub process {
 	$self->debug('IN', @_);
 	my $line = shift;
 	my $i_ok = 1;
-	my $h_cmds = $self->parse_commands($line, ''); # body could be file contents? 
+	my $h_cmds = $self->parse_commands($line, 'xxx'); # body could be file contents? 
 	my @res = ();
 	if (ref($h_cmds) ne 'HASH') {
 		$res[0] = "Command line($line) parse failure($h_cmds) - try 'h'\n";
@@ -335,7 +335,7 @@ sub parse_commands { # migrate -> Do
             	}
         	} elsif ($com =~ /^[q]$/) {						# MUST have a parameter.
             	@mand = ($mand);
-        	} elsif ($com =~ /^[aAbBcCeImnNpPrRsStTuvxX]$/) {	# MUST have a parameter.
+        	} elsif ($com =~ /^[aAbBcCeImnNpPrRsStTuvxXy]$/) {	# MUST have a parameter.
             	@mand = ($mand);
             	# @mand = split('\s', $mand);
         	} else {

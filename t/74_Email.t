@@ -31,10 +31,10 @@ my $dir		    = './t/testmails/switch';
 my @expected	= (qw(insert bounce quiet new reply reply_to)); # remove? insert
 my %installed	= ();
 my $context		= '';
-my $tktid       = '';
+my $BUGID       = '';
 my $msgid       = getnow;
 my $_MSGID      = '';
-my $_TKTID      = '';
+my $_BUGID      = '';
 
 # Tests
 # -----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ X-UIDL:  !!!!01JROPXND8ZK8Y7ZAG0
 	my $body = "\nBody (not much data... \nhere perl etc...\n";
 	#
 	my ($ok, $tid, $mid) = $o_mail->insert_bug($subject, $from, $to, $header, $body); 
-	$_TKTID=$tid;
+	$_BUGID=$tid;
 	if (!($ok == 1 and $o_mail->ok($tid))) {
 		$err++;
 		output("$context test ($test) failed -> '$tid'");
@@ -99,7 +99,7 @@ $context = 'quiet';
 $^W=0; # warnings while lots of duff headers
 QUIET:
 foreach my $test (grep(/^${context}_\d+$/, @tests)) {
-	my ($switch, $data) = &get_switch($test, $tktid, $msgid);
+	my ($switch, $data) = &get_switch($test, $BUGID, $msgid);
 	if ($switch ne "do_$context") {
 		$err++;
 		output("$context test ($test) failed -> '$switch'");
@@ -141,7 +141,7 @@ $context = 'new';
 NEW:
 foreach my $test (grep(/^${context}_\d+$/, @tests)) {
 	$msgid = getnow;
-	my ($switch, $data) = &get_switch($test, $tktid, $msgid);
+	my ($switch, $data) = &get_switch($test, $BUGID, $msgid);
 	if ($switch ne "do_$context") {
 		$err++;
 		output("$context test ($test) failed -> '$switch'");
@@ -163,7 +163,7 @@ $context = 'reply';
 REPLY:
 foreach my $test (grep(/^${context}_\d+$/, @tests)) {
 	$msgid = getnow;
-	my ($switch, $data) = &get_switch($test, $_TKTID, $msgid);
+	my ($switch, $data) = &get_switch($test, $_BUGID, $msgid);
 	if ($switch ne "do_$context") {
 		$err++;
 		output("$context test ($test) failed -> '$switch'");
@@ -205,7 +205,7 @@ if ($err == 0) {
 
 sub get_switch { # Switch wrapper
 	my $file  = shift;
-	my $tktid = shift || '';
+	my $BUGID = shift || '';
 	my $msgid = shift || '';
 	my $reply = shift || '';
 	my ($switch, $args, $mail) = ('', '', undef);
@@ -218,8 +218,8 @@ sub get_switch { # Switch wrapper
 			if ($msgid =~ /\w+/) { # substitute
 				$mail->head->replace('Message-Id', $msgid);
 			}
-			if ($tktid =~ /\w+/) { 
-				$mail->head->replace('Subject', "[ID $tktid ] ".$mail->head->get('Subject'));
+			if ($BUGID =~ /\w+/) { 
+				$mail->head->replace('Subject', "[ID $BUGID ] ".$mail->head->get('Subject'));
 			}
 			if ($reply =~ /\w+/) {
 				$mail->head->replace('In-Reply-To', "<$reply>");

@@ -1,6 +1,6 @@
-# Perlbug Ticket support functions
+# Perlbug Bug support functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: TM.pm,v 1.10 2000/08/10 10:49:10 perlbug Exp perlbug $
+# $Id: TM.pm,v 1.11 2000/09/01 11:50:02 perlbug Exp perlbug $
 #
 # Was TicketMonger.pm: Copyright 1997 Christopher Masto, NetMonger Communications
 # Perlbug integration: RFI
@@ -22,7 +22,7 @@ use Carp;
 # @ISA = qw(Perlbug::Log); 
 use strict;
 use vars qw($VERSION);
-$VERSION = 1.20; 
+$VERSION = 1.12; 
 my ($dbh, $lasterror) = (undef, '');
 my $CNT = 0;
 
@@ -92,7 +92,7 @@ sub DBConnect {
             $sqlpasswordfh->close;
         }
         # A bit Mysql|Oracle specific just here ($o_conf->database('connect'))
-        $self->debug(3, "Connect($sqlhost, $sqldatabase, $sqlusername, sqlpassword)");
+        $self->debug(0, "Connect($sqlhost, $sqldatabase, $sqlusername, sqlpassword)");
         $dbh=Mysql->Connect($sqlhost, $sqldatabase, $sqlusername, $sqlpassword);
         if (defined $dbh) {
 			# $dbh->selectdb($sqldatabase);
@@ -125,8 +125,6 @@ sub query {
     my $sth = undef;
     my $dbh=DBConnect($self); # or return undef;
     if (defined($dbh)) {
-        # *** better place to do this?
-	# $sth=$dbh->Query(qm($sql));
         $sth=$dbh->Query($sql);
         if (defined $sth) {
 			my $rows = 0;
@@ -167,7 +165,7 @@ sub new_id { # rf -> xxxx0827.007 ->19990827.007
     my ($id, $ok) = ('', 1);
     my ($today) = $self->get_date();
     $self->debug(2, "new_id requested on '$today'");
-    my $sth = $self->query("SELECT max(ticketid) FROM tm_id");
+    my $sth = $self->query("SELECT max(bugid) FROM tm_id");
     my $found = '';
     if (defined $sth) {
         ($found) = $sth->fetchcol(0);
@@ -202,7 +200,7 @@ sub new_id { # rf -> xxxx0827.007 ->19990827.007
     }
     if ($ok == 1) {
 	    my $newid   = $today.'.'.$num;
-	    my $update = "UPDATE tm_id set ticketid = '$newid' WHERE ticketid = '$found'";
+	    my $update = "UPDATE tm_id set bugid = '$newid' WHERE bugid = '$found'";
 	    my $sth = $self->query($update);
 	    if (defined($sth)) {
 	        my $res = $sth->affected_rows;
@@ -285,7 +283,7 @@ sub gen_update {
 sub cc_get {
   my $self = shift;
   my $tid = shift;
-  my $sth = $self->query("SELECT address FROM tm_cc WHERE ticketid = " . qm($tid))
+  my $sth = $self->query("SELECT address FROM tm_cc WHERE bugid = " . qm($tid))
     or $self->debug(0, "Couldn't get Ccs for [$tid]: $Mysql::db_errstr");
   return $sth->fetchcol(0);
 }
@@ -293,7 +291,7 @@ sub cc_get {
 sub claimants_get {
   my $self = shift;
   my $tid = shift;
-  my $sth = $self->query("SELECT userid FROM tm_claimants WHERE ticketid = " . qm($tid))
+  my $sth = $self->query("SELECT userid FROM tm_bug_user WHERE bugid = " . qm($tid))
     or $self->debug(0, "Couldn't get claimants for [$tid]: $Mysql::db_errstr");
   return $sth->fetchcol(0);
 }
@@ -301,7 +299,7 @@ sub claimants_get {
 sub user_get {
   my $self = shift;
   my $userid = shift;
-  my $sth = $self->query("SELECT * FROM tm_users WHERE userid = " . qm($userid))
+  my $sth = $self->query("SELECT * FROM tm_user WHERE userid = " . qm($userid))
     or $self->debug(0, "Couldn't get user information for ]: $Mysql::db_errstr");
   return { $sth->fetchhash };
 }
@@ -315,7 +313,7 @@ sub bug_new {
   my @values = map { qm($_) } @$data{@keys};
   my ($ok, $sth, $tries) = (1, undef, 0);
   my $id = $self->new_id;
-  my $query = $self->gen_insert("tm_tickets", $data, { ticketid => qm($id), created  => "now()" });
+  my $query = $self->gen_insert("tm_bug", $data, { bugid => qm($id), created  => "now()" });
   $self->debug(3, "New Tkt query($query)");
   foreach my $tries (1..3) { # 3 is probably enough
     $sth = $self->query($query);
@@ -334,11 +332,11 @@ sub bug_new {
   return ($ok, $id);
 }
 
-# If a ticket's status is closed, set it to reopen
+# If a bug's status is closed, set it to reopen
 sub bug_reopen {
   my $self = shift;
   my $tid = shift;
-  my $query = "UPDATE tm_tickets SET status = 'reopen' WHERE ticketid = "
+  my $query = "UPDATE tm_bug SET status = 'reopen' WHERE bugid = "
     . qm($tid) . " AND status = 'closed'";
   my $sth = $self->query($query) or $self->debug(0, "Couldn't UPDATE: $Mysql::db_errstr");
   return $sth->affected_rows;
@@ -347,8 +345,8 @@ sub bug_reopen {
 sub bug_set {
   my $self = shift;
   my ($tid, $h_data) = @_;
-  my $query = $self->gen_update("tm_tickets", $h_data);
-  $query .= " WHERE ticketid = " . qm($tid);
+  my $query = $self->gen_update("tm_bug", $h_data);
+  $query .= " WHERE bugid = " . qm($tid);
   my $sth = $self->query($query) or $self->debug(0, "Couldn't UPDATE: $Mysql::db_errstr");
   if ($sth->affected_rows >= 1) {
   	$self->track('t', $tid, join(':', values %{$h_data}));
@@ -359,7 +357,7 @@ sub bug_set {
 sub bug_get {
   my $self = shift;
   my ($tid, @fields) = @_;
-  my $query = "SELECT " . join(", ", @fields) . " FROM tm_tickets WHERE ticketid = " . qm($tid);
+  my $query = "SELECT " . join(", ", @fields) . " FROM tm_bug WHERE bugid = " . qm($tid);
   my $sth = $self->query($query) or $self->debug(0, "Couldn't SELECT: $Mysql::db_errstr");
   return $sth->fetchhash;
 }
@@ -367,8 +365,8 @@ sub bug_get {
 sub bug_check {  
   my $self = shift; 
   my $tid = shift;  
-  my $sth = $self->query("SELECT ticketid FROM tm_tickets WHERE "
-    . "ticketid = " . qm($tid)) or $self->debug(0, "Couldn't SELECT: $Mysql::db_errstr");
+  my $sth = $self->query("SELECT bugid FROM tm_bug WHERE "
+    . "bugid = " . qm($tid)) or $self->debug(0, "Couldn't SELECT: $Mysql::db_errstr");
   my $ok = ($sth->numrows >= 1) ? 1 : 0;
   return $ok;
 }
@@ -376,7 +374,7 @@ sub bug_check {
 sub bug_claim {
   my $self = shift;
   my ($tid, $name) = @_;
-  my $query = $self->gen_insert("tm_claimants", { ticketid => $tid, userid => $name });
+  my $query = $self->gen_insert("tm_bug_user", { bugid => $tid, userid => $name });
   my $sth = $self->query($query) or $self->debug(0, "Couldn't insert claimant: $Mysql::db_errstr");
   return defined($sth) ? 1 : 0;
 }
@@ -384,7 +382,7 @@ sub bug_claim {
 sub bug_unclaim {
   my $self = shift;
   my ($tid, $name) = @_;
-  my $query = "DELETE FROM tm_claimants WHERE ticketid = " . qm($tid) .
+  my $query = "DELETE FROM tm_bug_user WHERE bugid = " . qm($tid) .
               "AND userid = " . qm($name);
   $self->query($query) or $self->debug(0, "Couldn't delete claimant: $Mysql::db_errstr");
   return 1;
@@ -396,7 +394,7 @@ sub message_add {
   my $self = shift;
   my ($tid, $data) = @_;
   my $ok = 1;
-  my $insert = $self->gen_insert("tm_messages", $data, { ticketid => qm($tid), created => "now()"});
+  my $insert = $self->gen_insert("tm_message", $data, { bugid => qm($tid), created => "now()"});
   my $sth = $self->query($insert);
   if (defined($sth)) {
     #sth->num_rows;

@@ -1,0 +1,46 @@
+00_Test.t:94:$context = 'tm_tickets';
+00_Test.t:156:	my $insert = qq|INSERT INTO tm_patch VALUES (NULL, now(), NULL, 'Patch against a ticket($BID)', 'perlbug_test\@rfi.net', 'patch_${BID}_5.06.02_cnet33\@bugs.perl.org', $QHEADER, $QPATCH)|;
+00_Test.t:172:$context = 'tm_ticket_patch';
+00_Test.t:174:	my $insert = qq|INSERT INTO tm_ticket_patch VALUES (NULL, now(), '$BID', '$PID')|;
+00_Test.t:194:	my $insert = qq|INSERT INTO tm_test VALUES (NULL, now(), NULL, 'Test against a ticket($BID)', 'perlbug_test\@rfi.net', 'test_${BID}_5.06.02\@bugs.perl.org', $QHEADER, $QTEST)|;
+00_Test.t:210:$context = 'tm_ticket_test';
+00_Test.t:212:	my $insert = qq|INSERT INTO tm_ticket_test VALUES (NULL, now(), '$BID', '$TID')|;
+00_Test.t:232:	my $insert = qq|INSERT INTO tm_note VALUES (NULL, now(), NULL, 'Note against a ticket($BID)', 'perlbug_test\@rfi.net', 'test_${BID}_5.06.02\@bugs.perl.org', $QHEADER, $QNOTE)|;
+00_Test.t:248:$context = 'tm_ticket_note';
+00_Test.t:250:	my $insert = qq|INSERT INTO tm_ticket_note VALUES (NULL, now(), '$BID', '$NID')|;
+31_Format.t:26:	'ticketid' => '19990102.003',	
+31_Format.t:35:my ($href) = $o_fmt->href('bid', [$tkt{'ticketid'}], 'Bug report');
+31_Format.t:36:if ($href =~ /^\<a\shref\=\".+\?req\=bid\&bid=$tkt{'ticketid'}.+?\"\s*\>Bug\sreport\<\/a\>$/i) {	
+31_Format.t:40:	output("href($href) failed from data -> ($tkt{'ticketid'})");
+31_Format.t:46:my ($xhref) = $o_fmt->href('bid', [$tkt{'ticketid'}], 'Bug repoort');
+31_Format.t:47:if ($xhref !~ /^\<a\shref\=\".+\?req\=bid\&bid=$tkt{'ticketid'}.+?\"\s*\>Bug\sreport\<\/a\>$/i) {	
+31_Format.t:51:	output("href($xhref) failed from data -> ($tkt{'ticketid'})");
+32_Format.t:26:	'ticketid' => '19990102.003',
+32_Format.t:37:if (Dumper($h_fmtd) =~ /\'ticketid\'\s\=\>\s\'19990102.003\'/i) {	
+32_Format.t:48:if (Dumper($h_fmtd) !~ /\'ticketid\'\s\s\=\>\s\'19990102.003\'/i) {	
+33_Format.t:2:# Format (format_(bug|ticket|message|patch|test|note)_fields) tests for Perlbug 
+33_Format.t:25:my ($TID) = $o_fmt->get_list("SELECT MAX(ticketid) FROM tm_tickets");
+33_Format.t:27:	'ticketid' 	=> $TID,
+33_Format.t:58:# ticket ref
+33_Format.t:60:if ($$h_fmtd{'ticketid'} =~ /^\<a\shref\=\"perlbug\.cgi\?req\=bid\&bid\=$TID\&.+/i) {	
+33_Format.t:64:	output("format $context($h_fmtd) ticketid failed -> ".Dumper($$h_fmtd{'ticketid'}));
+34_Format.t:27:my ($TID) = $o_fmt->get_list("SELECT MAX(ticketid) FROM tm_tickets");
+35_Format.t:42:	'bug'		=> 'tickets', # and history...
+35_Format.t:56:	$item = 'ticket' if $item eq 'bug';
+51_Do.t:84:my $get_test = q|SELECT ticketid FROM tm_tickets WHERE sourceaddr LIKE '%perlbug_test@rfi.net%'|;
+52_Do.t:28:	'bug'		=> 'tickets', # and history...
+52_Do.t:41:	$item = 'ticket' if $item eq 'bug';
+54_Do.t.dis:29:	'a'		=> 'tickets', # and history...
+54_Do.t.dis:42:	$item = 'ticket' if $item eq 'bug';
+61_Base.t:27:my ($TID) = $o_base->get_list("SELECT MAX(ticketid) FROM tm_tickets");
+75_Email.t:34:my @expected	= (qw(splice check_header in_master_list admin_of_ticket)); 
+75_Email.t:131:# 4 ADMIN_OF_TICKET (tm_claimants, tm_cc, tm_tickets)
+75_Email.t:134:foreach my $context (qw(admin_of_ticket)) {
+75_Email.t:138:	my ($tid) = $o_mail->get_list("SELECT MAX(ticketid) FROM tm_tickets WHERE sourceaddr LIKE '%perlbug_test\@rfi.net%'");
+99_Test.t:22:my $get_tests = "SELECT ticketid FROM tm_tickets WHERE sourceaddr LIKE '%perlbug_test\@rfi.net%'";
+99_Test.t:31:    'tm_log'			=> "userid = 'perlbug_test' OR ticketid IN ('$testids')",
+99_Test.t:32:	'tm_messages'		=> "msgheader LIKE '%perlbug_test\@rfi.net%' OR ticketid IN ('$testids')",
+99_Test.t:34:	'tm_ticket_note'	=> "ticketid IN ('$testids')",
+99_Test.t:36:	'tm_ticket_patch'	=> "ticketid IN ('$testids')",
+99_Test.t:38:	'tm_tickets'		=> "sourceaddr LIKE '%perlbug_test\@rfi.net%' OR ticketid IN ('$testids')",
+99_Test.t:40:	'tm_ticket_test'	=> "ticketid IN ('$testids')",

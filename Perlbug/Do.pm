@@ -1,9 +1,7 @@
 # Perlbug functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Do.pm,v 1.28 2000/08/10 10:43:24 perlbug Exp perlbug $
+# $Id: Do.pm,v 1.30 2000/09/01 11:49:08 perlbug Exp $
 #
-# CREATE TABLE tm_parent_child ( parentid varchar(12) DEFAULT '' NOT NULL, childid varchar(12) DEFAULT '' NOT NULL);
-# 
 
 =head1 NAME
 
@@ -22,7 +20,7 @@ use strict;
 use vars qw($VERSION);
 $| = 1; 
 
-$VERSION = 1.27;
+$VERSION = 1.30;
 
 =head1 DESCRIPTION
 
@@ -121,7 +119,7 @@ Switches are sent on the subject line, dash may be omitted if only option:
 	  # 'e' => 'copy', 
 		'f' => 'format of data ascii|html|lean            ([aA|hH|l])', 
 	  # 'g' => '',
-      ##'i' => 'initiate new admin - inc. htpasswd        (-i)',								# B
+      ##'i' => 'initiate new admin - inc. htpasswd        (-i)',							# B
 		'h' => 'help - this message                       ()', 
 		'H' => 'more detailed help                        ()',
 	  # 'j' => '', 
@@ -131,10 +129,10 @@ Switches are sent on the subject line, dash may be omitted if only option:
 		'L' => 'Logfile - todays complete retrieval       ()', 								# A
 		'm' => 'retrieval by messageid                    (13 47 23 [...])', 
 		'n' => 'note retrieval                            (76 33 1  [...])',
-	  # 'N' => 'INSERT a Note against a bugid             (19990606.002 some_note)',
+	  # 'N' => 'INSERT a Note against a bugid             (19990606.002 some_note)',		# A
 		'o' => 'overview of bugs in db                    ()', 
 	    'p' => 'patch retrieval                           (patchid)', # change
-	  # 'P' => 'INSERT input',
+	  # 'P' => 'INSERT a patch against a bugid            (19990606.002 some_patch)',		# A
 	  	'q' => 'query the db directly                     (select * from tm_flags where 1 = 0)', 
 		'Q' => 'Query the schema for the db               ()', 
 		'r' => 'body search criteria                      (d_sigaction=define)', 
@@ -142,13 +140,13 @@ Switches are sent on the subject line, dash may be omitted if only option:
 		's' => 'subject search by literal                 (bug in docs)', 
 		'S' => 'Subject search as per -B                  (bug in docs)', 
 	    't' => 'test retrieval by testid                  (77 [...])', 
-	  # 'T' => 'INSERT a Test against a bugid|patch       (19990606.002 test|patch)', 
+	  # 'T' => 'INSERT a Test against a bugid|patch       (19990606.002 test|patch)', 		# A
 		'u' => 'user retrieval by userid                  (richardf [...])', 				# A
 	  	'v' => 'volunteer bug category etc.               (19990606.002 close)',
 	  # 'V' => 'Volunteer as admin',  
 		'x' => 'xterminate bug - remove bug               (19990606.002 [...])', 			# A
 		'X' => 'Xterminate bug - and messages             (19990606.002 [...])', 			# A
-	  # 'y' => 'xxx',
+	    'y' => 'yet another password                      ()', 								# 
 	  ##'z' => 'Disable interface or update script  		(-z)',							# B
 		@_,																					# Overwrite
 	);
@@ -217,8 +215,8 @@ sub doD { # Dump Database (for recovery)
 	my $pdir = $self->directory('perlbug');
 	my $dump = $self->database('backup');
 	my $last = File::Spec->canonpath($tdir.'/'.$self->database('latest'));
-	$last =~ s/^(.+?\.)gz/${1}$date/;
-	my $arch = File::Spec->canonpath($adir."/Perlbug.sql.gz.${date}");
+	$last =~ s/^(.+?\.)gz/${1}${date}\.gz/;
+	my $arch = File::Spec->canonpath($adir."/Perlbug.sql.${date}.gz");
 	my $lach = File::Spec->canonpath($adir.'/'.$self->database('latest'));
 	my $dage = $self->database('backup_age');
 	#
@@ -266,9 +264,11 @@ sub dom { # retrieve message by id
 	foreach my $i (@args) {
 	    next unless $i =~ /^\d+$/;
 	    $self->debug(3, "message id=$i");
-	    my $sql = "SELECT * FROM tm_messages WHERE messageid = '$i'";
+	    my $sql = "SELECT * FROM tm_message WHERE messageid = '$i'";
 	    my ($data) = $self->get_data($sql);
 	    if (ref($data) eq 'HASH') {
+			my @bids = $self->get_list("SELECT bugid FROM tm_bug_message WHERE messageid = '$i'");
+			$$data{'bugids'} = \@bids;
 			$i_ok += my $res = $self->format_data($data);
        	 	$self->debug(2, "message($i) $i_ok");
 		} else {
@@ -278,6 +278,80 @@ sub dom { # retrieve message by id
 	$self->finish;
 	$self->debug('OUT', $i_ok);
 	return $i_ok;
+}
+
+
+=item doM
+
+Create new message
+
+    my $i_ok = $do->doM($bugid, 'message', 'etc');
+
+#       rjsf -> ($xstr, $content, $hdr, $to, $from, $subject) # reverse order
+
+=cut
+
+sub doM { # create new message
+	my $self = shift;
+	$self->debug('IN', @_);
+	my $xstr  	= shift;
+	my $xmsg 	= shift || '';
+	my $xhdr 	= shift || '';
+	my $xsubj 	= shift || '';
+	my $xfrm 	= shift || '';
+	my $xto 	= shift || '';
+	my ($str, $msg, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xmsg, $xhdr, $xsubj, $xfrm, $xto) : ($xstr, $xmsg, $xhdr, $xsubj, $xfrm, $xto);
+	my $mid  = 0;
+	my $i_ok = 1;
+	my %cmds = $self->parse_str($str);
+	if ($msg !~ /\w+/) {
+		$i_ok = 0;
+		$self->debug(0, "requires a valid message($msg) to insert");
+	} else {
+		my $qmsg  = $self->quote($msg);
+		my $qsubj = $self->quote($subj);
+		my $qfrom = $self->quote($frm);
+		my $qto   = $self->quote($to);
+		my $qheader = $self->quote($hdr);
+		my $insert = qq|INSERT INTO tm_message VALUES 
+			(now(), NULL, NULL, $qsubj, $qfrom, $qto, $qheader, $qmsg)
+		|;
+		my $msth = $self->exec($insert);
+		if (!defined($msth)) {
+			$i_ok = 0;
+			$self->debug(0, "failed to insert message($insert)");		
+		} else {
+			$mid = $msth->insertid;
+			if ($mid !~ /\w+/) {
+				$i_ok = 0;
+				$self->debug(0, "failed to retrieve messageid($msg)");
+			} else {
+				$self->result("Message($mid) generated");
+				$self->track('m', $mid, $insert);
+				if (ref($cmds{'bugids'}) eq 'ARRAY') {
+					BID:
+					foreach my $bid (@{$cmds{'bugids'}}) { 
+						next BID unless $bid =~ /\w+/;
+						if (!$self->exists($bid)) {
+							$self->result("bugid($bid) doesn't exist for message($mid)");
+						} else {
+							my $insert = qq|INSERT INTO tm_bug_message VALUES ('$bid', '$mid')|;
+							my $mtsth = $self->exec($insert);
+							if (!defined($mtsth)) {
+								$i_ok = 0;
+								$self->debug(0, "failed to insert tm_bug_message($insert)");
+							} else {
+								$self->debug(0, "assigned message($mid) to bugids($bid)");
+							}
+						}
+					}
+				}
+			}
+		}
+	}		
+	$self->finish;
+	$self->debug('OUT', $mid);
+	return $mid;
 }
 
 
@@ -300,11 +374,18 @@ sub dop { # get patch by id
 	foreach my $i (@args) {
 	    next unless $i =~ /^\d+$/;
 	    $self->debug(3, "patchid=$i");
-	    my $sql = "SELECT * FROM tm_patches WHERE patchid = '$i'";
+	    my $sql = "SELECT * FROM tm_patch WHERE patchid = '$i'";
 	    my ($data) = $self->get_data($sql);
 		if (ref($data) eq 'HASH') {
-			my @bids = $self->get_list("SELECT DISTINCT ticketid FROM tm_patch_ticket WHERE patchid = '$i'");
-			$$data{'bugids'} = \@bids;
+			my @bids = $self->get_list("SELECT DISTINCT bugid FROM tm_bug_patch WHERE patchid = '$i'");
+			$$data{'bugids'} 	= \@bids;
+			
+			my ($cid) = $self->get_list("SELECT DISTINCT changeid FROM tm_patch_change WHERE patchid = '$i'");
+			$$data{'changeid'}	= $cid;
+			
+			my ($vid) = $self->get_list("SELECT DISTINCT version FROM tm_patch_version WHERE patchid = '$i'");
+			$$data{'version'} 	= $vid;
+			
 	    	$i_ok += my $res = $self->format_data($data);
        		$self->debug(2, "patch($i) $i_ok");
 		} else {
@@ -328,13 +409,13 @@ Assign to given bugid, given patch, return i_ok
 sub doP {
 	my $self  = shift;
     $self->debug('IN', @_);
-	my $str  = shift;
-	my $patch= shift;
-	my $hdr  = shift || '';
-	my $subj = shift || '';
-	my $frm  = shift || '';
-	my $to   = shift || '';
-	$str = (ref($str) eq 'ARRAY') ? @{$str} : ($str);
+	my $xstr  	= shift;
+	my $xpatch 	= shift || '';
+	my $xhdr 	= shift || '';
+	my $xsubj 	= shift || '';
+	my $xfrm 	= shift || '';
+	my $xto 	= shift || '';
+	my ($str, $patch, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xpatch, $xhdr, $xsubj, $xfrm, $xto) : ($xstr, $xpatch, $xhdr, $xsubj, $xfrm, $xto);
 	my $patchid = '';
 	my $i_ok    = 1;
 	my %cmds = $self->parse_str($str);
@@ -350,21 +431,22 @@ sub doP {
 		my $qfrom = $self->quote($frm);
 		my $qto = $self->quote($to);
 		my $qheader = $self->quote($hdr);
-		my $insert = qq|INSERT INTO tm_patches VALUES 
-			(NULL, now(), NULL, $qsubject, $qfrom, $qto, '$changeid', '$version', $qheader, $qpatch)
+		my $insert = qq|INSERT INTO tm_patch VALUES 
+			(now(), NULL, NULL, $qsubject, $qfrom, $qto, $qheader, $qpatch)
 		|;
 		my $tsth = $self->exec($insert);
 		if (!defined($tsth)) {
 			$i_ok = 0;
 			$self->debug(0, "failed to insert patch($insert)");		
 		} else {
-			my $getpatch = qq|SELECT MAX(patchid) FROM tm_patches WHERE msgbody = $qpatch|; # blech
-			($patchid) = $self->get_list($getpatch); # = $tsth->last_inserted_id;
+			$patchid = $tsth->insertid;
+			# my $getpatch = qq|SELECT MAX(patchid) FROM tm_patch WHERE msgbody = $qpatch|; # blech
+			# ($patchid) = $self->get_list($getpatch); # = $tsth->last_inserted_id;
 			if ($patchid !~ /\w+/) {
 				$i_ok = 0;
 				$self->debug(0, "failed to retrieve patchid($patch)");
 			} else {
-				$self->result("patch($patchid) inserted");
+				$self->result("Patch($patchid) generated");
 				$self->track('p', $patchid, $insert);
 				if (ref($cmds{'bugids'}) eq 'ARRAY') {
 					my @bids = ();
@@ -375,12 +457,21 @@ sub doP {
 							$self->result("bugid($bid) doesn't exist for patch($patchid)");
 						} else {
 							push(@bids, $bid);
-							my $insert = qq|INSERT INTO tm_patch_ticket VALUES (NULL, now(), '$patchid', '$bid')|;
+							my $insert = qq|INSERT INTO tm_bug_patch VALUES ('$bid', '$patchid')|;
 							my $ptsth = $self->exec($insert);
 							if (!defined($ptsth)) {
 								$i_ok = 0;
-								$self->debug(0, "failed to insert tm_patch_ticket($insert)");
-							} 
+								$self->debug(0, "failed to insert tm_bug_patch($insert)");
+							} else {
+								if ($changeid =~ /\w+/) {
+									my $change = qq|INSERT INTO tm_patch_change VALUES ('$patchid', '$changeid')|;
+									my $csth = $self->exec($change);
+								}
+								if ($version =~ /\w+/) {
+									my $version = qq|INSERT INTO tm_patch_version VALUES ('$patchid', '$version')|;
+									my $vsth = $self->exec($version);
+								}
+							}
 						}
 					}
 					$self->debug(1, "assigned patch($patchid) to bugids(@bids)");
@@ -412,11 +503,13 @@ sub dot { # get test by id
 	foreach my $i (@args) {
 	    next unless $i =~ /^\d+$/;
 	    $self->debug(3, "testid=$i");
-	    my $sql = "SELECT * FROM tm_tests WHERE testid = '$i'";
+	    my $sql = "SELECT * FROM tm_test WHERE testid = '$i'";
 	    my ($data) = $self->get_data($sql);
 		if (ref($data) eq 'HASH') {
-			my @bids = $self->get_list("SELECT DISTINCT ticketid FROM tm_test_ticket WHERE testid = '$i'");
+			my @bids = $self->get_list("SELECT DISTINCT bugid FROM tm_bug_test WHERE testid = '$i'");
 			$$data{'bugids'} = \@bids;
+			my ($vid) = $self->get_list("SELECT DISTINCT version FROM tm_test_version WHERE testid = '$i'");
+			$$data{'version'} = $vid;
 	    	$i_ok += my $res = $self->format_data($data);
 			# print "Patch:".Dumper($data);
 	    	$self->debug(3, "test formatted($res)");
@@ -441,13 +534,13 @@ Assign to given bugid, given test, return i_ok
 sub doT {
 	my $self  = shift;
     $self->debug('IN', @_);
-	my $str  = shift;
-	my $test = shift;
-	my $hdr  = shift || '';
-	my $subj = shift || '';
-	my $frm  = shift || '';
-	my $to   = shift || '';
-	($str) = (ref($str) eq 'ARRAY') ? @{$str} : ($str);
+	my $xstr  = shift;
+	my $xtest = shift;
+	my $xhdr  = shift || '';
+	my $xsubj = shift || '';
+	my $xfrm  = shift || '';
+	my $xto   = shift || '';
+	my ($str, $test, $hdr, $subj, $frm, $to) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xtest, $xhdr, $xsubj, $xfrm, $xto) : ($xstr, $xtest, $xhdr, $xsubj, $xfrm, $xto);
 	my $testid = '';
 	my $i_ok   = 1;
 	my %cmds = $self->parse_str($str);
@@ -463,21 +556,21 @@ sub doT {
 		my $qfrom = $self->quote($frm);
 		my $qto = $self->quote($to);
 		my $qheader = $self->quote($hdr);
-		my $insert = qq|INSERT INTO tm_tests VALUES 
-			(NULL, now(), NULL, $qsubject, $qfrom, $qto, '$changeid', '$version', $qheader, $qtest)
+		my $insert = qq|INSERT INTO tm_test VALUES 
+			(now(), NULL, NULL, $qsubject, $qfrom, $qto, $qheader, $qtest)
 		|;
 		my $tsth = $self->exec($insert);
 		if (!defined($tsth)) {
 			$i_ok = 0;
 			$self->debug(0, "failed to insert test($insert)");		
 		} else {
-			my $gettest = qq|SELECT MAX(testid) FROM tm_tests WHERE msgbody = $qtest|; # blech
+			my $gettest = qq|SELECT MAX(testid) FROM tm_test WHERE msgbody = $qtest|; # blech
 			($testid) = $self->get_list($gettest); # = $tsth->last_inserted_id;
 			if ($testid !~ /\w+/) {
 				$i_ok = 0;
 				$self->debug(0, "failed to retrieve testid($test)");
 			} else {
-				$self->result("test($testid) inserted");
+				$self->result("Test($testid) generated");
 				$self->track('t', $testid, $insert);
 				if (ref($cmds{'bugids'}) eq 'ARRAY') {
 					my @bids = ();
@@ -488,11 +581,11 @@ sub doT {
 							$self->result("bugid($bid) doesn't exist for test($testid)");
 						} else {
 							push(@bids, $bid);
-							my $insert = qq|INSERT INTO tm_test_ticket VALUES (NULL, now(), '$testid', '$bid')|;
+							my $insert = qq|INSERT INTO tm_bug_test VALUES ('$bid', '$testid')|;
 							my $ptsth = $self->exec($insert);
 							if (!defined($ptsth)) {
 								$i_ok = 0;
-								$self->debug(0, "failed to insert tm_test_ticket($insert)");
+								$self->debug(0, "failed to insert tm_bug_test($insert)");
 							} 
 						}
 					}
@@ -529,43 +622,43 @@ sub dob { # get bug by id
 	    $self->start("-t $i");
 		next unless $self->ok($i);
 		# Bug
-		my $get_tkt = "SELECT * FROM tm_tickets WHERE ticketid = '$i'";
+		my $get_tkt = "SELECT * FROM tm_bug WHERE bugid = '$i'";
 		my ($h_tkt) = $self->get_data($get_tkt);
 		if (ref($h_tkt) ne 'HASH') {
 			$self->result("No bug found with bugid($i)");
 		} else {
+			# Admins
+			my @admins = $self->get_list("SELECT DISTINCT userid FROM tm_bug_user WHERE bugid = '$i'");
+			$$h_tkt{'admins'} = \@admins;
 			# Messages
-			my @mids = $self->get_list("SELECT messageid FROM tm_messages WHERE ticketid = '$i'");
+			my @mids = $self->get_list("SELECT messageid FROM tm_bug_message WHERE bugid = '$i' ORDER BY messageid");
 			$$h_tkt{'messageids'} = \@mids;
 			$$h_tkt{'i_mids'} = @mids;
-			# Admins
-			my @admins = $self->get_list("SELECT DISTINCT userid FROM tm_claimants WHERE ticketid = '$i'");
-			$$h_tkt{'admins'} = \@admins;
 			# Message
     		my ($mid) = sort {$a <=> $b} @mids; # lowest -> first    
-			($$h_tkt{'msgbody'}) = $self->get_list("SELECT msgbody FROM tm_messages WHERE messageid = '$mid' ");
+			($$h_tkt{'msgbody'}) = $self->get_list("SELECT msgbody FROM tm_message WHERE messageid = '$mid'");
 			# Ccs
-			my @ccs = $self->get_list("SELECT DISTINCT address FROM tm_cc WHERE ticketid = '$i'");
+			my @ccs = $self->get_list("SELECT DISTINCT address FROM tm_cc WHERE bugid = '$i'");
 			$$h_tkt{'ccs'} = \@ccs;
 			# Parents
-			my @parents = $self->get_list("SELECT parentid FROM tm_parent_child WHERE childid = '$i'");
+			my @parents = $self->get_list("SELECT parentid FROM tm_parent_child WHERE childid = '$i' ORDER BY parentid");
 			$$h_tkt{'parents'} = \@parents;
 			# Children
-			my @children = $self->get_list("SELECT childid FROM tm_parent_child WHERE parentid = '$i'");
+			my @children = $self->get_list("SELECT childid FROM tm_parent_child WHERE parentid = '$i' ORDER by childid");
 			$$h_tkt{'children'} = \@children;
 			# Patches
-			my @pids = $self->get_list("SELECT patchid FROM tm_patch_ticket WHERE ticketid = '$i'");
+			my @pids = $self->get_list("SELECT patchid FROM tm_bug_patch WHERE bugid = '$i' ORDER by patchid");
 			$$h_tkt{'patches'} = \@pids; 
 			$$h_tkt{'i_pids'} = @pids;
 			# Notes
-			my @nids = $self->get_list("SELECT noteid FROM tm_notes WHERE ticketid = '$i'");
+			my @nids = $self->get_list("SELECT noteid FROM tm_bug_note WHERE bugid = '$i' ORDER by noteid");
 			$$h_tkt{'notes'} = \@nids;
 			$$h_tkt{'i_nids'} = @nids;
-			my @tids = $self->get_list("SELECT testid FROM tm_test_ticket WHERE ticketid = '$i'");
+			my @tids = $self->get_list("SELECT testid FROM tm_bug_test WHERE bugid = '$i' ORDER BY testid");
 			$$h_tkt{'tests'} = \@tids; 
 			$$h_tkt{'i_tids'} = @tids;
-			if (scalar(@nids == 1))  {
-				($$h_tkt{'note'}) = $self->get_list("SELECT msgbody FROM tm_notes WHERE ticketid = '$i'");
+			if (scalar(@nids == 1)) {
+				($$h_tkt{'note'}) = $self->get_list("SELECT msgbody FROM tm_note WHERE noteid = '@nids'");
 			}
 			$self->debug(3, "dob($i) admins(@admins), msgids(@mids), parent(@parents), children(@children), ccs(@ccs), patches(@pids), notes(@nids)");
 			if (ref($h_tkt) eq 'HASH') { 
@@ -575,7 +668,6 @@ sub dob { # get bug by id
 			} 
 		}
 	}
-	# print "found($fnd)\n";
 	$self->result('No bugs found') unless $fnd >= 1;
 	$self->finish;
 	$self->debug('OUT', $fnd);
@@ -606,21 +698,22 @@ sub doB { # get bug by id (large format)
         $fnd = $self->dob($bid);
     	$self->result($sep) if defined($sep); # kludge!
 		
-        my $msql = "SELECT messageid FROM tm_messages WHERE ticketid = '$bid'";
+        my $msql = "SELECT messageid FROM tm_bug_message WHERE bugid = '$bid' ORDER BY messageid";
         my @mids = $self->get_list($msql);
         my $i_m = $self->dom(\@mids);
 		
-		my $nsql = "SELECT noteid FROM tm_notes WHERE ticketid = '$bid'";
-        my @nids = $self->get_list($nsql);
-        my $i_n = $self->don(\@nids);
-		
-		my $psql = "SELECT patchid FROM tm_patch_ticket WHERE ticketid = '$bid'";
+		my $psql = "SELECT patchid FROM tm_bug_patch WHERE bugid = '$bid' ORDER BY patchid";
         my @pids = $self->get_list($psql);
         my $i_p = $self->dop(\@pids);
 		
-		my $tsql = "SELECT testid FROM tm_test_ticket WHERE ticketid = '$bid'";
+		my $tsql = "SELECT testid FROM tm_bug_test WHERE bugid = '$bid' ORDER BY testid";
         my @tids = $self->get_list($tsql);
         my $i_t = $self->dot(\@tids);
+		
+		my $nsql = "SELECT noteid FROM tm_bug_note WHERE bugid = '$bid' ORDER BY noteid";
+        my @nids = $self->get_list($nsql);
+        my $i_n = $self->don(\@nids);
+		
     }
 
     $self->finish;
@@ -647,7 +740,7 @@ sub dou { # get user by id
     my $fnd = 0;
     foreach my $uid (@uids) {
         next unless $uid =~ /^\w+$/;
-        my $sql = "SELECT * FROM tm_users WHERE userid = '$uid' AND active = '1' OR active = '0'";
+        my $sql = "SELECT * FROM tm_user WHERE userid = '$uid' AND active = '1' OR active = '0'";
 		if ($self->isadmin eq $self->system('bugmaster')) {
 			$sql .= " OR active IS NULL";
 		}
@@ -686,7 +779,7 @@ sub doc { # category retrieval -b
 	# ($args[0] == 1) && ($args[0] = undef);
 	my $str = join(' ', @args);
 	$self->start("-r @args"); 
-	my $sql = "SELECT ticketid FROM tm_tickets WHERE ticketid IS NOT NULL";
+	my $sql = "SELECT bugid FROM tm_bug WHERE bugid IS NOT NULL";
 	$sql .= $self->parse_flags($str, 'AND');
     $self->debug(2, "parsed sql($sql)");
 	my @data = $self->get_list($sql);
@@ -741,7 +834,7 @@ sub dos { # subject -b
 	my $i_ok   = 0;
 	my ($crit) = (ref($input) eq 'ARRAY') ? @{$input} : $input;
 	$self->start("-s $crit $borB"); 
-	my $sql = "SELECT DISTINCT ticketid FROM tm_tickets WHERE ticketid IS NOT NULL AND subject LIKE '%$crit%'";
+	my $sql = "SELECT DISTINCT bugid FROM tm_bug WHERE bugid IS NOT NULL AND subject LIKE '%$crit%'";
 	my @bids = $self->get_list($sql);
 	# should return tids associated with query, next step should dob|B ...
 	if (defined($borB) && $borB eq 'B') {
@@ -776,16 +869,16 @@ sub dor { # retrieve in body
 	$self->debug('IN', @_);
 	my $input  = shift;
 	my $borB   = shift  || '';
-	my ($crit) = (ref($input) eq 'ARRAY') ? @{$input} : $input;
+	my ($crit) = (ref($input) eq 'ARRAY') ? join(' ', @{$input}) : $input;
 	$self->start("-b $crit $borB"); 
-	my $sql = "SELECT DISTINCT ticketid FROM tm_messages WHERE ticketid IS NOT NULL AND msgbody LIKE '%$crit%'";
-	my @bids = $self->get_list($sql);
-	# should return bugids associated with query, next step should dob|B ...
+	my $msql = "SELECT DISTINCT messageid FROM tm_message WHERE msgbody LIKE '%$crit%'";
+	my @mids = $self->get_list($msql);
 	my $i_ok = 0;
-	if (defined($borB) && $borB eq 'B') {
-	    $i_ok = $self->dob(\@bids);
-	} else {
-    	$i_ok = $self->dob(\@bids);
+	if (scalar(@mids) >= 1) {
+		my $mids = join("', '", @mids);
+		my $sql = "SELECT DISTINCT bugid FROM tm_bug_message WHERE bugid IS NOT NULL AND messageid IN ('$mids')";
+		my @bids = $self->get_list($sql);
+		$i_ok = $self->dob(\@bids, $borB);
 	}
 	$self->finish;
 	$self->debug('OUT', $i_ok);
@@ -796,7 +889,7 @@ sub dor { # retrieve in body
 sub doR {
 	my $self  = shift;
 	$self->debug('IN', @_);
-	my $i_ok = $self->doR($_[0], 'B');
+	my $i_ok = $self->dor($_[0], 'B');
 	$self->debug('OUT', $i_ok);
 	return $i_ok;
 }
@@ -817,10 +910,12 @@ sub don {
 	my $fnd = 0;
 	foreach my $nid (@nids) {
         next unless $nid =~ /^\d+$/;
-        my $sql = "SELECT * FROM tm_notes WHERE noteid = '$nid'";
+        my $sql = "SELECT * FROM tm_note WHERE noteid = '$nid'";
 	    my ($h_note) = $self->get_data($sql);
 		if ((ref($h_note) eq 'HASH') && ($$h_note{'noteid'} eq $nid)) {
-            my $res = $self->format_data($h_note);
+            my ($bugid) = my @bugids = $self->get_list("SELECT DISTINCT bugid FROM tm_bug_note WHERE noteid = '$nid'");
+			$$h_note{'bugids'} = \@bugids;
+			my $res = $self->format_data($h_note);
             $fnd++;
         } else {
 			$self->result("No note found with noteid($nid)");
@@ -835,37 +930,54 @@ sub don {
 
 =item doN
 
-Assign to given bugid, given notes, return $i_ok
+Assign to given bugid, given notes, return $i_nid or 0
+
+Accepts ($bugid, $note, $header) or ([($bugid, $note, $header)])
 
 =cut
 
 sub doN {
 	my $self  = shift;
     $self->debug('IN', @_);
-	my $input = shift;
+	my $xstr  = shift;
 	my $xnote = shift || '';
 	my $xhdr  = shift || '';
-	my ($tid, $note, $hdr) = (ref($input) eq 'ARRAY') ? @{$input} : ($input, $xnote, $xhdr);
-	my $nid   = '';
+	my ($str, $note, $hdr) = (ref($xstr) eq 'ARRAY') ? (@{$xstr}, $xnote, $xhdr) : ($xstr, $xnote, $xhdr);
+	my %cmds  = $self->parse_str($str);
+	my $nid   = 0;
 	my $i_ok  = 1;
-	if (!($self->ok($tid))) {
+	my $bid   = '';
+	if (ref($cmds{'bugids'}) eq 'ARRAY') {
+		($bid) = @{$cmds{'bugids'}};
+	}
+	$self->debug(0, "doN x requires a valid bugid($bid)");
+	if (!($self->ok($bid))) {
 		$i_ok = 0;
-		$self->debug(0, "tm_notes requires a valid bugid($tid)");
+		$self->debug(0, "doN x requires a valid bugid($bid)");
 	} else {
-		my $qnote = $self->quote($note);
-		my $qhdr  = $self->quote($hdr);
-		if (!$self->exists($tid)) {
-			$i_ok = 0;
-			$self->result("bug($tid) doesn't exist for insert of note($note) and hdr($hdr");
+		if ($note !~ /\w+/) {
+			$self->debug(0, "requires a substantial note($note) to function");
 		} else {
-			if ($note =~ /\w+/) {
-				my $insert = "INSERT INTO tm_notes values (NULL, NULL, '$tid', NULL, 'x', '".$self->isadmin."', $qnote, $qhdr)";
-				my $sth = $self->exec($insert);
-				my $ok = $self->track('n', $tid, "assigned note($note)");
-				$self->debug(1, "Assigned($tid) <- note($note))");
-				($nid) = $self->get_list("SELECT MAX(noteid) FROM tm_notes WHERE msgbody = $qnote");	
-				$self->result("Note($nid) assigned($i_ok) to tid($tid)");
-			}	
+			my $qnote = $self->quote($note);
+			my $qhdr  = $self->quote($hdr);
+			if (!$self->exists($bid)) {
+				$i_ok = 0;
+				$self->result("bug($bid) doesn't exist for insert of note($note) and hdr($hdr");
+			} else {
+				if ($note =~ /\w+/) {
+					my $insert = "INSERT INTO tm_note values (now(), NULL, NULL, 'subj', 'source', 'to', $qhdr, $qnote)";
+					my $sth = $self->exec($insert);
+					if (defined($sth)) {
+						$nid = $sth->insertid;
+						$self->result("Note($nid) generated");
+						my $ref = "INSERT INTO tm_bug_note values ('$bid', '$nid')";
+						my $ref_sth = $self->exec($ref);
+						my $ok = $self->track('n', $bid, "assigned nid($nid) note($note) ($ref_sth)");
+						$self->debug(1, "Assigned($bid) <- nid($nid) note($note))");	
+						# $self->result("Note($nid) assigned($i_ok) to bid($bid) ($ref_sth)");
+					}
+				}	
+			}
 		}
 	}
 	$self->debug('OUT', $i_ok);
@@ -1068,21 +1180,22 @@ sub stats {
     my $self = shift;
 	$self->debug('IN', @_);
     my %over = (); 
-    my $bugs                = "SELECT COUNT(ticketid) FROM tm_tickets";
+    my $bugs                = "SELECT COUNT(bugid) FROM tm_bug";
     my $datediff            = "WHERE TO_DAYS(NOW()) - TO_DAYS(created)";
 # BUGS
-($over{'messages'})     = $self->get_list('SELECT COUNT(messageid) FROM tm_messages');
+($over{'messages'})     = $self->get_list('SELECT COUNT(messageid) FROM tm_message');
 ($over{'bugs'})      = $self->get_list("$bugs");
-($over{'patches'})      = $self->get_list('SELECT COUNT(patchid) FROM tm_patches');
-($over{'notes'})        = $self->get_list('SELECT COUNT(noteid) FROM tm_notes');
-my @claimed             = $self->get_list("SELECT DISTINCT ticketid FROM tm_claimants");
+($over{'patches'})      = $self->get_list('SELECT COUNT(patchid) FROM tm_patch');
+($over{'notes'})        = $self->get_list('SELECT COUNT(noteid) FROM tm_note');
+($over{'tests'})        = $self->get_list('SELECT COUNT(testid) FROM tm_test');
+my @claimed             = $self->get_list("SELECT DISTINCT bugid FROM tm_bug_user");
 $over{'claimed'}        = scalar @claimed; 
 my $claimed             = join("', '", @claimed);
-($over{'unclaimed'})    = $self->get_list("$bugs WHERE ticketid NOT IN ('$claimed')");
-my @admins = $self->get_list('SELECT DISTINCT userid FROM tm_users');
+($over{'unclaimed'})    = $self->get_list("$bugs WHERE bugid NOT IN ('$claimed')");
+my @admins = $self->get_list('SELECT DISTINCT userid FROM tm_user');
 $over{'administrators'}	= @admins;
 foreach my $admin (@admins) {
-	my ($cnt) = $self->get_list("SELECT COUNT(ticketid) FROM tm_claimants WHERE userid = '$admin'");
+	my ($cnt) = $self->get_list("SELECT COUNT(bugid) FROM tm_bug_user WHERE userid = '$admin'");
 	$over{'admins'}{$admin} = $cnt;
 }
 
@@ -1178,7 +1291,9 @@ sub doa { # admin
 	my %cmds = $self->parse_str(join(' ', @args));
     my $cmds = join(' ', @{$cmds{'flags'}});
     my ($commands) = $self->parse_flags($cmds, 'SET');
-	$commands .= ", version = '@{$cmds{'versions'}}'" if scalar(@{$cmds{'versions'}}) >= 1;
+	# version -> fixed as more typical in admin update situation?
+	$commands .= ", fixed = '@{$cmds{'versions'}}'" if scalar(@{$cmds{'versions'}}) >= 1;
+	$commands .= ", ts = NULL";
 	$self->debug(2, "str(@args) -> cmds(".Dumper(\%cmds)."commands($commands)");
 	if ($commands !~ /\w+/) {
 		$self->debug(0, "parse_flags failed($cmds -> $commands)");
@@ -1189,7 +1304,8 @@ sub doa { # admin
 	        if (!$self->admin_of_bug($t, $self->isadmin)) {
 				my $notify = $self->administration_failure($t, $commands, $self->isadmin, 'not admin');
 			} else {
-				my $sql = "UPDATE tm_tickets SET $commands WHERE ticketid = '$t'";
+				my $orig = $self->current_status($t);
+				my $sql = "UPDATE tm_bug SET $commands WHERE bugid = '$t'";
                 my $sth = $self->exec($sql);
                 if (defined($sth)) {
                     $done++;
@@ -1197,7 +1313,7 @@ sub doa { # admin
                     $self->debug(2, "Bug ($t) updated ($rows, $done).");
                     my $i_t= $self->track('b', $t, $commands);
 					if ($rows >= 1) {
-						my $i_x = $self->notify_cc($t, $cmds);
+						my $i_x = $self->notify_cc($t, $cmds, $orig);
 					}
 					# $self->doK([$tid]) unless $self->admin_of_bug($tid, $self->isadmin);
 	    		} else {
@@ -1217,7 +1333,7 @@ sub doa { # admin
 
 =item admin_of_bug
 
-Checks given bugid and administrator against tm_claimants.
+Checks given bugid and administrator against tm_bug_user.
 
 Returns 1 if administrator listed against bug, 0 otherwise.
 
@@ -1229,7 +1345,7 @@ sub admin_of_bug {
     my $bid   = shift;
     my $admin = shift || '';
 	my $i_ok  = 0;
-    my $sql   = "SELECT DISTINCT ticketid FROM tm_claimants WHERE userid = '$admin' AND ticketid = '$bid'";
+    my $sql   = "SELECT DISTINCT bugid FROM tm_bug_user WHERE userid = '$admin' AND bugid = '$bid'";
     my ($res) = $self->get_list($sql);
 	if (defined($res) and $bid =~ /^$res$/) {
 		$i_ok = 1;
@@ -1276,7 +1392,7 @@ sub dok { # claim bug
     my $i_ok = 1;
 	#$self->start("-c @bids");
     my $admin = $self->isadmin;
-    my @admins = $self->get_list("SELECT DISTINCT userid FROM tm_users");
+    my @admins = $self->get_list("SELECT DISTINCT userid FROM tm_user");
 	if (grep(/^$admin$/, @admins)) {
 		foreach my $i (@bids) {
         	next unless $self->ok($i);
@@ -1316,7 +1432,7 @@ sub doK { # unclaim bug
 
 =item dox
 
-Delete bug from tm_tickets table.
+Delete bug from tm_bug table.
 
 Use C<doX> for messages associated with bugs.
 
@@ -1333,14 +1449,14 @@ sub dox { # xterminate bugs
     foreach my $arg (@args) {
         next unless $self->ok($arg);
         if (1) {
-            my $delete = "DELETE FROM tm_tickets WHERE ticketid = '$arg'";
+            my $delete = "DELETE FROM tm_bug WHERE bugid = '$arg'";
             $self->debug(2, "Going for it ($delete).");
             my ($del) = $self->exec($delete);
             if ($del->numrows >= 1) {
-                $self->debug(0, "Bug ($arg) deleted from tm_tickets <br>\n");
+                $self->debug(0, "Bug ($arg) deleted from tm_bug <br>\n");
                 $deleted += $del->numrows;
             } else {
-                $self->result("Bug ($arg) not deleted ($del) from tm_tickets: $Mysql::db_errstr\n");
+                $self->result("Bug ($arg) not deleted ($del) from tm_bug: $Mysql::db_errstr\n");
             }
         } 
     }
@@ -1352,7 +1468,7 @@ sub dox { # xterminate bugs
 
 =item doX
 
-Delete given bugid messages from tm_messages.
+Delete given bugid messages from tm_message.
 
 =cut
 
@@ -1373,8 +1489,8 @@ sub doX { # Xterminate messages
 			$self->debug(0, "Can't delete bug which has child records(@children)");
 		} else {
         	$self->debug(2, "Going for the delete ($arg)");
-        	foreach my $table (qw(tm_cc tm_claimants tm_messages)) {
-            	my $delete = "DELETE FROM $table WHERE ticketid = '$arg'";
+        	foreach my $table (qw(tm_cc tm_bug_message tm_bug_note tm_bug_patch tm_bug_test tm_bug_user)) {
+            	my $delete = "DELETE FROM $table WHERE bugid = '$arg'";
             	my ($del) = $self->exec($delete);
             	if ($del->numrows >= 1) {
                 	$self->debug(0, "Bug ($arg) deleted from $table(".$del->numrows.") <br>\n");
@@ -1384,7 +1500,7 @@ sub doX { # Xterminate messages
         	} 
 			my $tmpc = "DELETE FROM tm_parent_child WHERE childid = '$arg'";
 			$self->exec($tmpc);
-			$deleted += $self->dox($arg); # tm_tickets if $sofarsogood
+			$deleted += $self->dox($arg); # tm_bug if $sofarsogood
 		}
     }
 	$self->finish;
@@ -1466,7 +1582,7 @@ sub doi { # initiate new admin
 		}
   	}
 	if ($ok == 1) { # CHECK UNIQUE IN DB
-	    my @exists = $self->get_list("SELECT userid FROM tm_users WHERE userid = '$userid'");
+	    my @exists = $self->get_list("SELECT userid FROM tm_user WHERE userid = '$userid'");
         if (scalar(@exists) >= 1) {
             $ok = 0;
             $self->debug(0, "user already defined in db(@exists)");
@@ -1477,8 +1593,8 @@ sub doi { # initiate new admin
 		}
     } 
     if ($ok == 1) { # INSERT: non-active is default - don't want to upset everybody :-)
-        my $insert = qq|INSERT INTO tm_users values (
-            '$userid', '$encrypted', '$address', '$name', '$match_address', 0
+        my $insert = qq|INSERT INTO tm_user values (
+            now(), NULL, '$userid', '$encrypted', '$address', '$name', '$match_address', 0
         )|;
         my ($sth) = $self->exec($insert);
         $ok = $sth->affected_rows;
@@ -1540,7 +1656,7 @@ sub doI {
         	next UID unless $tgt =~ /^\s*(\w+)\s*$/;
 			my $uid = $1;
         	$self->debug(2, "Disabling userid($uid)");
-        	my $update = "UPDATE tm_users SET active = NULL WHERE userid = '$uid'";
+        	my $update = "UPDATE tm_user SET active = NULL WHERE userid = '$uid'";
             my ($sth) = $self->exec($update);
             if (defined($sth)) {
 				$i_ok++;
@@ -1556,17 +1672,19 @@ sub doI {
 	$self->debug('OUT', $i_ok);
 	return $i_ok;
 }
- # select userid, active from tm_users where active is null;     
+ # select userid, active from tm_user where active is null;     
 
-=item doz
+
+
+=item _doz
 
 Update: only to be used by perlbug@rfi.net (disabled)
 
-    $ok = $o_obj->doz($filename, $data);
+    $ok = $o_obj->_doz($filename, $data);
 
 =cut
 
-sub doz { # update
+sub _doz { # update
     my $self = shift;
 	$self->debug('IN', @_);
     my ($update) = @_;
@@ -1615,6 +1733,66 @@ sub doz { # update
     
 	$self->debug('OUT', $ok);
 	return $ok;
+}
+
+
+=item doy
+
+Password renewal
+
+    $i_ok = $o_obj->doy($user, $pass);
+
+=cut
+
+sub doy { # password, user
+    my $self = shift;
+	$self->debug('IN', @_);
+	my $input = shift;
+	($input) = (ref($input) eq 'ARRAY') ? @{$input} : ($input);
+	my ($user, $pass) = split(/\s+/, $input);
+	$pass = 'default_password' unless $pass =~ /\w+/;
+	$self->start("-y $user $pass");
+    my $i_ok = 1;
+    
+	if (!($user =~ /\w+/ && $pass =~ /\w+/)) {
+		$i_ok = 0;
+		$self->debug(0, "invalid user($user) or pass($pass)");
+	} else {
+		my @users = $self->get_list("SELECT userid FROM tm_user WHERE userid = '$user' AND active IS NOT NULL");
+		if (!(grep(/^$user$/, @users))) {
+			$i_ok = 0;
+			$self->debug(0, "can't update password for non-valid user($user)");
+		}
+	}
+	
+	if ($i_ok == 1) { # HTPASSWD
+		my $encrypted = crypt($pass, substr($pass, 0, 2));
+		$i_ok = $self->htpasswd($user, $encrypted);
+		if ($i_ok == 1) {
+			$self->debug(0, "htp: user($user) inserted new password($pass)");
+		} else {
+			$i_ok = 0;
+			$self->debug(0, "htp: user($user) failed to insert new password($pass)");
+		}
+    }
+	
+	if ($i_ok == 1) { # DATABASE
+		my $newpass = "UPDATE tm_user SET password = PASSWORD('$pass') WHERE userid = '$user'";
+		my $sth = $self->exec($newpass);
+    	if (defined($sth) and $sth->num_rows == 1) {
+			$self->debug(0, "db: user($user) set new password($pass) -> $sth");
+		} else {
+			$i_ok = 0;
+			$self->debug(0, "db: user($user) failed to set new password($pass) -> $sth");
+		}
+	}
+	
+	if ($i_ok == 1) {
+		$self->result("user($user) set new password($pass)");
+	}
+    
+	$self->debug('OUT', $i_ok);
+	return $i_ok;
 }
 
 

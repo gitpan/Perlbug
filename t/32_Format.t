@@ -23,7 +23,7 @@ my $o_fmt = Perlbug::Base->new;
 # Tests
 # -----------------------------------------------------------------------------
 my %h_data = (
-	'ticketid' => '19990102.003',
+	'bugid' => '19990102.003',
 	'status'   => 'and there',
 	'there'	   => [qw(and over here)],
 	'zip'	   => '',
@@ -34,7 +34,7 @@ my %h_data = (
 # scalar
 $test++;
 my $h_fmtd = $o_fmt->format_fields(\%h_data);
-if (Dumper($h_fmtd) =~ /\'ticketid\'\s\=\>\s\'19990102.003\'/i) {	
+if (Dumper($h_fmtd) =~ /\'bugid\'\s\=\>\s\'19990102.003\'/i) {	
 	ok($test);
 } else {
 	notok($test);
@@ -45,7 +45,7 @@ if (Dumper($h_fmtd) =~ /\'ticketid\'\s\=\>\s\'19990102.003\'/i) {
 # scalar
 $test++;
 $h_fmtd = $o_fmt->format_fields(\%h_data);
-if (Dumper($h_fmtd) !~ /\'ticketid\'\s\s\=\>\s\'19990102.003\'/i) {	
+if (Dumper($h_fmtd) !~ /\'bugid\'\s\s\=\>\s\'19990102.003\'/i) {	
 	ok($test);
 } else {
 	notok($test);

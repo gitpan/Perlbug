@@ -1,0 +1,664 @@
+#!/usr/local/bin/perl -w
+
+# perl/Tk interface to the perlbug database
+
+use strict;
+
+my $VERSION = "1.02";
+
+use Getopt::Long qw(:config nopermute bundling bundling_override);
+
+use Tk;
+use Tk::Balloon;
+use Tk::BrowseEntry;
+use Tk::NoteBook;
+use Tk::ROText;
+
+use MyDBD;
+
+my $host    = "l1";
+my $perlbug = "/$host/pro/3gl/CPAN/PerlBug";
+   $ENV{MYSQLDB} = "perlbug";
+
+if ($Tk::VERSION >= 800.013) {
+    Tk::CmdLine->LoadResources ();
+    Tk::CmdLine->SetArguments ();
+    }
+
+my $opt_m = 0;	# Match direct (don't use regex matching)
+my $opt_x = 0;
+GetOptions (
+    "x"    => \&$opt_x,
+    "m"    => \&$opt_m,
+    ) or usage ();
+
+my @sel = qw(ticketid admin
+	     status category severity osname
+	     fixed version
+	     subject author body
+	     note
+	     );
+my %sel;	# Legal options to choose from
+my %pat;	# What we've selected to see
+my %subs;
+my %ticket =	# SQL stuff for ticket
+    map { $_ => "" } qw(ticketid status subject sourceaddr destaddr
+		        severity category fixed version os osname
+		        messageid follows author msgheader msgbody msgcount
+			noteid noteauthor noteheader notebody);
+my @ticket;	# Current selected set
+
+my $top;
+my %head;
+
+$pat{ticketid} = shift (@ARGV) || undef;
+
+InitTU ();
+SetList ();
+
+MainLoop;
+
+### ###########################################################################
+
+sub usage
+{
+    print STDERR "usage: perlbug-db ...\n";
+    exit 0;
+    } # usage
+
+sub to_background
+{
+    my $pid = fork;
+    if ($pid < 0) {
+	print STDERR "Unable to run in the background, cannot fork: $!\n";
+	exit $?;
+	}
+    $pid and exit 0;
+    } # to_background
+
+sub pat_reset ($)
+{
+    my $mask = $_[-1];
+
+    if (length ($mask) > 2 and exists $pat{$mask}) {
+	$pat{$mask} = "";
+	$pat{prv}{$mask} = "?";
+	}
+    else {
+	$mask = qr/^$mask/;
+
+	"t" =~ $mask and $pat{ticketid} = "", $pat{prv}{ticketid} = "?";
+
+	"a" =~ $mask and $pat{admin}    = "", $pat{prv}{admin}    = "?";
+
+	"s" =~ $mask and $pat{status}   = "", $pat{prv}{status}   = "?";
+	"c" =~ $mask and $pat{category} = "", $pat{prv}{category} = "?";
+	"y" =~ $mask and $pat{severity} = "", $pat{prv}{severity} = "?";
+	"o" =~ $mask and $pat{osname}   = "", $pat{prv}{osname}   = "?";
+
+	"f" =~ $mask and $pat{fixed}    = "", $pat{prv}{fixed}    = "?";
+	"v" =~ $mask and $pat{version}  = "", $pat{prv}{version}  = "?";
+
+	"u" =~ $mask and $pat{author}   = "", $pat{prv}{author}   = "?";
+	"j" =~ $mask and $pat{subject}  = "", $pat{prv}{subject}  = "?";
+	"b" =~ $mask and $pat{body}     = "", $pat{prv}{body}     = "?";
+	"n" =~ $mask and $pat{note}     = "", $pat{prv}{note}     = "?";
+	}
+
+    $pat{prv}{admin} = "refresh";
+    DoOneEvent ();
+    } # pat_reset
+
+sub GetData ($)
+{
+    my $init = shift;
+
+    if ($init) {
+	pat_reset (".");
+	}
+
+    $init and print STDERR "Getting data .";
+    {   my $sth = prepex ("select type, flag from tm_flags");
+	my ($type, $flag);
+	$sth->bind_columns (\$type, \$flag);
+	while ($sth->fetch) {
+	    push @{$sel{$type}}, $flag;
+	    }
+	$sth->finish;
+	}
+
+    {	my $sth = prepex ("select userid, name from tm_users");
+	my ($userid, $name);
+	$sth->bind_columns (\$userid, \$name);
+	while ($sth->fetch) {
+	    $sel{admin}{$userid} = $name;
+	    }
+	$sth->finish;
+	}
+
+    foreach my $sel (qw(ticketid fixed version osname)) {
+	my $sth = prepex ("select $sel from tm_tickets");
+	my $f;
+	my %f = ();
+	$sth->bind_columns (\$f);
+	while ($sth->fetch) {
+	    defined $f or next;
+	    $f{$f} = 1;
+	    }
+	$sth->finish;
+	@{$sel{$sel}} = sort keys %f;
+	}
+
+    $init and print STDERR "\n";
+    } # GetData
+
+# Promote for derived widget classes
+sub Tk::bindDefKeys ($$)
+{
+    my $w = shift;
+
+    $w->bind ("<Delete>"        => "Backspace");
+    $w->bind ("<Enter>"         => [ \&SetRealList ]);
+    $w->bind ("<Control-Key-w>" => [ \&pat_reset, shift ]);
+    $w->bind ("<Alt-Key-r>"     => [ \&pat_reset, "."   ]);
+    $w;
+    } # bindDefKeys
+
+sub InitTU
+{
+    select ((select (STDERR), $| = 1)[0]);
+    select ((select (STDOUT), $| = 1)[0]);
+
+    GetData (1);
+
+    $ticket{sql_list} = prepex (
+	"select ticketid, status, subject, sourceaddr, destaddr,",
+	"       severity, category, fixed, version, os, osname",
+	"from   tm_tickets");
+    $ticket{sql_list}->bind_columns (
+	\@ticket{qw(ticketid status subject sourceaddr destaddr
+		    severity category fixed version os osname)});
+    $ticket{sql_list}->finish;
+    $ticket{sql_ticket} = prepex (
+	"select ticketid, status, subject, sourceaddr, destaddr,",
+	"       severity, category, fixed, version, os, osname",
+	"from   tm_tickets",
+	"where  ticketid = ?");
+    $ticket{sql_ticket}->bind_columns (
+	\@ticket{qw(ticketid status subject sourceaddr destaddr
+		    severity category fixed version os osname)});
+    $ticket{sql_ticket}->finish;
+    $ticket{sql_msg} = prepex (
+	"select messageid, follows, author, msgheader, msgbody",
+	"from   tm_messages",
+	"where  ticketid = ?");
+    $ticket{sql_msg}->bind_columns (
+	\@ticket{qw(messageid follows author msgheader msgbody)});
+    $ticket{sql_msg}->finish;
+    $ticket{sql_notes} = prepex (
+	"select noteid, author, msgheader, msgbody",
+	"from   tm_notes",
+	"where  ticketid = ?");
+    $ticket{sql_notes}->bind_columns (
+	\@ticket{qw(noteid noteauthor noteheader notebody)});
+    $ticket{sql_notes}->finish;
+
+    to_background ();
+
+    $top = MainWindow->new (
+	-name   => "perlbug",
+	-cursor => "top_left_arrow");
+    $top->title ("Perl5 Bug database");
+
+    my $ico = Tk::Toplevel->new ($top,
+	-borderwidth => 0,
+	-class       => 'Icon');
+#   $ico->Label (	# Give it an image
+#	-image  => $ico->Pixmap (-file => "/pro/local/lib/xtel.xpm"),
+#	-relief => "flat",
+#	-anchor => "c"
+#	)->pack (-fill => "both");
+    $top->iconwindow ($ico);
+    $top->iconname ("perlbug");
+
+    $subs{SelBugs} = sub { SetList (); };
+
+    my $bln = $top->Balloon (
+	-foreground => "Blue4",
+	-background => "LightYellow2");
+
+    ########################### Basic layout ##################################
+
+    # Set up some menubar here ...
+
+    my %f = (
+	search	=> $top->Frame (
+			-relief  => "flat"  )->pack (
+			    -side     => "top",
+			    -expand   => 0,
+			    -fill     => "x"),
+	list	=> $top->Frame (
+			-relief  => "sunken")->pack (
+			    -side     => "left",
+			    -expand   => 0,
+			    -fill     => "y"),
+	message	=> $top->Frame (
+			-relief  => "sunken")->pack (
+			    -side     => "left",
+			    -expand   => 1,
+			    -fill     => "both"),
+	);
+
+    my $NIndex = undef;
+    my $NCurrent = sub {
+	$NIndex || $ticket{list}->index ("current");
+	};
+
+    ########################### Main search criteria ##########################
+
+    my $f = $f{search}->Frame (-relief => "flat")->pack (qw(-side top -expand 0 fill x));
+
+    foreach my $sel (qw(status category severity osname version fixed)) {
+	#print STDERR "Preparing browse button for $sel\n";
+	my $b = $f->BrowseEntry (
+	    -relief             => "sunken",
+	    -width              => 15,
+	    -borderwidth        =>  1,
+	    -highlightthickness =>  1,
+	    -listwidth          => 50,
+	    -variable           => \$pat{$sel},
+	    -browsecmd          => $subs{SelBugs})->pack (
+		-anchor => "w",
+		-side   => "left")->bindDefKeys (substr ($sel, 0, 1));
+	$bln->attach ($b, -msg => "Browse to select $sel");
+	$b->insert ("end", undef);
+	foreach my $s (sort @{$sel{$sel}}) {
+	    $b->insert ("end", $s);
+	    }
+	}
+
+    # -------------------------------------------------------------------------
+
+    $f = $f{search}->Frame (-relief => "flat")->pack (qw(-side left  -expand 0 fill x));
+
+    my $e = $f->Frame (-relief => "flat")->pack (qw(-side top expand 0 -fill x));
+    foreach my $sel (qw(ticketid admin)) {
+	my $b = $e->BrowseEntry (
+	    -relief             => "sunken",
+	    -width              => 15,
+	    -borderwidth        =>  1,
+	    -highlightthickness =>  1,
+	    -listwidth          => 50,
+	    -variable           => \$pat{$sel},
+	    -browsecmd          => $subs{SelBugs})->pack (
+		-anchor => "w",
+		-side   => "left")->bindDefKeys ($sel);
+	$bln->attach ($b, -msg => "Browse to select $sel");
+	$b->insert ("end", undef);
+	my @v = $sel eq "admin" ? keys %{$sel{$sel}} : @{$sel{$sel}};
+	foreach my $s (sort @v) {
+	    $b->insert ("end", $s);
+	    }
+	}
+
+    $f->Button (
+	-text    => "reset",
+	-command => sub { pat_reset ("."); SetRealList (); },
+	)->pack (qw(-side left -expand 1 -fill both));
+    $f->Button (
+	-text    => "quit",
+	-command => \&exit,
+	)->pack (qw(-side left -expand 1 -fill both));
+
+    # -------------------------------------------------------------------------
+    
+    $f = $f{search}->Frame (-relief => "flat")->pack (qw(-side right -expand 0 fill x));
+
+    foreach my $sel (qw(subject note message)) {
+	#print STDERR "Preparing selection button for $sel\n";
+	my $e = $f->Frame (-relief => "flat")->pack (qw(-side top expand 0 -fill x));
+	$e->Label (
+	    -text       => ucfirst $sel,
+	    -foreground => "Green4",
+	    -anchor     => "c",
+	    -width      => 8,
+	    -relief     => "flat")->pack (
+		-side => "left");
+	my $b = $e->Entry (
+	    -relief             => "sunken",
+	    -width              => 60,
+	    -borderwidth        =>  1,
+	    -highlightthickness =>  1,
+	    -textvariable       => \$pat{$sel})->pack (
+		-anchor => "w",
+		-side   => "left")->bindDefKeys ($sel);
+	$bln->attach ($b, -msg => "Enter selection criterium for $sel");
+	}
+
+#   Optional stuff to remove the balloons etc. but the setup kinda needs them
+#
+#    $bln->attach (
+#	$f->Checkbutton (
+#	    -borderwidth        => 1,
+#	    -highlightthickness => 0,
+#	    -variable           => \$opt_m,
+#	    -command            => [ \&pat_reset, "0" ])->pack (
+#		-side => "left"),
+#	-msg => "Klik hier om magic aan of uit te zetten in criteria");
+#    my $rm_balloon;
+#    $bln->attach (
+#	$rm_balloon = $f->Checkbutton (
+#	    -borderwidth        => 1,
+#	    -highlightthickness => 0)->pack (
+#		-side => "left"),
+#	-msg => "Klik hier ballonnetjes te verwijderen");
+#    $rm_balloon->configure (
+#	-command => sub {
+#	    # Change focus to remove current balloon
+#	    $top->focusNext;
+#	    $top->update;
+#	    $top->after (10, sub {
+#		$bln->destroy;
+#		$rm_balloon->packForget;
+#		});
+#	    });
+#    $opt_b and $top->after (100, sub { $rm_balloon->invoke });
+
+    ########################### Main message window ###########################
+
+    $f = $f{message}->Frame (-relief => "sunken")->pack (qw(-side top -expand 0 -fill x));
+    foreach my $s (qw(status category severity osname version fixed admin)) {
+	my $l = $f->Label (
+	    -textvariable => \$ticket{$s},
+	    -foreground   => "Green4",
+	    -anchor       => "c",
+	    -width        => 12,
+	    -relief       => "ridge")->pack (
+		-side => "left");
+	$bln->attach ($l, -msg => "This is the $s of the ticket");
+	$head{$s} = $l;
+	}
+    my $l = $f->Label (
+	-textvariable => \$ticket{msgcount},
+	-foreground   => "Red4",
+	-anchor       => "e",
+	-width        => 6,
+	-relief       => "flat")->pack (
+	    -side => "left");
+    $bln->attach ($l, -msg => "This is the message count of the ticket");
+    $head{msgcount} = $l;
+
+    # -------------------------------------------------------------------------
+
+    $f = $f{message}->Frame (-relief => "sunken")->pack (qw(-side top -expand 0 -fill x));
+
+    $l = $f->Label (
+	-textvariable => \$ticket{ticketid},
+	-foreground   => "Red4",
+	-anchor       => "c",
+	-width        => 12,
+	-relief       => "flat")->pack (
+	    -side => "left");
+    $bln->attach ($l, -msg => "This is the ID of the ticket");
+    $head{ticketid} = $l;
+    $l = $f->Label (
+	-textvariable => \$ticket{subject},
+	-foreground   => "Blue4",
+	-anchor       => "w",
+	-width        => 8,
+	-relief       => "sunken")->pack (
+	    -expand => 1,
+	    -fill   => "x",
+	    -side   => "left");
+    $bln->attach ($l, -msg => "This is the subject of the ticket");
+    $head{subject} = $l;
+    $l = $f->Label (
+	-textvariable => \$ticket{author},
+	-foreground   => "Blue4",
+	-anchor       => "w",
+	-width        => 15,
+	-relief       => "sunken")->pack (
+	    -expand => 0,
+	    -fill   => "x",
+	    -side   => "left");
+    $bln->attach ($l, -msg => "This is the author of the ticket");
+    $head{author} = $l;
+
+    # -------------------------------------------------------------------------
+
+    my $nb = $f{message}->NoteBook ()->pack (qw(-side top -expand 1 -fill both));
+
+    foreach my $page (0 .. 24) {
+	$ticket{message}[$page] = [ $nb, $nb->add ($page,
+	    -label  => sprintf ("%2d", $page),
+	    -state  => "disabled",
+	    -anchor => "nw")->Scrolled ("ROText",
+		-scrollbars         => "osoe",
+		-wrap               => "none",
+		-borderwidth        =>  1,
+		-highlightthickness =>  0,
+		-width              => 70,
+		-height             => 25)->pack (
+		    -expand => 1,
+		    -fill   => "both",
+		    -side   => "top") ];
+	}
+
+    $ticket{note} = $f{message}->Scrolled ("ROText",
+	-scrollbars         => "osoe",
+	-wrap               => "none",
+	-borderwidth        =>  1,
+	-highlightthickness =>  0,
+	-width              => 70,
+	-height             =>  5)->pack (
+	    -expand => 1,
+	    -fill   => "both",
+	    -side   => "top");
+
+    ########################################## Search results #################
+
+    $f = $f{list};
+
+    my $lastActive = "";
+
+    my $NMotion = sub {
+	my $e = $ticket{list}->XEvent;
+	my ($x, $y) = ($e->x, $e->y);
+	my $newLine = $ticket{list}->index ("\@$x,$y linestart");
+	if ($newLine ne $lastActive) {
+	    $ticket{list}->tagRemove ("active", "1.0", "end");
+	    $lastActive = $newLine;
+	    $ticket{list}->tagAdd ("active", $lastActive, "$lastActive lineend");
+
+	    my $ticketid = $ticket[int ($lastActive) - 1];
+	    $ticket{sql_ticket}->execute ($ticketid);
+	    $ticket{sql_ticket}->fetch;
+
+	    $ticket{sql_msg}->execute ($ticketid);
+	    foreach my $page (0 .. 24) {
+		$ticket{message}[$page][0]->pageconfigure ($page, -state => "disabled");
+		$ticket{message}[$page][1]->delete ("0.0", "end");
+		}
+	    my $page = 0;
+	    while ($ticket{sql_msg}->fetch) {
+		$ticket{message}[$page][0]->pageconfigure ($page, -state => "normal");
+		$ticket{message}[$page++][1]->insert ("end", $ticket{msgbody});
+		}
+	    $ticket{msgcount} = $page;
+
+	    while (my ($k, $w) = each %head) {
+		$w->configure (-text => $ticket{$k});
+		$w->update;
+		}
+
+	    $ticket{note}->delete ("0.0", "end");
+	    $ticket{sql_notes}->execute ($ticketid);
+	    while ($ticket{sql_notes}->fetch) {
+		$ticket{note}->insert ("end",
+		    sprintf "%5d %-20.20s %s\n", @ticket{qw(noteid noteauthor notebody)});
+		}
+	    }
+	};
+    my $NLock = sub {
+#	#$LblLock->configure (-text => "<1> Move");
+#	$LblLock->configure (-fg => "Orange4");
+	$ticket{list}->tagBind ("all", "<Motion>" => sub {});
+	$NIndex = $ticket{list}->index ("current");
+	};
+    $subs{NUnlock} = sub {
+#	#$LblLock->configure (-text => "<1> Lock");
+#	$LblLock->configure (-fg => "Blue4");
+	$ticket{list}->tagBind ("all", "<Motion>" => $NMotion);
+	$NIndex = undef;
+	};
+
+    $ticket{list} = $f->Scrolled ("ROText",
+	-scrollbars         => "osoe",
+	-wrap               => "none",
+	-borderwidth        =>  1,
+	-highlightthickness =>  0,
+	-width              => 13,
+	-height             => 25)->pack (
+	    -fill   => "both",
+	    -expand => 1,
+	    -side   => "top")->Subwidget ("scrolled");
+    $ticket{list}->bindDefKeys ("-");
+    $ticket{list}->tagConfigure ("active",
+	-relief      => "raised",
+	-borderwidth => 1);
+    $ticket{list}->tagBind ("all",
+	"<Motion>" => $NMotion,
+#	"<Key-Up>" => $NMotion	# Here I want to enable Up-Arrow and Down-Arrow
+	);
+
+#    ### Popup menu on <3> and other fun
+#
+#    my $Actions = $ticket{list}->Menu;
+#
+#    my $NToggle = sub {
+#	if (defined $NIndex) { &{$subs{NUnlock}} } else { &$NLock }
+#	#&$NNotes;
+#	&$NMotion;
+#	};
+#
+#    $Actions->command (-label        => "~Desk",
+#		       -command      => $NDesk);
+#    $Actions->separator;
+#    $Actions->command (-label        => "~Notes",    -accelerator => "  <1>",
+#		       -command      => $NNotes);
+#    $Actions->command (-label        => "~Address",  -accelerator => "S-<1>",
+#		       -command      => $NAddr);
+#    $Actions->separator;
+##   $Actions->command (-label        => "~Hide",
+##		       -command      => sub {
+##			    # Change focus to remove current balloon
+##			    $top->focusNext;
+##			    $top->update;
+##			    $top->after (10, sub {
+##				$Actions->withdraw;
+##				})
+##			    });
+#
+#    $ticket{list}->tagBind ("all", "<Button-1>"         => $NToggle);
+#    $ticket{list}->tagBind ("all", "<Button-2>"         => $NMach);
+#    # As of 800.015, <3> is bound to default popup window (thanks Nick :-((
+#    $ticket{list}->bind ("Tk::ROText", "<Button-3>"     => sub {
+#	$Actions->Popup (-popover   => "cursor",
+#	                 -popanchor => "w");
+#	$Actions->break;
+#	});
+#    $ticket{list}->tagBind ("all", "<Shift-Button-1>"   => $NAddr);
+#    $ticket{list}->tagBind ("all", "<Shift-Button-2>"   => $NModem);
+#    $ticket{list}->tagBind ("all", "<Shift-Button-3>"   => $NCall);
+#
+#    $ticket{list}->tagBind ("all", "<Control-Button-1>" => $NMail);
+#    $ticket{list}->tagBind ("all", "<Control-Button-3>" => $NAddr);
+#    $ticket{list}->tagBind ("all", "<Control-Button-3>" => $NCallFTP);
+#
+#    $top->update;
+#    my $g = $top->geometry;
+#    # Fit 10 lines + scrollbar or 11 lines
+#    $g =~ m/x(\d+)/ and
+#	$1 < 370 and
+#	$g =~ s/x$1/x370/ and
+#	$top->geometry ($g);
+#
+#    $opt_i and $top->iconify;
+
+    $ticket{list}->after (500, $subs{SelBugs});
+    } # InitTU
+
+sub fail ($)
+{
+    my $id = shift;
+
+    my ($s, $p) = ($ticket{$id}, $pat{regex}{$id});
+
+    defined $s or $s = "";
+    defined $p or return 0;
+
+    $opt_m and return index (uc $s, $p) < 0;
+    $s !~ $p;
+    } # fail
+
+sub SetList
+{
+    if ($top->state eq "iconic") {
+	$ticket{list}->after (5000, $subs{SelBugs});
+	return;
+	}
+
+    local $" = "÷";
+    "@pat{@sel}" eq "@{$pat{prv}}{@sel}" and return;
+
+#   &{$subs{NUnlock}};
+    $ticket{list}->DoWhenIdle (\&SetRealList);
+    } # SetList
+
+sub SetRealList
+{
+    $top->Busy;
+
+    @{$pat{prv}}{@sel} = @pat{@sel};
+
+    my @tickets = ();
+    foreach my $sel (@sel) {
+	my $p = $pat{$sel};
+	if ($opt_m) {
+	    $pat{regex}{$sel} = uc $p;
+	    next;
+	    }
+	do { # Invalid pattern (might be still incomplete)
+	    eval {'' =~ m/$p/};
+	    } while ($@ and chop $p);
+	$pat{regex}{$sel} = qr/$p/i;
+	}
+
+    $ticket{sql_list}->execute;
+    while ($ticket{sql_list}->fetch) {
+	fail ("ticketid") and next;
+	fail ("admin")    and next;
+
+	fail ("status")   and next;
+	fail ("category") and next;
+	fail ("severity") and next;
+	fail ("osname")   and next;
+	fail ("fixed")    and next;
+	fail ("version")  and next;
+
+	fail ("subject")  and next;
+
+	push @tickets, $ticket{ticketid};
+	}
+
+    $ticket{list}->delete ("1.0", "end");
+    @ticket = reverse sort @tickets;
+    foreach my $tid (@ticket) {
+	my @tags = ("all");
+	$ticket{list}->insert ("end", "$tid\n", \@tags);
+	}
+
+    $top->Unbusy;
+
+    $ticket{list}->after (500, $subs{SelBugs});
+    } # SetRealList

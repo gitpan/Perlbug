@@ -60,34 +60,34 @@ if ($debug == 3) {
 # 4
 $test++;
 $context = 'doh';
-my $data = $o_perlbug->$context; 
+my $data = $o_perlbug->doh; 
 if (length($data) >= 1) {	
 	ok($test);
 } else {
 	notok($test);
-	output("$context failed($data)");
+	output("doh failed($data)");
 }
 
 # 5
 $test++;
 $context = 'dof';
-my $i_fok = $o_perlbug->$context('h'); 
+my $i_fok = $o_perlbug->dof('h'); 
 if ($i_fok == 1) {	
 	ok($test);
 } else {
 	notok($test);
-	output("$context('h') failed($data)");
+	output("dof('h') failed($data)");
 }
 
 # 6
 $test++;
 $context = 'dof';
-$i_fok = $o_perlbug->$context('a'); 
+$i_fok = $o_perlbug->dof('a'); 
 if ($i_fok == 1) {	
 	ok($test);
 } else {
 	notok($test);
-	output("$context('a') failed($data)");
+	output("dof('a') failed($data)");
 }
 
 

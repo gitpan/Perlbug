@@ -64,11 +64,12 @@ if ($err == 0) {
 	notok($test);
 }
 
+
 # 2
 # OSNAME
 $test++; 
 $err = 0;
-$context = 'OSNAME';
+$context = 'osname';
 foreach my $test (grep(/^$context/, @tests)) {
 	my ($ok, $data) = &get_data($test);
 	# output("data=$data");

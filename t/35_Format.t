@@ -7,7 +7,7 @@ BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
 	use Perlbug::Testing;
-	plan('tests' => 6);
+	plan('tests' => 7);
 }
 use strict;
 use Data::Dumper;
@@ -38,32 +38,23 @@ if ($i_nok == 0) {
 	output("format_data(\%unrec) failed -> $i_nok");
 }
 
-my %tgt = ( # sigh, the english language!
-	'bug'		=> 'tickets', # and history...
-	'message'	=> 'messages',
-	'patch'		=> 'patches',
-  # 'test'		=> 'tests',
-	'note'		=> 'notes',
-	'user'		=> 'users',
-);
+my @tgts = qw(bug message note patch test user);
 
-
-# 2..6
-foreach my $item (keys %tgt) {
+# 2..7
+foreach my $item (@tgts) {
 	$test++;
-	my $table = $tgt{$item};
 	my $context = 'do'.substr($item, 0, 1);
-	$item = 'ticket' if $item eq 'bug';
 	my $target = $item.'id';
-	my ($id) = $o_fmt->get_list("SELECT MAX($target) FROM tm_$table");
+	my ($id) = $o_fmt->get_list("SELECT MAX($target) FROM tm_$item");
 	my $i_ok = $o_fmt->$context($id);
+	# output("item($item)->target($target)->id($id)->ok($i_ok)");
 	my $curr = $o_fmt->_current_target;
 	$i_ok = $o_fmt->format_data($curr) if $i_ok == 1; 
 	if ($i_ok >= 1) {	
 		ok($test);
 	} else {
 		notok($test);
-		output("format_data $context($id) failed($i_ok) for item($item) target($target) in table($table)");
+		output("format_data $context($id) failed($i_ok) for item($item) target($target) in table(tm_$item)");
 	}
 }
 

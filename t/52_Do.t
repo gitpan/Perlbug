@@ -7,7 +7,7 @@ BEGIN {
 	use File::Spec; 
 	use lib File::Spec->updir;
 	use Perlbug::Testing;
-	plan('tests' => 5);
+	plan('tests' => 6);
 }
 use strict;
 use Data::Dumper;
@@ -24,21 +24,13 @@ my $o_perlbug = Perlbug::Base->new;
 # Tests
 # -----------------------------------------------------------------------------
 
-my %tgt = ( # sigh, the english language!
-	'bug'		=> 'tickets', # and history...
-	'message'	=> 'messages',
-	'patch'		=> 'patches',
-    # 'test'		=> 'tests',
-	'note'		=> 'notes',
-	'user'		=> 'users',
-);
+my @tgts = qw(bug message note patch test user);
 
 # 1..6
-foreach my $item (keys %tgt) {
+foreach my $item (@tgts) {
 	$test++;
-	my $table = $tgt{$item};
+	my $table = $item;
 	$context = 'do'.substr($item, 0, 1);
-	$item = 'ticket' if $item eq 'bug';
 	my $target = $item.'id';
 	my ($id) = $o_perlbug->get_list("SELECT MAX($target) FROM tm_$table");
 	my $i_ok = $o_perlbug->$context($id); 

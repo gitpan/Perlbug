@@ -1,0 +1,17 @@
+From: perlbug_test@rfi.net
+To: targettest@bugs.perl.org
+Subject: a new test bug
+Message-Id: xxxyz@here.and.gone.today
+X-Header: some header stuff
+
+message body with perl mentioned
+
+should keep 'xxxyz@here.and.gone.today' as Message-Id
+remap to perl5-porters@perl.org
+subject should get [ID ...]
+X-Header: should be maintained
+etc.
+
+---
+sig
+

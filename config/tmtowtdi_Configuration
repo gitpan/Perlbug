@@ -7,7 +7,7 @@
 
 # CURRENT                       
 --------------------------------------------------------------------------------
-current, debug,    3,                           # level
+current, debug,    1,                           # level
 current, format,   a,                           # a, A, h, H, l, L
 current, isatest,  0,                           #! 0=normal 1=maintainer 2=print
 current, switches, bfhmnoprstu,	 			    # minimal
@@ -17,7 +17,7 @@ current, user,     generic,			  			# user
 
 # SYSTEM   
 --------------------------------------------------------------------------------
-system, admin_switches, aAdDiILNPQTxXz,	 	  	# admin switches
+system, admin_switches, aAdDiILNPQTxXyz,	 	# admin switches
 system, assign,         5,                  	# max tickets to assign/admin
 system, bugmaster,		richardf,		  		# master admin 
 system, enabled,		1,			  			# enabler

@@ -7,7 +7,7 @@
 
 # CURRENT                       
 --------------------------------------------------------------------------------
-current, debug,    3,                           # level
+current, debug,    2,                           # level
 current, format,   a,                           # a, A, h, H, l, L
 current, isatest,  2,                           #! 0=normal 1=maintainer 2=print
 current, switches, bfhmnoprstu,	 			    # minimal
@@ -17,14 +17,14 @@ current, user,     generic,			  			# user
 
 # SYSTEM   
 --------------------------------------------------------------------------------
-system, admin_switches, aAdDiILNPQTxXz,	 	  	# admin switches
+system, admin_switches, aAdDiILNPQTxXyz,	 	# admin switches
 system, assign,         5,                  	# max tickets to assign/admin
 system, bugmaster,		richardf,		  		# master admin 
 system, enabled,		1,			  			# enabler
 system, maintainer,     richard@perl.org,       # address
 system, max_age,        3,                      # max age of log files in days
 system, path,           /bin:/usr/bin,          # path to set for logs etc.
-system, restricted,     1,                      # (0|1) (all|admin)->can(modify) 
+system, restricted,     0,                      # (0|1) (all|admin)->can(modify) 
 system, separator,      /,                      # directory separator (/;\:...)
 system, source,			Perlbug.tar.gz,			# name for latest backup
 system, title,			Perlbug,		  		# :-)

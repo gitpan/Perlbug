@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Format (format_(bug|ticket|message|patch|test|note)_fields) tests for Perlbug 
+# Format (format_(bug|bugid|message|patch|test|note)_fields) tests for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
 # $Id: 33_Format.t,v 1.2 2000/08/08 10:07:17 perlbug Exp perlbug $
 #
@@ -22,9 +22,9 @@ my $o_fmt = Perlbug::Base->new;
 
 # Tests
 # -----------------------------------------------------------------------------
-my ($TID) = $o_fmt->get_list("SELECT MAX(ticketid) FROM tm_tickets");
+my ($BID) = $o_fmt->get_list("SELECT MAX(bugid) FROM tm_id");
 my %h_data = (
-	'ticketid' 	=> $TID,
+	'bugid' 	=> $BID,
 	'admins' 	=> [qw(me you)],
 	'messageids'=> [qw(1 2 3)],
 	'ccs'		=> [qw(m1 m2 m3)],
@@ -32,8 +32,8 @@ my %h_data = (
 	'noteid',   => '1',
 	'sourceaddr'=> 'perlbug_test@rfi.net',
 	'subject'   => 'some subject',
-	'parents'	=> [$TID],
-	'children'  => [$TID, $TID],
+	'parents'	=> [$BID],
+	'children'  => [$BID, $BID],
 	'fixed'		=> '',
 	'severity'	=> 'low',
 	'category'  => 'notabug',
@@ -55,19 +55,19 @@ if (ref($h_fmtd)) {
 }
 
 # 2
-# ticket ref
+# bugid ref
 $test++;
-if ($$h_fmtd{'ticketid'} =~ /^\<a\shref\=\"perlbug\.cgi\?req\=bid\&bid\=$TID\&.+/i) {	
+if ($$h_fmtd{'bugid'} =~ /^\<a\shref\=\"perlbug\.cgi\?req\=bid\&bid\=$BID\&.+/i) {	
 	ok($test);
 } else {
 	notok($test);
-	output("format $context($h_fmtd) ticketid failed -> ".Dumper($$h_fmtd{'ticketid'}));
+	output("format $context($h_fmtd) bugid failed -> ".Dumper($$h_fmtd{'bugid'}));
 }
 
 # 3
 # history
 $test++;
-if ($$h_fmtd{'history'} =~ /^\<a\shref\=\"perlbug\.cgi\?req\=hist\&hist\=$TID\&.+/i) {	
+if ($$h_fmtd{'history'} =~ /^\<a\shref\=\"perlbug\.cgi\?req\=hist\&hist\=$BID\&.+/i) {	
 	ok($test);
 } else {
 	notok($test);

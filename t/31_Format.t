@@ -23,32 +23,32 @@ my $o_fmt = Perlbug::Base->new;
 # Tests
 # -----------------------------------------------------------------------------
 my %tkt = (
-	'ticketid' => '19990102.003',	
-	'address'  => 'perlbug_test@rfi.net',
-	'osname'   => 'generic',
-	'unique_id'=> 'abc_today',
+	'bugid' 	=> '19990102.003',	
+	'address'  	=> 'perlbug_test@rfi.net',
+	'osname'   	=> 'generic',
+	'unique_id'	=> 'abc_today',
 );
 
 # 1
 # href? 
 $test++; 
-my ($href) = $o_fmt->href('bid', [$tkt{'ticketid'}], 'Bug report');
-if ($href =~ /^\<a\shref\=\".+\?req\=bid\&bid=$tkt{'ticketid'}.+?\"\s*\>Bug\sreport\<\/a\>$/i) {	
+my ($href) = $o_fmt->href('bid', [$tkt{'bugid'}], 'Bug report');
+if ($href =~ /^\<a\shref\=\".+\?req\=bid\&bid=$tkt{'bugid'}.+?\"\s*\>Bug\sreport\<\/a\>$/i) {	
 	ok($test);
 } else {
 	notok($test);
-	output("href($href) failed from data -> ($tkt{'ticketid'})");
+	output("href($href) failed from data -> ($tkt{'bugid'})");
 }
 
 # 2
 # href? 
 $test++; 
-my ($xhref) = $o_fmt->href('bid', [$tkt{'ticketid'}], 'Bug repoort');
-if ($xhref !~ /^\<a\shref\=\".+\?req\=bid\&bid=$tkt{'ticketid'}.+?\"\s*\>Bug\sreport\<\/a\>$/i) {	
+my ($xhref) = $o_fmt->href('bid', [$tkt{'bugid'}], 'Bug repoort');
+if ($xhref !~ /^\<a\shref\=\".+\?req\=bid\&bid=$tkt{'bugid'}.+?\"\s*\>Bug\sreport\<\/a\>$/i) {	
 	ok($test);
 } else {
 	notok($test);
-	output("href($xhref) failed from data -> ($tkt{'ticketid'})");
+	output("href($xhref) failed from data -> ($tkt{'bugid'})");
 }
 
 # 3
