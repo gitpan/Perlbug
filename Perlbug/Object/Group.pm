@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Group.pm,v 1.25 2001/09/18 13:37:50 richardf Exp $
+# $Id: Group.pm,v 1.26 2001/12/01 15:24:42 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::Group - Group class
 package Perlbug::Object::Group;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.25 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.26 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -99,7 +99,7 @@ sub htmlify {
 		$grp{'description'}	= $cgi->textfield(-'name' => $gid.'_description', -'value' => $grp{'description'}, -'size' => 45, -'maxlength' => 99, -'override' => 1);
 		$grp{'name'} 		= $cgi->textfield(-'name' => $gid.'_name', -'value' => $name, -'size' => 15, -'maxlength' => 15);
 		$grp{'select'}     	= $cgi->checkbox(-'name'=>'groupids', -'checked' => '', -'value'=> $gid, -'label' => '', -'override' => 1);
-		$grp{'user_ids'} = $o_usr->selector($gid.'_userids', $self->rel_ids('user')).$grp{'user_ids'};
+		$grp{'user_ids'} 	= $o_usr->choice($gid.'_userids', $self->rel_ids('user')).$grp{'user_ids'};
 	}
 	# print '<pre>'.Dumper(\%grp).'</pre>';
 	return \%grp;

@@ -1,6 +1,6 @@
 # (C) 2001 Richard Foley RFI perlbug@rfi.net
 # 
-# $Id: Email.pm,v 1.105 2001/10/22 15:29:50 richardf Exp $ 
+# $Id: Email.pm,v 1.106 2001/12/01 15:24:42 richardf Exp $ 
 # 
 
 
@@ -13,7 +13,7 @@ Perlbug::Interface::Email - Email  interface to perlbug database.
 package Perlbug::Interface::Email;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.105 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.106 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -90,7 +90,8 @@ sub parse_input {
 	my $h_cmds = {};
 
 	my @cc = ();
-	my ($from, $subject, $to) = ('', '', '');
+	my @to = ();
+	my ($from, $subject) = ('', '');
 	my ($o_hdr, $header, $body) = $self->splice($o_int);
 
 	if (ref($o_hdr)) {
@@ -100,17 +101,17 @@ sub parse_input {
 	}
 
 	if (ref($o_hdr)) {
+		my $domain = quotemeta($self->email('domain'));
+		($subject, @to) = ($o_hdr->get('Subject'), $o_hdr->get('To'));
 		@cc = $o_hdr->get('Cc'); @cc = () unless @cc; 
+		chomp(@to, $subject, @cc);
+		$self->debug(2, "domain($domain)? -> to(@to), cc(@cc), subject($subject)") if $Perlbug::DEBUG;
 		if ($self->check_incoming($o_hdr)) {
-			my $domain = quotemeta($self->email('domain'));
-			($to, $subject) = ($o_hdr->get('To'), $o_hdr->get('Subject'));
-			chomp($to, $subject, @cc);
-			$self->debug(1, "domain($domain) ?-> to($to), subject($subject), cc(@cc)") if $Perlbug::DEBUG;
-			if (grep(/^(.+)\@$domain$/i, $to, @cc)) {                     # .*@bugs.perl.org
+			if (grep(/^(.+)\@$domain$/i, @to, @cc)) {                     # .*@bugs.perl.org
 				$h_cmds = $self->parse_header($o_hdr, $body);
 			} else {
 				my $bugdb = quotemeta($self->email('bugdb'));
-				if (grep(/^$bugdb$/, $to, @cc)) {
+				if (grep(/^$bugdb$/, @to, @cc)) {
 					if ($subject =~ /\-\w/o) {                            # bugdb@perl.org
 						$h_cmds = $self->parse_line($subject);
 					} else {
@@ -123,9 +124,12 @@ sub parse_input {
 			}
 		}
 	}
+	$self->debug(3, 'midway: '.Dumper($h_cmds)) if $Perlbug::DEBUG;
+
 	# $DB::single=2;
 	if (scalar(keys %{$h_cmds})) {
 		my $cc      = (scalar(@cc) >= 1) ? '' : join(', ', @cc);
+		my $to      = (scalar(@to) >= 1) ? '' : join(', ', @to);
 		my $msgid   = $o_hdr->get('Message-Id') || '';
 		my $replyto = $o_hdr->get('Reply-To') 	|| '';
 		chomp($cc, $msgid, $replyto);
@@ -133,12 +137,10 @@ sub parse_input {
 		my %info = ( # should be in input2args - but why do it x times?
 			'body'			=> $body, 
 			'email_msgid'	=> $msgid,
-			'from'			=> $from,
 			'header'		=> $header, 
 			'sourceaddr'	=> $from,
 			'subject'		=> $subject,
 			'reply-to'		=> $replyto,
-			'to'			=> $to,
 			'toaddr'		=> $to,
 			'cc'			=> $cc,
 		);
@@ -153,17 +155,12 @@ sub parse_input {
 				delete $$h_cmds{$1};
 				$cmd = 'E';
 			}
-			# $DB::single=2;
 			$$h_cmds{$cmd} = $self->input2args($cmd, $$h_cmds{$cmd}, \%info);
 		}
 	}
 
-	# $DB::single=2;
 	$$h_cmds{'quiet'} = $self->message('quiet') unless keys %{$h_cmds} >= 1;
-	# $$h_cmds{'quiet'} = [($header, $body)]; # $self->message('quiet') unless keys %{$h_cmds} >= 1;
-
-	$self->debug(1, "Email to($to) subject($subject): ".Dumper($h_cmds)) if $Perlbug::DEBUG;
-	$self->debug(3, "Email to($header): ".Dumper($h_cmds)) if $Perlbug::DEBUG;
+	$self->debug(1, "PI: ".Dumper($h_cmds)) if $Perlbug::DEBUG;
 
     return $h_cmds;
 }
@@ -248,10 +245,10 @@ sub process_commands {
 		$self->error("requires commands($h_cmds) and Int::Mail object($o_int)!");
 	} else {
 		@res = $self->SUPER::process_commands($h_cmds);
-		$DB::single=2;
 		if ($o_int->head->get('To') =~ /(^bugdb|$domain$)/o) {
-			# not when forward, x, y, z...?
-			my $i_ok = $self->return_info(join("\n", @res)."\n", $o_int);
+			$DB::single=2;
+			my $i_ok = $self->return_info(join("\n", @res)."\n", $o_int)
+				unless $res[0] =~ /^quiet/; 
 		}
 	}
 
@@ -303,56 +300,25 @@ sub return_info { # from bugdb type call
 
 =item mailing
 
-Switch mailing on/off, and sets isatest(1)
+Switch mailing on(1) or off(0)
+
+	my $i_onoff = $o_mail->mailing(1);
 
 =cut
 
 sub mailing {
 	my $self = shift;
-	my $flag = shift;
+	my $arg  = shift;
+	my $res  = my $orig = $self->current('mailing');
 
-	return 1; # rjsf
-
-	if (defined $flag and $flag =~ /^([01])$/o) {
-		my ($mailing) = $self->current({'mailing', $1});
-		$self->debug(2, "mailing set to '$mailing'") if $Perlbug::DEBUG; # rjsf uninit. vals.!!!
-		if ($mailing != 1) {
-			my ($isatest) = ($self->current('isatest') == 2) ? 2 : 1;
-			($isatest) = $self->current({'isatest', $isatest});
-			$self->debug(1, "mailing($mailing) test($isatest)") if $Perlbug::DEBUG;
-		}
+	if (defined $arg and $arg =~ /^([01])$/o) {
+		$res = $self->current({'mailing', $1});
 	}		
-	return $self->current('mailing');
+
+	$self->debug(1, "setting mailing($arg) orig($orig) => res($res)") if $Perlbug::DEBUG;
+
+	return $res;
 }
-
-
-=item splice
-
-Returns the given mail spliced up into useful bits.
-
-    my ($o_hdr, $header, $body) = $self->splice($o_int);
-
-=cut
-
-sub splice {
-    my $self  = shift;
-	my $o_int = shift;
-
-	my @data = ();
-	if (!ref($o_int)) {	
-		$self->error("Can't splice inappropriate mail($o_int) object")
-	} else {
-		# $o_int->remove_sig;
-		@data = (
-			$o_int->head,
-			join('', @{$o_int->head->header}),
-			join('', @{$o_int->body}),
-		);
-	}
-
-	return @data;
-}
-
 
 
 =item from
@@ -366,7 +332,8 @@ Sort out the wheat from the chaff, use the first valid ck822 address:
 sub from {
 	my $self  = shift;
 	my @addrs = @_;
-	map { chomp($_) } grep(/\w+/, @addrs);
+
+	map { chomp($_) } grep(/\w+/, @addrs) if @addrs;
 	# chomp(@addrs);
 
 	my $from = '';
@@ -408,20 +375,20 @@ sub messageid_recognised {
 	if ($msg_id !~ /(\<.+\>)/) {    # trim it
 		$self->error("No MessageId($msg_id) given to check against");
 	} else {
-		my $msgid = $1;
-		($msgid) = $self->db->quote($1); # escape it
+		my ($msgid) = $self->db->quote($1); # escape it
 		$msgid =~ s/\'(.+)\'/$1/;  # unquote it
-		my $messageid = "%Message-Id: $msgid%"; # with <...> brackets
-		$self->debug(3, "looking at messageid($msg_id) -> ($msgid) -> ($messageid)") if $Perlbug::DEBUG;
-
+		# my $messageid = "%Message-Id: %$msgid%"; # with <...> brackets
+		# my $getbymsgid = "UPPER(header) LIKE UPPER('$messageid')"; # doesn't do newlines!
+		my $getbymsgid = "UPPER(email_msgid) LIKE UPPER('%$msgid%')";
+		$self->debug(2, "looking up messageid($msg_id) -> ($msgid) -> ($getbymsgid)") if $Perlbug::DEBUG;
 		OBJ:
-		foreach my $obj (grep(!/(parent|child)/i, $self->objects('mail'))) {
+		foreach my $obj (grep(!/(parent|child)/io, $self->objects('mail'))) {
 			next OBJ unless $obj =~ /\w+/o;
 			my $o_obj = $self->object($obj);
 			$self->debug(3, "looking at obj($obj) with $o_obj") if $Perlbug::DEBUG;
-			@ids = $o_obj->ids("UPPER(header) LIKE UPPER('$messageid')");
+			@ids = $o_obj->ids($getbymsgid);
         	if (scalar(@ids) >= 1) {
-				$self->debug(2, "MessageId($msgid) belongs to obj($obj) ids(@ids)") if $Perlbug::DEBUG;	
+				$self->debug(1, "MessageId($msgid) belongs to obj($obj) ids(@ids)") if $Perlbug::DEBUG;	
 				$object = $obj; # recognised
 				last OBJ;
 			}
@@ -447,46 +414,41 @@ sub check_incoming { # incoming
     my $i_ok  = 0;
     $self->debug(3, "check_incoming($o_hdr)") if $Perlbug::DEBUG;
     my $dodgy = $self->dodgy_addresses('from'); 
-	my $tests = $self->dodgy_addresses('test');
     if (!ref($o_hdr)) {
 		$self->error("No hdr($o_hdr) given");
 	} else {
     	my @cc      = $o_hdr->get('Cc') || '';
+    	my @to      = $o_hdr->get('To') || '';
     	my $from    = $o_hdr->get('From') || '';
     	my $inreply = $o_hdr->get('In-Reply-To') || '';
 		my $msgid   = $o_hdr->get('Message-Id') || '';
     	my $replyto = $o_hdr->get('Reply-To') || '';
-    	my $to      = $o_hdr->get('To') || '';
     	my $subject = $o_hdr->get('Subject') || '';
         my $xperlbug= $o_hdr->get('X-Perlbug') || '';
 		# ($to) = map { ($_->address) } Mail::Address->parse($to);
-		chomp($xperlbug, $to, $from, $replyto, $inreply, $msgid, $subject, @cc);
+		chomp($xperlbug, @to, $from, $replyto, $inreply, $msgid, $subject, @cc);
         $self->{'attr'}{'message-id'} = $msgid;
-    	$self->debug(0, qq|$0: 
+    	$self->debug(0, qq|incoming: $0: 
 			Cc(@cc) 
 			From($from) 
 			In-Reply-To($inreply)
 			Message-Id($msgid) 
 			Reply-To($replyto) 
 			Subject($subject) 
-			To($to) 
+			To(@to) 
 			X-Perlbug($xperlbug)
 		|) if $Perlbug::DEBUG;
 
-		my $o_to    = Mail::Address->parse($to);
+		my $o_to    = Mail::Address->parse(@to);
 		my $o_from  = Mail::Address->parse($from);
 		my $o_reply = Mail::Address->parse($replyto);
 		my $o_cc    = Mail::Address->parse(@cc);
 
-		$to      = ref($o_to)   ? $o_to->address    : $to;
+		@to      = ref($o_to)   ? $o_to->address    : @to;
 		$from    = ref($o_from) ? $o_from->address  : $from;
 		$replyto = ref($o_reply)? $o_reply->address : $replyto;
 		@cc      = ref($o_cc)   ? $o_cc->address    : @cc;
 
-		if ($to =~ /$tests/i) {
-			$self->isatest(1);
-			$self->debug(0, "X-Test mail -> setting test flag") if $Perlbug::DEBUG;
-		}
 		$i_ok = 1;
         if ($xperlbug =~ /\w+/io) {
             $i_ok = 0;
@@ -522,7 +484,7 @@ sub check_incoming { # incoming
 			);
 			# my $addrs = join('|', map { quotemeta($_) } @addrs);
 			TOCC:
-			foreach my $tc ($to, @cc) {
+			foreach my $tc (@to, @cc) {
 				next TOCC unless $tc =~ /\w+\@\w+/;
 				ADDR:	
 				foreach my $addr (@addrs) {
@@ -535,7 +497,7 @@ sub check_incoming { # incoming
 			}
 			if ($i_cnt == 0) {
 				$i_ok = 0;
-				$self->debug(0, "Not addressed($i_cnt) to us at all: to($to) cc(@cc)!") if $Perlbug::DEBUG;
+				$self->debug(0, "Not addressed($i_cnt) to us at all: to(@to) cc(@cc)!") if $Perlbug::DEBUG;
 			}
 		}
     } 
@@ -561,11 +523,13 @@ sub check_user {
     my $given = ref($_[0]) ? $_[0]->get('From') : shift;
 
 	my $o_usr = $self->object('user');
-	my ($address) = $o_usr->parse_addrs([$given]);
-	my @uids  = $o_usr->ids;
+	my ($parsed) = $o_usr->parse_addrs([$given]);
+	my ($o_addr) = Mail::Address->parse($given);
+	my $host = $o_addr->host; $host =~ s/[^a-zA-Z]/%/g;
+    $self->debug(3, "check_user($given), parsed($parsed), host($host)") if $Perlbug::DEBUG;
+	my @uids  = $o_usr->ids("match_address LIKE '%$host%'"); # pro domain
 	my @addrs = $o_usr->col('match_address');
-
-	$self->current({'switches', $self->system('user_switches')});
+    $self->debug(3, "ids(@uids)") if $Perlbug::DEBUG;
 
     USER:
     foreach my $uid (@uids) {
@@ -574,16 +538,13 @@ sub check_user {
 		if ($o_usr->READ) {
 			my $userid = $o_usr->data('userid');
        		my $match_address = $o_usr->data('match_address');
-			if ($address =~ /^($match_address)$/i) { # an administrator
+			if ($parsed =~ /^($match_address)$/i) { # an administrator
 				$self->current({'admin', $userid});
-				my $switches = $self->system('user_switches').$self->system('admin_switches');
-				$self->current({'switches', $switches});
-				last USER;
 			}
         } 
     }
 
-    $self->debug(1, "email check_user($given)...(".$self->isadmin.')') if $Perlbug::DEBUG;
+    $self->debug(1, "parsed($parsed) => isadmin(".$self->isadmin.')') if $Perlbug::DEBUG;
 
 	return $self->isadmin;
 }
@@ -622,18 +583,18 @@ and forward it onto the appropriate mailing list:
 }
 
 
-=item get_switches
+=item switches
 
-Appends a couple of extra email specific switches to B<Perlbug::Base::get_switches()>
+Appends a couple of extra email specific switches to B<Perlbug::Base::switches()>
 
-	my @switches = $o_email->get_switches();
+	my @switches = $o_email->switches();
 
 =cut
 
-sub get_switches {
+sub switches {
 	my $self = shift;
 	
-	my @switches = ($self->SUPER::get_switches(@_), grep(!/^[A-Z]$/, $self->message));
+	my @switches = ($self->SUPER::switches(@_), grep(!/^[A-Z]$/, $self->message));
 
 	return @switches;
 }
@@ -659,35 +620,35 @@ sub get_header {
 	my $self   = shift;
 	my $o_orig = shift || '';
 	my $context= shift || 'default'; # ...|remap|ok
-
 	my $o_hdr  = Mail::Header->new;
+
 	if (ref($o_orig)) { # partially fresh
 		$o_hdr = $o_orig->dup;
 		foreach my $tag ($o_orig->tags) { # to, cc?
 			my @lines = $o_orig->get($tag);
+			# $DB::single=2 if $tag =~ /^to/i;
 			my @res = $self->$context($tag, @lines); # default|remap|ok
 			$o_hdr->replace($tag, @res) if scalar(@res) >= 1;
-			$self->debug(2, "tag($tag) lines(@lines) -> context($context) -> res(@res)") if $Perlbug::DEBUG;
+			$self->debug(2, "$context - tag($tag) lines(@lines) -> res(@res)") if $Perlbug::DEBUG;
 		}
-		my @xos = qw(Cc From Reply-To Message-Id Perlbug Subject To);
-		foreach my $xo (@xos) {
-			my $ref = ($xo =~ /^Cc$/o) 
+		my @xheaders = qw(Cc From Message-Id Perlbug In-Reply-To Reply-To Subject To);
+		foreach my $xheader (@xheaders) {
+			my $ref = ($xheader =~ /^Cc$/o) 
 				? join(', ', $o_orig->get('Cc')) 
-				: $o_orig->get($xo) || '';
-			$o_hdr->replace('X-Original-'.$xo, $ref);
+				: $o_orig->get($xheader) || '';
+			$o_hdr->replace('X-Original-'.$xheader, $ref);
 		}
+	}
 
-		$o_hdr->replace('Return-Path', $o_orig->get('Return-Path') || $self->system('maintainer')); 
+	if (ref($o_hdr)) {
+		# $o_hdr->replace('Message-Id', "<$$".'_'.rand(time)."\@".$self->email('domain').'>') unless $msgid 
 		$o_hdr->replace('X-Perlbug', "Perlbug(tron) v$Perlbug::VERSION"); # [ID ...]+
 		$o_hdr->replace('X-Perlbug-Test', 'test') if $self->isatest;
-		$o_hdr->replace('X-Errors-To', $o_orig->get('X-Errors-To') || $self->system('maintainer')) 
-		# $o_hdr->replace('Message-Id', "<$$".'_'.rand(time)."\@".$self->email('domain').'>') 
-	} else {
-		$o_hdr->add('Return-Path', $self->system('maintainer')); 
-		$o_hdr->add('X-Perlbug', "Perlbug(tron) v$Perlbug::VERSION"); # [ID ...]+
-		$o_hdr->add('X-Perlbug-Test', 'test') if $self->isatest;
-		$o_hdr->add('X-Errors-To', $self->system('maintainer')) 
+		map { $o_hdr->add($_, $self->system('maintainer')) 
+			unless $o_hdr->get($_) } qw(X-Errors-To Return-Path);
 	}
+
+	$self->debug(3, 'orig: '.Dumper($o_orig)."\nret: ".Dumper($o_hdr)) if $Perlbug::DEBUG;
 		
 	return $o_hdr; 		# Mail::Header
 }
@@ -733,7 +694,9 @@ sub default {
         } 
 		$self->debug(3, "tag($tag) defaulted to lines(@res)") if $Perlbug::DEBUG;
 	}
+
 	chomp(@res);
+
     return @res;
 }
 
@@ -747,15 +710,15 @@ sub default {
 sub ok {
     my $self = shift;
     my $tag  = shift;
-
     my @lines= @_;
 	chomp(@lines);
+	my @res = ();
 
 	my %res = ();
 	if ($tag !~ /\w+/) {
 		$self->error("Invalid tag($tag) given for ok($tag, @lines)");
 	} else {
-		if ($tag !~ /^(To|Cc)$/i) { # reply-to?
+		if ($tag !~ /^(To|Cc)$/io) { # reply-to?
 			map { $res{$_}++ } @lines;
 			$self->debug(3, "Tag NOT a To/Cc($tag): keeping original(@lines)") if $Perlbug::DEBUG;
 		} else {
@@ -769,17 +732,18 @@ sub ok {
 					if (grep(/$addr/i, @targets)) {	# one of ours
 						my @forward = $self->forward('ok');        		# find or use generic
 						map { $res{$_}++ } @forward ;  					# chunk dupes
-						$self->debug(1, "applying ok tag($tag) line($line) addr($addr) -> fwds(@forward)") if $Perlbug::DEBUG;
+						$self->debug(1, "ok applying tag($tag) line($line) addr($addr) -> fwds(@forward)") if $Perlbug::DEBUG;
 					} else {											# keep
 						$res{$line}++;
-						$self->debug(1, "line($addr) NOT one of ours: keeping line($line)") if $Perlbug::DEBUG;	
+						$self->debug(1, "ok line($addr) NOT one of ours: keeping line($line)") if $Perlbug::DEBUG;	
 					}
 				}
 			}
 		}
 	}
-	my @res = keys %res;
-	chomp(@res);
+
+	chomp(@res = keys %res);
+
     return @res;
 }
 
@@ -797,34 +761,40 @@ Attempt to remain moderately invisible by maintaining all other original headers
 sub remap {
     my $self = shift;
     my $tag  = shift;
-
     my @lines= @_;
 	chomp(@lines);
+	my @res = ();
 
 	my %res = ();
-	if ($tag !~ /^(To|Cc)$/i) { # reply-to?
+	if ($tag !~ /^(To|Cc)$/io) { # reply-to?
 		map { $res{$_}++ } @lines;
 		$self->debug(3, "Tag NOT a To/Cc($tag): keeping original(@lines)") if $Perlbug::DEBUG;
 	} else {
-		my $o_bug = $self->object('bug');
+		my $o_bug   = $self->object('bug');
+		my $default = quotemeta($self->email('domain')).'|'.quotemeta($self->email('bugdb'));
 		my @targets = $self->get_vals('target');
 		$self->debug(2, "remapping tag($tag) lines(@lines) with our targets(@targets)?") if $Perlbug::DEBUG;	
 		LINE:
 		foreach my $line (@lines) {
 			next LINE unless $line =~ /\w+/o;
-			my ($addr) = $o_bug->parse_addrs([$line]);
-			if (grep(/$addr/i, @targets)) {	# one of ours
-				my @forward = $self->get_forward($addr);        # find or use generic
-				map { $res{$_}++ } @forward ;  					# chunk dupes
-				$self->debug(1, "applying tag($tag) line($line) addr($addr) -> @forward") if $Perlbug::DEBUG;						
-			} else {											# keep
-				$res{$line}++;
-				$self->debug(1, "line($addr) NOT one of ours: keeping line($line)") if $Perlbug::DEBUG;	
+			# my ($addr) = $o_bug->parse_addrs([$line]);
+			my @addrs  = $o_bug->parse_addrs([$line]); # multiple To: addrs!
+			$DB::single=2;
+			foreach my $addr (@addrs) {
+				if ($addr =~ /$default/ or grep(/$addr/i, @targets)) {	# one of ours
+					my @forward = $self->get_forward($addr);        # find or use generic
+					map { $res{$_}++ } @forward ;  					# chunk dupes
+					$self->debug(1, "remap applying tag($tag) line($line) addr($addr) -> @forward") if $Perlbug::DEBUG;						
+				} else {											# keep
+					$res{$addr}++;
+					$self->debug(1, "remap line($addr) NOT one of ours -> keeping it") if $Perlbug::DEBUG;	
+				}
 			}
 		}
 	}
 
-	chomp(my @res = keys %res);
+	chomp(@res = keys %res);
+
     return @res;
 }
 
@@ -857,16 +827,16 @@ sub send_mail {
 	}
 =cut
 	$o_hdr = $self->defense($o_hdr); 
-	if (!ref($o_hdr)) { 	# Mail::Header
+	if (!(defined($o_hdr) && ref($o_hdr))) { 	# Mail::Header
 		$self->error("requires a valid header($o_hdr) to send!");
 	} else {
-		($o_hdr, $body) = $self->tester($o_hdr, $body);
+		# ($o_hdr, $body) = $self->tester($o_hdr, $body);
 		@to = $o_hdr->get('To');
 		@cc = $o_hdr->get('Cc') || ();
 		chomp(@to, @cc);
 		# $DB::single=2;
         $self->debug(1, "Mail to(@to), cc(@cc)") if $Perlbug::DEBUG;
-		if ($self->isatest) { # --------------------
+		if ($self->isatest) { # -------------------- print
 			my $o_send = Mail::Send->new;
 			$self->debug(3, "Send($o_send)...") if $Perlbug::DEBUG;
 			TAG:
@@ -878,11 +848,9 @@ sub send_mail {
 					$o_send->set($tag, $line);
 				}
 			}
-			my $mailer = ($self->isatest != 0) 
-				? 'test'					# print it
-				: $self->email('mailer');   # or mail or test  
+			my $mailer = 'test';
 			my $mailFH = $o_send->open($mailer) or $self->error("Couldn't open mailer($mailer): $!");
-			$self->debug(1, "...fh($mailFH)...") if $Perlbug::DEBUG;
+			$self->debug(3, "...fh($mailFH)...") if $Perlbug::DEBUG;
 			if (defined($mailFH)) { # Mail::Mailer
 				if (print $mailFH $body) {
 					$i_ok = 1; # success
@@ -891,12 +859,12 @@ sub send_mail {
 					$self->error("Can't send mail to mailfh($mailFH)");
 				}
 				$mailFH->close; # ? sends twice from tmtowtdi, once from pc026991, once from bluepc? 
-				$self->debug(1, "Mail($mailFH) sent!(".length($body).") -> to(@to), cc(@cc)") if $Perlbug::DEBUG;
+				$self->debug(3, "Mail($mailFH) sent!(".length($body).") -> to(@to), cc(@cc)") if $Perlbug::DEBUG;
 			} else {
 				$self->error("Undefined mailfh($mailFH), can't mail data($body)");
 			}
-			$self->debug(1, "...done") if $Perlbug::DEBUG;
-		} else { # live --------------------------------------------------------
+			$self->debug(3, "...done") if $Perlbug::DEBUG;
+		} else { # live ---------------------------- send
 			my $hdr = '';
 			$self->debug(2, "live...") if $Perlbug::DEBUG;
         	TAG:
@@ -909,12 +877,12 @@ sub send_mail {
                 	$hdr .= "$tag: $line\n";
                 }
         	}
-			$self->debug(1, "...mailing...") if $Perlbug::DEBUG;
+			$self->debug(3, "...mailing...") if $Perlbug::DEBUG;
 			if (open(MAIL, "|/usr/sbin/sendmail -t")) {  		# :-( sigh...
 				if (print MAIL "$hdr\n$body\n") {
 					if (close MAIL) {
 						$i_ok = 1; # success
-						$self->debug(1, "Mail(MAIL) sent?(".length($body).") -> to(@to), cc(@cc)") if $Perlbug::DEBUG;
+						$self->debug(3, "Mail(MAIL) sent?(".length($body).") -> to(@to), cc(@cc)") if $Perlbug::DEBUG;
 					} else {
 						$self->error("Can't close sendmail");
 					}
@@ -924,48 +892,11 @@ sub send_mail {
 			} else {
 				$self->error("Can't open sendmail")
 			} 
-			$self->debug(1, "...done($i_ok)") if $Perlbug::DEBUG;
+			$self->debug(3, "...done($i_ok)") if $Perlbug::DEBUG;
 		}
     }
-	$self->debug(1, "sent(".length($body).") ok($i_ok) -> to(@to), cc(@cc)") if $Perlbug::DEBUG; 
+	$self->debug(1, "sent(".length($body).") ok($i_ok) => to(@to), cc(@cc)") if $Perlbug::DEBUG; 
     return $i_ok;
-}
-
-
-=item tester
-
-If test mail, turn header to maintainer and return header data, and body for insertion
-
-	($o_hdr, $body) = $self->tester($o_hdr, $body);
-
-=cut
-
-sub tester {
-    my $self  = shift;
-    my $o_hdr = shift; # Mail::Header
-	my $body  = shift;
-
-	if (!ref($o_hdr)) {
-		$self->error("requires a valid Mail::Header($o_hdr) to test");
-		undef($o_hdr);
-	} else {
-		if ($self->isatest =~ /^([12])$/) {
-			my $isatest = $1;
-			my $from = $self->email('from');
-			$self->debug(1, "Test: dumping to maintainer...") if $Perlbug::DEBUG;
-			$o_hdr->delete('Cc');
-			$o_hdr->delete('Bcc');
-			$o_hdr->replace('To', $self->system('maintainer')) if $isatest == 1;
-			$o_hdr->replace('From', $from);
-			$o_hdr->replace('Reply-To', $self->system('maintainer'));
-			$o_hdr->replace('Subject', $self->system('title')." test mail");
-			$o_hdr->replace('X-Perlbug-Test', 'test');
-			my $sep = ('-' x 78)."\n";
-			my $header = join('', @{$o_hdr->header});
-			$body = "Header:\n${sep}${header}\n\nBody:\n${sep}$body\n\n";
-		}
-	}
-	return ($o_hdr, $body); 	# Mail::Header and dump
 }
 
 
@@ -1001,7 +932,7 @@ sub addurls {
 
 =item defense
 
-Set mail defaults for _all_ mail emanating from here, calls L<clean_header()> -> L<trim_to()>.
+Set mail defaults for _all_ mail emanating from here, calls L<trim_to()>.
 
     my $o_hdr = $o_email->defense($o_hdr); 
 
@@ -1011,41 +942,8 @@ sub defense {
     my $self  = shift;
     my $o_hdr = shift; # Mail::Header
 
-	my $dodgy = $self->dodgy_addresses('to');
 	if (!ref($o_hdr)) {
 		$self->error("requires a valid Mail::Header($o_hdr) to defend");
-		undef $o_hdr;
-	} else {
-		$o_hdr = $self->clean_header($o_hdr);	# (inc trim_to)
-		if (ref($o_hdr)) {
-			$o_hdr->replace('From', $self->email('from')) unless defined($o_hdr->get('From'));
-			my $msgid = $o_hdr->get('Message-Id') || '';
-			chomp($msgid);
-			# if (defined($self->{'_defense'}{$msgid}) and $self->{'_defense'}{$msgid} >= 1) {
-			#	$self->error("found duplicate Message-Id($msgid)!");
-			#	undef $o_hdr;
-			# } 
-    		$self->{'_defense'}{$msgid}++;
-		}
-	}
-	return $o_hdr; 	# Mail::Header
-}
-
-
-=item clean_header
-
-Clean header of non-compliant 822 address lines using Mail::Address::parse()
-
-	my $o_hdr = $o_email->clean_header($o_hdr);
-
-=cut
-
-sub clean_header {
-	my $self  = shift;
-	my $o_hdr = shift;	# Mail::Header
-
-	if (!ref($o_hdr)) {
-		$self->error("requires a valid Mail::Header($o_hdr) to clean");
 		undef $o_hdr;
 	} else {
 		my @cc = $o_hdr->get('Cc');
@@ -1095,27 +993,28 @@ sub trim_to {
 		undef($o_hdr);
 	} else {
 		my $dodgy = $self->dodgy_addresses('to');
-		my $to = $o_hdr->get('To');
-		my @orig = $o_hdr->get('Cc');
-		chomp($to, @orig);
+		my @to    = $o_hdr->get('To');
+		my @orig  = $o_hdr->get('Cc');
+		chomp(@to, @orig);
 		my %cc = (); # trim dupes
+		my $to = join('|', @to);
 		%cc = map { lc($_) => ++$cc{lc($_)}} (grep(!/($to|$dodgy)/i, @orig));  
 		my @cc = keys %cc;
 		$o_hdr->delete('To');
 		$o_hdr->delete('Cc');  
 		$o_hdr->delete('Bcc'); 
-		if ($to !~ /\w+/) {
+		if (!(scalar(@to) >= 1)) {
 			undef $o_hdr;
-		    $self->error("no-one to send mail to ($to)!"); 
+		    $self->error("no-one to send mail to (@to)!"); 
 		} else {
 			my $o_usr = $self->object('user');
-			my ($xto, @xcc) = $o_usr->parse_addrs([($to, @cc)]);
+			my ($xto, @xcc) = $o_usr->parse_addrs([(@to, @cc)]);
 		    if (grep(/^($dodgy)$/i, $xto, @xcc)) { # final check
 				undef($o_hdr);
-				$self->error("Managed to find a duff address! in to($to) cc(@cc)"); 
+				$self->error("Managed to find a duff address! in to(@to) cc(@cc)"); 
 		    } else {
-				$self->debug(2, "whoto looks ok: '$to, @cc'") if $Perlbug::DEBUG;
-				$o_hdr->add('To', $to);
+				$self->debug(1, "whoto looks ok: '@to, @cc'") if $Perlbug::DEBUG;
+				$o_hdr->add('To', @to);
 				$o_hdr->add('Cc', join(', ', @cc)) if scalar(@cc) >= 1; 
 		    }
 		} 
@@ -1152,12 +1051,14 @@ sub get_forward {
 		my @potential = $self->target($type); 
 		if (grep(/^$tgt$/, @potential)) {
 			@dest = $self->forward($type);
-			$self->debug(1, "found tgt($tgt) -> $type -> fwd(@dest)") if $Perlbug::DEBUG;
 			last TYPE;
 		} else {
 			$self->debug(3, "$type not applicable(@potential)") if $Perlbug::DEBUG;
 		}
 	}
+
+	$self->debug(2, "tgt($tgt) => dest(@dest)") if $Perlbug::DEBUG;
+
     return @dest;
 }
 
@@ -1244,7 +1145,7 @@ sub switch {
 		$self->error("requires Mail::Internet($o_int) for decision"); 
 	}
 
-	my $to = $o_int->head->get('To') || '';
+	my @to = $o_int->head->get('To') || '';
 
 	if ($found == 0) {
 		$self->{'attr'}{'bugid'} = '';
@@ -1256,9 +1157,9 @@ sub switch {
     	my $from    = $o_int->head->get('From') || '';
     	my $subject = $o_int->head->get('Subject') || '';
     	my $inreply = $o_int->head->get('In-Reply-To') || '';
-    	chomp($from, $subject, $inreply, $to, @cc);
-		($to) = map { ($_->address) } Mail::Address->parse($to);
-		(@cc  = map { ($_->address) } Mail::Address->parse(@cc)) if @cc;
+    	chomp($from, $subject, $inreply, @to, @cc);
+		(@to = map { ($_->address) } Mail::Address->parse(@to));
+		(@cc = map { ($_->address) } Mail::Address->parse(@cc)) if @cc;
 
 		# Is there a bugid in the subject? -> REPLY
     	if ($found != 1) {
@@ -1298,9 +1199,9 @@ sub switch {
     	if ($found != 1) {  
         	my $match = $self->email('match');
 			my @targets = $self->get_vals('target');
-        	$self->debug(2, "Looking at addresses to($to), cc(@cc) against targets(@targets)?") if $Perlbug::DEBUG;
+        	$self->debug(2, "Looking at addresses to(@to), cc(@cc) against targets(@targets)?") if $Perlbug::DEBUG;
         	ADDR:
-			foreach my $line ($to, @cc) {
+			foreach my $line (@to, @cc) {
 				next ADDR unless $line =~ /\w+/o;
 				last ADDR if $found >= 1;
 				my ($addr) = $o_bug->parse_addrs([$line]);
@@ -1322,13 +1223,13 @@ sub switch {
             		$self->debug(2, "address($line) not relevant pass($found)") if $Perlbug::DEBUG;
         		}
 			}
-			$self->debug(2, "Addressed and bodied to us? ($found) <- ($to, @cc)") if $Perlbug::DEBUG; # unless $found == 1;
+			$self->debug(2, "Addressed and bodied to us? ($found) <- (@to, @cc)") if $Perlbug::DEBUG; # unless $found == 1;
     	}
 	}
 	
 	# Catch all -> TRASH it
     if ($found != 1) {  
-        $switch = ($to eq $self->email('bugdb')) ? 'nocommand' : 'quiet'; # maybe we missed something?
+        $switch = ($to[0] eq $self->email('bugdb')) ? 'nocommand' : 'quiet'; # maybe we missed something?
 		$opts = $self->message('quiet');
 		$msg = "IGNORE $switch($found): invalid perlbug data, potential p5p miscellanea or spam) :-|\n";
         $self->debug(2, $msg) if $Perlbug::DEBUG;
@@ -1453,30 +1354,19 @@ sub parse_header {
 	my %flags = ();
 	my $admin = $self->isadmin ? 'a' : 'v';
 	foreach my $tgt (qw(group osname severity status)) {
-		my $target = '^('.join('|', map { substr($_, 0, 4) } $self->object($tgt)->col('name')).')';
+		my $target = '^('.join('|', map { substr($_, 0, 4) } 
+			grep(/\w+/, $self->object($tgt)->col('name'))).')';
 		$flags{$target} = $admin;
 	}
-	my %map = (
-		'^admins'				=> 'v',
-		'^bug'					=> 'B',
-		'^db'					=> 'Q',
-		'^(faq|info|spec)'		=> 'h',
-		'^(forward|propos)'		=> 'v', # e|al
-		'^h(elp)'				=> 'h',
-		'^group'				=> 'G',
-		'^(message|reply)'		=> 'M',
-		'^(note|track)'			=> 'N',
-		'^password'				=> 'y',
-		'^patch'				=> 'P',
-		'^perlbug[\-_]*test'	=> 'j',
-		'^query'				=> 'q',
-		'^overview'				=> 'o',
-		'^regist'				=> 'V', # er|ration
-		'^renotify'				=> 'E',
-		'^schema'				=> 'Q',
-		'^test'					=> 'T',
+	my %commands = %{$self->email('commands')};
+	my %map = ( # Configuration ?
+		# '^admins'				=> 'v',
+		# '^bug'				=> 'B',
+		%commands, 
 		%flags,
+		$self->dodgy_addresses('test') => 'j',
 	);
+	$self->debug(3, "map: ".Dumper(\%map)) if $Perlbug::DEBUG;
 
 	my @bugids = ();
 	my ($to, $cc, $subject, $bugids) = ('', '', '', '');
@@ -1502,18 +1392,10 @@ sub parse_header {
 		# special cases:
 		if ($to =~ /^bugdb.*/io) {		# allow old style through 
 			%cmd = %{$self->SUPER::parse_input($subject)};
-		# } elsif ($to =~ /^regist/io) {	# admin registration request -> accept if in p5p
-			# if ($self->in_master_list($from)) {
-			#	$cmd{'i'} = $cmd{'V'};
-			#	delete $cmd{'V'};
-			# }
-			# my $h_data = $self->header2admin($o_hdr);
-			# $cmd{'i'} = $h_data;
 		} elsif ($to =~ /^query/io) {
 			$cmd{'q'} = $subject;
 		}
-
-		# print "cmds: ".Dumper(\%cmd);
+		$self->debug(2, "mapped: ".Dumper(\%cmd)) if $Perlbug::DEBUG;
 	}
 
 	# BUGIDs
@@ -1526,7 +1408,7 @@ sub parse_header {
 			if ($body !~ /$match/) {
 				$self->debug(1, "no match($match) in body($body)!") if $Perlbug::DEBUG;
 				delete $cmd{'B'};
-				$cmd{'bounce'} = $self->message('nomatch');
+			$cmd{'bounce'} = $self->message('nomatch');
 			}
 		} elsif ($keys =~ /([MNPT])/o) {
 			my $key = $1;
@@ -1549,6 +1431,7 @@ sub parse_header {
 		$self->debug(1, "no commands found in to($to) => 'H' ".Dumper(\%cmd)) if $Perlbug::DEBUG;
 		$cmd{'H'} = $self->message('nocommand');
 	}
+	$self->debug(1, "PH: ".Dumper(\%cmd)) if $Perlbug::DEBUG;
 
 	return \%cmd;
 }
@@ -1682,9 +1565,8 @@ sub doB {
 		$o_bug->read($bugid); 
 		my $h_data = $self->scan($args{'body'});
 
-		my @addrs = ($args{'to'}); 
-		push(@addrs, $args{'cc'}) if $args{'cc'};
-		$$h_data{'address'}{'names'} = \@addrs;
+		my @addrs  = $o_bug->parse_addrs([$args{'to'}]); # multiple To: addrs
+		push(@addrs, $o_bug->parse_addrs([$args{'cc'}])) if $args{'cc'};
 
 		if (ref($h_data) ne 'HASH') {
 			my $err = 'SCAN failure';
@@ -1832,7 +1714,7 @@ sub doH {
 	my @args   = (ref($h_args) eq 'HASH') ? %{$h_args} : ();
 
     my $HELP = $self->help; 
-	$HELP .= $self->read('mailhelp');
+    $HELP .= join('', $self->read('mailhelp'));
 
 	return $HELP;
 }
@@ -2006,10 +1888,11 @@ Drop out quietly, no entry in database, silent dump into black hole;
 
 sub doquiet {
     my $self = shift;
+	my @args = @_; 
 
-	$self->debug(1, "QUIET (@_) logged(pass through), not in db:\n") if $Perlbug::DEBUG;
+	$self->debug(1, "QUIET (".join(', ', @_).") logged(pass through), not in db:\n") if $Perlbug::DEBUG;
 
-	return 1;
+	return 'quiet ok';
 }
 
 

@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
-# Email tests for from() and get_header internal functions: get_forward, default, remap
+# Email tests for returns of do(from|h|j|remap(line)|...) etc.
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 76_Email.t,v 1.7 2001/10/05 08:20:10 richardf Exp $
+# $Id: 76_Email.t,v 1.8 2001/12/01 15:24:43 richardf Exp $
 #
 
 use strict;
 use lib qw(../);
-use Data::Dumper; $Data::Dumper::Indent=1;
+use Data::Dumper; 
 use FileHandle;
 use Mail::Internet;
 use Perlbug::Interface::Email;
@@ -140,7 +140,7 @@ foreach my $type (sort keys %tests) {
 			if ($result !~ /$expected/) {
 				$i_err++;
 				output("Mis-matching($type) args(@args) => result($result) expected($expected)");
-				output('Mail: '.Dumper($h_test));
+				output('Mail: '.Dumper($h_test)) if $Perlbug::DEBUG;
 				last TEST;
 			}
 		}

@@ -1,0 +1,6429 @@
+? locallibs
+? TODO
+? perl.errs
+? diffs
+? blib
+? current
+? pm_to_blib
+? dot.qmail
+? Makefile
+? Perlbug/Utility.pm
+? Perlbug/Object/x-Thing.pm
+? Perlbug/Object/Object.pm
+? Perlbug/Object/x-Type.pm
+? config/blue_htpasswd
+? config/onion_Configuration
+? config/current-config
+? config/onion_Configuration_Live
+? config/blue_Oracle_Configuration
+? config/blue_Mysql_Configuration
+? scripts/bugtest
+? scripts/bugrun
+? scripts/out.html
+? scripts/tmon.out
+? scripts/perl.errs
+? scripts/I
+? scripts/E
+? scripts/R
+? scripts/A
+? scripts/mails
+? scripts/onion-qmails
+? scripts/onion-rjsf
+? scripts/blue-msgids
+? scripts/blue-genmail
+? scripts/blue-remake
+? scripts/blue-decmail
+? scripts/blue-cgi-params
+? scripts/onion-migrate
+? scripts/bugwatch
+? spool/logs/cgi_20011130.log
+? spool/logs/xxx_20011130.log
+? spool/logs/xxx_20011201.log
+? sql/mig/260_to_278
+? sql/mig/x
+? sql/mig/278_to_288
+? sql/mysql/populate_object_table.sql
+? t/53_Do.t.dis
+? t/11_Config.t
+? t/perl.errs
+? t/41_Relation.t
+? t/40_Relation.t
+? web/admin/_perlbug.cgi
+? web/admin/adminfaq.html
+? web/admin/footer.html
+? web/admin/frame.html
+? web/admin/graph.cgi
+? web/admin/header.html
+? web/admin/help.html
+? web/admin/images
+? web/admin/index.html
+? web/admin/mailhelp.html
+? web/admin/perlbug.cgi
+? web/admin/robots.txt
+? web/admin/spec.html
+? web/admin/todo.html
+? web/admin/webhelp.html
+Index: MANIFEST
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/MANIFEST,v
+retrieving revision 1.20
+diff -r1.20 MANIFEST
+32a33
+> Perlbug/Object/Object.pm
+42,43d42
+< Perlbug/Object/Thing.pm
+< Perlbug/Object/Type.pm
+45a45,46
+> Perlbug/Object/x-Thing.pm
+> Perlbug/Object/x-Type.pm
+47a49
+> Perlbug/Utility.pm
+68a71
+> dot.qmail
+84a88
+> scripts/bugtest
+87c91,93
+< scripts/mails/BUG
+---
+> scripts/bugwatch
+> scripts/mails/Bug
+> scripts/mails/admin-bugs
+88a95,97
+> scripts/mails/bug-bugs
+> scripts/mails/bugs
+> scripts/mails/closed-bugs
+89a99
+> scripts/mails/help-bugs
+91c101,103
+< scripts/mails/note
+---
+> scripts/mails/message-bugs
+> scripts/mails/note-bugs
+> scripts/mails/propose-bugs
+92a105,109
+> scripts/mails/reply-bugs
+> scripts/mails/schema-bugs
+> scripts/mails/short-clos-bugs
+> scripts/mails/short-ope-bugs
+> scripts/mails/test
+119a137
+> sql/mig/278_to_288
+122a141
+> sql/mysql/create_indexes.sql
+124a144
+> sql/mysql/optimize
+126a147
+> sql/mysql/populate_object_table.sql
+131,132c152
+< t/11.Config.t
+< t/11_Database.t
+---
+> t/11_Config.t
+143d162
+< t/34_Object.t
+145c164,165
+< t/40_Relations.t
+---
+> t/40_Relation.t
+> t/41_Relation.t
+153a174,175
+> t/72_Email.t
+> t/73_Email.t
+179a202,208
+> web/admin/images/home.gif
+> web/admin/images/linux.gif
+> web/admin/images/mysql.gif
+> web/admin/images/perl_republic.gif
+> web/admin/images/perl_title.gif
+> web/admin/images/powered_by_mysql.gif
+> web/admin/images/xxx.gif
+Index: Perlbug.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug.pm,v
+retrieving revision 2.88
+diff -r2.88 Perlbug.pm
+57a58,60
+> 	#       fixed the errant cmd_<bugid>_var@domain parse, do(\w) and feedback 
+> 	#       indexes throughout, optimize tables, rr(rels)
+> 	# 2.90+ templates 
+65,66c68,70
+< Bug tracking system, written in perl, currently using Mysql, 
+< probably running on Linux with Apache.
+---
+> Bug, and problem management, tracking system, written in perl.
+> 
+> Currently using Mysql, probably running on Linux with Apache.
+121c125
+< 	Files=32,  Tests=218, 120 wallclock secs (33.67 cusr +  2.19 csys = 35.86 CPU)  
+---
+> 	Files=33,  Tests=241, 127 wallclock secs (36.66 cusr +  2.66 csys = 39.32 CPU)                      
+123,124c127,128
+< 	With better coverage and improved timing (more tests in less time and/or cpus :)
+<     Files=28,  Tests=148, 148 wallclock secs (59.27 cusr +  2.61 csys = 61.88 CPU) 
+---
+> 	Compare to June 2000 - (more tests in less time and/or cpus :)
+>     Files=28,  Tests=148, 148 wallclock secs (59.27 cusr +  2.61 csys = 61.88 CPU)
+128c132
+< 	Documented (in perldoc -> do what I say _and_ what I do :-)
+---
+> 	Documented (in perldoc -> do what I say _and_ what I do ;-)
+130c134
+< 	Freely available sourcecode and data.
+---
+> 	Freely available sourcecode (on sourceforge.net)
+274a279,282
+> =item bugwatcher
+> 
+> Any mails sent to this script, if likely looking, will be forwarded FAO B<bugmaster>, to catch any which might otherwise 'fall through the cracks'.
+> 
+291,299c299,304
+<                    ----------------------------------       - 
+<                             |                       |       |       
+<                             Cmd                     |       |
+<                           ---------                 |	    |
+<                           |       |                 |       |
+<                           |       Email             Web     Tk
+<     -----------------------       ----------        ---     --- 
+<     |       |     |       |       |        |        |       | 
+<     bugcron bugdb bughist bugfix  bugtron bugmail   bugcgi  bugtk
+---
+>                    --------------------------------------------------
+>                           |       |                         |       |
+>                         Cmd       Email                     Web     Tk
+>     -----------------------       -----------------         ---     --- 
+>     |       |     |       |       |       |       |         |       | 
+>     bugcron bugdb bughist bugfix  bugtron bugmail bugwatch  bugcgi  bugtk
+304,308c309,310
+<              Template
+< 			 --------
+< 			 |
+<              Format
+<              ------
+---
+>       Format + Template
+>       -----------------
+378a381,384
+> For example, to see what's going on without looking in the log file:
+> 
+> 	export Perlbug_DEBUG=012d; perl t/31_Object.t
+> 
+470,471c476,477
+< Send active admins unclosed bugs and an overview to master_list(p5p), 
+< 	dump current database for reference/backup:
+---
+> Send active admins unclosed bugs, remind open bug submitters their bug remains 
+> 	open, send an overview to master_list(p5p), backup current database:
+Index: Perlbug/Base.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Base.pm,v
+retrieving revision 1.89
+diff -r1.89 Base.pm
+25c25
+< @ISA = qw(Perlbug::Do); 
+---
+> @ISA = qw(Perlbug::Do Perlbug::Utility); 
+32a33
+> use Perlbug::Utility;
+124c125
+< 	$CACHE_TIME{'INIT'} = Benchmark->new; 
+---
+> 	$CACHE_TIME{'INIT'} = Benchmark->new if $Perlbug::DEBUG;
+136c137
+< 		$CACHE_TIME{'PREP'} = Benchmark->new; 
+---
+> 		$CACHE_TIME{'PREP'} = Benchmark->new if $Perlbug::DEBUG; 
+138c139,140
+< 		$self->debug(0, "INIT $version ($$) debug($Perlbug::DEBUG) scr($0)") if $Perlbug::DEBUG; 
+---
+> 		my $userid  = $self->isadmin;
+> 		$self->debug(0, "INIT $version ($$) debug($Perlbug::DEBUG) scr($0)  user($userid)") if $Perlbug::DEBUG; 
+151c153
+< 		$CACHE_TIME{'LOAD'} = Benchmark->new; 
+---
+> 		$CACHE_TIME{'LOAD'} = Benchmark->new if $Perlbug::DEBUG;
+191a194
+> 		$req = '-nodebug' unless $0 =~ /cgi$/; # context eq 'http'
+341a345,372
+> =item splice
+> 
+> Returns a given Mail::Internet object s(p)liced up into useful bits.
+> 
+>     my ($o_hdr, $header, $body) = $self->splice($o_int); # todo ---sig
+> 
+> =cut
+> 
+> sub splice {
+>     my $self  = shift;
+> 	my $o_int = shift;
+> 
+> 	my @data = ();
+> 	if (!ref($o_int)) {	
+> 		$self->debug(0, "Can't splice inappropriate mail($o_int) object")
+> 	} else {
+> 		# $o_int->remove_sig;
+> 		@data = (
+> 			$o_int->head,
+> 			join('', @{$o_int->head->header}),
+> 			join('', @{$o_int->body}),
+> 		);
+> 	}
+> 
+> 	return @data;
+> }
+> 
+> 
+410,420d440
+< =item cachable
+< 
+< Return cachable status for application
+< 
+< 	my $i_ok = $o_base->xcachable(); # 1 or 0
+< 
+< =cut
+< 
+< sub xcachable { my $self = shift; return $self->system('cachable'); }
+< 
+< 
+442,445c462,466
+< 	my $arg = shift || '';
+< 	if ($arg =~ /^([012])$/o) {
+< 		my ($res) = $self->current({'isatest', $1});
+< 		$self->debug(1, "setting isatest($arg)->res($res)") if $Perlbug::DEBUG;
+---
+> 	my $arg  = shift || '';
+> 	my $res  = my $orig = $self->current('isatest');
+> 
+> 	if ($arg =~ /^([01])$/o) {
+> 		$res = $self->current({'isatest', $1});
+447c468,471
+< 	return $self->current('isatest');
+---
+> 
+> 	$self->debug(2, "isatest($arg) orig($orig) => res($res)") if $Perlbug::DEBUG;
+> 
+> 	return $res;
+489c513
+< Returns quoted, OR-d dodgy addresses prepared for a pattern match ...|...|...
+---
+> Returns quotemeta'd, OR-d dodgy addresses prepared for a pattern match ...|...|...
+491c515,517
+< 	my $regex = $o_obj->dodgy_addresses('from'); # $rex = 'perlbug\@perl\.com|perl5\-porters\@perl\.org|...'
+---
+> 	my $regex = $o_obj->dodgy_addresses('from'); 
+> 	
+> 	# $regex  = 'perlbug\@perl\.com|perl5\-porters\@perl\.org|...'
+494a521,522
+> # rjsf: Should be addresses()
+> 
+497a526
+> 	my $dodgy = '';
+499d527
+< 	my $i_ok  = 1;
+507,508c535
+< 		push(@duff, @targs,
+< 					$self->email('bugdb'), $self->email('bugtron'));
+---
+> 		push(@duff, @targs, $self->email('bugdb'), $self->email('bugtron'));
+515c542,543
+< 	my $dodgy = '';
+---
+> 
+> 	DUFF:
+520a549
+> 
+522,523c551
+<     undef $dodgy unless $i_ok == 1; # something in it for example?
+< 	$self->debug(3, "dodgy_addresses($scope) -> '$dodgy'") if $Perlbug::DEBUG;
+---
+> 	$self->debug(3, "addresses($scope) -> '$dodgy'") if $Perlbug::DEBUG;
+590,591c618,619
+< 	my $types = join('|', qw(group osname project severity status version)); # yek
+< 	# my $types = $self->object('object')->names("type = 'flag'");
+---
+> 	# my $types = join('|', qw(group osname project severity status version)); # yek
+> 	my $types = join('|', ($self->object('object')->names("type = 'flag'"), 'group'));
+619c647,648
+< 	my @types = qw(group osname project severity status version); # yek
+---
+> 	# my @types = qw(fixed group osname project severity status version); # yek
+> 	my @types = ($self->object('object')->names("type = 'flag'"), 'group');
+749,750c778,779
+< 	            $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
+< 	            $self->debug(1, "given param ($user) taken as admin id ($id), switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
+---
+> 	            # $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
+> 	            $self->debug(1, "given param ($user) taken as admin id ($id)"); # , switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
+759,760c788,789
+<         $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
+< 	    $self->debug(1, "Non-restricted user($user) taken as admin id, switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
+---
+>         # $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
+> 	    $self->debug(1, "Non-restricted user($user) taken as admin id"); # , switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
+762c791
+< 	$self->debug(2, "check_user($user)->'".$self->isadmin."'") if $Perlbug::DEBUG;
+---
+> 	$self->debug(1, "check_user($user)->'".$self->isadmin."'") if $Perlbug::DEBUG;
+786c815
+< =item get_switches
+---
+> =item switches
+788c817
+< Returns array of current switches, rather than string
+---
+> Returns array of appropriate switches based on B<isadmin> or arg.
+790c819
+< 	my @switches = $o_pb->get_switches('user');
+---
+> 	my @switches = $o_pb->switches([admin|user]); # exlusive
+794c823
+< sub get_switches { # current or admin|user
+---
+> sub switches { # admin|user
+799,800c828,829
+< 	# my @admin_switches = split(//, $self->system('admin_switches'));
+< 	# my @user_switches  = split(//, $self->system('user_switches'));
+---
+> 	my @admin = split(//, $self->system('admin_switches'));
+> 	my @user  = split(//, $self->system('user_switches'));
+803c832
+< 		@switches = split(//, $self->system('admin_switches'));
+---
+> 		@switches = @admin;
+805c834
+< 		@switches = split(//, $self->system('user_switches'));
+---
+> 		@switches = @user;
+807c836
+< 		@switches = split(//, $self->current('switches'));
+---
+> 		@switches = ($self->isadmin) ? (@admin, @user) : @user;
+810c839,841
+< 	@switches = ($self->isadmin =~ /^richardf$/o) ? grep(/^(\w|\!)$/, @switches) : grep(/^\w$/, @switches);
+---
+> 	@switches = sort grep(/^\w$/, @switches);
+> 	
+> 	$self->debug(2, "in($arg) out(".join(', ', @switches).')') if $Perlbug::DEBUG;
+1036c1067,1068
+<     		$self->debug('S', 'found '.$sth->rows.' rows') if $Perlbug::DEBUG;
+---
+> 			$CACHE_SQL{$sql} = $a_info if $self->system('cachable');
+>     		$self->debug('S', 'found '.$sth->rows." rows($a_info): ".Dumper($a_info)) if $Perlbug::DEBUG;
+1040d1071
+< 	$CACHE_SQL{$sql} = $a_info if $self->system('cachable');
+1064d1094
+< 		$DB::single=2;
+1067,1068d1096
+< 		# my $i_insertid = $sth->insertid || '';
+< 		# $self->debug('X', "inserted($i_insertid)") if $Perlbug::DEBUG;
+1135,1136c1163,1166
+< 			if ($self->current('mailing')) {
+< 				my $o_int   = $self->setup_int($header, $body)->head;
+---
+> 			if (!$self->current('mailing')) {
+> 				$self->debug(0, "not mailing(".!$self->current('mailing').")") if $Perlbug::DEBUG;
+> 			} else {
+> 				my $o_int = $self->setup_int($header, $body);
+1138,1143c1168,1172
+< 				my $title	= $self->system('title');
+< 				my $bugtron = $self->email('bugtron');
+< 				my $maint   = $self->system('maintainer');
+< 				my @ccs     = ($obj eq 'bug' ) ? $self->bugid_2_addresses($oid, 'new') : ();
+< 				my ($from, $orig, $replyto, $subject, $to) = ('', '', '', '', '');
+< 				if (ref($o_hdr)) {
+---
+> 				if (!ref($o_hdr)) {
+> 					$self->debug(0, "no header($o_hdr) for notification!");
+> 				} else {
+> 					my ($from, $orig, $replyto, $subject, $to) = ('', '', '', '', '');
+> 					my @cc   = $o_hdr->get('Cc'); @cc = () unless @cc;
+1145d1173
+< 					$replyto = $o_hdr->get('Reply-To');
+1146a1175
+> 					$replyto = $o_hdr->get('Reply-To');
+1148,1158c1177,1178
+< 					chomp($from, $orig, $replyto, $subject, $to); 
+< 					# $subject  = ucfirst($obj)." [ID $oid] $orig"; 
+< 					$subject  = " [ID $oid] $orig"; 
+< 					$o_hdr    = $self->addurls($o_hdr, $obj, $oid);
+< 					$o_hdr->replace('Subject', $subject);
+< 
+< 					my $type = ($subject =~ /^\s*OK/io) ? 'ok' : 'remap';
+< 					my $o_notify = $self->get_header($o_hdr, $type);	# p5p
+< 					$o_notify->replace('Cc', join(', ', @ccs));
+< 					$i_ok = $self->send_mail($o_notify, $body); # auto
+< 				}
+---
+> 					chomp(@cc, $from, $orig, $replyto, $subject, $to); 
+> 					$subject  = ($obj =~ 'bug' ? '' : ucfirst($obj))." [ID $oid] $orig";
+1160,1172c1180,1209
+< 				# ACKNOWLEDGE 
+< 				if ($body =~ /(ack(knowledge)*=no)/iso) {
+< 					$self->debug(1, "body contains ack(\w+)=no -> not notifying!") if $Perlbug::DEBUG;
+< 				} else {
+< 					my $o_ack = $self->get_header($o_hdr);
+< 					$o_ack->replace('Subject', "Ack - $subject");
+< 					$o_ack->replace('To', $self->from($replyto, $from)); 
+< 
+< 					my $response = join('', $self->read('response'));
+< 					my $footer   = join('', $self->read('footer'));
+< 					$response =~ s/(An ID)/A $obj ID ($oid)/;
+< 					$response =~ s/(Original\ssubject:)/$1 $orig/;
+< 					$i_ok = $self->send_mail($o_ack, $response.$footer);
+---
+> 					# ACKNOWLEDGE - noack
+> 					if (grep(/noack/io, $to, @cc) || $body =~ /(ack(knowledge)*=no)/iso) {
+> 						$self->debug(1, "body(to|cc) contains ack(\w+)=no -> not acknowledging!") if $Perlbug::DEBUG;
+> 					} else {
+> 						$self->debug(1, "body(to|cc) doesn't contain ack(\w+)=no -> acknowledging") if $Perlbug::DEBUG;
+> 						my $o_ack = $self->get_header($o_hdr);
+> 						$o_ack->replace('Subject', "Ack - $subject");
+> 						$o_ack->replace('To', $self->from($replyto, $from)); 
+> 						my $response = join('', $self->read('response'));
+> 						my $footer   = join('', $self->read('footer'));
+> 						$response =~ s/(An ID)/A $obj ID ($oid)/;	    # clunk
+> 						$response =~ s/(Original\ssubject:)/$1 $orig/;	# clunk
+> 						$i_ok = $self->send_mail($o_ack, $response.$footer);
+> 					}
+> 
+> 					# NOTIFY - nocc
+> 					if (grep(/no(cc|notify)/io, $to, @cc)) {
+> 						$self->debug(1, "to($to), cc(@cc) contains no(cc|notify) -> not notifying!") if $Perlbug::DEBUG;
+> 					} else {
+> 						$self->debug(1, "to($to), cc(@cc) doesn't contain no(cc|notify) -> notifying") if $Perlbug::DEBUG;
+> 						my @ccs = ($obj eq 'bug' ) ? $self->bugid_2_addresses($oid, 'new') : ();
+> 						$o_hdr  = $self->addurls($o_hdr, $obj, $oid);
+> 						$o_hdr->replace('Subject', $subject);
+> 						my $type = ($subject =~ /^\s*OK/io) ? 'ok' : 'remap';
+> 	$DB::single=2;
+> 						my $o_notify = $self->get_header($o_hdr, $type);	
+> 	$DB::single=2;
+> 						$o_notify->replace('Cc', join(', ', @ccs));
+> 						$i_ok = $self->send_mail($o_notify, $body); # auto
+> 					}
+1204,1205c1241,1242
+< 		if ($header =~ /^([^:]+:\s*\w+.*)/mo) { # unfold
+< 			$header =~ s/\r?\n\s+/ /sog;
+---
+> 		if ($header =~ /^([^:]+:\s*\w+.*)/mo) { 
+> 			$header =~ s/\r?\n\s+/ /sog; # unfold
+1208c1245
+< 			$self->error("Can't setup int from invalid header($header)!");
+---
+> 			$self->debug(0, "Can't setup int from invalid header($header)!");
+1216a1254
+> 			$tag =~ s/^\s*//; $tag =~ s/\s*$//; # stray newlines creeping in?
+1222c1260
+< 		$o_int = Mail::Internet->new('Header' => $o_hdr, 'Body' => [split("\n", $body)]);
+---
+> 		$o_int = Mail::Internet->new('Header' => $o_hdr, 'Body' => [map { "$_\n" } split("\n", $body)]);
+1258a1297
+> 		my $diff = $o_bug->diff($orig, $bug);
+1262,1263c1301,1302
+< The original:
+< $orig
+---
+> The difference from the original:
+> $diff
+1265,1267d1303
+< 		# 
+< 		# should be a diff?
+< 		# 
+1269c1305
+< To see this data on the web, visit:
+---
+> To see this (and more) data on the web, visit:
+1273,1277d1308
+< To see current data on this bug($bid) send an email of the following form:
+< 
+< 	To: $bugdb
+< 	Subject: -B $bid
+< 
+1294c1325
+< 	return $i_ok
+---
+> 	return $i_ok;
+1329c1360
+< 	$sth = $self->track($type, $id, $entry);
+---
+> 	$sth = $self->track($obj, $id, $entry);
+1492,1493c1523,1525
+<     $self->debug(2, "Cleaned up: age($max) -> files($cleaned) of($found)") if $Perlbug::DEBUG;
+< 	# 
+---
+>     $self->debug(3, "Cleaned up: age($max) -> files($cleaned) of($found)") if $Perlbug::DEBUG;
+> 	
+> 	return ();
+1499c1531
+< Put runtime info in log file
+---
+> Put runtime info in log file, if $Perlbug::DEBUG 
+1507c1539
+< 	my $now  = shift || Benchmark->new; 
+---
+> 	my $feedback = ' ';
+1509c1541,1542
+< 	$CACHE_TIME{'DONE'} = $now;
+---
+> 	if ($Perlbug::DEBUG) {
+> 		my $now  = shift || Benchmark->new; 
+1511,1531c1544,1568
+< 	my $start = $CACHE_TIME{'INIT'} || 0;
+< 	my $prep  = $CACHE_TIME{'PREP'} || 0;
+< 	my $load  = $CACHE_TIME{'LOAD'} || 0;
+< 	my $done  = $CACHE_TIME{'DONE'} || 0;
+< 	my $x = qq|start($start), prep($prep), load($load), done($done)|;
+< 
+< 	my $started = timediff($prep, $start);
+< 	my $loaded  = timediff($load, $prep);
+< 	my $runtime = timediff($done, $load);
+< 	my $total   = timediff($done, $start);
+< 
+< 	my $feedback = ($started && $loaded && $runtime && $total) 
+< 		? qq|$0 debug($Perlbug::DEBUG)
+< 	Startup: @{[timestr($started)]}
+< 	Loaded : @{[timestr($loaded)]}
+< 	Runtime: @{[timestr($runtime)]}
+< 	Alltook: @{[timestr($total)]}
+<         including $Perlbug::Database::SQL SQL statements 
+<         using $Perlbug::Database::HANDLE database handle/s
+< 	|
+< 		: '';
+---
+> 		$CACHE_TIME{'DONE'} = $now;
+> 
+> 		my $start = $CACHE_TIME{'INIT'} || 0;
+> 		my $prep  = $CACHE_TIME{'PREP'} || 0;
+> 		my $load  = $CACHE_TIME{'LOAD'} || 0;
+> 		my $done  = $CACHE_TIME{'DONE'} || 0;
+> 		my $x = qq|start($start), prep($prep), load($load), done($done)|;
+> 
+> 		my $started = timediff($prep, $start);
+> 		my $loaded  = timediff($load, $prep);
+> 		my $runtime = timediff($done, $load);
+> 		my $total   = timediff($done, $start);
+> 
+> 		$feedback = ($started && $loaded && $runtime && $total) 
+> 			? qq|$0 debug($Perlbug::DEBUG)
+> 		Startup: @{[timestr($started)]}
+> 		Loaded : @{[timestr($loaded)]}
+> 		Runtime: @{[timestr($runtime)]}
+> 		Alltook: @{[timestr($total)]}
+> 			including $Perlbug::Database::SQL SQL statements 
+> 			using $Perlbug::Database::HANDLE database handle/s
+> 		|
+> 			: '';
+> 		$self->debug(1, $feedback); 
+> 	}
+1533d1569
+< 	$self->debug(1, $feedback) if $Perlbug::DEBUG;
+1540c1576,1578
+< Returns hash of data extracted from given string:
+---
+> Returns hash of data extracted from given string.
+> 
+> Matches are 'nearest wins' after 4 places ie; clos=closed.
+1570c1608
+< 	my @names = map { $self->object($_)->col('name') } @flags;
+---
+> 	my @names = map { substr($_, 0, 4) } map { $self->object($_)->col('name') } @flags;
+1576a1615,1616
+> 		my $arg4 = substr($arg, 0, 4);
+> 		# print "arg($arg) => arg4($arg4)<hr>";
+1578d1617
+< 			# push(@{$cmds{'bugids'}}, $arg);
+1580c1619
+< 		} elsif (grep(/^$arg$/i, @names)) {				
+---
+> 		} elsif (grep(/^\Q$arg4/i, @names)) {				
+1584,1585c1623,1626
+< 				if (grep(/^$arg$/i, @types)) {			# type 
+< 					# push(@{$cmds{$flag}}, $arg);
+---
+> 				my ($argtype) = ($flag =~ /^(group|severity|status)$/) 
+> 					? grep(/^$arg/i, @types) 	# loose 
+> 					: grep(/^$arg$/i, @types);	# tighter (eg; osname...)
+> 				if ($argtype =~ /\w+/) {			    # type 
+1587,1588c1628,1629
+< 					push(@{$cmds{$flag}{'ids'}}, $id);
+< 					push(@{$cmds{$flag}{'names'}}, $arg);
+---
+> 					push(@{$cmds{$flag}{'ids'}}, $id) if $id;
+> 					push(@{$cmds{$flag}{'names'}}, $argtype);
+1597c1638,1639
+< 	$self->debug(1, "*** parse in($str), out-> ".Dumper(\%cmds)) if $Perlbug::DEBUG;
+---
+> 	# $DB::single=2;
+> 	$self->debug(1, "parse in($str), out-> ".Dumper(\%cmds)) if $Perlbug::DEBUG;
+1765,1808d1806
+< }
+< 
+< 
+< =item dump
+< 
+< Wraps Dumper() and dumps given args
+< 
+< 	print $o_base->dump($h_data);
+< 
+< =cut
+< 
+< sub dump {
+< 	my $self = shift;
+< 	my @args = @_;
+< 	my $res  = "rjsf dump: \n";
+< 
+< 	foreach my $arg (@args) {
+< 		$res .= "\targ($arg): ".Dumper(\$arg);
+< 	}
+< 	$res .= "\n";
+< 
+< 	return $res;
+< }
+< 
+< 
+< =item html_dump
+< 
+< Encodes and dumps given args
+< 
+< 	print $o_base->html_dump($h_data);
+< 
+< =cut
+< 
+< sub html_dump {
+< 	my $self = shift;
+< 	my @args = @_;
+< 	my $res  = '<table><tr><td>rjsf html_dump: </td></tr>';
+< 
+< 	foreach my $arg (@args) {
+< 		$res .= qq|<tr><td><pre>|.encode_entities(Dumper($arg)).qq|&nbsp;</pre></td></tr>|;	
+< 	}
+< 	$res .= '</table>';
+< 
+< 	return $res;
+Index: Perlbug/Config.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Config.pm,v
+retrieving revision 1.50
+diff -r1.50 Config.pm
+63d62
+< 
+68c67
+< 	# $self->relog if $Perlbug::DEBUG =~ /dD/;
+---
+> 	$self->relog if $Perlbug::DEBUG =~ /[dD]/;
+70,71c69,70
+< 	$self->("suspect Perlbug::Config data: ".Dumper($self->{'_config'})) 
+< 		unless keys %{$self->{'_config'}} >= 7; # ?
+---
+> 	$self->error(0, "suspect Perlbug::Config data: ".Dumper($self->{'_config'})) 
+> 		unless keys %{$self->{'_config'}} >= 16; # ?
+79c78
+< Redirect log output to STDOUT
+---
+> Redirect log output to STDOUT (if $Perlbug_DEBUG =~ /[dD]/
+113a113
+> 		# my @res = ($0 =~ /t\/\w+\.t$/) ? print($err) : confess($err);
+116,120c116,118
+< 		if ($Perlbug::DEBUG =~ /[23]/o) {
+< 			cluck($err);
+< 		} else {
+< 			print($err);
+< 		}	
+---
+> 		my @ignored = ($Perlbug::DEBUG =~ /[23]/o) 
+> 			? cluck($err) 
+> 			: print($err);
+477a476,481
+> my $VALID = join('|', qw( 
+> 	CURRENT SYSTEM DATABASE DIRECTORY 
+> 	LINK ENV FEEDBACK MESSAGE EMAIL WEB VARS
+> 	DEFAULT GROUP SEVERITY STATUS VERSION
+> ));
+> 
+489,496c493
+< 	# TARGET FORWARD taken care of above
+< 	my $valid = join('|', qw( 
+< 		CURRENT SYSTEM DATABASE DIRECTORY 
+< 		ENV FEEDBACK MESSAGE EMAIL WEB VARS
+< 		DEFAULT GROUP SEVERITY STATUS VERSION
+< 	));
+< 
+< 	if ($meth !~ /^($valid)$/) { # not one of ours :-)
+---
+> 	if ($meth !~ /^($VALID)$/) { # not one of ours :-)
+503c500
+< 			my @ret = ();
+---
+> 			my @ret  = ();
+505,527c502,518
+< 			# if (ref($self->{'_config'}{$meth}) ne 'HASH') {
+< 			#	$self->error("invalid config($pkg) structure($meth): ".Dumper($self));
+< 			#} else {
+< 				if (!defined($get)) {
+< 					@ret = keys %{$self->{'_config'}{$meth}};
+< 				} else {
+< 					if (ref($get) ne 'HASH') { 						# get ...
+< 						@ret = ($self->{'_config'}{$meth}{$get});	#  
+< 					} else {										# set ...
+< 						if ($meth !~ /^current$/i) { 				# current 
+< 							$self->error("structure($meth) not settable: ".Dumper($get));
+< 						} else {
+< 							my $keys = join('|', keys %{$self->{'_config'}{"$meth"}}); 	# ref
+< 							SET:
+< 							foreach my $key (keys %{$get}) {
+< 								if ($key !~ /^($keys)$/) {
+< 									$self->error("unrecognised key($key) in $meth structure($keys)!");
+< 								} else {
+< 									if ($key =~ /^(\w{3})_file$/o) { # setting new file?
+< 										undef $self->{'_config'}{$meth}{$1.'_fh'};
+< 									}
+< 									$self->{'_config'}{$meth}{$key} = $$get{$key}; # 
+< 									push(@ret, $$get{$key});		# 
+---
+> 			if (!defined($get)) {
+> 				@ret = keys %{$self->{'_config'}{$meth}};
+> 			} else {
+> 				if (ref($get) ne 'HASH') { 						# get ...
+> 					@ret = ($self->{'_config'}{$meth}{$get});	#  
+> 				} else {										# set ...
+> 					if ($meth !~ /^current$/i) { 				# current 
+> 						$self->error("structure($meth) not settable: ".Dumper($get));
+> 					} else {
+> 						my $keys = join('|', keys %{$self->{'_config'}{"$meth"}}); 	# ref
+> 						SET:
+> 						foreach my $key (keys %{$get}) {
+> 							if ($key !~ /^($keys)$/) {
+> 								$self->error("unrecognised key($key) in $meth structure($keys)!");
+> 							} else {
+> 								if ($key =~ /^(\w{3})_file$/o) { # setting new file?
+> 									undef $self->{'_config'}{$meth}{$1.'_fh'};
+528a520,521
+> 								$self->{'_config'}{$meth}{$key} = $$get{$key}; # 
+> 								push(@ret, $$get{$key});		# 
+533c526,527
+< 			#}
+---
+> 			}
+> 
+535c529
+< 		}			
+---
+> 		}	# autoload
+Index: Perlbug/Database.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Database.pm,v
+retrieving revision 1.15
+diff -r1.15 Database.pm
+130a131,138
+> =item DBConnect
+> 
+> DBConnect() checks to see if there is an open connection to the
+> Savant database, opens one if there is not, and returns a global
+> database handle.  This eliminates opening and closing database
+> handles during a session.  undef is returned 
+> 
+> =cut
+132,136d139
+< ###
+< # DBConnect() checks to see if there is an open connection to the
+< # Savant database, opens one if there is not, and returns a global
+< # database handle.  This eliminates opening and closing database
+< # handles during a session.  undef is returned 
+177a181,204
+> }
+> 
+> 
+> =item case_sensitive
+> 
+> Return given args(column, string) as case sensitive match
+> 
+> 	my $sql = $o_db->case_sensitive('format', 'H');
+> 
+> =cut
+> 
+> sub case_sensitive { 
+> 	my $self = shift;
+> 	my $col  = shift;
+> 	my $str  = shift;
+> 	my $ret  = '';
+> 
+> 	if (!($col =~ /\w+/ && $str =~ /\w+/)) {
+> 		$self->debug(0, "no col($col) or str($str) given!");		
+> 	} else {
+> 		$ret = "STRCMP($col, '$str') = 0";
+> 	}	
+> 
+> 	return $ret;
+Index: Perlbug/Do.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Do.pm,v
+retrieving revision 1.65
+diff -r1.65 Do.pm
+152,153c152,153
+< 		$cmd =~ /^[BCGMNPTUV]$/o ? 'HASH' : 
+< 		$cmd =~ /^[adfloqrsvz]$/o ? 'SCALAR' : 
+---
+> 		$cmd =~ /^[aBCGMNPTUVv]$/o ? 'HASH' : 
+> 		$cmd =~ /^[dfhHloqrsz]$/o ? 'SCALAR' : 
+196c196
+< 	$self->debug(1, "cmd($cmd) arg($arg) => ret: ".Dumper($ret)) if $Perlbug::DEBUG;
+---
+> 	$self->debug(2, "cmd($cmd) arg($arg) => ret: ".Dumper($ret)) if $Perlbug::DEBUG;
+233,234c233,234
+< 		my %adminable = ();
+< 		%adminable = map { $_ => ++$adminable{$_} } $self->get_switches('admin');
+---
+> 		# my %adminable = ();
+> 		# %adminable = map { $_ => ++$adminable{$_} } $self->switches('admin');
+238,241c238,241
+< 			next SWITCH unless grep(/^$switch$/, $self->get_switches);
+< 			if (!$self->isadmin) {
+< 				next SWITCH if $adminable{$switch};
+< 			}
+---
+> 			next SWITCH unless grep(/^$switch$/, $self->switches);
+> 			# if (!$self->isadmin) {
+> 			#	next SWITCH if $adminable{$switch};
+> 			#}
+245,246c245,249
+< 				push(@res, $self->do($switch, $cmds{$switch})); 
+< 				$self->debug(2, "Process ($switch, $cmds{$switch}) completed next...") if $Perlbug::DEBUG;
+---
+> 				$cmds{$switch} = '' unless $cmds{$switch};
+> 				$self->debug(1, "processing($switch, $cmds{$switch})...") if $Perlbug::DEBUG;
+> 				my @result = $self->do($switch, $cmds{$switch}); 
+> 				push(@res, "$switch: => ".join("\n", @result));
+> 				$self->debug(1, "processed(@res)") if $Perlbug::DEBUG;
+281a285
+> 		$DB::single=2;
+288a293,295
+> # -----------------------------------------------------------------------------
+> # From here are all the do\w commands
+> # -----------------------------------------------------------------------------
+300,301c307,309
+< 	my $cmds   = shift;
+< 	my $res    = '';
+---
+> 	my $h_args = shift;
+> 	my %args   = %{$h_args};
+> 	my @res    = ();
+303,304c311,312
+< 	my %cmds = $self->parse_str($cmds);
+< 	my @bids = @{$cmds{'bugids'}};
+---
+> 	my %cmds = $self->parse_str($$h_args{'opts'});
+> 	my @bids = ref($cmds{'bug'}{'ids'}) eq 'ARRAY' ? @{$cmds{'bug'}{'ids'}} : ();
+312c320
+< 	    foreach my $b (@{$cmds{'bugids'}}) {
+---
+> 	    foreach my $b (@bids) {
+316c324
+< 				$res .= "Bug ($b) update failure";
+---
+> 				push(@res, "Bugid($b) read failure");
+319,320c327
+< 				$self->debug(0, "related($b): ".Dumper(\%cmds));
+< 				my $o_int = $self->base->setup_int($o_bug->data('header'), $o_bug->data('body'))->head;
+---
+> 				my $o_int = $self->setup_int($o_bug->data('header'), $o_bug->data('body'));
+335c342,343
+< 					my $nid = $o_note->insertid;
+---
+> 					my $nid = $o_note->oid;
+> 					$o_bug->rel('note')->assign([$nid]);
+341a350,353
+> 			my $current = $o_bug->read($b)->format('a');
+> 			push(@res, "Current status (post admin)\n$current\n");
+> 			my $diff = $o_bug->diff($orig, $current);
+> 			push(@res, "Difference from previous status (by line): \n$diff\n");
+346c358
+< 	return $res;
+---
+> 	return @res;
+365c377
+<     push(@res, $self->doa($cmds));
+---
+> 	my @bids = ref($cmds{'bug'}{'ids'}) eq 'ARRAY' ? @{$cmds{'bug'}{'ids'}} : ();
+367c379,385
+<     push(@res, $self->dob(@{$cmds{'bugids'}}));
+---
+> 	if (!(@bids >= 1)) {
+> 		$self->error("requires bugids(@bids) to Administrate!");
+> 	} else {
+> 		push(@res, $self->doa($cmds));
+> 
+> 		push(@res, $self->dob($cmds{'bug'}{'ids'}));
+> 	}
+413d430
+< 	my $cmd    = $args{'opts'};
+417,418d433
+< 	my %cmds   = $self->parse_str($cmd);
+< 
+438c453,454
+< 			$id = $o_obj->insertid;
+---
+> 			$id = $o_obj->oid;
+> 			my %cmds = $self->parse_str($args{'opts'});
+469,470c485,486
+<         } else {
+< 			print "No patches found with changeid($id), trying with bugs...<br>\n"; 
+---
+>         } else { # 
+> 			print "No patches found with changeid($id), trying with bugs...<br>\n" if $0 =~ /cgi$/; 
+622c638
+< 		$cmd = "$bakup $args -u$user -p$pass $db | $comp > $target" if $i_ok == 1;
+---
+> 		$cmd = "$bakup $args -u$user -p$pass $db | $comp > $target" if $i_ok == 1; # ek
+740d755
+< 
+742,743d756
+< 	my $cmd    = $args{'opts'};
+< 	my %cmds   = $self->parse_str($cmd);
+760,761c773,775
+< 			$id = $o_obj->insertid;
+< 			$o_obj->relate(\%cmds);
+---
+> 			$id = $o_obj->oid;
+> 			my %cmds  = $self->parse_str($args{'opts'});
+> 			my $i_rel = $o_obj->relate(\%cmds);
+827,828c841,842
+< 		'i' => 'index retrieval criteria                  (open core regex)', 
+< 		'I' => 'Index retrieval criteria more detail      (open core regex)', 
+---
+> 		'i' => 'index retrieval criteria                  (open high aix)', 
+> 		'I' => 'Index retrieval criteria more detail      (open high aix)', 
+864c878
+< 		next SWITCH unless grep(/^$key$/, $self->get_switches); 
+---
+> 		next SWITCH unless grep(/^$key$/, $self->switches); 
+948c962
+< Just test for a response (prints ok)
+---
+> Just test for a response - produces "$title $version => ok"
+957c971
+< 	my $res  = 'ok';
+---
+> 	my $res  = join(' ', $self->system('title'), $self->version, '=>', 'ok');
+1094a1109
+> 	ID:
+1096c1111
+< 	    next unless $i =~ /^\d+$/o;
+---
+> 	    next ID unless $i =~ /^\d+$/o;
+1119d1133
+< 	my $cmd    = $args{'opts'};
+1123,1124d1136
+< 	my %cmds   = $self->parse_str($cmd);
+< 
+1142,1143c1154,1157
+< 			$id = $o_obj->insertid; # oid
+< 			$o_obj->relate(\%cmds);
+---
+> 			$id = $o_obj->oid; 
+> 			my %cmds = $self->parse_str($args{'opts'});
+> 			my $i_rel = $o_obj->relate(\%cmds);
+> 			my $i_don = $o_obj->appropriate(\%cmds);
+1196,1197d1209
+< 	my %cmds   = $self->parse_str($args{'opts'});
+< 
+1215,1217c1227,1231
+< 			$id = $o_obj->insertid;
+< 			$o_obj->relate(\%cmds);
+< 			$self->notify($target, $id);
+---
+> 			$id = $o_obj->oid;
+> 			my %cmds = $self->parse_str($args{'opts'});
+> 			my $i_rel = $o_obj->relate(\%cmds);
+> 			my $i_don = $o_obj->appropriate(\%cmds);
+> 			# $self->notify($target, $id);
+1376c1390
+< 	my $self  = shift;
+---
+> 	my $self   = shift;
+1378d1391
+< 
+1380d1392
+< 	my $cmd    = $args{'opts'};
+1384d1395
+< 	my %cmds   = $self->parse_str($cmd);
+1401,1402c1412,1415
+< 			$id = $o_obj->insertid;
+< 			$o_obj->relate(\%cmds);
+---
+> 			$id = $o_obj->oid;
+> 			my %cmds = $self->parse_str($args{'opts'});
+> 			my $i_rel = $o_obj->relate(\%cmds);
+> 			my $i_don = $o_obj->appropriate(\%cmds);
+1486d1498
+< 
+1489,1490d1500
+< 	    # my $sql = "SELECT * FROM $t WHERE 1 = 0";
+< 	    # my $sql = "SHOW FIELDS FROM $t";
+1492c1502
+< 		my $res = join("\n", $self->doq($sql));
+---
+> 		my $res = join("\n", $self->get_list($sql));
+1629a1640
+> 	my $o_tmp = $self->object('template');
+1630a1642
+> 	# push(@res, $o_tmp->start('test', $fmt);
+1635a1648
+> 	# push(@res, $o_tmp->finish('test', $fmt);
+1655d1667
+< 	my $cmd    = $args{'opts'};
+1659,1660d1670
+< 	my %cmds   = $self->parse_str($cmd);
+< 
+1676,1677c1686,1689
+< 			$id = $o_obj->insertid;
+< 			$o_obj->relate(\%cmds);
+---
+> 			$id = $o_obj->oid;
+> 			my %cmds = $self->parse_str($args{'opts'});
+> 			my $i_rel = $o_obj->relate(\%cmds);
+> 			my $i_don = $o_obj->appropriate(\%cmds);
+1874c1886,1887
+< 	my $cmds   = shift;
+---
+> 	my $h_args = shift;
+> 	my %args   = %{$h_args};
+1877c1890
+< 	my %cmds   = $self->parse_str($cmds);
+---
+> 	my %cmds   = $self->parse_str($args{'opts'});
+1879,1881c1892,1894
+< 	my $o_int = '';
+< 	if (!ref($o_int)) {
+< 		$self->error("bug forwarding requires a Mail::Internet object($o_int)");
+---
+> 	my $i_ok = 0;
+> 	if (1 != 1) {
+> 		$self->error("forwarding requires something ...!");
+1883,1885c1896,1899
+< 		my ($o_hdr, $header, $body) = $self->splice($o_int);
+< 		my ($subject, $from, $replyto) = ($o_hdr->get('Subject'), $o_hdr->get('From'), $o_hdr->get('Reply-To'));
+< 		chomp($subject, $from, $replyto);
+---
+> 		my $body    = $args{'body'} || '';
+> 		my $from    = $args{'from'} || '';
+> 		my $replyto = $args{'replyto'} || '';
+> 		my $subject = $args{'subject'} || '';
+1888c1902
+< 		my $o_prop  = $self->get_header($o_hdr);
+---
+> 		my $o_prop  = $self->get_header(); # $o_hdr);
+1893c1907
+< 		my $i_ok = $self->send_mail($o_prop, $body);
+---
+> 		$i_ok = $self->send_mail($o_prop, $body);
+1896,1897c1910
+< 	my $i_ok = '';
+< 	$res = "Proposal request($i_ok)";
+---
+> 	$res = "Proposal request forwarded($i_ok)";
+2174d2186
+< 		$DB::single=2;
+Index: Perlbug/Fix.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Fix.pm,v
+retrieving revision 1.36
+diff -r1.36 Fix.pm
+83a84
+> 	'b' 	=> 'scan_body    [bugid%]',    	'bh' 	=> 'scan bug bodies (see <s>)',
+95c96
+< 	's' 	=> 'scan_bugs    [bugid%]',    	'sh' 	=> 'scan all bugs for group, osname, version, etc.',
+---
+> 	's' 	=> 'scan_header  [bugid%]',    	'sh' 	=> 'scan bug headers (see <b>)',
+848a850,872
+> =item scan_header
+> 
+> Scan only the header portion of the bug
+> 
+> =cut
+> 
+> sub scan_header {
+> 	my $self = shift;
+> 	return $self->scan_bugs('header', @_);
+> }
+> 
+> =item scan_body
+> 
+> Scan only the body portion of the bug
+> 
+> =cut
+> 
+> sub scan_body {
+> 	my $self = shift;
+> 	return $self->scan_bugs('body', @_);
+> }
+> 
+> 
+852a877,878
+> 	$o_fix->scan_bugs([header|body], [bugid%]);
+> 
+856a883
+> 	my $which   = shift;
+880c907
+< 		if (ref($o_int)) {
+---
+> 		if (ref($o_int) and $which eq 'header') {
+908,914c935,943
+< 		if (length($body) >= 1) {
+< 			print '... ';
+< 			my $h_scan = $self->scan($body);
+< 			$$h_scan{'address'}{'names'} = \@cc if scalar(@cc) >= 1;
+< 			print 'scanned('.length($body).') '; # .(Dumper($h_scan));		
+< 			my $i_rels = my @rels = $o_bug->relate($h_scan);
+< 			print "-> fixed $i_rels rels(@rels)\n";
+---
+> 		if ($which eq 'body') {
+> 			if (length($body) >= 1) {
+> 				print '... ';
+> 				my $h_scan = $self->scan($body);
+> 				$$h_scan{'address'}{'names'} = \@cc if scalar(@cc) >= 1;
+> 				print 'scanned('.length($body).') '; # .(Dumper($h_scan));		
+> 				my $i_rels = my @rels = $o_bug->relate($h_scan);
+> 				print "-> fixed $i_rels rels(@rels)\n";
+> 			}
+1061a1091
+> 							# $i_fxd++ if $o_bug->rel('group')->set_source($o_bug)->_store(['notabug'])->STORED;
+Index: Perlbug/Format.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Format.pm,v
+retrieving revision 1.66
+diff -r1.66 Format.pm
+35c35
+< Supplies formatting methods on behalf of all objects according to the following format types:
+---
+> Supplies formatting methods for object data, according to the currently supported format types:
+40a41,44
+> 	d debug short - a|h with object attributes (unsupported)
+> 
+> 	D debug long  - A|H with object attributes (unsupported)
+> 
+184c188
+<     my $h_data = $o_fmt->format_fields($h_data, [$fmt]);
+---
+>     my $h_data = $o_fmt->format_fields($h_data, [$fmt, [$i_max]]);
+191a196
+> 	my $i_max= shift || 10;
+196a202
+> 		$self->debug(2, "normalising...");
+198a205
+> 			$self->debug(2, "asciifying...");
+200a208
+> 			$self->debug(2, "htmlifying...");
+202,203c210,212
+< 			foreach my $k (keys %{$h_ret}) {
+< 				if ($k =~ /body|entry|header|subject/io) {
+---
+> 			$$h_ret{'select'} = '&nbsp;' unless $$h_ret{'select'};
+> 			foreach my $k (sort keys %{$h_ret}) {
+> 				if ($k =~ /body|entry|header|subject/io) { # ?!
+209a219,220
+> 
+> 	$self->debug(3, "rjsf: fmt($fmt): ".Dumper($h_ret)) if $Perlbug::DEBUG;
+248c259
+< 		foreach my $key (keys %args) {
+---
+> 		foreach my $key (sort keys %args) {
+253c264
+< 				foreach my $hkey (keys %data) {
+---
+> 				foreach my $hkey (sort keys %data) {
+258a270
+> 	$self->debug(3, "$h_data => ".Dumper(\%ret)) if $Perlbug::DEBUG;
+282c294
+< 		foreach my $key (keys %args) {
+---
+> 		foreach my $key (sort keys %args) {
+293a306
+> 	$self->debug(3, "$h_data => ".Dumper(\%ret)) if $Perlbug::DEBUG;
+301c314
+< Returns args generically wrapped with html tags.
+---
+> Returns args generically wrapped with html tags - way to convoluted.
+317c330
+< 		foreach my $key (keys %args) { 
+---
+> 		foreach my $key (sort keys %args) { 
+342c355
+< 							foreach my $arg (@args) { 		# status lines
+---
+> 							foreach my $arg (sort @args) { 		# status lines
+365c378
+< 					$self->debug(1, "obj($obj) val($val) -> ret($ret{$key})") if $Perlbug::DEBUG;
+---
+> 					$self->debug(2, "obj($obj) val($val) -> ret($ret{$key})") if $Perlbug::DEBUG;
+392a406,407
+> 	$self->debug(3, "$h_data => ".Dumper(\%ret)) if $Perlbug::DEBUG;
+> 
+521c536
+< =item popup
+---
+> =item xpopup
+535c550
+< sub popup {
+---
+> sub xpopup {
+537d551
+< 
+541a556
+> 
+559c574,578
+< 		$popup = $cgi->popup_menu( -'name' => $uqid, -'values' => \@options, -'default' => $default);
+---
+> 		$popup = $cgi->popup_menu( 
+> 			-'name' => $uqid, 
+> 			-'values' => \@options, 
+> 			-'default' => $default
+> 		);
+807c826
+< $obj_key_oid  Name           Bugids  Created            Subject|;
+---
+> $obj_key_oid  Name           Bugids  Createdx            Subject|;
+Index: Perlbug/Log.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Log.pm,v
+retrieving revision 1.52
+diff -r1.52 Log.pm
+270c270,271
+<         $data = "Excessive data length(".length($data).") called!\n"; 
+---
+> 		my @caller = caller(2);
+>         $data = "Excessive data length(".length($data).") called from @caller!\n"; 
+Index: Perlbug/Object.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Object.pm,v
+retrieving revision 1.45
+diff -r1.45 Object.pm
+114c114
+< 			'match_oid'	=> '(\d+)',  		# default
+---
+> 			'match_oid'	=> '[\b\D]*(\d+)[\b\D]*',  		# default
+154,156c154
+< Initialise generic object attr, columns and column_types from table in db.
+< 
+< Returns object
+---
+> Initialise generic object attr, columns and column_types from table in db (specific).
+160,161d157
+< N.B. this may be a bit unstable against different databases (Oracle/Mysql/etc.)
+< 
+205c201
+< 		foreach my $targ ( @{$self->attr($type)} ) { # patch change bug address user
+---
+> 		foreach my $targ ( $self->attr($type) ) { # patch change bug address user
+229c225
+< 	my $oid = shift || $self->oid;
+---
+> 	my $oid = shift || ''; #  || $self->oid;
+240,242c236,237
+< 	my $i_ok = $self->check();
+< 
+< 	my @types  = @{$self->attr('types')};
+---
+> 	my $i_ok   = $self->check();
+> 	my @types  = $self->attr('types');
+244c239,242
+< 	# $self->oid($oid) if $oid;
+---
+> 
+> 	$self->attr( { 'objectid', $oid} ); # explicit	
+> 	$self->data( { $self->attr('primary_key'), $oid} );
+> 
+253c251,253
+< Refresh relation data
+---
+> Refresh relation data, optionally restricted to only those given, others are cleared.
+> 
+> 	$self->refresh_relations([\@wanted]);
+258a259
+> 	my @args = my @rels = @_;
+260,263c261,274
+< 	foreach my $rel ($self->relations) { # should not be here! -> call rel($rel, 'ids')
+< 		my @rids  = $self->rel_ids($rel, '', 'refresh');	# refresh
+< 		my @names = $self->rel_names($rel); 	# $self->relation($rel)->id2name(\@rids);
+< 		$self->{'_relation'}{$rel}{'ids'}   = \@rids; # need this for format/templates
+---
+> 	my $rellies = join('|', my @rellies = $self->rels);
+> 	@rels = grep(/($rellies)/, @args);
+> 	$self->debug(2, ref($self).": args(@args) rellies($rellies) => rels(@rels)") if $Perlbug::DEBUG;
+> 
+> 	my $obj  = $self->key;
+> 	$self->{'_relation'} = {};	
+> 
+> 	REL:
+> 	foreach my $rel (@rels) {
+> 		next REL if $rel =~ /^$obj$/i; # no recurse
+> 		my @rids  = $self->rel_ids($rel, '', 'refresh');		# if ids	
+> 		my @names = $self->rel_names($rel, '', 'refresh');		# if ids	
+> 		# my @names = $self->id2name(\@rids);		# if names
+> 		$self->{'_relation'}{$rel}{'ids'}   = \@rids; 
+266a278
+> 	$self->debug(3, 'relations: '.Dumper($self->{'_relation'})) if $Perlbug::DEBUG;
+276c288
+< 	my $i_ok = $o_obj->check(@keys_to_check);
+---
+> 	my $i_ok = $o_obj->check(\%attributes);
+280c292
+< sub check{
+---
+> sub check {
+288,290c300,304
+< 		if ($$h_ref{$key} !~ /\w+/ && $key !~ /(debug|objectid)/i) {
+< 			$i_ok = 0;
+< 			$self->error(" is incomplete key($key) val($$h_ref{$key}): ".Dumper($h_ref));
+---
+> 		unless ($key =~ /(debug|objectid)/) {
+> 			if ($$h_ref{$key} !~ /\w+/) {
+> 				$i_ok = 0;
+> 				$self->error(" is incomplete key($key) val($$h_ref{$key}): ".Dumper($h_ref));
+> 			}
+415c429
+< 		@ids = ($str =~ /$match/gs);
+---
+> 		@ids = ($str =~ /$match/cgs);
+510c524
+< sub oid { my $self = shift; return $self->objectid(@_); } # shortcut
+---
+> sub objectid { my $self = shift; return $self->oid(@_); } # shortcut
+512c526
+< sub objectid {
+---
+> sub oid {
+560,561c574
+< 	# print "rjsf: <hr>$self, input($input), extra($extra), refresh($refresh) -> ids(@ids)<hr>";
+< 	$self->debug(2, "input($input) extra($extra) -> ids(@ids)") if $Perlbug::DEBUG;
+---
+> 	$self->debug(3, "input($input) extra($extra) -> ids(@ids)") if $Perlbug::DEBUG;
+812a826,844
+> =item choice
+> 
+> Returns appropriate B<popup()> or B<selector()> for object, based on B<prejudicial> setting.
+> 
+> 	print $o_obj->choice($unique_name, [$selected]); # or none('') 
+> 
+> =cut
+> 
+> sub choice {
+> 	my $self = shift;
+> 
+> 	my $choice = ($self->attr('prejudicial') == 1) ? 'popup' : 'selector';
+> 
+> 	$self->debug(3, "choice($choice)...");
+> 
+> 	return $self->$choice(@_);
+> }
+> 
+> 
+817c849
+< 	my $popup = $o_obj->popup('unique_name', [$selected]); # or none('') 
+---
+> 	my $popup = $o_obj->popup('unique_name', $selected); # or none('') 
+824a857
+> 	($sel)   = @{$sel} if ref($sel) eq 'ARRAY';
+827d859
+< 	($sel)  = @{$sel} if ref($sel) eq 'ARRAY';
+859c891,893
+< 	# $self->debug(3, "name($name) pop($pop)") if $Perlbug::DEBUG;
+---
+> 	
+> 	$self->debug(3, "name($name) selected($sel) pop($pop)") if $Perlbug::DEBUG;
+> 
+866c900
+< Create scrolling web list selector with given pre-selections, with names where possible
+---
+> Create scrolling web list selector with given pre-selections, with names where possible.  Also appends simple list of selected items.
+868c902
+< 	my $selctr = $o_obj->selector('unique_name', @pre_selected);
+---
+> 	my $selctr = $o_obj->selector('unique_name', \@pre_selected);
+896c930
+< 	}
+---
+> 1	}
+910,911c944,947
+< 	);
+< 	# $self->debug(3, "name($name) sel($sel)") if $Perlbug::DEBUG;
+---
+> 	).'<br>'.join(', ', map { $map{$_} } @selected);
+> 	
+> 	$self->debug(3, "name($name) selected(@selected) => sel($sel)") if $Perlbug::DEBUG;
+> 
+940a977,979
+> 
+> 	$self->debug(3, "name($name) val($val) => txta($txt)") if $Perlbug::DEBUG;
+> 
+969a1009,1011
+> 
+> 	$self->debug(3, "name($name) val($val) => txtf($txt)") if $Perlbug::DEBUG;
+> 
+984c1026
+< sub _gen_field_handler {
+---
+> sub x_gen_field_handler { # AUTOLOAD'd
+1033,1035c1075,1077
+< 	my $self = shift;
+< 	my $key  = shift;
+< 	my $href = ''; # !
+---
+> 	my $self  = shift;
+> 	my $key   = shift;
+> 	my $h_ref = ''; # !
+1042c1084
+< 		$href = { %{$self->{"_$key"}} }; # copy
+---
+> 		$h_ref = { %{$self->{"_$key"}} }; # copy
+1044c1086,1089
+< 	return $href;
+---
+> 
+> 	$self->debug(3, "key($key) => href: ".Dumper($h_ref)) if $Perlbug::DEBUG;
+> 	
+> 	return $h_ref;
+1079c1124
+< sub rel_types { my $self = shift; return $self->relation_types(@_); } # wrapper for relation_types()
+---
+> sub relation_types { my $self = shift; return $self->rel_types(@_); } # wrapper for rel_types()
+1081c1126
+< sub relation_types {
+---
+> sub rel_types {
+1083c1128
+< 	return @{$self->attr('types')};
+---
+> 	return $self->attr('types');
+1121c1166
+< sub rels { my $self = shift; return $self->relations(@_); } # wrapper for relations()
+---
+> sub relations { my $self = shift; return $self->rels(@_); } # wrapper for rels()
+1123c1168
+< sub relations {
+---
+> sub rels { 
+1128c1173
+< 		@rels = @{$self->attr($type)}; 
+---
+> 		@rels = $self->attr($type); 
+1130c1175
+< 		@rels = map { @{$self->attr($_)} } $self->rel_types;
+---
+> 		@rels = map { $self->attr($_) } $self->rel_types;
+1131a1177,1178
+> 	$self->debug(3, "type($type) => rels(@rels)") if $Perlbug::DEBUG;
+> 
+1154c1201
+< sub rel { my $self = shift; return $self->relation(@_); } # wrapper for relation()
+---
+> sub relation { my $self = shift; return $self->rel(@_); } # wrapper for rel()
+1156c1203
+< sub relation {
+---
+> sub rel {
+1188c1235
+< sub rel_ids { my $self = shift; return $self->relation_ids(@_); } # wrapper for relation_ids()
+---
+> sub relation_ids { my $self = shift; return $self->rel_ids(@_); } # wrapper for rel_ids()
+1190c1237
+< sub relation_ids { # object 
+---
+> sub rel_ids { # object 
+1231c1278
+< sub rel_names { my $self = shift; return $self->relation_names(@_); } # wrapper for relation_names()
+---
+> sub relation_names { my $self = shift; return $self->rel_names(@_); } # wrapper for rel_names()
+1233c1280
+< sub relation_names { # object 
+---
+> sub rel_names { # object 
+1252,1254c1299,1301
+< Work through the given hash using the objects' B<relations()>,  
+< B<assign()>ing any relation-ids found, alternatively,  
+< B<_assign()>ing any relation-names found. 
+---
+> Work through the given hash using the objects' B<relations()>:
+> 
+> 	B<assign()>ing any relation-ids found
+1256c1303
+< Prejudicial against $o_rel->attr('prejudicial') relationships.
+---
+> 	B<_assign()>ing any relation-names found
+1258c1305,1306
+< Designed to take the output of B<Perlbug::Base::parse_str()>:
+---
+> Prejudicial against $o_rel->attr('prejudicial') relationships, and 
+> is designed to take the output of B<Perlbug::Base::parse_str()>.
+1260c1308
+< Returns number of objects assigned to.
+---
+> Returns name of objects assigned to.
+1289a1338,1339
+> See also L<rtrack()>
+> 
+1295c1345
+< 	my @rels    = 0;
+---
+> 	my @rels    = ();
+1304d1353
+< 			my $track = '';
+1306c1355,1356
+< 			$self->debug(2, "relating for oid: ".$self->oid);
+---
+> 			$self->debug(1, 'oid: '.$self->oid.' relatable: '.Dumper($h_ships)) if $Perlbug::DEBUG;
+> 			$DB::single=2;
+1308a1359
+> 			# foreach my $rel (keys %{$h_ships}) {
+1316c1367
+< 					$track{$rel}{'ids'} = $o_rel->ASSIGNED.' of ('.join(', ', @{$a_ids}).')';
+---
+> 					$track{$rel}{'ids'} = $o_rel->ASSIGNED.' <= ('.join(', ', @{$a_ids}).')';
+1319c1370
+< 				if (ref($$h_ships{$rel}{'names'}) eq 'ARRAY') {
+---
+> 				if (ref($$h_ships{$rel}{'names'})) { 
+1322c1373
+< 					$track{$rel}{'names'} = $o_rel->ASSIGNED.' of ('.join(', ', @{$a_names}).')';
+---
+> 					$track{$rel}{'names'} = $o_rel->ASSIGNED.' <= ('.join(', ', @{$a_names}).')';
+1328,1329c1379,1380
+< 			$self->debug(2, 'oid('.$self->oid.') related: '.Dumper(\%track)) if $Perlbug::DEBUG;
+< 			$self->track($track);
+---
+> 			$self->debug(1, 'oid('.$self->oid.') related: '.Dumper(\%track)) if $Perlbug::DEBUG;
+> 			$self->rtrack(\%track);
+1336a1388,1423
+> =item appropriate
+> 
+> Attempts to relate relatable bug relations to relevant bugs :-)
+> 
+> The idea is that a test can call B<appropriate()> after a B<relate()>, 
+> and this will apply appropriate status flags to any bugids found, etc.
+> 
+> See L</relate()> for more info.
+> 
+> 	my @bugids = $o_obj->appropriate(\%rels);
+> 
+> =cut
+> 
+> sub appropriate {
+> 	my $self    = shift;
+> 	my $h_ships = shift;
+> 	my @bugids  = ();
+> 
+> 	if (ref($h_ships) ne 'HASH') {
+> 		$self->debug(0, "requires relationships: ".Dumper($h_ships)) if $Perlbug::DEBUG;
+> 	} else {
+> 		@bugids   = (ref($$h_ships{'bug'}{'ids'}) eq 'ARRAY') 
+> 			? @{$$h_ships{'bug'}{'ids'}}
+> 			: ();
+> 		if (scalar(@bugids) >= 1) {
+> 			my $o_bug = $self->object('bug');
+> 			foreach my $bugid (@bugids) {
+> 				$o_bug->read($bugid)->relate($h_ships);
+> 			}
+> 		}
+> 	}
+> 
+> 	return @bugids;
+> }
+> 
+> 
+1370,1371c1457
+< 	# $self->reinit; # always want a fresh one
+< 	$self->READ(0);
+---
+> 	$self->reinit(''); # always want a fresh one
+1499,1500c1585,1586
+< 			$val =~ s/^\s+//o;		# front
+< 			$val =~ s/\s+$//o;		# back
+---
+> 			# $val =~ s/^\s+//o;		# front
+> 			# $val =~ s/\s+$//o;		# back
+1518d1603
+< 		# print "sql($sql)\n";
+1558c1643
+< 			$self->error("requires an objectid($oid) to create record".Dumper($h_data));
+---
+> 			$self->error("requires an objectid($oid) to create record: ".Dumper($h_data));
+1576c1661
+< 						$self->track($sql." -> oid($oid)");
+---
+> 						# $self->track($sql." -> oid($oid)"); rjsf !
+1718c1803
+< 					$self->track($sql); # rjsf: too much (remove msgheader/body/entry) 
+---
+> 					# $self->track($sql); # rjsf: too much (remove msgheader/body/entry) 
+1782c1867
+< 					$self->track($sql);
+---
+> 					# $self->track($sql);
+1847a1933
+> 	my $newid= '';
+1849,1851c1935,1941
+< 	$DB::single=2;
+< 	
+< 	my $newid = $sth->{'mysql_insertid'} || $oid; # aaaagh!
+---
+> 	if ($sth) {
+> 		if ($oid =~ /^(\s*|NULL)$/) {
+> 			$newid = $sth->{'mysql_insertid'};
+> 		} else {
+> 			$newid = $oid;
+> 		}
+> 	}
+1853c1943
+< 	$self->debug(1, "currently inserted objectid($newid) oid($oid)") if $Perlbug::DEBUG;
+---
+> 	$self->debug(1, "inserted($sth) oid($oid) => newid($newid)") if $Perlbug::DEBUG;
+1876c1966
+< 	$self->debug(1, "new objectid($newid)") if $Perlbug::DEBUG;
+---
+> 	$self->debug(1, 'new '.ref($self)." objectid($newid)") if $Perlbug::DEBUG;
+1952,1955c2042,2047
+< 	$self->refresh_relations; # ek
+< 
+< 	return $self->FORMAT($fmt, @_); # Perlbug::FORMAT
+< 	return $self->template($func, $fmt, @_);
+---
+> 	if (0) { # too late to turn back now :-]
+> 		$self->refresh_relations; # ek
+> 		return $self->FORMAT($fmt, @_); # Perlbug::FORMAT
+> 	} else {
+> 		return $self->template($fmt);
+> 	}
+1961,1963c2053
+< Simple wrapper for L<TEMPLATE()>
+< 
+< 	my $str = $o_obj->template([$fmt, [$h_data, [$h_rels]]]);
+---
+> Applies appropriate template to this object, based on optional format.  
+1965c2055
+< Unless given, this uses the internal object structures B<data> and B<rel>, (if primed).
+---
+> 	my $str = $o_obj->template($fmt); # [ahl...]
+1969c2059
+< sub template { # return $o_template->TEMPLATE(@_)  
+---
+> sub template { # return $o_template->merge($self, $fmt)  
+1972,1976c2062
+< 	my $h_data = shift || $self->_oref('data');
+< 	my $h_rel  = shift || $self->_oref('relation'); # :-\
+< 	my $str    = '';
+< 
+< 	$self->refresh_relations; # ek
+---
+> 	my $obj    = $self->key;
+1978d2063
+< 	my $o_object   = $self->object('object');
+1980,1981c2065
+< 	my $o_user     = $self->object('user');
+< 	my $o_tmpusr   = $o_template->rel('user');
+---
+> 	my ($hdr, $str, $ftr) = $o_template->merge($self, $fmt);
+1983,2012c2067,2072
+< 	my $obj        = $self->key;
+< 	my ($type)     = $o_object->col('type', "name = '$obj'");
+< 	my $userid     = $self->base->isadmin;
+< 	
+< 	my $template_user = "SELECT ".$o_template->primary_key." FROM ".$o_tmpusr->attr('table')." WHERE userid = '$userid'";
+< 	my @tempids  = $self->base->get_list($template_user);
+< 	my $tempids  = join("', '", @tempids);
+< 
+< 	my $cond = "object = '$obj' AND format = '$fmt' AND templateid IN('$tempids')";
+< 	my ($tempid) = reverse sort { $a <=> $b } my @tids = $o_template->ids($cond);
+< 	$self->debug(0, "template($tempid) for user($userid) from($cond)");
+< 	if (!$tempid) { # default?
+< 		$cond = "object = '' AND type = '$type' AND format = '$fmt' AND templateid IN('$tempids')";
+< 		($tempid) = reverse sort { $a <=> $b } my @tids = $o_template->ids($cond);
+< 	}
+< 
+< 	my $withheader = 0;
+< 	$self->attr({'printed', $self->attr('printed') + 1});
+< 	if ($self->attr('printed') >= $o_template->data('repeat')) {
+< 		$withheader = 1;
+< 		$self->attr({'printed', 0});
+< 	}
+< 
+< 	if ($tempid !~ /^\d+$/) {
+< 		$self->debug(0, "using default display!");	
+< 		$str = $o_template->_template($h_data, $h_rel, $fmt, $withheader);
+< 	} else {
+< 		$o_template->read($tempid);
+< 		$self->debug(0, "using template($tempid) read(".$o_template->READ.")");	
+< 		$str = $o_template->template($h_data, $h_rel, $fmt, $withheader);
+---
+> 	my $i_printing = $self->attr({'printed', $self->attr('printed') + 1});
+> 
+> 	my $i_rep = my $i_reporig = $o_template->data('repeat') || 0; 
+> 	if ($i_rep > 1) {
+> 		my $i_res = $i_printing % $i_rep;
+> 		$i_rep = 0 unless $i_res == 1;
+2013a2074,2078
+> 	$self->debug(3, "i_printing($i_printing) % orig($i_reporig) => rep($i_rep)") if $Perlbug::DEBUG;
+> 
+> 	$str = $hdr.$str.$ftr if $i_rep;
+> 
+> 	$self->debug(3, "!$i_printing!: fmt($fmt) obj($obj) => ".$str) if $Perlbug::DEBUG;
+2019c2084
+< =item track 
+---
+> =item diff
+2021c2086
+< Tracks object administration, where $entry is the relevant statement, etc.
+---
+> Returns differences between two (format|templat)ed strings, on a per line basis.
+2023c2088,2098
+< 	$o_obj = $o_obj->track($entry, 'bug', '<bugoid>');
+---
+> 	my $diff = $o_obj->diff("this\nand\that", "this\nor\nthat\netc.");
+> 
+> Produces:
+> 
+> 	old:
+> 		2  and
+> 		4
+> 
+> 	new:
+> 		2  or
+> 		4  etc.
+2027c2102
+< sub track {
+---
+> sub diff {
+2029,2031c2104,2148
+< 	my $data = shift || '';
+< 	my $type = shift || $self->key;
+< 	my $oid  = shift || $self->oid;
+---
+> 	my $xone = shift;
+> 	my $xtwo = shift;
+> 	my $diff = '';
+> 
+> 	unless (defined($xone) and defined($xtwo)) {
+> 		$self->debug(0, "requires one($xone) and two($xtwo) to differentiate") if $Perlbug::DEBUG;
+> 	} else { 
+> 		my $i_one = my @one = split("\s*\n\s*", $xone);
+> 		my $i_two = my @two = split("\s*\n\s*", $xtwo);
+> 
+> 		my ($old, $new) = ('', '');
+> 		my $i_max = (($i_one > $i_two) ? $i_one : $i_two) + 1;
+> 		foreach my $i_num (1..$i_max) {
+> 			my $one = (scalar(@one) >= 1) ? shift(@one) : '';
+> 			my $two = (scalar(@two) >= 1) ? shift(@two) : '';
+> 			my $qtwo = quotemeta($two);
+> 			if ($one =~ /^$qtwo$/) {
+> 				$self->debug(3, "$i_max: \n\tone($one) looks like \n\ttwo($two)") if $Perlbug::DEBUG;
+> 			} else {
+> 				$self->debug(3, "$i_max: \n\tone($one) differs from \n\ttwo($two)") if $Perlbug::DEBUG;
+> 				$old .= "$i_num  $one\n";
+> 				$new .= "$i_num  $two\n";
+> 			}
+> 		}
+> 		$diff = "old: \n$old\nnew: \n$new\n" if $old && $new;
+> 	}
+> 	$self->debug(2, "one($xone) two($xtwo) => diff($diff)") if $Perlbug::DEBUG;
+> 
+> 	return $diff;
+> }
+> 
+> 
+> =item rtrack 
+> 
+> Tracks object administration (relations), where %entry is the relevant B<relate()> data, etc.
+> 
+> 	$o_obj = $o_obj->rtrack(\%data, [$obj, [$objectid]]);
+> 
+> =cut
+> 
+> sub rtrack {
+> 	my $self   = shift;
+> 	my $h_data = shift || '';
+> 	my $type   = shift || $self->key;
+> 	my $oid    = shift || $self->oid;
+2033,2034c2150,2154
+< 	my $i_tracked = $self->base->track($type, $oid, $data) 
+< 		unless $type =~ /(log|range)/io; # || $type =~ /^pb_[a-z]+_[a-z]+$/); # relly
+---
+> 	my $indent = $Data::Dumper::Indent;
+> 	$Data::Dumper::Indent=0;
+> 	my $i_tracked = $self->base->track($type, $oid, Dumper($h_data)) 
+> 		unless $type =~ /(log|range)/io; #
+> 	$Data::Dumper::Indent=$indent;
+2167,2184c2287,2302
+< 			# if (ref($self->{"_$meth"}) ne 'HASH') {
+< 			#	$self->error("invalid object($pkg) structure($meth): ".Dumper($self));
+< 			# } else {
+< 				if (!defined($get)) {
+< 					@ret = keys %{$self->{"_$meth"}}; 			# ref
+< 				} else {
+< 					if (ref($get) ne 'HASH') { 					# get
+< 						@ret = ($self->{"_$meth"}{$get});
+< 					} else {									# set
+< 						my $keys = join('|', keys %{$self->{"_$meth"}}); 	# ref
+< 						SET:
+< 						foreach my $key (keys %{$get}) {
+< 							if ($key =~ /^($keys)$/) {
+< 								$self->{"_$meth"}->{$key} = $$get{$key}; # SET
+< 								push(@ret, $$get{$key});
+< 							} else {
+< 								$self->debug(2, "$pkg has no such $meth key($key) valid($keys)") if $Perlbug::DEBUG;
+< 							}
+---
+> 			if (!defined($get)) {
+> 				@ret = keys %{$self->{"_$meth"}}; 			# ref
+> 			} else {
+> 				if (ref($get) ne 'HASH') { 					# get
+> 					@ret = ref($self->{"_$meth"}{$get}) eq 'ARRAY' 
+> 						? @{$self->{"_$meth"}{$get}} 
+> 						:  ($self->{"_$meth"}{$get});
+> 				} else {									# set the hashref
+> 					my $keys = join('|', keys %{$self->{"_$meth"}}); 	# ref
+> 					SET:
+> 					foreach my $key (keys %{$get}) {
+> 						if ($key =~ /^($keys)$/) {
+> 							$self->{"_$meth"}->{$key} = $$get{$key}; # SET
+> 							push(@ret, $$get{$key});
+> 						} else {
+> 							$self->debug(2, "$pkg has no such $meth key($key) valid($keys)") if $Perlbug::DEBUG;
+2188,2189c2306,2307
+< 				return wantarray ? @ret : $ret[0];
+< 			# }	
+---
+> 			}
+> 			return wantarray ? @ret : $ret[0];
+2191a2310
+> 
+Index: Perlbug/Relation.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Relation.pm,v
+retrieving revision 1.34
+diff -r1.34 Relation.pm
+178,179c178,179
+< 	my @src_from = @{$o_src->attr('from')};
+< 	my @src_to = @{$o_src->attr('to')};
+---
+> 	my @src_from = $o_src->attr('from');
+> 	my @src_to = $o_src->attr('to');
+182,183c182,183
+< 	my @tgt_from = @{$o_tgt->attr('from')};
+< 	my @tgt_to   = @{$o_tgt->attr('to')};
+---
+> 	my @tgt_from = $o_tgt->attr('from');
+> 	my @tgt_to   = $o_tgt->attr('to');
+431a432
+> 			my $table = $self->attr('table');
+433,440c434,447
+< 			$self->debug(1, "working with ids(@ids) from ".Dumper($a_input)) if $Perlbug::DEBUG;
+< 			foreach my $id (@ids) {
+< 				$self->oid($oid);
+< 				$self->data({ $t_key => $id, });
+< 				$self->create($self->_oref('data'), 'relation');
+< 				if ($self->CREATED) {
+< 					$self->ASSIGNED(1);
+< 					$self->debug(2, "assigned: $s_key($oid) $t_key($id)") if $Perlbug::DEBUG;
+---
+> 			my $sql = "DELETE FROM $table WHERE $s_key = '".$o_src->oid()."'";		
+> 			my $sth = $self->base->exec($sql);
+> 			$self->debug(0, "non-prejudicial $sql -> sth($sth)") if $Perlbug::DEBUG;
+> 			if (!defined($sth)) {
+> 				$self->error(ref($self)." assign trim failed: sql($sql) -> sth($sth)");
+> 			} else {
+> 				foreach my $id (@ids) {
+> 					$self->oid($oid);
+> 					$self->data({ $t_key => $id, });
+> 					$self->create($self->_oref('data'), 'relation');
+> 					if ($self->CREATED) {
+> 						$self->ASSIGNED(1);
+> 						$self->debug(2, "assigned: $s_key($oid) $t_key($id)") if $Perlbug::DEBUG;
+> 					}
+532,539c539,547
+< 				$self->assign(\@ids); # first!
+< 				$self->debug(0, "assigned(".$self->ASSIGNED.") ids(@ids)") if $Perlbug::DEBUG;
+< 				if ($self->ASSIGNED) {
+< 					my $where = " WHERE $s_key = '".$o_src->oid()."'";		
+< 					my $sql = "DELETE FROM ".$self->attr('table')." $where AND $t_key NOT IN ('$ids')"; 
+< 					my $sth = $self->base->exec($sql);
+< 					$self->debug(3, "prejudicial(".$self->ASSIGNED.") DELETE WHERE NOT IN ids($ids)") if $Perlbug::DEBUG;
+< 					if ($sth) {
+---
+> 				my $table = $self->attr('table');
+> 				my $sql = "DELETE FROM $table WHERE $s_key = '".$o_src->oid()."'";		
+> 				my $sth = $self->base->exec($sql);
+> 				$self->debug(0, "prejudicial $sql -> sth($sth)") if $Perlbug::DEBUG;
+> 				if (!defined($sth)) {
+> 					$self->error(ref($self)." store trim failed: sql($sql) -> sth($sth)");
+> 				} else {
+> 					$self->assign(\@ids); # 
+> 					if ($self->ASSIGNED) {
+541,543c549
+< 						$self->base->clean_cache('sql');
+< 					} else { 
+< 						$self->error(ref($self)." trim failed: sql($sql) -> sth($sth)");
+---
+> 						$self->debug(0, "assigned(".$self->ASSIGNED.") ids(@ids)") if $Perlbug::DEBUG;
+545a552
+> 				$self->base->clean_cache('sql');
+602c609
+< 		$self->debug(3, "working with ids(@ids)") if $Perlbug::DEBUG;
+---
+> 		$self->debug(2, "working with ids(@ids)") if $Perlbug::DEBUG;
+687,688c694,696
+< 				$self->debug(1, "NOPE($ident) -> inserting!") if $Perlbug::DEBUG;
+< 				$o_tgt->reinit->data({ 
+---
+> 				$self->debug(1, "NOPE($ident) -> creating!") if $Perlbug::DEBUG;
+> 				$o_tgt->reinit->oid($ident);
+> 				my $h_data = { 
+691,692c699,701
+< 				});
+< 				$o_tgt->create($o_tgt->_oref('data')); # the new target
+---
+> 				};
+> 				$self->debug(0, ref($o_tgt).' data: '.Dumper($h_data));
+> 				$o_tgt->create($h_data); # the new target
+Index: Perlbug/Test.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Test.pm,v
+retrieving revision 1.1
+diff -r1.1 Test.pm
+5c5
+< Perlbug::Test- Perlbug testing module
+---
+> Perlbug::Test - Perlbug testing module
+55c55
+< 		output("failed".Dumper($o_int));
+---
+> 		output("failed: $switch, $msg");
+69c69,73
+< Sets current(isatest=>1, admin=>$bugmaster):
+---
+> Sets current (
+> 	admin	=> $bugmaster,
+> 	fatal	=> 0,
+> 	isatest	=> 1
+> ):
+82a87
+> 	my $BUGID = '19870502.007';
+87c92
+< 		$o_arg->current({'fatal' => 0});
+---
+> 		$o_arg->current({'fatal'   => 0}); $Perlbug::FATAL=0; 
+89,93c94,115
+< 		my $switches = $o_arg->system('user_switches').$o_arg->system('admin_switches');
+< 		$o_arg->current({'switches'   => $switches});
+< 		my $inreplyto = "SELECT max(email_msgid) FROM pb_bug WHERE email_msgid LIKE '%_\@_%'";
+< 		my ($INREPLYTO)  = $o_arg->get_list($inreplyto) if $o_arg->can('get_list');
+< 		my ($MESSAGEID)  = $o_arg->get_rand_msgid if $o_arg->can('get_rand_msgid');
+---
+> 		# my $switches = $o_arg->system('user_switches').$o_arg->system('admin_switches');
+> 		# $o_arg->current({'switches'=> $switches});
+> 		my $FROM = 'perlbugtrontest.run@rfi.net';
+> 		my ($CHANGEID, $CHANGENAME, $INREPLYTOMSGID, $MESSAGEID, $NOTEID, $PATCHID, $TESTID) 
+> 			= ('', '', '', '', '', '', '');
+> 		if ($o_arg->can('get_list')) {
+> 			my $inreplytomsgid = "SELECT email_msgid FROM pb_bug WHERE bugid = '$BUGID'";
+> 			($INREPLYTOMSGID)  = $o_arg->get_list($inreplytomsgid);
+> 			my $getchangeid  = "SELECT MAX(changeid)  FROM pb_change";
+> 			my $getchangename= "SELECT MAX(name)      FROM pb_change";
+> 			my $getmessageid = "SELECT MAX(messageid) FROM pb_message WHERE sourceaddr = '$FROM'";
+> 			my $getnoteid    = "SELECT MAX(noteid)    FROM pb_note WHERE sourceaddr    = '$FROM'";
+> 			my $getpatchid   = "SELECT MAX(patchid)   FROM pb_patch WHERE sourceaddr   = '$FROM'";
+> 			my $gettestid    = "SELECT MAX(testid)    FROM pb_test WHERE sourceaddr    = '$FROM'";
+> 			($CHANGEID)  = $o_arg->get_list($getchangeid);
+> 			($CHANGENAME)= $o_arg->get_list($getchangename);
+> 			($MESSAGEID) = $o_arg->get_list($getmessageid);
+> 			($NOTEID)    = $o_arg->get_list($getnoteid);
+> 			($PATCHID)   = $o_arg->get_list($getpatchid);
+> 			($TESTID)    = $o_arg->get_list($gettestid);
+> 		}
+> 		my ($EMAIL_MESSAGEID) = $o_arg->get_rand_msgid if $o_arg->can('get_rand_msgid');
+95d116
+< 		my $BUGID = '19870502.007';
+99c120
+< 			'bugid'     => $BUGID,
+---
+> 			'body'      => qq|some irrelevant body matter\n---\nsig\n|,
+101c122,124
+< 			'domain'    => 'perl.org',
+---
+> 			'bugid'     => $BUGID,
+> 			'changeid'  => $CHANGEID,
+> 			'changename'=> $CHANGENAME,
+102a126,127
+> 			'domain'    => 'perl.org',
+> 			'email_messageid' => $EMAIL_MESSAGEID || 'no-email_messageid',
+105c130,131
+< 			'inreplyto' => $INREPLYTO || '',
+---
+> 			'inreplytobugid' => $BUGID || 'no-bugid',
+> 			'inreplytomsgid' => $INREPLYTOMSGID || 'no-inreplytomsgid',
+107c133,135
+< 			'messageid' => $MESSAGEID || '',
+---
+> 			'messageid' => $MESSAGEID || 'no-messageid',
+> 			'noteid'	=> $NOTEID    || 'no-noteid',
+> 			'patchid'	=> $PATCHID   || 'no-patchid',
+111c139
+< 			'body'      => qq|some irrelevant body matter\n---\nsig\n|,
+---
+> 			'testid'	=> $TESTID,
+Index: Perlbug/Interface/Email.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Interface/Email.pm,v
+retrieving revision 1.105
+diff -r1.105 Email.pm
+70a71,72
+> 
+> 	return $self;
+90c92,95
+<     my ($o_hdr, $header, $body) = $self->splice($o_int);
+---
+> 	my @cc = ();
+> 	my @to = ();
+> 	my ($from, $subject) = ('', '');
+> 	my ($o_hdr, $header, $body) = $self->splice($o_int);
+92,93c97,103
+< 	my ($to, $subject) = ('', '');
+<     if ($self->check_incoming($o_hdr)) {
+---
+> 	if (ref($o_hdr)) {
+> 		$from = $o_hdr->get('From') || '';
+> 		chomp($from);
+> 		$self->check_user($from || $Perlbug::User || 'generic'); # ?!
+> 	}
+> 
+> 	if (ref($o_hdr)) {
+95,107c105,122
+< 		my ($to, $subject, @cc) = ($o_hdr->get('To'), $o_hdr->get('Subject'), $o_hdr->get('Cc')); 
+< 		@cc = () unless @cc; chomp($to, $subject, @cc);
+< 		$self->debug(1, "domain($domain) ?-> to($to), subject($subject), cc(@cc)") if $Perlbug::DEBUG;
+< 		
+< 		if (grep(/^(.+)\@$domain$/i, $to, @cc)) {                     # .*@bugs.perl.org
+< 			$h_cmds = $self->parse_header($o_hdr, $body);
+< 		} else {
+< 			my $bugdb = quotemeta($self->email('bugdb'));
+< 			if (grep(/^$bugdb$/, $to, @cc)) {
+< 				if ($subject =~ /\-\w/o) {                            # bugdb@perl.org
+< 					$h_cmds = $self->parse_line($subject);
+< 				} else {
+< 					$$h_cmds{'nocommand'} = $self->message('nocommand');
+---
+> 		($subject, @to) = ($o_hdr->get('Subject'), $o_hdr->get('To'));
+> 		@cc = $o_hdr->get('Cc'); @cc = () unless @cc; 
+> 		chomp(@to, $subject, @cc);
+> 		$self->debug(2, "domain($domain)? -> to(@to), cc(@cc), subject($subject)") if $Perlbug::DEBUG;
+> 		if ($self->check_incoming($o_hdr)) {
+> 			if (grep(/^(.+)\@$domain$/i, @to, @cc)) {                     # .*@bugs.perl.org
+> 				$h_cmds = $self->parse_header($o_hdr, $body);
+> 			} else {
+> 				my $bugdb = quotemeta($self->email('bugdb'));
+> 				if (grep(/^$bugdb$/, @to, @cc)) {
+> 					if ($subject =~ /\-\w/o) {                            # bugdb@perl.org
+> 						$h_cmds = $self->parse_line($subject);
+> 					} else {
+> 						$$h_cmds{'nocommand'} = $self->message('nocommand');
+> 					}
+> 				} else {                                                  # anything else
+> 					my ($switch, $opts) = $self->switch($o_int);
+> 					$$h_cmds{$switch} = $opts;
+109,111d123
+< 			} else {                                                  # anything else
+< 				my $switch = $self->switch($o_int);
+< 				$$h_cmds{$switch} = $self->message($switch);
+113a126,127
+> 	}
+> 	$self->debug(3, 'midway: '.Dumper($h_cmds)) if $Perlbug::DEBUG;
+114a129,130
+> 	# $DB::single=2;
+> 	if (scalar(keys %{$h_cmds})) {
+116c132
+< 		my $from    = $o_hdr->get('From') 		|| '';
+---
+> 		my $to      = (scalar(@to) >= 1) ? '' : join(', ', @to);
+119c135
+< 		chomp($cc, $from, $msgid, $replyto);
+---
+> 		chomp($cc, $msgid, $replyto);
+124d139
+< 			'from'			=> $from,
+129d143
+< 			'to'			=> $to,
+133a148,151
+> 		# the various possible inputs have all been worked out
+> 		# apply them to the appropriate command
+> 		# $$h_cmds{$cmd} = $self->opts($blabla);
+> 
+136c154
+< 			if ($cmd =~ /^([BMNPT])$/ && $self->current('renotify')) {
+---
+> 			if ($cmd =~ /^([BGMNPTU])$/ && $self->current('renotify')) {
+145,147c163
+< 	# $$h_cmds{'quiet'} = [($header, $body)]; # $self->message('quiet') unless keys %{$h_cmds} >= 1;
+< 
+< 	$self->debug(0, "Email input($subject): ".Dumper($h_cmds)) if $Perlbug::DEBUG;
+---
+> 	$self->debug(1, "PI: ".Dumper($h_cmds)) if $Perlbug::DEBUG;
+167c183
+< 	if ($cmd =~ /^(E|j|bounce|nocommand|quiet)$/o) {
+---
+> 	if ($cmd =~ /^(E|j|bounce|nocommand)$/o) {
+168a185,186
+> 	} elsif ($cmd =~ /^quiet$/) {
+> 		$wanted = 'SCALAR';
+196a215
+> 	# $DB::single=2;
+199c218
+< 		# ($$ret{'opts'}) ||= $arg; # rjsf !? - losing data!
+---
+> 		($$ret{'opts'}) ||= $arg; # rjsf !? - losing data!
+223a243
+> 	my $domain = quotemeta($self->email('domain'));
+228,229c248,252
+< 		@res = $self->return_info(join("\n", @res)."\n", $o_int) 
+< 			if ($o_int->head->get('To') =~ /bugdb\@(bugs\.){0,1}perl\.org/o);
+---
+> 		if ($o_int->head->get('To') =~ /(^bugdb|$domain$)/o) {
+> 			$DB::single=2;
+> 			my $i_ok = $self->return_info(join("\n", @res)."\n", $o_int)
+> 				unless $res[0] =~ /^quiet/; 
+> 		}
+245c268
+< sub return_info {
+---
+> sub return_info { # from bugdb type call
+280c303,305
+< Switch mailing on/off, and sets isatest(1)
+---
+> Switch mailing on(1) or off(0)
+> 
+> 	my $i_onoff = $o_mail->mailing(1);
+286,288c311,312
+< 	my $flag = shift;
+< 
+< 	return 1; # rjsf
+---
+> 	my $arg  = shift;
+> 	my $res  = my $orig = $self->current('mailing');
+290,297c314,315
+< 	if (defined $flag and $flag =~ /^([01])$/o) {
+< 		my ($mailing) = $self->current({'mailing', $1});
+< 		$self->debug(2, "mailing set to '$mailing'") if $Perlbug::DEBUG; # rjsf uninit. vals.!!!
+< 		if ($mailing != 1) {
+< 			my ($isatest) = ($self->current('isatest') == 2) ? 2 : 1;
+< 			($isatest) = $self->current({'isatest', $isatest});
+< 			$self->debug(1, "mailing($mailing) test($isatest)") if $Perlbug::DEBUG;
+< 		}
+---
+> 	if (defined $arg and $arg =~ /^([01])$/o) {
+> 		$res = $self->current({'mailing', $1});
+299,303d316
+< 	return $self->current('mailing');
+< }
+< 
+< 
+< =item splice
+305,309c318
+< Returns the given mail spliced up into useful bits.
+< 
+<     my ($o_hdr, $header, $body) = $self->splice($o_int);
+< 
+< =cut
+---
+> 	$self->debug(1, "setting mailing($arg) orig($orig) => res($res)") if $Perlbug::DEBUG;
+311,327c320
+< sub splice {
+<     my $self = shift;
+< 	my $o_int = shift;
+< 
+< 	my @data = ();
+< 	if (!ref($o_int)) {	
+< 		$self->error("Can't splice inappropriate mail($o_int) object")
+< 	} else {
+< 		# $o_int->remove_sig;
+< 		@data = (
+< 			$o_int->head,
+< 			join('', @{$o_int->head->header}),
+< 			join('', @{$o_int->body}),
+< 		);
+< 	}
+< 
+< 	return @data;
+---
+> 	return $res;
+331d323
+< 
+343c335,336
+< 	map { chomp($_) } grep(/\w+/, @addrs);
+---
+> 
+> 	map { chomp($_) } grep(/\w+/, @addrs) if @addrs;
+385,386c378
+< 		my $msgid = $1;
+< 		($msgid) = $self->db->quote($1); # escape it
+---
+> 		my ($msgid) = $self->db->quote($1); # escape it
+388,390c380,383
+< 		my $messageid = "%Message-Id: $msgid%"; # with <...> brackets
+< 		$self->debug(3, "looking at messageid($msg_id) -> ($msgid) -> ($messageid)") if $Perlbug::DEBUG;
+< 
+---
+> 		# my $messageid = "%Message-Id: %$msgid%"; # with <...> brackets
+> 		# my $getbymsgid = "UPPER(header) LIKE UPPER('$messageid')"; # doesn't do newlines!
+> 		my $getbymsgid = "UPPER(email_msgid) LIKE UPPER('%$msgid%')";
+> 		$self->debug(2, "looking up messageid($msg_id) -> ($msgid) -> ($getbymsgid)") if $Perlbug::DEBUG;
+392c385
+< 		foreach my $obj (grep(!/(parent|child)/i, $self->objects('mail'))) {
+---
+> 		foreach my $obj (grep(!/(parent|child)/io, $self->objects('mail'))) {
+396c389
+< 			@ids = $o_obj->ids("UPPER(header) LIKE UPPER('$messageid')");
+---
+> 			@ids = $o_obj->ids($getbymsgid);
+398c391
+< 				$self->debug(2, "MessageId($msgid) belongs to obj($obj) ids(@ids)") if $Perlbug::DEBUG;	
+---
+> 				$self->debug(1, "MessageId($msgid) belongs to obj($obj) ids(@ids)") if $Perlbug::DEBUG;	
+424d416
+< 	my $tests = $self->dodgy_addresses('test');
+428a421
+>     	my @to      = $o_hdr->get('To') || '';
+433d425
+<     	my $to      = $o_hdr->get('To') || '';
+437c429
+< 		chomp($xperlbug, $to, $from, $replyto, $inreply, $msgid, $subject, @cc);
+---
+> 		chomp($xperlbug, @to, $from, $replyto, $inreply, $msgid, $subject, @cc);
+439c431
+<     	$self->debug(0, qq|$0: 
+---
+>     	$self->debug(0, qq|incoming: $0: 
+446c438
+< 			To($to) 
+---
+> 			To(@to) 
+450c442
+< 		my $o_to    = Mail::Address->parse($to);
+---
+> 		my $o_to    = Mail::Address->parse(@to);
+455c447
+< 		$to      = ref($o_to)   ? $o_to->address    : $to;
+---
+> 		@to      = ref($o_to)   ? $o_to->address    : @to;
+460,463d451
+< 		if ($to =~ /$tests/i) {
+< 			$self->isatest(1);
+< 			$self->debug(0, "X-Test mail -> setting test flag") if $Perlbug::DEBUG;
+< 		}
+499c487
+< 			foreach my $tc ($to, @cc) {
+---
+> 			foreach my $tc (@to, @cc) {
+512c500
+< 				$self->debug(0, "Not addressed($i_cnt) to us at all: to($to) cc(@cc)!") if $Perlbug::DEBUG;
+---
+> 				$self->debug(0, "Not addressed($i_cnt) to us at all: to(@to) cc(@cc)!") if $Perlbug::DEBUG;
+538,539c526,530
+< 	my ($address) = $o_usr->parse_addrs([$given]);
+< 	my @uids  = $o_usr->ids;
+---
+> 	my ($parsed) = $o_usr->parse_addrs([$given]);
+> 	my ($o_addr) = Mail::Address->parse($given);
+> 	my $host = $o_addr->host; $host =~ s/[^a-zA-Z]/%/g;
+>     $self->debug(3, "check_user($given), parsed($parsed), host($host)") if $Perlbug::DEBUG;
+> 	my @uids  = $o_usr->ids("match_address LIKE '%$host%'"); # pro domain
+541,542c532
+< 
+< 	$self->current({'switches', $self->system('user_switches')});
+---
+>     $self->debug(3, "ids(@uids)") if $Perlbug::DEBUG;
+551c541
+< 			if ($address =~ /^($match_address)$/i) { # an administrator
+---
+> 			if ($parsed =~ /^($match_address)$/i) { # an administrator
+553,555d542
+< 				my $switches = $self->system('user_switches').$self->system('admin_switches');
+< 				$self->current({'switches', $switches});
+< 				last USER;
+560c547
+<     $self->debug(3, "check_user($given)...(".$self->isadmin.')') if $Perlbug::DEBUG;
+---
+>     $self->debug(1, "parsed($parsed) => isadmin(".$self->isadmin.')') if $Perlbug::DEBUG;
+599c586
+< =item get_switches
+---
+> =item switches
+601c588
+< Appends a couple of extra email specific switches to B<Perlbug::Base::get_switches()>
+---
+> Appends a couple of extra email specific switches to B<Perlbug::Base::switches()>
+603c590
+< 	my @switches = $o_email->get_switches();
+---
+> 	my @switches = $o_email->switches();
+607c594
+< sub get_switches {
+---
+> sub switches {
+610c597
+< 	my @switches = ($self->SUPER::get_switches(@_), grep(!/^[A-Z]$/, $self->message));
+---
+> 	my @switches = ($self->SUPER::switches(@_), grep(!/^[A-Z]$/, $self->message));
+636d622
+< 
+637a624
+> 
+641a629
+> 			# $DB::single=2 if $tag =~ /^to/i;
+644c632
+< 			$self->debug(2, "tag($tag) lines(@lines) -> context($context) -> res(@res)") if $Perlbug::DEBUG;
+---
+> 			$self->debug(2, "$context - tag($tag) lines(@lines) -> res(@res)") if $Perlbug::DEBUG;
+646,648c634,636
+< 		my @xos = qw(Cc From Reply-To Message-Id Perlbug Subject To);
+< 		foreach my $xo (@xos) {
+< 			my $ref = ($xo =~ /^Cc$/o) 
+---
+> 		my @xheaders = qw(Cc From Message-Id Perlbug In-Reply-To Reply-To Subject To);
+> 		foreach my $xheader (@xheaders) {
+> 			my $ref = ($xheader =~ /^Cc$/o) 
+650,651c638,639
+< 				: $o_orig->get($xo) || '';
+< 			$o_hdr->replace('X-Original-'.$xo, $ref);
+---
+> 				: $o_orig->get($xheader) || '';
+> 			$o_hdr->replace('X-Original-'.$xheader, $ref);
+652a641
+> 	}
+654c643,644
+< 		$o_hdr->replace('Return-Path', $o_orig->get('Return-Path') || $self->system('maintainer')); 
+---
+> 	if (ref($o_hdr)) {
+> 		# $o_hdr->replace('Message-Id', "<$$".'_'.rand(time)."\@".$self->email('domain').'>') unless $msgid 
+657,663c647,648
+< 		$o_hdr->replace('X-Errors-To', $o_orig->get('X-Errors-To') || $self->system('maintainer')) 
+< 		# $o_hdr->replace('Message-Id', "<$$".'_'.rand(time)."\@".$self->email('domain').'>') 
+< 	} else {
+< 		$o_hdr->add('Return-Path', $self->system('maintainer')); 
+< 		$o_hdr->add('X-Perlbug', "Perlbug(tron) v$Perlbug::VERSION"); # [ID ...]+
+< 		$o_hdr->add('X-Perlbug-Test', 'test') if $self->isatest;
+< 		$o_hdr->add('X-Errors-To', $self->system('maintainer')) 
+---
+> 		map { $o_hdr->add($_, $self->system('maintainer')) 
+> 			unless $o_hdr->get($_) } qw(X-Errors-To Return-Path);
+664a650,651
+> 
+> 	$self->debug(3, 'orig: '.Dumper($o_orig)."\nret: ".Dumper($o_hdr)) if $Perlbug::DEBUG;
+709a697
+> 
+710a699
+> 
+724d712
+< 
+726a715
+> 	my @res = ();
+732c721
+< 		if ($tag !~ /^(To|Cc)$/i) { # reply-to?
+---
+> 		if ($tag !~ /^(To|Cc)$/io) { # reply-to?
+746c735
+< 						$self->debug(1, "applying ok tag($tag) line($line) addr($addr) -> fwds(@forward)") if $Perlbug::DEBUG;
+---
+> 						$self->debug(1, "ok applying tag($tag) line($line) addr($addr) -> fwds(@forward)") if $Perlbug::DEBUG;
+749c738
+< 						$self->debug(1, "line($addr) NOT one of ours: keeping line($line)") if $Perlbug::DEBUG;	
+---
+> 						$self->debug(1, "ok line($addr) NOT one of ours: keeping line($line)") if $Perlbug::DEBUG;	
+755,756c744,746
+< 	my @res = keys %res;
+< 	chomp(@res);
+---
+> 
+> 	chomp(@res = keys %res);
+> 
+774d763
+< 
+776a766
+> 	my @res = ();
+779c769
+< 	if ($tag !~ /^(To|Cc)$/i) { # reply-to?
+---
+> 	if ($tag !~ /^(To|Cc)$/io) { # reply-to?
+783c773,774
+< 		my $o_bug = $self->object('bug');
+---
+> 		my $o_bug   = $self->object('bug');
+> 		my $default = quotemeta($self->email('domain')).'|'.quotemeta($self->email('bugdb'));
+789,796c780,791
+< 			my ($addr) = $o_bug->parse_addrs([$line]);
+< 			if (grep(/$addr/i, @targets)) {	# one of ours
+< 				my @forward = $self->get_forward($addr);        # find or use generic
+< 				map { $res{$_}++ } @forward ;  					# chunk dupes
+< 				$self->debug(1, "applying tag($tag) line($line) addr($addr) -> @forward") if $Perlbug::DEBUG;						
+< 			} else {											# keep
+< 				$res{$line}++;
+< 				$self->debug(1, "line($addr) NOT one of ours: keeping line($line)") if $Perlbug::DEBUG;	
+---
+> 			# my ($addr) = $o_bug->parse_addrs([$line]);
+> 			my @addrs  = $o_bug->parse_addrs([$line]); # multiple To: addrs!
+> 			$DB::single=2;
+> 			foreach my $addr (@addrs) {
+> 				if ($addr =~ /$default/ or grep(/$addr/i, @targets)) {	# one of ours
+> 					my @forward = $self->get_forward($addr);        # find or use generic
+> 					map { $res{$_}++ } @forward ;  					# chunk dupes
+> 					$self->debug(1, "remap applying tag($tag) line($line) addr($addr) -> @forward") if $Perlbug::DEBUG;						
+> 				} else {											# keep
+> 					$res{$addr}++;
+> 					$self->debug(1, "remap line($addr) NOT one of ours -> keeping it") if $Perlbug::DEBUG;	
+> 				}
+801c796,797
+< 	chomp(my @res = keys %res);
+---
+> 	chomp(@res = keys %res);
+> 
+834c830
+< 	if (!ref($o_hdr)) { 	# Mail::Header
+---
+> 	if (!(defined($o_hdr) && ref($o_hdr))) { 	# Mail::Header
+837c833
+< 		($o_hdr, $body) = $self->tester($o_hdr, $body);
+---
+> 		# ($o_hdr, $body) = $self->tester($o_hdr, $body);
+841c837
+< $DB::single=2;
+---
+> 		# $DB::single=2;
+843c839
+< 		if ($self->isatest) { # --------------------
+---
+> 		if ($self->isatest) { # -------------------- print
+855,857c851
+< 			my $mailer = ($self->isatest != 0) 
+< 				? 'test'
+< 				: $self->email('mailer'); # or mail or test  
+---
+> 			my $mailer = 'test';
+859c853
+< 			$self->debug(1, "...fh($mailFH)...") if $Perlbug::DEBUG;
+---
+> 			$self->debug(3, "...fh($mailFH)...") if $Perlbug::DEBUG;
+868c862
+< 				$self->debug(1, "Mail($mailFH) sent!(".length($body).") -> to(@to), cc(@cc)") if $Perlbug::DEBUG;
+---
+> 				$self->debug(3, "Mail($mailFH) sent!(".length($body).") -> to(@to), cc(@cc)") if $Perlbug::DEBUG;
+872,873c866,867
+< 			$self->debug(1, "...done") if $Perlbug::DEBUG;
+< 		} else { # live --------------------------------------------------------
+---
+> 			$self->debug(3, "...done") if $Perlbug::DEBUG;
+> 		} else { # live ---------------------------- send
+886c880
+< 			$self->debug(1, "...mailing...") if $Perlbug::DEBUG;
+---
+> 			$self->debug(3, "...mailing...") if $Perlbug::DEBUG;
+891c885
+< 						$self->debug(1, "Mail(MAIL) sent?(".length($body).") -> to(@to), cc(@cc)") if $Perlbug::DEBUG;
+---
+> 						$self->debug(3, "Mail(MAIL) sent?(".length($body).") -> to(@to), cc(@cc)") if $Perlbug::DEBUG;
+901c895
+< 			$self->debug(1, "...done($i_ok)") if $Perlbug::DEBUG;
+---
+> 			$self->debug(3, "...done($i_ok)") if $Perlbug::DEBUG;
+904c898
+< 	$self->debug(1, "sent(".length($body).") ok($i_ok) -> to(@to), cc(@cc)") if $Perlbug::DEBUG; 
+---
+> 	$self->debug(1, "sent(".length($body).") ok($i_ok) => to(@to), cc(@cc)") if $Perlbug::DEBUG; 
+909,944d902
+< =item tester
+< 
+< If test mail, turn header to maintainer and return header data, and body for insertion
+< 
+< 	($o_hdr, $body) = $self->tester($o_hdr, $body);
+< 
+< =cut
+< 
+< sub tester {
+<     my $self  = shift;
+<     my $o_hdr = shift; # Mail::Header
+< 	my $body  = shift;
+< 
+< 	if (!ref($o_hdr)) {
+< 		$self->error("requires a valid Mail::Header($o_hdr) to test");
+< 		undef($o_hdr);
+< 	} else {
+< 		if ($self->isatest) {
+< 			my $from = $self->email('from');
+< 			$self->debug(1, "Test: dumping to maintainer...") if $Perlbug::DEBUG;
+< 			$o_hdr->delete('Cc');
+< 			$o_hdr->delete('Bcc');
+< 			$o_hdr->replace('To', $self->system('maintainer'));
+< 			$o_hdr->replace('From', $from);
+< 			$o_hdr->replace('Reply-To', $self->system('maintainer'));
+< 			$o_hdr->replace('Subject', $self->system('title')." test mail");
+< 			$o_hdr->replace('X-Perlbug-Test', 'test');
+< 			my $sep = ('=' x 78)."\n";
+< 			my $header = join('', @{$o_hdr->header});
+< 			$body = "Header:\n${sep}${header}\n\nBody:\n${sep}$body\n\n";
+< 		}
+< 	}
+< 	return ($o_hdr, $body); 	# Mail::Header and dump
+< }
+< 
+< 
+977c935
+< Set mail defaults for _all_ mail emanating from here, calls L<clean_header()> -> L<trim_to()>.
+---
+> Set mail defaults for _all_ mail emanating from here, calls L<trim_to()>.
+987d944
+< 	my $dodgy = $self->dodgy_addresses('to');
+992,1023d948
+< 		$o_hdr = $self->clean_header($o_hdr);	# (inc trim_to)
+< 		if (ref($o_hdr)) {
+< 			$o_hdr->replace('From', $self->email('from')) unless defined($o_hdr->get('From'));
+< 			my $msgid = $o_hdr->get('Message-Id') || '';
+< 			chomp($msgid);
+< 			# if (defined($self->{'_defense'}{$msgid}) and $self->{'_defense'}{$msgid} >= 1) {
+< 			#	$self->error("found duplicate Message-Id($msgid)!");
+< 			#	undef $o_hdr;
+< 			# } 
+<     		$self->{'_defense'}{$msgid}++;
+< 		}
+< 	}
+< 	return $o_hdr; 	# Mail::Header
+< }
+< 
+< 
+< =item clean_header
+< 
+< Clean header of non-compliant 822 address lines using Mail::Address::parse()
+< 
+< 	my $o_hdr = $o_email->clean_header($o_hdr);
+< 
+< =cut
+< 
+< sub clean_header {
+< 	my $self  = shift;
+< 	my $o_hdr = shift;	# Mail::Header
+< 
+< 	if (!ref($o_hdr)) {
+< 		$self->error("requires a valid Mail::Header($o_hdr) to clean");
+< 		undef $o_hdr;
+< 	} else {
+1071,1073c996,998
+< 		my $to = $o_hdr->get('To');
+< 		my @orig = $o_hdr->get('Cc');
+< 		chomp($to, @orig);
+---
+> 		my @to    = $o_hdr->get('To');
+> 		my @orig  = $o_hdr->get('Cc');
+> 		chomp(@to, @orig);
+1074a1000
+> 		my $to = join('|', @to);
+1080c1006
+< 		if ($to !~ /\w+/) {
+---
+> 		if (!(scalar(@to) >= 1)) {
+1082c1008
+< 		    $self->error("no-one to send mail to ($to)!"); 
+---
+> 		    $self->error("no-one to send mail to (@to)!"); 
+1085c1011
+< 			my ($xto, @xcc) = $o_usr->parse_addrs([($to, @cc)]);
+---
+> 			my ($xto, @xcc) = $o_usr->parse_addrs([(@to, @cc)]);
+1088c1014
+< 				$self->error("Managed to find a duff address! in to($to) cc(@cc)"); 
+---
+> 				$self->error("Managed to find a duff address! in to(@to) cc(@cc)"); 
+1090,1091c1016,1017
+< 				$self->debug(2, "whoto looks ok: '$to, @cc'") if $Perlbug::DEBUG;
+< 				$o_hdr->add('To', $to);
+---
+> 				$self->debug(1, "whoto looks ok: '@to, @cc'") if $Perlbug::DEBUG;
+> 				$o_hdr->add('To', @to);
+1128d1053
+< 			$self->debug(1, "found tgt($tgt) -> $type -> fwd(@dest)") if $Perlbug::DEBUG;
+1133a1059,1061
+> 
+> 	$self->debug(2, "tgt($tgt) => dest(@dest)") if $Perlbug::DEBUG;
+> 
+1199c1127
+< This returns any of (B|M|bounce|nocommand|quiet)
+---
+> This returns any of (B|M|bounce|nocommand|quiet) and parsable relations.
+1201c1129
+<     my $call = $o_email->switch(Mail::Internet->new(\$STDIN); 
+---
+>     my ($call, $opts) = $o_email->switch(Mail::Internet->new(\$STDIN); 
+1207c1135
+<     my $o_int    = shift;
+---
+>     my $o_int   = shift;
+1209d1136
+<     my $found   = 0;
+1210a1138,1140
+> 	my $opts    = '';
+> 
+>     my $found   = 0;
+1218c1148
+< 	my $to      = $o_int->head->get('To') || '';
+---
+> 	my @to = $o_int->head->get('To') || '';
+1230,1232c1160,1162
+<     	chomp($from, $subject, $inreply, $to, @cc);
+< 		($to) = map { ($_->address) } Mail::Address->parse($to);
+< 		(@cc  = map { ($_->address) } Mail::Address->parse(@cc)) if @cc;
+---
+>     	chomp($from, $subject, $inreply, @to, @cc);
+> 		(@to = map { ($_->address) } Mail::Address->parse(@to));
+> 		(@cc = map { ($_->address) } Mail::Address->parse(@cc)) if @cc;
+1243c1173
+< 					$self->{'attr'}{'bugid'} = $bid;
+---
+> 					$opts .= "$bid ";
+1246c1176
+< 					$self->debug(1, $msg) if $Perlbug::DEBUG; 
+---
+> 					$self->debug(2, $msg) if $Perlbug::DEBUG; 
+1263c1193
+< 				$self->{'attr'}{'bugid'} = $bid;
+---
+> 				$opts .= "$bid ";
+1272c1202
+<         	$self->debug(2, "Looking at addresses to($to), cc(@cc) against targets(@targets)?") if $Perlbug::DEBUG;
+---
+>         	$self->debug(2, "Looking at addresses to(@to), cc(@cc) against targets(@targets)?") if $Perlbug::DEBUG;
+1274c1204
+< 			foreach my $line ($to, @cc) {
+---
+> 			foreach my $line (@to, @cc) {
+1284c1214,1215
+<                 		$self->debug(1, $msg) if $Perlbug::DEBUG;
+---
+> 						$opts = $self->message('B');
+>                 		$self->debug(2, $msg) if $Perlbug::DEBUG;
+1287c1218,1219
+<                 		$self->debug(1, "Nope, $switch($found): addressed to one of us, but with no match in body(".length($body).") :-||") if $Perlbug::DEBUG;
+---
+> 						$opts = $self->message('bounce');
+>                 		$self->debug(2, "Nope, $switch($found): addressed to one of us, but with no match in body(".length($body).") :-||") if $Perlbug::DEBUG;
+1294c1226
+< 			$self->debug(2, "Addressed and bodied to us? ($found) <- ($to, @cc)") if $Perlbug::DEBUG; # unless $found == 1;
+---
+> 			$self->debug(2, "Addressed and bodied to us? ($found) <- (@to, @cc)") if $Perlbug::DEBUG; # unless $found == 1;
+1300c1232,1233
+<         $switch = ($to eq $self->email('bugdb')) ? 'nocommand' : 'quiet'; # maybe we missed something?
+---
+>         $switch = ($to[0] eq $self->email('bugdb')) ? 'nocommand' : 'quiet'; # maybe we missed something?
+> 		$opts = $self->message('quiet');
+1302c1235
+<         $self->debug(1, $msg) if $Perlbug::DEBUG;
+---
+>         $self->debug(2, $msg) if $Perlbug::DEBUG;
+1304c1237
+<     $self->debug(1, "Decision -> do_$switch($found) $msg") if $Perlbug::DEBUG;
+---
+>     $self->debug(1, "Decision -> do_($switch, $opts) - $msg") if $Perlbug::DEBUG;
+1306c1239
+<     return $switch; # do_(new|reply|quiet|bounce) ($reason -> look in the logs)
+---
+>     return ($switch, $opts); # do_(bounce|[BMNPT]), '<bugid> patch close' 
+1421,1437c1354,1367
+< 	my %map   = (
+< 		'^(admin|forward|propos(e|al))'	=> 'v',
+< 		'^bug'					=> 'B',
+< 		'^db'					=> 'Q',
+< 		'^(faq|help|info|spec)'	=> 'h',
+< 		'^group'				=> 'G',
+< 		'^(message|reply)'		=> 'M',
+< 		'^(note|track)'			=> 'N',
+< 		'^password'				=> 'y',
+< 		'^patch'				=> 'P',
+< 		'^perlbug[\-_]*test'	=> 'j',
+< 		'^query'				=> 'q',
+< 		'^overview'				=> 'o',
+< 		'^regist(er|ration)'	=> 'V',
+< 		'^renotify'				=> 'E',
+< 		'^schema'				=> 'Q',
+< 		'^test'					=> 'T',
+---
+> 	my %flags = ();
+> 	my $admin = $self->isadmin ? 'a' : 'v';
+> 	foreach my $tgt (qw(group osname severity status)) {
+> 		my $target = '^('.join('|', map { substr($_, 0, 4) } 
+> 			grep(/\w+/, $self->object($tgt)->col('name'))).')';
+> 		$flags{$target} = $admin;
+> 	}
+> 	my %commands = %{$self->email('commands')};
+> 	my %map = ( # Configuration ?
+> 		# '^admins'				=> 'v',
+> 		# '^bug'				=> 'B',
+> 		%commands, 
+> 		%flags,
+> 		$self->dodgy_addresses('test') => 'j',
+1438a1369
+> 	$self->debug(3, "map: ".Dumper(\%map)) if $Perlbug::DEBUG;
+1442a1374
+> 	# $DB::single=2;
+1458c1390
+< 		map { $cmd{$map{$_}} = $to if $to =~ /$_/i } keys %map; # n.b. sequence
+---
+> 		map { $cmd{$map{$_}} = lc($to) if $to =~ /$_/i } keys %map; # n.b. sequence
+1462,1472c1394
+< 			my $h_cmd = $self->SUPER::parse_input($subject);
+< 			%cmd = %{$h_cmd};
+< 		} elsif ($to =~ /^regist/io) {	# admin registration request -> accept if in p5p
+< 			my $key = 'V';	
+< 			if ($self->in_master_list($from)) {
+< 				$cmd{'i'} = $cmd{'V'};
+< 				delete $cmd{'V'};
+< 				$key = 'i';
+< 			}
+< 			my $h_data = $self->header2admin($o_hdr);
+< 			$cmd{$key} = $h_data;
+---
+> 			%cmd = %{$self->SUPER::parse_input($subject)};
+1475,1476d1396
+< 		} elsif ($to =~ /^(H((?i)elp))/o) {
+< 			$cmd{'H'} = $1;
+1478,1479c1398
+< 
+< 		# print "cmds: ".Dumper(\%cmd);
+---
+> 		$self->debug(2, "mapped: ".Dumper(\%cmd)) if $Perlbug::DEBUG;
+1491d1409
+< 				$cmd{'bounce'} = $self->message('nomatch');
+1492a1411
+> 			$cmd{'bounce'} = $self->message('nomatch');
+1503d1421
+< 				$cmd{'bounce'} = $self->message('nobugids');
+1504a1423
+> 				$cmd{'bounce'} = $self->message('nobugids');
+1508a1428
+> 	# $DB::single=2;
+1511,1516c1431,1432
+< 		if ($self->isadmin) {
+< 			$cmd{'a'} = ($bugids =~ /\w/o) ? $to.'_'.$bugids: $to;
+< 		} else {
+< 			$self->debug(1, "no commands found: to($to) => 'H' ".Dumper(\%cmd)) if $Perlbug::DEBUG;
+< 			$cmd{'H'} = $self->message('nocommand');
+< 		}
+---
+> 		$self->debug(1, "no commands found in to($to) => 'H' ".Dumper(\%cmd)) if $Perlbug::DEBUG;
+> 		$cmd{'H'} = $self->message('nocommand');
+1517a1434
+> 	$self->debug(1, "PH: ".Dumper(\%cmd)) if $Perlbug::DEBUG;
+1651,1653c1568,1569
+< 		my @addrs = ($args{'to'}); 
+< 		push(@addrs, $args{'cc'}) if $args{'cc'};
+< 		$$h_data{'address'}{'names'} = \@addrs;
+---
+> 		my @addrs  = $o_bug->parse_addrs([$args{'to'}]); # multiple To: addrs
+> 		push(@addrs, $o_bug->parse_addrs([$args{'cc'}])) if $args{'cc'};
+1669c1585
+< 			$o_bug->relate($h_data);
+---
+> 			my $i_rel = $o_bug->relate($h_data);
+1801c1717
+< 	$HELP .= $self->read('mailhelp');
+---
+>     $HELP .= join('', $self->read('mailhelp'));
+1834a1751,1753
+>     my $header = join('', $self->read('header'));
+> 	$header =~ s/Perlbug::VERSION/ - v$Perlbug::VERSION/io;
+>     my $footer = join('', $self->read('footer'));
+1838c1757
+< 	$i_ok = $self->send_mail($o_reply, $body); 
+---
+> 	$i_ok = $self->send_mail($o_reply, $header.$body.$footer); 
+1971a1891
+> 	my @args = @_; 
+1973c1893
+< 	$self->debug(1, "QUIET (@_) logged(pass through), not in db:\n") if $Perlbug::DEBUG;
+---
+> 	$self->debug(1, "QUIET (".join(', ', @_).") logged(pass through), not in db:\n") if $Perlbug::DEBUG;
+1975c1895
+< 	return 1;
+---
+> 	return 'quiet ok';
+Index: Perlbug/Interface/Web.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Interface/Web.pm,v
+retrieving revision 1.105
+diff -r1.105 Web.pm
+105c105
+< 		$self->debug(1, "Checked user($remote_user)->'$user'") if $Perlbug::DEBUG;
+---
+> 		$self->debug(1, "checked user($remote_user)->'$user'") if $Perlbug::DEBUG;
+194a195,198
+> 	foreach my $target (qw(database language os webserver)) {
+> 		my $link = $self->link($target);
+> 		$links =~ s#\Q<!-- $target link -->\E#$link#;
+> 	}
+356,357d359
+< Varies with framed, includes dump.
+< 
+472a475
+> 	# print "$orig => $req: ".$cgi->dump if $Perlbug::DEBUG; 
+482c485
+< 				print $self->$req();
+---
+> 				print $self->$req($orig);
+550c553
+< 	$ret .= '<tr><td colspan=100%>'.$self->ranges($self->{'_range'}).'</td></tr>' if $range;
+---
+> 	# $ret .= '<tr><td colspan=?>'.$self->ranges($self->{'_range'}).'</td></tr>' if $range;
+551a555
+> 	$ret .= '<hr>'.$self->ranges($self->{'_range'}).'<hr>' if $range;
+665c669,671
+< 	print "found ".@bids." bugs ($filter) showing max($max)<br>\n";
+---
+> 
+> 	my $s = (scalar(@bids) == 1) ? '' : 's';
+> 	print "found ".@bids." bug$s ($filter) showing max($max)<br>\n";
+689c695
+<     my @ids = $cgi->param("${obj}_id");
+---
+>     my @ids  = $cgi->param("${obj}_id");
+690a697
+> 	my $fmt  = $cgi->param('format') || 'L';
+702c709
+< 			print $o_obj->format if $o_obj->READ && $o_obj->exists([$oid]);
+---
+> 			print $o_obj->format if $o_obj->READ;
+740c747
+< 				print $o_obj->template($call, 'h') if $o_obj->READ && $o_obj->exists([$oid]);
+---
+> 				print $o_obj->format($call, 'h') if $o_obj->READ && $o_obj->exists([$oid]);
+842a850
+> 	my $o_msg= $self->object('message');
+846a855,856
+>         my @mids = $self->object('bug')->rel_ids('message');
+>         print $self->dom(\@mids);
+931c941
+< 		my $admins = $o_usr->selector('addusers');
+---
+> 		my $admins = $o_usr->choice('addusers');
+1149c1159,1160
+< 	print "Found $found relevant bug ids<br>";
+---
+> 	my $s = ($found == 1) ? '' : 's';
+> 	print "Found $found relevant bug id$s<br>";
+1309d1319
+< 	my $nocc = ($req eq 'nocc') ? 1 : 0;
+1420a1431
+> 
+1431c1442,1443
+< 				$update{$rel}{$type} = \@update if scalar(@update) >= 1;
+---
+> 				my @extant = $o_bug->rel_ids($rel);
+> 				$update{$rel}{$type} = [(@update, @extant)] if scalar(@update) >= 1;
+1437c1449
+< 				my $ix = $self->notify_cc($bid, $orig) unless $nocc eq 'nocc'; 
+---
+> 				my $ix = $self->notify_cc($bid, $orig) unless $req eq 'nocc'; 
+1439,1447c1451,1458
+< 			my $i_newnoteid  = $self->doN($bid, $cgi->param($bid.'_newnote'),  '') if $cgi->param($bid.'_newnote');
+< 			my $i_newpatchid = $self->doP($bid, $cgi->param($bid.'_newpatch'), '') if $cgi->param($bid.'_newpatch');
+< 			my $i_newtestid  = $self->doT($bid, $cgi->param($bid.'_newtest'),  '') if $cgi->param($bid.'_newtest');
+< 			my @cids = split(/\s+/, $cgi->param($bid.'_change'));
+< 			
+< 			if ($i_newpatchid =~ /\w+/o && scalar(@cids) >= 1) {
+< 				$self->debug(2, "given both a new patchid($i_newpatchid) and changeids(@cids), updating patches too!") if $Perlbug::DEBUG;
+< 				my $o_pat = $self->object('patch')->read($i_newpatchid);
+< 				$o_pat->relation('change')->assign(\@cids) if $o_pat->READ;
+---
+> 
+> 			# my $i_newnoteid  = $self->doN($bid, $cgi->param($bid.'_new_note'),  '') 
+> 			foreach my $targ (qw(note patch test)) {
+> 				my $call = 'do'.uc(substr($targ, 0, 1));
+> 				my $i_newid  = $self->$call({
+> 					'opts'	=> "req($req): $bid", 
+> 					'body'	=> $cgi->param($bid.'_new_'.$targ),
+> 				}) if $cgi->param($bid.'_new_'.$targ);
+1663,1664d1673
+< 
+< 	print $cgi->dump if $Perlbug::DEBUG =~ /[23]/o;
+Index: Perlbug/Object/Bug.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Object/Bug.pm,v
+retrieving revision 1.39
+diff -r1.39 Bug.pm
+105c105
+< sub new_id {
+---
+> sub xnew_id {
+122c122
+< sub insertid {
+---
+> sub xinsertid {
+178c178
+< 			$bug{$item} = '';
+---
+> 			$bug{$item} = '&nbsp;';
+182a183
+> 	$bug{'select'} = '&nbsp;' unless $bug{'select'}; 
+185,186c186,187
+< 		my ($group)    = @{$$h_bug{'group_ids'}}    if $$h_bug{'group_ids'};
+< 		my ($osname)   = @{$$h_bug{'osname_ids'}}   if $$h_bug{'osname_ids'};
+---
+> 		my @groups     = @{$$h_bug{'group_ids'}}    if $$h_bug{'group_ids'};
+> 		my @osnames    = @{$$h_bug{'osname_ids'}}   if $$h_bug{'osname_ids'};
+189c190
+< 		my ($user)     = @{$$h_bug{'user_ids'}}     if $$h_bug{'user_ids'};
+---
+> 		my @users      = @{$$h_bug{'user_ids'}}     if $$h_bug{'user_ids'};
+197c198
+< 		$bug{'group_names'}  	= $self->object('group')->popup($bid.'_group', $group); 
+---
+> 		$bug{'group_names'}  	= $self->object('group')->choice($bid.'_group', @groups); 
+200c201
+<         $bug{'fixed'}       = $self->object('fixed')->text_field($bid.'_fixed', $fixed);
+---
+>         $bug{'fixed_names'} = $self->object('fixed')->text_field($bid.'_fixed', $fixed);
+202,204c203,205
+< 		$bug{'newnote'}     = $cgi->textarea(-'name'  => $bid.'_newnote',  -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1, 'onChange' => 'pick(this)');
+< 		$bug{'newpatch'}    = $cgi->textarea(-'name'  => $bid.'_newpatch', -'value' => '', -'rows' => 3, -'cols' => 35, -'override' => 1, 'onChange' => 'pick(this)');
+< 		$bug{'newtest'}     = $cgi->textarea(-'name'  => $bid.'_newtest',  -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1, 'onChange' => 'pick(this)');
+---
+> 		$bug{'new_note'}     = $cgi->textarea(-'name'  => $bid.'_new_note',  -'value' => '', -'rows' => 3, -'cols' => 20, -'override' => 1, 'onChange' => 'pick(this)');
+> 		$bug{'new_patch'}    = $cgi->textarea(-'name'  => $bid.'_new_patch', -'value' => '', -'rows' => 3, -'cols' => 20, -'override' => 1, 'onChange' => 'pick(this)');
+> 		$bug{'new_test'}     = $cgi->textarea(-'name'  => $bid.'_new_test',  -'value' => '', -'rows' => 3, -'cols' => 20, -'override' => 1, 'onChange' => 'pick(this)');
+207c208
+< 		$bug{'osname_names'}  = $self->object('osname')->popup($bid.'_osname', $osname);
+---
+> 		$bug{'osname_names'}  = $self->object('osname')->choice($bid.'_osname', @osnames);
+211,212c212,213
+< 		$bug{'severity_names'}= $self->object('severity')->popup($bid.'_severity', $severity);
+<         $bug{'status_names'}  = $self->object('status')->popup($bid.'_status', $status);
+---
+> 		$bug{'severity_names'}= $self->object('severity')->choice($bid.'_severity', $severity);
+>         $bug{'status_names'}  = $self->object('status')->choice($bid.'_status', $status);
+214c215
+<         # $bug{'user_ids'}  = $self->object('user')->selector($bid.'_user', $user);
+---
+>         # $bug{'user_ids'}  = $self->object('user')->choice($bid.'_user', @users);
+217,218c218,219
+< 	# print '<pre>h_bug'.encode_entities(Dumper($h_bug)).'</pre>'; 
+< 	# print '<pre>bug'.encode_entities(Dumper(\%bug)).'</pre>'; 
+---
+> 	# print '<pre>h_bug: '.encode_entities(Dumper($h_bug)).'</pre>'; 
+> 	# print '<pre>bug: '.encode_entities(Dumper(\%bug)).'</pre>'; 
+527c528
+< <tr><td>$$x{'newnote'}</td><td colspan=2>$$x{'newpatch'}</td><td>$$x{'newtest'}</td></tr>
+---
+> <tr><td>$$x{'new_note'}</td><td colspan=2>$$x{'new_patch'}</td><td>$$x{'new_test'}</td></tr>
+552c553
+< 		my $num = $2 + 1;
+---
+> 		my $num = ($1 eq $today) ? $2 + 1 : 1;
+Index: Perlbug/Object/Fixed.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Object/Fixed.pm,v
+retrieving revision 1.8
+diff -r1.8 Fixed.pm
+23c23
+< For inherited methods, see L<Perlbug::Object::Version>
+---
+> For inherited methods, see L<Perlbug::Object>
+29,30c29,30
+< use Perlbug::Object::Version;
+< @ISA = qw(Perlbug::Object::Version); 
+---
+> use Perlbug::Object;
+> @ISA = qw(Perlbug::Object); 
+59,61c59,62
+< 	my $self = Perlbug::Object::Version->new( $o_base, 
+< 		'hint'		=> 'Fixed',
+< 		# 'from'		=> [qw(bug patch test)],
+---
+> 	my $self = Perlbug::Object->new( $o_base, 
+> 		'name'			=> 'Fixed',
+> 		'from'			=> [qw(bug)],
+> 		'prejudicial'	=> 1,
+Index: Perlbug/Object/Group.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Object/Group.pm,v
+retrieving revision 1.25
+diff -r1.25 Group.pm
+102c102
+< 		$grp{'user_ids'} = $o_usr->selector($gid.'_userids', $self->rel_ids('user')).$grp{'user_ids'};
+---
+> 		$grp{'user_ids'} 	= $o_usr->choice($gid.'_userids', $self->rel_ids('user')).$grp{'user_ids'};
+Index: Perlbug/Object/Template.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Object/Template.pm,v
+retrieving revision 1.8
+diff -r1.8 Template.pm
+16c16
+< $VERSION = do { my @r = (q$Revision: 1.8 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+---
+> $VERSION = do { my @r = (q$Revision: 1.8 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
+28c28
+< Frames the data generated by L<Perlbug::Format>.
+---
+> Applies a template to the data generated by L<Perlbug::Format>.
+30c30,33
+< Each B<User> may apply a B<Template> to each B<Object> optionally by type
+---
+> Each B<user> may apply a B<template> to each B<object> | B<type>. 
+> 
+> Defaults for a particular type of object (eg; mail, flag, ...) may be 
+> applied by enabling the type column instead of the object one.
+40,42c43
+< 	my $o_template = Perlbug::Object:;Template->new();
+< 
+< 	print $o_template->read('7')->format('h');
+---
+> 	my $o_tmp = Perlbug::Object:;Template->new();
+44c45
+< 	print $o_template->object('bug')->read('19870502.007')->template('display', 'h');
+---
+> 	print $o_tmp->object('bug')->read('19870502.007')->template('h');
+63c64
+< Placeholders in templates look like this: B<<{data}>> and B<<{rel_ids}>> etc.
+---
+> Placeholders in templates look like this: B<<{datacol}>> and B<<{rel_ids}>> etc.
+70c71
+< 	created: <{created}>
+---
+> 	created: <{created}> 		
+76,80c77,102
+< 	messageids <{message_ids}>
+< 	patch ids: <{patch_ids}>
+< 	admins:    <{user_names}>
+< 	CC list:   <{address_names}>
+< 	status:    <{status_names}>
+---
+> 	message count(<{message_count}>)
+> 
+> 	messageids: <{message_ids}>
+> 	patch ids:  <{patch_ids}>
+> 	admins:     <{user_names}>
+> 	CC list:    <{address_names}>
+> 	status:     <{status_names}>
+> 	<{ifadmin}>
+> 		this bit only if admin
+> 	</{ifadmin}>
+> 
+> =head2 FORMATTING
+> 
+> To assist with formatting of ascii templates, an integer followed by white space may be placed between the last two special characters of the placeholders.  The (internal) white space will be stripped, and the number will be used to pad out the given variable, with spaces, using sprintf to that length.
+> 
+> N.B. this will not trim the field, but pad it.
+> 
+> 	bugid:    <{bugid}15    > status: <{status_names}>
+> 	severity: <{severity_names}  15 > osname: <{osname_names}>
+> 	messages: <{message_count}  15  > <{message_ids}>
+> 
+> will produce
+> 
+> 	bugid:    19870502.007   status: open
+> 	severity: high           osname: linux aix etc.
+> 	messages: 5              22 23 41 72 102 
+95c117
+< 	my $o_template = Perlbug::Object::Template->new();
+---
+> 	my $o_merge = Perlbug::Object::Template->new();
+112a135,176
+> =item object2id
+> 
+> Return template id given current object key type and perhaps format and/or user
+> 
+> 	my $templateid = $o_tmp->object2id('bug', ['a', ['perlbug']]);
+> 
+> =cut
+> 
+> sub object2id {
+> 	my $self   = shift;
+> 	my $obj    = shift;
+> 	my $fmt    = shift || $self->base->current('format');
+> 	my $userid = shift || $self->base->isadmin;
+> 	my $tempid = '';
+> 
+> 	my $straight = "object = '$obj' AND ".$self->base->db->case_sensitive('format', $fmt);
+> 	my @tmpids = $self->ids($straight);
+> 	$self->debug(3, "straight($straight) => tmpids(@tmpids)") if $Perlbug::DEBUG;
+> 
+> 	if (scalar(@tmpids) == 0) { 	# default?
+> 		my ($type) = $self->object('object')->col('type', "name = '$obj'");
+> 		my $default = "type = '$type' AND ".$self->base->db->case_sensitive('format', $fmt);
+> 		@tmpids = $self->ids($default);
+> 		$self->debug(3, "default($default) => tmpids(@tmpids)") if $Perlbug::DEBUG;
+> 	}
+> 
+> 	if (scalar(@tmpids) == 1) { 	# gotcha
+> 		($tempid) = @tmpids;
+> 	} elsif (scalar(@tmpids) > 1) {	# shrinkit
+> 		my $tmpids  = join("', '", @tmpids);
+> 		my $user = 'templateid', "userid = '$userid' AND templateid IN('$tmpids')";
+> 		my @utmpids = $self->rel('user')->col($user);
+> 		$self->debug(0, "user($user) => tmpids(@utmpids)") if $Perlbug::DEBUG;
+> 		@tmpids = @utmpids if scalar(@utmpids) >= 1;
+> 		($tempid) = reverse sort { $a <=> $b } @tmpids; # latest in every case
+> 	} # else zip found
+> 
+> 	$self->debug((($tempid) ? 2 : 0), "obj($obj) fmt($fmt) user($userid) => templateid($tempid)") if $Perlbug::DEBUG;
+> 
+> 	return $tempid;
+> }
+> 
+114c178
+< =item _template 
+---
+> =item _merge 
+120c184
+< 	my $str = $o_tmp->_template($h_data, $h_rels);
+---
+> 	my $str = $o_tmp->_merge($h_data, $h_rels);
+122c186
+< 	my $str = $o_tmp->_template($h_data, $h_rels, [$fmt, [$i_withhdr]]]);
+---
+> 	my $str = $o_tmp->_merge($h_data, $h_rels, [$fmt]);
+126c190
+< sub _template {
+---
+> sub _merge {
+131d194
+< 	my $withhdr= shift || 0;
+135c198
+< 		$self->error("non-valid required args: data_href($h_data) and relations_href($h_rels)!");		
+---
+> 		$self->error("non-valid required args: data_href($h_data) and rels_href($h_rels)!");		
+137,140c200,201
+< 		# my $h_dat = $self->format_fields({%{$h_data}, %{$h_rels}}, $fmt);
+< 		# my $br   = ($fmt =~ /[hHIL]/) ? "<br>\n" : "\n";
+< 
+< 		my $br   = "\n";
+---
+> 		my $h_dat  = $self->format_fields({%{$h_data}, %{$h_rels}}, $fmt); # i_max?
+> 		my $br     = "\n";
+143a205
+> 		# $^W = 0;
+146,150c208,209
+< 		foreach my $data (keys %{$h_data}) {
+< 			$^W = 0;
+< 			my $data = ' '.sprintf('%-'.$dmax.'s', $data).' = '.$$h_data{$data}.$br;
+< 			$^W = 1;
+< 			$str .= wrap('', '', $data);
+---
+> 		foreach my $xdata (sort keys %{$h_data}) {
+> 			$str .= ' '.sprintf('%-'.$dmax.'s', $xdata).' = '.$$h_dat{$xdata}.$br;
+153a213
+> 		my $xmax = '%-'.($rmax + 8).'s'; # '$rel (ids|names): '
+155,162c215,227
+< 		foreach my $rel (keys %{$h_rels}) {
+< 			$^W = 0;
+< 			my $data = '  '.sprintf('%-'.$rmax.'s', $rel).' ids:   '.join("', '", @{$$h_rels{$rel}{'ids'}}).$br 
+< 				if @{$$h_rels{$rel}{'ids'}} >= 1;
+< 			$data = '  '.sprintf('%-'.$rmax.'s', $rel).' names: '.join("', '", @{$$h_rels{$rel}{'names'}}).$br 
+< 				if @{$$h_rels{$rel}{'names'}} >= 1;
+< 			$^W = 1;
+< 			$str .= wrap('', '', $data);
+---
+> 		foreach my $rel (sort keys %{$h_rels}) {
+> 			if ($fmt =~ /^[a-z]$/) { 
+> 				my $tgt = 'count';
+> 				if ($$h_dat{$rel.'_'.$tgt}) {
+> 					$str .= '  '.sprintf($xmax, "$rel $tgt: ").$$h_dat{$rel.'_'.$tgt}.$br;
+> 				}
+> 			} else {
+> 				foreach my $tgt (sort qw(count ids names)) {
+> 					if ($$h_dat{$rel.'_'.$tgt}) {
+> 						$str .= '  '.sprintf($xmax, "$rel $tgt: ").$$h_dat{$rel.'_'.$tgt}.$br;
+> 					}
+> 				}
+> 			}
+163a229
+> 		# $^W = 1;
+165,168c231,235
+< 		# if ($self->base->current('context') eq 'http' && $fmt !~ /[hHIL]/) {
+< 		if ($self->base->current('context') eq 'http') {
+< 			$str = encode_entities($str);
+< 			$str = '<pre>'.$str.'</pre>';
+---
+> 		if ($self->base->current('context') eq 'http' || $fmt =~ /[hHIL]/) {
+> 			# encode_entities done in format_fields
+> 			$str = '<pre>'.$str.'</pre>'; # maintain formatting
+> 		} elsif ($self->data('wrap') =~ /^([1-9])/o) { # WRAP
+> 			$str = wrap('', '', $str) if $str; #  .
+170a238
+> 
+179,181c247
+< =item template 
+< 
+< Return object in template layout according to format(B<a>).
+---
+> =item merge 
+183c249
+< See also L<_template()>
+---
+> Return object in template layout according to format(B<a>), relations are called from the object given.
+185c251
+< 	my $str = $o_tmp->template($h_data, $h_rels);
+---
+> 	my ($hdr, $str, $ftr) = $o_tmp->merge($o_obj, $fmt, [\%data]);
+187c253
+< 	my $str = $o_tmp->_template($h_data, $h_rels, [$fmt, [$i_withhdr]]);
+---
+> If no template found, calls L<_merge()>
+191c257
+< sub template {
+---
+> sub merge {
+193,197c259,262
+< 	my $h_data = shift;
+< 	my $h_rels = shift;
+< 	my $fmt    = shift || $self->base->current('format');
+< 	my $withhdr= shift || 0;
+< 	my $str    = '';
+---
+> 	my $o_obj  = shift;
+> 	my $fmt    = shift;
+> 	my $h_data = shift || $o_obj->_oref('data');
+> 	my ($hdr, $str, $ftr) = ('', '', '');
+199,200c264,265
+< 	if (ref($h_data) ne 'HASH' or ref($h_rels) ne 'HASH') {
+< 		$self->error("non-valid required args: data_href($h_data) and relations_href($h_rels)!");		
+---
+> 	if (!(ref($o_obj) && $fmt =~ /^\w$/ && ref($h_data) eq 'HASH')) {
+> 		$self->error("required args: obj($o_obj), fmt($fmt), h_data($h_data)!");		
+202,218c267,309
+< 		my $h_dat = $self->format_fields({%{$h_data}, %{$h_rels}}, $fmt);
+< 		my $br    = ($fmt =~ /[hHIL]/) ? "<br>\n" : "\n";
+< 		my $hdr   = $self->data('header'); 
+< 		$str      = $self->data('body'); 
+< 
+< 		# $^W = 0;
+< 		DATA:
+< 		foreach my $data (keys %{$h_dat}) {
+< 			if (ref($data) eq 'HASH') {
+< 				redo DATA;
+< 			} elsif (ref($$h_dat{$data}) eq 'ARRAY') {
+< 				my $replace = join(', ', @{$$h_dat{$data}});
+< 				$str =~ s/\<\{$data\}\>/$replace/gmsi;
+< 				$hdr =~ s/\<\{$data\}\>/$replace/gmsi if $withhdr;
+< 			} else {
+< 				$str =~ s/\<\{$data\}\>/$$h_dat{$data}/gmsi;
+< 				$hdr =~ s/\<\{$data\}\>/$$h_dat{$data}/gmsi if $withhdr;
+---
+> 		my $obj    = $o_obj->key;
+> 		my $tempid = $self->object2id($obj, $fmt); 
+> 		my $i_read = ($tempid =~ /\d+/ && $self->read($tempid)->READ) ? 1 : 0;
+> 		my $h_attr = ($fmt =~ /[dD]/) ? $o_obj->_oref('attr') : {};
+> 		$self->debug(1, "temp($tempid) read($i_read)") if $Perlbug::DEBUG;
+> 
+> 		if (!($tempid && $i_read)) { 	# long way to do it
+> 			my $h_rels = $o_obj->refresh_relations()->_oref('relation');
+> 			$h_data = $self->xtra($h_data, $obj, $o_obj->oid, $h_attr);
+> 			$str = $self->_merge($h_data, $h_rels, $fmt);
+> 		} else {						# a bit snappier now with rr() [ except message/s ]
+> 			$hdr = $self->data('header') || ''; 
+> 			$str = $self->data('body')   || ''; 
+> 			$ftr = $self->data('footer') || ''; 
+> 			$hdr =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos unless $self->base->isadmin;
+> 			$str =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos unless $self->base->isadmin;
+> 			$ftr =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos unless $self->base->isadmin;
+> 			my $tmp = $hdr.$str.$ftr;
+> 			$self->debug(0, "template: \n$tmp") if $Perlbug::DEBUG;
+> 
+> 			my %map = ();
+> 			%map = map { $_ => ++$map{$_} } ($tmp =~ 
+> 				/<{([a-z]+)(?:_count|id|_ids|_names)}[\s\d]*>/gi); # better _with_ ids|names?
+> 			my $h_rels = $o_obj->refresh_relations(keys %map)->_oref('relation');
+> 			$self->debug(3, "rels: ".Dumper($h_rels)) if $Perlbug::DEBUG;
+> 			$h_data = $self->xtra($h_data, $obj, $o_obj->oid, $h_attr);
+> 			my $h_dat = $o_obj->format_fields({%{$h_data}, %{$h_rels}}, $fmt);
+> 			$self->debug(3, "data: ".Dumper($h_dat)) if $Perlbug::DEBUG;
+> 
+> 			# $^W = 0;
+> 			my %seen = ();
+> 			DATA:
+> 			foreach my $data (keys %{$h_dat}) {
+> 				my $replace = $$h_dat{$data};
+> 				if (ref($data) eq 'HASH') {
+> 					$seen{ref($data)}++;
+> 					redo DATA unless $seen{ref($data)} >= 9; # ?-]
+> 				} elsif (ref($$h_dat{$data}) eq 'ARRAY') {
+> 					$replace = join(', ', @{$$h_dat{$data}});
+> 				}
+> 				$hdr =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $hdr;
+> 				$str =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $str;
+> 				$ftr =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $ftr;
+220,228c311,319
+< 		}
+< 		# $^W = 1;
+< 
+< 		# Wrap
+< 		if ($self->data('wrap') =~ /^[1-9]/) {
+< 			$str = wrap('', '', $str);
+< 			if ($withhdr) {
+< 				$hdr = wrap('', '', $hdr);
+< 				$str = $hdr.$br.$str;
+---
+> 			# $^W = 1;
+> 			$hdr =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos;
+> 			$str =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos;
+> 			$ftr =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos;
+> 
+> 			if ($self->data('wrap') =~ /^([1-9])/o) { # WRAP
+> 				$hdr = wrap('', '', $hdr) if $hdr; # $1
+> 				$str = wrap('', '', $str) if $str; #  .
+> 				$ftr = wrap('', '', $ftr) if $ftr; #  .
+231,235d321
+< 
+< 		# if ($self->base->current('context') eq 'http' && $fmt !~ /[hHIL]/) {
+< 		#	$str = encode_entities($str);
+< 		#	$str = '<pre>'.$str.'</pre>';
+< 		#}
+237d322
+< 	$self->debug(3, "str($str)") if $Perlbug::DEBUG;
+239c324,349
+< 	return $str;
+---
+> 	$self->debug(2, "obj($o_obj) fmt($fmt) => str(".$hdr.$str.$ftr.")") if $Perlbug::DEBUG;
+> 
+> 	return ($hdr, $str, $ftr);
+> }
+> 
+> 
+> =item xtra
+> 
+> Add a little extra to the data, as a helper for default templates
+> 
+> 	my $h_data = $o_tmp->xtra($key, $o_obj->oid, $h_attr);
+> 
+> =cut
+> 
+> sub xtra {
+> 	my $self   = shift;
+> 	my $h_data = shift;
+> 	my $key    = shift || 'unknown-obj';
+> 	my $oid    = shift || 'unknown-oid';
+> 	my $h_attr = shift || {};
+> 
+> 	$$h_data{'attr'}   = $h_attr;
+> 	$$h_data{'id4key'} = $oid; # santa's little helper 
+> 	$$h_data{'key'}    = $key; # for default templates 
+> 
+> 	return $h_data;
+Index: Perlbug/Object/User.pm
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/Perlbug/Object/User.pm,v
+retrieving revision 1.31
+diff -r1.31 User.pm
+102c102
+< sub insertid {
+---
+> sub xinsertid {
+146c146
+< 		$usr{'group_ids'} 	  = $o_grp->selector($userid.'_groupids', @mygids).$usr{'group_ids'};
+---
+> 		$usr{'group_ids'} 	  = $o_grp->choice($userid.'_groupids', @mygids).$usr{'group_ids'};
+159c159
+<         $usr{'userid'}        = '';
+---
+>         $usr{'userid'}        = '&nbsp;';
+Index: config/.htpasswd
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/config/.htpasswd,v
+retrieving revision 1.4
+diff -r1.4 .htpasswd
+3c3
+< richardf:yZuT18z9laQ.Y
+---
+> richardf:FiAKhd3.GTVZ.
+Index: config/Configuration
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/config/Configuration,v
+retrieving revision 1.11
+diff -r1.11 Configuration
+2c2
+< # (C) 2000 Richard Foley RFI perlbug@rfi.net
+---
+> # (C) 2000 2001 Richard Foley RFI richard.foley@rfi.net
+11,13c11,13
+< 		'debug'		=> '0x',                        # /[msx0-5]/i #!
+< 		'fatal'  	=> 0,                           # errors are fatal(1), or just test/debugable(0) #!
+< 		'format'	=> 'a',                         # /[ahilx]/i
+---
+> 		'debug'		=> '01x',                       # /[msx0-5]/i #!
+> 		'fatal'  	=> 1,                           # errors are fatal(1), or debugable(0) #!
+> 		'format'	=> 'l',                         # /[ahilx]/i
+15c15
+< 		'isatest'	=> 0,                           # ! 0=normal 1=maintainer 2=print #!
+---
+> 		'isatest'	=> 1,                           # 0=normal 1=print
+17c17
+< 		'mailing'	=> 0,							# 0|1
+---
+> 		'mailing'	=> 1,							# 0|1
+19d18
+< 		'switches'	=> 'bBceEfjghmMnNopPrstTu',     # minimal
+65a65,84
+> 		'commands'	=> {                                        # case-insensitive@DOMAIN 
+> 			'^admins'				=> 'v',
+> 			'^bug'					=> 'B',
+> 			'^db'					=> 'Q',
+> 			'^(faq|info|spec)'		=> 'h',
+> 			'^(forward|propos)'		=> 'v', # e|al
+> 			'^h(elp)'				=> 'h',
+> 			'^group'				=> 'G',
+> 			'^(message|reply)'		=> 'M',
+> 			'^(note|track)'			=> 'N',
+> 			'^password'				=> 'y',
+> 			'^patch'				=> 'P',
+> 			'^perlbug[\-_]*test'	=> 'j',
+> 			'^query'				=> 'q',
+> 			'^overview'				=> 'o',
+> 			'^regist'				=> 'V', # er|ration
+> 			'^renotify'				=> 'E',
+> 			'^schema'				=> 'Q',
+> 			'^test'					=> 'T',
+> 		},
+78c97
+< 		'macos'     	=> [qw(macperl-porters@macperl.org)],        # f
+---
+> 		'macos'     	=> [qw(macperl-porters@macperl.org macperl-porters@perl.org)],        # f
+82a102,107
+> 	'LINK'		=> {
+> 		'database'      => '<a href="http://www.mysql.com/">Driven by MySQL</a>',    # link
+> 		'language'      => '<a href="http://www.perl.org/">Scriven in Perl</a>',     # link
+> 		'os'            => '<a href="http://www.linux.org/">Hosted by Linux</a>',    # link
+> 		'webserver'		=> '<a href="http://www.apache.org/">Powered by Apache</a>', # link
+> 	},
+107c132
+< 		'maintainer'    => 'perlbug@rfi.net',       # address
+---
+> 		'maintainer'    => 'perlbug@rfi.net', 		# address
+118a144
+> 		'watch'			=> 'yes',					# enable watch script?
+129c155
+< 		'test'          => [qw(targettest@bugs.perl.org perlbug-test@perl.org perlbug-test@bugs.perl.org)],		# t
+---
+> 		'test'          => [qw(perlbug-test@perl.org targettest@bugs.perl.org perlbug-test@bugs.perl.org)],		# t
+Index: scripts/bugobj
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/scripts/bugobj,v
+retrieving revision 1.5
+diff -r1.5 bugobj
+21a22
+> use Perlbug::Test;
+61a63,67
+> my $o_test = Perlbug::Test->new($o_pb);
+> my $FROM = $o_test->from;
+> my $TO = $o_test->bugdb;
+> my $SUBJECT = $o_test->subject;
+> my $MSGID = $o_test->messageid;
+112c118,123
+< 		'header'	=> 'message header',
+---
+> 		'header'	=> join("\n", 
+> 			"From: $FROM",
+> 			"Subject: $SUBJECT",
+> 			"To: $TO",
+> 			"Message-Id: $MSGID",
+> 		),
+Index: scripts/bugtemplates
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/scripts/bugtemplates,v
+retrieving revision 1.2
+diff -r1.2 bugtemplates
+25c25,29
+< Inserts templates on behalf of all/any objects into database
+---
+> Inserts <Perlbug::Object::Template>s on behalf of all/any objects into database.
+> 
+> Object type based on contents of B<Perlbug::Object::Object> table.
+> 
+> For this to be practical, each format type should have, in addition to default types for Flag and Mail objects, a distinct template for corresponding Bug, Group and User objects.  Application and Item defaults can use the _merge routine with no great loss (except beauty :-)
+30a35,43
+> =head1 SYNOPSIS
+> 
+> Only insert ascii bug templates against user perlbug, richardf and mickey mouse
+> 
+> 	./bugtemplates -f a -o bug -u perlbug:richardf:mm
+> 
+> Force insert of default html templates only
+> 
+> 	./bugtemplates -f h -x default -F
+33a47,48
+> =over 4
+> 
+40c55
+< format (a|h|H|i|L|...) default is all (regex)
+---
+> format (a|h|H|i|L|...) default is all /\w+/
+44c59
+< Force insert, even though comparable exists(delete) in DB
+---
+> Force insert, even though comparable exists (will overwrite) in DB
+95a111,162
+> if ($h) {
+> 	exec "perldoc $0";
+> }
+> 
+> =back
+> 
+> 
+> =head1 TEMPLATES
+> 
+> Divided by format, default or object type, object key:
+> 
+> For an explanation of each format see L<Perlbug::Format>
+> 
+> 	+ means the template is supplied here and will be B<merge()>'d
+> 
+> 	- means it isn't (and will use the default B<_merge()> unless template provided)
+> 
+>   Formats: a A h H i I l L x X
+>   ============================
+>   APPLIC:  a A h H i I l L x X
+>   default  - - - - - - - - - -
+>   log      - - - - - - - - - -
+>   range    - - - - - - - - - -
+> 
+>   FLAG:    a A h H i I l L x X
+>   default  + + + + + + + + - -
+>   change   - - - - - - - - - - 
+>   fixed    - - - - - - - - - -
+>   osname   - - - - - - - - - -
+>   project  - - - - - - - - - -
+>   severity - - - - - - - - - -
+>   status   - - - - - - - - - -
+>   version  - - - - - - - - - -
+> 
+>   ITEM:    a A h H i I l L x X
+>   default  - - - - + + + + - -
+>   address  + + - - - - - - - -   
+>   group    + + + + - - + + - - 
+>   user     + + + + - - + - - - 
+> 
+>   MAIL:    a A h H i I l L x X
+>   default  + + + + + + + + - -
+>   bug      + + + + - - + + - -  
+>   child    - - - - - - - - - -
+>   message  - - - - - - - - - -
+>   note     - - - - - - - - - -
+>   parent   - - - - - - - - - -
+>   patch    - - - - - - - - - -
+>   test     - - - - - - - - - -
+> 
+> =cut
+> 
+97,103c164,176
+< 	'a'	=> {
+< 		'default'	=> {
+< 			'mail'	=> {
+< 				'description'	=> 'default for mail type objects where none given',
+< 			},
+< 			'flag'	=> {
+< 				'description'	=> 'default for flag type objects where none given',
+---
+> 	'A' => { 					# ASCII - long
+> 		'default'	=> {		# DEFAULT A
+> 			# 'application'	=>  # A
+> 			'flag'	=> {		# A
+> 				'description'	=> 'ASCII flag template', 
+> 				'wrap'			=> '75',
+> 				'repeat'	=> 50,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> <{name}> 
+> <{key}>id: <{id4key}>  Created: <{created}>  Modified: <{created}>
+> Bug ids: <{bug_count}> <{bug_ids}>
+> #,
+105,107c178,180
+< 		},
+< 		'object'	=> {
+< 			'bug'	=> {
+---
+> 			#'item'	=> {},		# A 
+> 			'mail'	=> {		# A
+> 				'description'	=> 'ASCII mail template', 
+109c182
+< 				'description'	=> 'ascii bug template', 
+---
+> 				'repeat'	=> 50,
+112c185
+< Bug: <{bugid}>  Created: <{created}>  Modified: <{created}>
+---
+> <{key}>id: <{id4key}>  Created: <{created}>  Modified: <{created}>
+113a187
+> Source:  <{sourceaddr}>
+115,118c189,192
+< Status:   <{status_names}>
+< OS:       <{osname_names}>
+< Severity: <{severity_names}>
+< Group:    <{group_names}>
+---
+> Bug ids: <{bug_count}> <{bug_ids}>
+> 
+> Header:   
+> <{header}>
+120,121c194,218
+< Message ids: <{patch_ids}>
+< Patch ids:   <{patch_ids}>
+---
+> Body:
+> <{body}>
+> #,
+> 			},
+> 		},
+> 		'object'	=> {		# OBJECT A
+> 			'address'	=> {	# A
+> 				'description'	=> 'ASCII address template', 
+> 				'repeat'	=> 40,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> Address:   <{name}> 
+> Addressid: <{addressid}5>  Bug count: <{bug_count}>  ids: <{bug_ids}>
+> Created:   <{created}>  Modified: <{created}>
+> #,
+> 			},
+> 			'bug'	=> {		# A
+> 				'description'	=> 'ASCII bug template', 
+> 				'repeat'	=> 50,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> Bug:      <{bugid}15>  
+> Subject:  <{subject}>
+> From:     <{sourceaddr}>
+> Created:  <{created}>  Modified: <{created}>
+122a220,233
+> Status:   <{status_names}15 >  Severity: <{severity_names}>
+> OS names: <{osname_names}>
+> Group:    <{group_names}>
+> Version:  <{version_names}15>  Fixed in:  <{fixed_names}>
+> 
+> Message ids: <{message_count}5>  <{message_ids}>
+> Patch ids:   <{patch_count}  5>  <{patch_ids}>
+> Test ids:    <{test_count}   5>  <{test_ids}>
+> Note ids:    <{note_count}   5>  <{note_ids}>
+> Change ids:  <{change_count} 5>  <{change_ids}>
+> Parent ids:  <{parent_count} 5>  <{parent_ids}>
+> Child ids:   <{child_count}  5>  <{child_ids}>
+> Address ids: <{address_count}5>  <{address_names}>
+> 	
+128c239
+< 				#,
+---
+> #,
+130,131c241,254
+< 			'user' => {
+< 				'wrap'			=> '75',
+---
+> 			'group' => {		# A
+> 				'description'	=> 'ascii group template', 
+> 				'repeat'	=> 50,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> Group:       <{name}>
+> Groupid:     <{groupid}> Created: <{created}>  Modified: <{created}>
+> Description: <{description}>
+> Address ids: <{address_count}5>  <{address_ids}>
+> User ids:    <{user_count}5   >  <{user_ids}>
+> Bug  ids:    <{bug_count} 5   >  <{bug_ids}>
+> #,
+> 			},
+> 			'user' => {			# A
+133c256,298
+< 				'header'		=> "\n", 
+---
+> 				'repeat'	=> 50,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> Userid:     <{userid}15>  Name: <{name}>  Active: <{active}>
+> Created:    <{created}>  Modified: <{created}>
+> Address:    <{address}>
+> Match address: <{match_address}>
+> Password:   <{password}>
+> Groups:     <{group_count}   5> <{group_ids}>
+> Bug ids:    <{bug_count}     5> <{bug_ids}>
+> #,
+> 			},
+> 		},
+> 	},	# end A
+> 	'a'	=> {					# ascii - short
+> 		'default'	=> {		# DEFAULT a
+> 			#'application'	=> {},
+> 			'flag'	=> {		# a
+> 				'repeat'	=> 40,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> <{key}>id <{id4key}>  
+> Created: <{created}>  Modified: <{created}>
+> Bug ids: <{bug_count}>
+> #,
+> 			},
+> 			#'item'	=> {},		# a
+> 			'mail'	=> {		# a
+> 				'repeat'	=> 50,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> <{key}>id  <{id4key}>
+> Created: <{created}>  Modified: <{created}>
+> Subject: <{subject}>
+> Source:  <{sourceaddr}>
+> Bug ids: <{bug_count}>
+> #,
+> 			},
+> 		},
+> 		'object'	=> {		# OBJECT a
+> 			'address'	=> {	# a
+> 				'repeat'	=> 50,
+> 				'header'		=> "\n",
+135,137d299
+< userid:  <{userid}>   name: <{name}>
+< created: <{created}>  modified: <{created}>
+< address: <{address}>
+139,140c301,352
+< bug ids: <{bug_ids}>
+< 				#,
+---
+> Address:   <{name}> 
+> Addressid: <{addressid}5>  Bug count: <{bug_count}>
+> Created:   <{created}>  Modified: <{created}>
+> #,
+> 			},
+> 			'bug'	=> {		# a
+> 				'header'		=> "\n",
+> 				'repeat'	=> 25,
+> 				'body'			=> q#
+> Bug:      <{bugid}15>  
+> Subject:  <{subject}>
+> From:     <{sourceaddr}>
+> Created:  <{created}>  Modified: <{created}>
+> 
+> Status:   <{status_names}15 >  Severity: <{severity_names}>
+> OS names: <{osname_names}>
+> Group:    <{group_names}>
+> Version:  <{version_names}15>  Fixed in:  <{fixed_names}>
+> 
+> Message ids: <{message_count}5>  
+> Patch ids:   <{patch_count}  5> 
+> Test ids:    <{test_count}   5>
+> Note ids:    <{note_count}   5>
+> Change ids:  <{change_count} 5>
+> Parent ids:  <{parent_count} 5>
+> Child ids:   <{child_count}  5>
+> Address ids: <{address_count}5>
+> #,
+> 			},
+> 			'group' => {		# a
+> 				'description'	=> 'ascii group template', 
+> 				'repeat'	=> 50,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> Groupid:     <{groupid}5      >  Name: <{name}>
+> Created:     <{created}>  Modified: <{created}>
+> Description: <{description}>
+> Address ids: <{address_count}5>  User ids: <{user_count}5   >
+> Bug ids:     <{bug_count} 5   > 
+> #,
+> 			},
+> 			'user' => {			# a
+> 				'description'	=> 'ascii user template', 
+> 				'repeat'	=> 50,
+> 				'header'		=> "\n",
+> 				'body'			=> q#
+> Userid:     <{userid}15>  Name: <{name}>  Active: <{active}>
+> Created:    <{created}>  Modified: <{created}>
+> Address:    <{address}>
+> Groups:     <{group_count}   5> <{group_names}>
+> Bug ids:    <{bug_count}     5> 
+> 		#,
+143,145c355,356
+< 	},
+< 	,
+< 	'h'	=> {
+---
+> 	},	# end a
+> 	'H' => { 					# HTML - long
+147,149c358
+< 			'mail'	=> {
+< 				'description'	=> 'default for mail type objects where none given',
+< 			},
+---
+> 			# 'application'	=>  # H
+151c360,396
+< 				'description'	=> 'default for flag type objects where none given',
+---
+> 				'repeat'	=> 1,
+> 				'header'		=> q#
+> <tr>
+> <td><b><{key}></b></td><td><b>Bug ids</b></td><td><b>Created</b></td><td><b>Modified</b></td>
+> </tr>
+> #,
+> 				'body'			=> q#
+> <tr>
+> <td><{id4key}>: <{name}></td>
+> <td>Bug ids: <{bug_count}></td>
+> <td>Created: <{created}></td><td>Modified: <{created}></td>
+> </tr>
+> <tr>
+> <{bug_ids}>
+> </tr>
+> #,
+> 			},
+> 			# 'item'	=>  	# H rjsf
+> 			'mail'	=> {		# H
+> 				'description'	=> 'HTML mail template', 
+> 				'repeat'	=> 1,
+> 				'header'		=> q#
+> <table border=1 width=100%>
+> #,
+> 				'footer'		=> q#
+> <tr><td colspan=4>&nbsp;</td></tr>
+> </table>
+> #,
+> 				'body'		=> q#
+> <tr><td><b><{key}> id</b></td><td><{id4key}></td>
+> 	<td><b>Created</b></td><td><{created}></td></tr>
+> <tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
+> 	<td><b>Modified</b></td><td><{modified}></td></tr>
+> <tr><td><b>Subject</b></td><td colspan=3><{subject}>)</td></tr>
+> <tr><td><b>Source</b></td><td colspan=3><{sourceaddr}>)</td></tr>
+> <tr><td colspan=4><{body}></td></tr>
+> #,
+155,157c400,402
+< 			'bug'	=> {	
+< 				'repeat'		=> '7',
+< 				'description'	=> 'html bug template', 
+---
+> 			'bug'		=> 	{ # H rjsf
+> 				'description'	=> 'HTML mail template', 
+> 				'repeat'	=> 1,
+159,163c404,406
+< <table>
+< <tr><td>Bug</td> <td>Created></td> <td>Modified</td></tr>
+< 			#,
+< 			'body'			=> q#
+< <tr><td><{bugid}></td> <td><{created}></td> <td><{created}></td></tr>
+---
+> <table border=1 width=100%>
+> #,
+> 				'footer'		=> q#
+165,173c408,444
+< <pre>
+< Header:   
+< <{header}>
+< 
+< Body:
+< <{body}>
+< </pre>
+< <hr>
+< 				#,
+---
+> #,
+> 				'body'		=> q#
+> <table border=1 width=100%>
+> <tr><td colspan=2><b><{select}> Bug id</b>: <{bugid}></td>
+> 	<td><b>Change ids</b></td><td><{change_names}></td></tr>
+> <tr><td><b>Status</b></td><td><{status_names}></td>
+> 	<td><b>Severity</b></td><td><{severity_names}></td></tr>
+> <tr><td><b>Created</b></td><td><{created}></td>
+> 	<td><b>Modified</b></td><td><{modified}></td></tr>
+> <tr><td><b>Groups</b></td><td><{group_names}></td>
+> 	<td><b>Osname</b></td><td><{osname_names}></td></tr>
+> <tr><td><b>Version</b></td><td><{version_names}></td>
+> 	<td><b>Fixed in</b></td><td><{fixed_names}></td></tr>
+> <tr><td><b>Subject</b></td><td colspan=3><{subject}>)</td></tr>
+> <tr><td><b>Source</b></td><td colspan=3><{sourceaddr}>)</td></tr>
+> <tr><td><b>Admins</b>:</td><td colspan=3><{user_names}></td></tr>
+> <tr><td><b>Messages</b>:</td><td><{message_ids}></td>
+> 	<td><b>Notes</b></td><td><{note_ids}></td></tr>
+> <tr><td><b>Patches</b>:</td><td><{patch_ids}></td>
+> 	<td><b>Tests</b></td><td><{test_ids}></td></tr>
+> <tr><td><b>Parents</b>:</td><td><{parent_ids}></td>
+> 	<td><b>Children</b></td><td><{child_ids}></td></tr>
+> <{ifadmin}>
+> <tr><td colspan=4>
+>   <table><tr>
+>     <td><b>New Note </b>:<br><{new_note}></td>
+> 	<td><b>New Patch</b>:<br><{new_patch}></td>
+> 	<td><b>New Test </b>:<br><{new_test}></td>
+>     </tr></table>
+>   </td></tr>
+> </{ifadmin}>
+> </table>
+> <table border=1>
+> <tr><td><{body}></td></tr>
+> <tr><td>&nbsp;</td></tr>
+> </table>
+> #,
+175,177c446,571
+< 			'user'	=> {
+< 				'repeat'		=> '15',
+< 				'description'	=> 'html user template', 
+---
+> 			'group'	=> {		# H 
+> 				'description'	=> 'HTML group template', 
+> 				'repeat'	=> 1,
+> 				'header'		=> q#
+> <table border=1 width=100%>
+> #,
+> 				'footer'		=> q#
+> <tr><td colspan=4>&nbsp;</td></tr>
+> </table>
+> #,
+> 				'body'		=> q#
+> <tr><td><b>Group id</b></td><td><{groupid}></td>
+> 	<td><b>Created</b></td><td><{created}></td></tr>
+> <tr><td><b>Name</b></td><td><{name}></td>
+> 	<td><b>Modified</b></td><td><{modified}></td></tr>
+> <tr><td><b>Description</b></td><td colspan=3><{description}></td></tr>
+> <tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
+> 	<td><b>Userids</b>(<{user_count}>)</td><td><{user_names}></td></tr>
+> #,
+> 			},
+> 			'user'	=> {		# H
+> 				'description'	=> 'HTML user template', 
+> 				'repeat'		=> 1,
+> 				'header'		=> qq#<table border=1 width=100%>\n#,
+> 				'footer'		=> q#
+> <tr><td colspan=4>&nbsp;</td></tr>
+> </table>
+> #,
+> 				'body'			=> q#
+> <tr><td><b>User id</b></td><td><{userid}></td>
+> 	<td><b>Created</b></td><td><{created}></td></tr>
+> <tr><td><b>Name</b></td><td><{name}></td>
+> 	<td><b>Modified</b></td><td><{modified}></td></tr>
+> <tr><td><b>Address</b></td><td><{address}></td>
+> 	<td><b>Match addresss</b></td><td><{match_address}></td></tr>
+> <tr><td><b>Password</b></td><td><{password}></td>
+> 	<td><b>Active</b></td><td><{active}></td></tr>
+> <tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
+> 	<td><b>Groups</b>(<{group_count}>)</td><td><{group_names}></td></tr>
+> #, 
+> 			},
+> 		},
+> 	},	# end H 
+> 	'h'	=> {					# html - short
+> 		'default'	=> {		# DEFAULT h
+> 			# 'application'	=>  # h
+> 			'mail'	=> {		# h
+> 				'description'	=> 'html mail template', 
+> 				'header'		=> # '<tr><td colspan=15><hr></td></tr>',
+> 					'<tr><td>'.join('</td><td>', (
+> 					'<b>&nbsp;</b>',
+> 					'<b><{key}>id</b>',
+> 					'<b>bugids</b>',
+> 					'<b>Subject</b>',
+> 				))."</td></tr>\n",
+> 				'repeat'	=> 5,
+> 				'footer'		=> '',
+> 				'body'			=> '<tr><td>'.join('</td><td>', (
+> 					'<{select}>&nbsp;',
+> 					'<{id4key}>&nbsp;',
+> 					'<{bug_ids}>&nbsp;',
+> 					'<{subject}>&nbsp;',
+> 					'<{body}>&nbsp;',
+> 				))."</td></tr>\n",
+> 			},
+> 			'flag'	=> {		# h
+> 				'description'	=> 'html flag template', 
+> 				'repeat'	=> 15,
+> 				'header'		=> q#
+> <tr>
+> <td><b><{key}></b></td><td><b>Bug ids</b></td><td><b>Created</b></td><td><b>Modified</b></td>
+> </tr>
+> #,
+> 				'body'			=> q#
+> <tr>
+> <td><{id4key}>: <{name}></td>
+> <td>Bug ids: <{bug_count}></td>
+> <td>Created: <{created}></td><td>Modified: <{created}></td>
+> </tr>
+> #,
+> 			},
+> 		},
+> 		'object'	=> {		# OBJECT h
+> 			'bug'	=> {		# h
+> 				'description'	=> 'html bug template', 
+> 				'repeat'		=> 5,
+> 				'footer'		=> '',
+> 				'header'		=> # '<tr><td colspan=15><hr></td></tr>',
+> 					'<tr><td>'.join('</td><td>', (
+> 					'<b>&nbsp;</b>',
+> 					'<b>Bugid</b>',
+> 					'<b>Status</b>',
+> 					'<b>version</b>',
+> 					'<b>fixed in</b>',
+> 					'<b>group</b>',
+> 					'<b>severity</b>',
+> 					'<b>osname</b>',
+> 					'<b>messageids</b>',
+> 					'<b>change ids</b>',
+> 					'<b>note ids</b>',
+> 					'<b>patch ids</b>',
+> 					'<b>test ids</b>',
+> 					'<b>user ids</b>',
+> 					'<b>Subject</b>',
+> 				))."</td></tr>\n",
+> 				'body'			=> '<tr><td>'.join('</td><td>', (
+> 					'<{select}>&nbsp;',
+> 					'<{bugid}>&nbsp;',
+> 					'<{status_names}>&nbsp;', 
+> 					'<{version_names}>&nbsp;', 
+> 					'<{fixed_names}>&nbsp;', 
+> 					'<{group_names}>&nbsp;', 
+> 					'<{severity_names}>&nbsp;', 
+> 					'<{osname_names}>&nbsp;', 
+> 					'<{message_count}>&nbsp;', 
+> 					'<{change_names}>&nbsp;',
+> 					'<{note_count}>&nbsp;', 
+> 					'<{patch_count}>&nbsp;',
+> 					'<{test_count}>&nbsp;', 
+> 					'<{user_count}>&nbsp;',
+> 					'<{subject}>&nbsp;',
+> 				))."</td></tr>\n",
+> 			},
+> 			'group' => {		# h
+> 				'description'	=> 'html group template', 
+> 				'repeat'	=> 15,
+181c575
+< 	<td><b>userid</b></td>
+---
+> 	<td><b>groupid</b></td>
+183c577,578
+< 	<td><b>address</b></td>
+---
+> 	<td><b>userids</b></td>
+> 	<td><b>description</b></td>
+187c582,609
+< 				#,
+---
+> #,
+> 				'body'			=> q#
+> <tr>
+> 	<td><{groupid}> &nbsp;</td>
+> 	<td><{name}> &nbsp;</td>
+> 	<td><{user_count}> &nbsp;</td>
+> 	<td><{description}> &nbsp;</td>
+> 	<td><{created}> &nbsp;</td>
+> 	<td><{modified}> &nbsp;</td>
+> </tr>
+> </table>
+> #,
+> 			},
+> 			'user'	=> {		# h
+> 				'description'	=> 'html user template', 
+> 				'repeat'	=> 15,
+> 				'header'		=> q#
+> <table border=1 width=100%>
+> <tr>
+> 	<td><b>Userid</b></td>
+> 	<td><b>Name</b></td>
+> 	<td><b>Bugids</b></td>
+> 	<td><b>Groups</b></td>
+> 	<td><b>Address</b></td>
+> 	<td><b>Created</b></td>
+> 	<td><b>Modified</b></td>
+> </tr>
+> #,
+191a614,615
+> 	<td><{bug_count}> &nbsp;</td>
+> 	<td><{group_names}> &nbsp;</td>
+197c621
+< 				#, 
+---
+> #, 
+200c624,814
+< 	},
+---
+> 	},	# end h
+> 	'I'	=> {					# INDEX - html
+> 		'default'	=> {		# DEFAULT I
+> 			# 'application'	=>  # I
+> 			'flag'	=> {		# I
+> 				'description'	=> 'INDEX flag template', 
+> 				'repeat'	=> 30,
+> 				'header'		=> qq#<b><{key}></b> ids:<br>\n#,
+> 				'body'			=> qq#<{id4key}><br>\n#,
+> 			},
+> 			'item'	=> {		# I
+> 				'description'	=> 'INDEX item template', 
+> 				'repeat'	=> 30,
+> 				'header'		=> qq#<b><{key}></b> ids:<br>\n#,
+> 				'body'			=> qq#<{id4key}><br>\n#,
+> 			},
+> 			'mail'	=> {		# I
+> 				'description'	=> 'INDEX mail template', 
+> 				'repeat'	=> 30,
+> 				'header'		=> qq#<b><{key}></b> ids:<br>\n#,
+> 				'body'			=> qq#<{id4key}><br>\n#,
+> 			},
+> 		},
+> 	},	# end I
+> 	'i'	=> {					# index - short
+> 		'default'	=> {		# DEFAULT i
+> 			# 'application'	=>  # i
+> 			'flag'	=> {		# i
+> 				'description'	=> 'index flag template', 
+> 				'repeat'	=> 30,
+> 				'header'		=> qq#<{key}> ids:\n#,
+> 				'body'			=> qq#<{id4key}>\n#,
+> 			},
+> 			'item'	=> {		# i
+> 				'description'	=> 'index item template', 
+> 				'repeat'	=> 30,
+> 				'header'		=> qq#<{key}> ids:\n#,
+> 				'body'			=> qq#<{id4key}>\n#,
+> 			},
+> 			'mail'	=> {		# i
+> 				'description'	=> 'index mail template', 
+> 				'repeat'	=> 30,
+> 				'header'		=> qq#<{key}> ids:\n#,
+> 				'body'			=> qq#<{id4key}>\n#,
+> 			},
+> 		},
+> 	},	# end i
+> 	'L'	=> {					# List - html 
+> 		'default'	=> {		# DEFAULT L
+> 			# 'application'	=>  # L
+> 			'flag'	=> {		# L
+> 				'description'	=> 'LIST flag template', 
+> 				'repeat'	=> 10,
+> 				'header'		=> '<tr><td>'.join('</td><td>', (
+> 					'<b><{key}> ids</b>',
+> 					'<b>Bug ids</b>',
+> 					'<b>Created</b>',
+> 					'<b>Modified</b>',
+> 				))."</td></tr>\n",
+> 				'body'			=> '<tr><td>'.join('</td><td>', (
+> 					'<{id4key}>',
+> 					'<{bug_count}>',
+> 					'<{created}>',
+> 					'<{modified}>',
+> 				))."</td></tr>\n",
+> 			},
+> 			'item'	=> {		# L
+> 				'description'	=> 'LIST item template', 
+> 				'repeat'	=> 10,
+> 				'header'		=> '<tr><td>'.join('</td><td>', (
+> 					'<b><{key}> ids</b>',
+> 					'<b>Bug ids</b>',
+> 					'<b>Created</b>',
+> 					'<b>Modified</b>',
+> 				))."</td></tr>\n",
+> 				'body'			=> '<tr><td>'.join('</td><td>', (
+> 					'<{id4key}>',
+> 					'<{bug_count}>',
+> 					'<{created}>',
+> 					'<{modified}>',
+> 				))."</td></tr>\n",
+> 			},
+> 			'mail'	=> {		# L
+> 				'description'	=> 'LIST mail template', 
+> 				'repeat'	=> 10,
+> 				'header'		=> '<tr><td>'.join('</td><td>', (
+> 					'<b><{key}> ids</b>',
+> 					'<b>Bug ids</b>',
+> 					'<b>Subject</b>',
+> 				))."</td></tr>\n",
+> 				'body'			=> '<tr><td>'.join('</td><td>', (
+> 					'<{id4key}>',
+> 					'<{bug_count}>',
+> 					'<{subject}>',
+> 				))."</td></tr>\n",
+> 			},
+> 		},
+> 		'object'	=> {
+> 			'bug'	=> {		# L
+> 				'description'	=> 'LIST bug template', 
+> 				'header'		=> # '<tr><td colspan=15><hr></td></tr>',
+> 					'<tr><td>'.join('</td><td>', (
+> 					'<b>&nbsp;</b>',
+> 					'<b>Bugid</b>',
+> 					'<b>Status</b>',
+> 					'<b>version</b>',
+> 					'<b>group</b>',
+> 					'<b>severity</b>',
+> 					'<b>osname</b>',
+> 					'<b>fixed</b>',
+> 					'<b>messageids</b>',
+> 					'<b>changees</b>',
+> 					'<b>note ids</b>',
+> 					'<b>patch ids</b>',
+> 					'<b>test ids</b>',
+> 					'<b>user ids</b>',
+> 					'<b>Subject</b>',
+> 				))."</td></tr>\n",
+> 				'repeat'	=> 5,
+> 				'body'			=> '<tr><td>'.join('</td><td>', (
+> 					'<{select}>&nbsp;',
+> 					'<{bugid}>&nbsp;',
+> 					'<{status_names}>&nbsp;', 
+> 					'<{version_names}>&nbsp;', 
+> 					'<{group_names}>&nbsp;', 
+> 					'<{severity_names}>&nbsp;', 
+> 					'<{osname_names}>&nbsp;', 
+> 					'<{fixed_names}>&nbsp;', 
+> 					'<{message_count}>&nbsp;', 
+> 					'<{change_count}>&nbsp;',
+> 					'<{note_count}>&nbsp;', 
+> 					'<{patch_count}>&nbsp;',
+> 					'<{test_count}>&nbsp;', 
+> 					'<{user_count}>&nbsp;',
+> 					'<{subject}>&nbsp;',
+> 				))."</td></tr>\n",
+> 			},
+> 		},	
+> 	},	# end L
+> 	'l'	=> {					# list - short
+> 		'default'	=> {		# DEFAULT l
+> 			# 'application'	=> {		# l
+> 			'flag'	=> {		# l
+> 				'description'	=> 'list flag template', 
+> 				'repeat'	=> 20,
+> 				'header'		=> qq#<{key}>:\n#,
+> 				'body'			=> q#<{id4key}3>  <{name}>  bugids: <{bug_count}5> - Created: <{created}> 
+> #,
+> 			},
+> 			'item'	=> {		# l
+> 				'description'	=> 'list item template', 
+> 				'repeat'	=> 20,
+> 				'header'		=> qq#<{key}>:\n#,
+> 				'body'			=> q#<{id4key}3>  <{name}>  bugids: <{bug_count}5> - Created: <{created}> 
+> #,
+> 			},
+> 			'mail'	=> {		# l
+> 				'description'	=> 'list mail template', 
+> 				'repeat'	=> 20,
+> 				'header'		=> qq#<{key}>:\n#,
+> 				'body'			=> q#<{id4key}3>  bugids: <{bug_count}5> - Subject: <{subject}>
+> #,
+> 			},
+> 		},
+> 		'object'	=> {	
+> 			'bug'	=> {		# l
+> 				'description'	=> 'list bug template', 
+> 				'repeat'	=> 50,
+> 				'header'		=> q#bugid         messageids  subject 
+> #,
+> 				'body'			=> q#<{bugid}13> <{message_count}10>  <{subject}>
+> #,
+> 			},
+> 			'group'	=> {		# l
+> 				'description'	=> 'list group template', 
+> 				'repeat'	=> 50,
+> 				'header'		=> q#groupid     name             bugs     description 
+> #,
+> 				'body'			=> q#<{groupid}10>  <{name}15>  <{bug_count}7>  <{description}>
+> #,
+> 			},
+> 			'user'	=> {		# l
+> 				'description'	=> 'list user template', 
+> 				'repeat'	=> 50,
+> 				'header'		=> q#userid      name                       bugs     address 
+> #,
+> 				'body'			=> q#<{userid}10>  <{name}25>  <{bug_count}7>  <{address}>
+> #,
+> 			},
+> 		},
+> 	},	# end l
+202a817,818
+> # $o_tmp->template
+> 
+216a833
+> 	output("[$f] -> format($format)");
+222a840
+> 		output("[$x] --> defobj($defobj)");
+228a847,848
+> 			next OBJECTTYPE unless $$h_temp{'body'} =~ /\w+/;
+> 			output("[$o] ---> objtype($objtype)");
+232c852
+< 			my $pri    = $o_tmp->primary_key;
+---
+> 			my $pri    = $o_tmp->attr('primary_key');
+234,237c854
+< 			my ($object, $type) = ( ($defobj eq 'default')
+< 				? ('', $objtype)
+< 				: ($objtype, '')
+< 			);
+---
+> 			my ($object, $type) = (($defobj eq 'default') ? ('', $objtype) : ($objtype, ''));
+239c856
+< 				'body'			=> 'no body', 
+---
+> 				'body'			=> "no template body\n", 
+242,243c859,861
+< 				'header'		=> 'no header', 
+< 				'repeat'		=> '1',
+---
+> 				'header'		=> '',
+> 				'repeat'	=> '0',
+> 				'footer'		=> '',
+251c869,870
+< 			my $cond = "format = '$format' AND object = '$object' AND type = '$type'";
+---
+> 			my $cond = "object = '$object' AND type = '$type' AND ".
+> 				$o_pb->db->case_sensitive('format', $format);
+252a872
+> 			my @userids = ();
+255c875,877
+< 				if ($F) {
+---
+> 				if ($F) { # rjsf: _NOT_ if related to anybody!
+> 					my $exists = join("', '", @exists);
+> 					@userids = $o_tmp->rel('user')->ids("templateid IN('$exists')");
+272a895
+> 				# if ($F) { # rjsf: _NOT_ if related to anybody!
+274a898
+> 				# if ($F) { # rjsf: _NOT_ if related to anybody!
+277c901,902
+< 					my @users = split(':', $u);
+---
+> 					my @users = (split(':', $u), @userids);
+> 					my $i_del = $o_tmp->rel('user')->delete(\@exists)->DELETED;
+280,283d904
+< 					my $blank = '';
+< 					my $default = "INSERT INTO pb_template_user SET created = sysdate(), templateid = '$oid', userid = '$blank'";
+< 					my $i_defres = $o_tmp->base->exec($default); # special case while userid = ''
+< 					output("\trelated to user($blank)");
+293c914
+< 	output("...failed($err) of $i_wanted templates installation"); 
+---
+> 	output("...failed($err) of $i_wanted types(".join(', ', keys %TEMPLATES).") of template installations ok($i_inst)"); 
+Index: sql/mysql/perlbug_admin.sql
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/sql/mysql/perlbug_admin.sql,v
+retrieving revision 1.1
+diff -r1.1 perlbug_admin.sql
+14c14,15
+< 	'1'
+---
+> 	'1',
+> 	''
+Index: sql/mysql/perlbug_tables.sql
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/sql/mysql/perlbug_tables.sql,v
+retrieving revision 1.5
+diff -r1.5 perlbug_tables.sql
+8,15d7
+< # Table structure for table 'bug_msgs_count'
+< #
+< CREATE TABLE bug_msgs_count (
+<   bugid varchar(12),
+<   msgcount int(5)
+< );
+< 
+< #
+54,56c46,48
+<   subject varchar(100) DEFAULT '' NOT NULL,
+<   sourceaddr varchar(100) DEFAULT '' NOT NULL,
+<   toaddr varchar(100) DEFAULT '' NOT NULL,
+---
+>   subject varchar(255) DEFAULT '' NOT NULL,
+>   sourceaddr varchar(255) DEFAULT '' NOT NULL,
+>   toaddr varchar(100),
+61,65c53,58
+<   UNIQUE tm_bug_id_i (bugid),
+<   KEY tm_bug_subject (subject),
+<   KEY tm_bug_sourceaddr_i (sourceaddr),
+<   KEY tm_bug_toaddr_i (toaddr),
+<   KEY pb_bug_emailmsgid_i (email_msgid)
+---
+>   UNIQUE bug_id (bugid),
+>   KEY pb_bug_emailmsgid_i (email_msgid),
+>   KEY bugid (bugid),
+>   KEY subject (subject),
+>   KEY email_msgid (email_msgid),
+>   KEY sourceaddr (sourceaddr)
+236a230,238
+> # Table structure for table 'pb_bugid'
+> #
+> CREATE TABLE pb_bugid (
+>   created datetime,
+>   modified datetime,
+>   bugid varchar(12) DEFAULT '' NOT NULL
+> );
+> 
+> #
+245d246
+<   UNIQUE tm_change_name_u (name),
+268,270c269
+<   PRIMARY KEY (groupid),
+<   UNIQUE tm_group_id_i (groupid),
+<   UNIQUE group_name_i (name)
+---
+>   PRIMARY KEY (groupid)
+294,295c293
+<   PRIMARY KEY (logid),
+<   UNIQUE tm_log_id_i (logid)
+---
+>   PRIMARY KEY (logid)
+305,307c303,305
+<   subject varchar(100) DEFAULT '' NOT NULL,
+<   sourceaddr varchar(100) DEFAULT '' NOT NULL,
+<   toaddr varchar(100) DEFAULT '' NOT NULL,
+---
+>   subject varchar(255) DEFAULT '' NOT NULL,
+>   sourceaddr varchar(255) DEFAULT '' NOT NULL,
+>   toaddr varchar(100),
+312,316c310,315
+<   UNIQUE tm_message_id_i (messageid),
+<   KEY tm_message_subject_i (subject),
+<   KEY tm_message_sourceaddr_i (sourceaddr),
+<   KEY tm_message_toaddr_i (toaddr),
+<   KEY pb_message_emailmsgid_i (email_msgid)
+---
+>   UNIQUE message_id (messageid),
+>   KEY pb_message_emailmsgid_i (email_msgid),
+>   KEY subject (subject),
+>   KEY email_msgid (email_msgid),
+>   KEY sourceaddr (sourceaddr),
+>   KEY messageid (messageid)
+326,327c325,326
+<   subject varchar(100),
+<   sourceaddr varchar(100),
+---
+>   subject varchar(255) DEFAULT '' NOT NULL,
+>   sourceaddr varchar(255) DEFAULT '' NOT NULL,
+333,334c332,347
+<   UNIQUE tm_note_id_i (noteid),
+<   KEY pb_note_emailmsgid_i (email_msgid)
+---
+>   KEY pb_note_emailmsgid_i (email_msgid),
+>   KEY email_msgid (email_msgid),
+>   KEY sourceaddr (sourceaddr),
+>   KEY noteid (noteid)
+> );
+> 
+> #
+> # Table structure for table 'pb_object'
+> #
+> CREATE TABLE pb_object (
+>   created datetime,
+>   ts timestamp(14),
+>   objectid smallint(5),
+>   type char(16),
+>   name char(25) DEFAULT '' NOT NULL,
+>   description char(150)
+346d358
+<   UNIQUE tm_osname_name_u (name),
+357,358c369,370
+<   subject varchar(100),
+<   sourceaddr varchar(100),
+---
+>   subject varchar(255) DEFAULT '' NOT NULL,
+>   sourceaddr varchar(255) DEFAULT '' NOT NULL,
+364,365c376,381
+<   UNIQUE tm_patch_id_i (patchid),
+<   KEY pb_patch_emailmsgid_i (email_msgid)
+---
+>   KEY pb_patch_emailmsgid_i (email_msgid),
+>   KEY email_msgid (email_msgid),
+>   KEY sourceaddr (sourceaddr),
+>   KEY sourceaddr_2 (sourceaddr),
+>   KEY sourceaddr_3 (sourceaddr),
+>   KEY patchid (patchid)
+386c402
+<   description varchar(150) DEFAULT '' NOT NULL,
+---
+>   description varchar(150),
+412d427
+<   UNIQUE tm_severity_name_u (name),
+425d439
+<   UNIQUE tm_status_name_u (name),
+464,465c478,479
+<   subject varchar(100) DEFAULT '',
+<   sourceaddr varchar(100) DEFAULT '',
+---
+>   subject varchar(255) DEFAULT '' NOT NULL,
+>   sourceaddr varchar(255) DEFAULT '' NOT NULL,
+471,472c485,489
+<   UNIQUE tm_test_id_i (testid),
+<   KEY pb_test_emailmsgid_i (email_msgid)
+---
+>   KEY pb_test_emailmsgid_i (email_msgid),
+>   KEY email_msgid (email_msgid),
+>   KEY sourceaddr (sourceaddr),
+>   KEY testid (testid),
+>   KEY testid_2 (testid)
+500,512d516
+< # Table structure for table 'pb_type'
+< #
+< CREATE TABLE pb_type (
+<   created datetime,
+<   ts timestamp(14),
+<   typeid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+<   type varchar(16),
+<   name varchar(25) DEFAULT '' NOT NULL,
+<   description varchar(150),
+<   PRIMARY KEY (typeid)
+< );
+< 
+< #
+524,526c528,529
+<   public_key blob,
+<   PRIMARY KEY (userid),
+<   UNIQUE tm_user_id_i (userid)
+---
+>   p5p_key blob,
+>   PRIMARY KEY (userid)
+538d540
+<   UNIQUE tm_version_name_u (name),
+Index: t/00_Clean.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/00_Clean.t,v
+retrieving revision 1.1
+diff -r1.1 00_Clean.t
+20,21c20
+< $o_pb->current('admin', 'richardf');
+< $o_pb->current('isatest', 1);
+---
+> my $o_test = Perlbug::Test->new($o_pb);
+23c22
+< my %map = ( # thing types 
+---
+> my %map = ( # object types 
+27a27
+> 	'group'			=> "description LIKE '".$o_test->from."'",
+30c30
+< my $o_thing = $o_pb->object('thing');
+---
+> my $o_object = $o_pb->object('object');
+32c32
+< foreach my $type (sort $o_thing->col('type')) { #
+---
+> foreach my $type (sort $o_object->col('type')) { #
+34c34,35
+< 	next TYPE unless $type eq 'mail';			# ! -->	
+---
+> 	next TYPE unless $type =~ /^mail$/;
+> 	# next TYPE unless $type =~ /^(item|mail)$/; # address, user, group
+36c37
+< 	foreach my $o (sort $o_thing->col('name', "type = '$type'")) {
+---
+> 	foreach my $o (sort $o_object->col('name', "type = '$type'")) {
+48d48
+< 			my $ids = join("', '", @ids);
+Index: t/10_Config.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/10_Config.t,v
+retrieving revision 1.1
+diff -r1.1 10_Config.t
+1,2c1,2
+< #!/usr/bin/perl -w
+< # Config pattern matches for Perlbug 
+---
+> 
+> # Config pattern matches for Perlbug, for ck822 email tests see t/70_Email.t 
+11c11
+< plan('tests' => 20);
+---
+> plan('tests' => 21);
+25,26c25,26
+< 	CURRENT DATABASE DEFAULT DIRECTORY EMAIL ENV
+< 	FEEDBACK FORWARD GROUP MESSAGE SEVERITY 
+---
+> 	CURRENT DATABASE DEFAULT DIRECTORY EMAIL 
+> 	ENV FEEDBACK FORWARD GROUP LINK MESSAGE SEVERITY 
+45,49c45,50
+< output("host(".
+< 	$o_conf->database('sqlhost')."), user(".
+< 	$o_conf->system('user')."), email(".
+< 	$o_conf->email('mailer')."), isatest(".
+< 	$o_conf->current('isatest').") set properly?"
+---
+> output(join(', ', 
+> 	'host(' 	. $o_conf->database('sqlhost')	.')',
+> 	'user(' 	. $o_conf->system('user')		.')',
+> 	'email('  	. $o_conf->email('mailer')		.')',
+> 	'isatest('	. $o_conf->current('isatest')	.')',
+> 	).'set properly?'
+52d52
+< 
+62d61
+< 
+111c110
+< #	output("Config data: ".Dumper($o_conf));
+---
+> 	output("Config data: ".Dumper($o_conf)) if $Perlbug::DEBUG;
+129,130c128
+< 			'isatest'   => '^([012])$',       	# 
+< 			'switches'	=> '^[a-zA-Z]+$', 		#	 
+---
+> 			'isatest'   => '^([01])$',       	# 
+149,150c147,149
+< 			'default',		=> '\w+\@\w+',			#
+< 			'deny_from',	=> '\w+',
+---
+> 			'default'		=> '\w+\@\w+',			#
+> 			'commands'		=> '\w+',				# {}
+> 			'deny_from'		=> '\w+',
+152c151
+< 			'hint',			=> '\w+',
+---
+> 			'hint'			=> '\w+',
+170a170,172
+> 		'link'	=> {
+> 			'default'	=> '\w+',
+> 		},
+196a199
+> 			'watch'			=> '^(yes|no)$',	    # 
+Index: t/16_Database.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/16_Database.t,v
+retrieving revision 1.1
+diff -r1.1 16_Database.t
+4c4
+< # $Id: 16_Database.t,v 1.1 2001/10/05 08:23:53 richardf Exp $
+---
+> # $Id: 11_Database.t,v 1.5 2001/09/18 13:37:50 richardf Exp $
+Index: t/21_Base.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/21_Base.t,v
+retrieving revision 1.1
+diff -r1.1 21_Base.t
+68c68
+< 			output('Header: '.Dumper($h_test));
+---
+> 			output('Header: '.Dumper($h_test)) if $Perlbug::DEBUG;
+Index: t/22_Base.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/22_Base.t,v
+retrieving revision 1.1
+diff -r1.1 22_Base.t
+17a18
+> my $CHANGENAME = $o_test->changename;
+38c39
+< 		'string'	=> qq|5.0.5_Aix_IRIX_${BUGID}_Etc|,
+---
+> 		'string'	=> qq|5.6.0_Aix_IRIX_${BUGID}_Etc|,
+50c51
+< 				'names'	=> [qw(5.0.5)],
+---
+> 				'names'	=> [qw(5.6.0)],
+55c56
+< 		'string'	=> qq|5.6.1_44_AIX_AIX_aix_irix_${BUGID}_${BUGID}_${BUGID}_AIXTC|,
+---
+> 		'string'	=> qq|5.6.1_${CHANGENAME}_AIX_AIX_aix_irix_${BUGID}_${BUGID}_${BUGID}_AITXC|,
+61c62
+< 				'names'	=> [qw(44)],
+---
+> 				'names'	=> [$CHANGENAME],
+67c68
+< 				'names'	=> [qw(AIXTC _)],
+---
+> 				'names'	=> [qw(AITXC _)],
+75c76
+< 		'string'	=> qq|${BUGID} 5.7.2 open X_xwin323 6644|,
+---
+> 		'string'	=> qq|${BUGID} 5.7.2 open xto_xwin323 ${CHANGENAME}|,
+81c82
+< 				'names'	=> [qw(6644)],
+---
+> 				'names'	=> [$CHANGENAME],
+87c88
+< 				'names'	=> [qw(X xwin323 _)],
+---
+> 				'names'	=> [qw(xto xwin323 _)],
+112c113
+< 		'string'	=> qq|5.7.1 $BUGID $BUGID high 5.0.5 5.005.3 ${BUGID}|,
+---
+> 		'string'	=> qq|5.7.1 $BUGID $BUGID high 5.6.0 5.005.3 ${BUGID}|,
+121c122
+< 				'names'	=> [qw(5.0.5 5.005.3 5.7.1)],
+---
+> 				'names'	=> [qw(5.6.0 5.005.3 5.7.1)],
+126c127
+< 		'string'	=> qq|5.7.1 coRe MACOS iNSTALL high CLOSED 5.0.5 5.005.3 ${BUGID}|,
+---
+> 		'string'	=> qq|5.7.1 coRe MACOS iNSTALL high CLOSED 5.6.0 5.005.3 ${BUGID}|,
+144c145
+< 				'names'	=> [qw(5.0.5 5.005.3 5.7.1)],
+---
+> 				'names'	=> [qw(5.6.0 5.005.3 5.7.1)],
+164c165
+< 		# print "target($target): ".Dumper($expected{$target});
+---
+> 		# output("target($target): ".Dumper($expected{$target})) if $Perlbug::DEBUG;
+172c173
+< 			foreach my $exp (@expd) {					# aix, irix, $BUGID, 444
+---
+> 			foreach my $exp (@expd) {					# aix, irix, $BUGID, $CHANGENAME
+195c196
+< 			output("Redundant $target data: ".Dumper($scanned{$target}));
+---
+> 			output("Redundant $target data: ".Dumper($scanned{$target})) if $Perlbug::DEBUG;
+200c201
+< 		output("Redundant scanned: ".Dumper(\%scanned));
+---
+> 		output("Redundant scanned: ".Dumper(\%scanned)) if $Perlbug::DEBUG;
+Index: t/23_Base.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/23_Base.t,v
+retrieving revision 1.1
+diff -r1.1 23_Base.t
+34a35,47
+> 	'dor'	=> [
+> 		{ 
+> 			'args'		=> ['not much data'],
+> 			'expected' 	=> '[a-zA-Z]+',
+> 		},	
+> 		
+> 	],
+> 	'dos'	=> [
+> 		{ 
+> 			'args'		=> ['realclean'],
+> 			'expected' 	=> '[a-zA-Z]+',
+> 		},	
+> 	],
+38c51
+< 			'expected' 	=> '[a-zA-Z]+',
+---
+> 			'expected' 	=> '[a-z\sA-Z]+',
+Index: t/30_Object.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/30_Object.t,v
+retrieving revision 1.2
+diff -r1.2 30_Object.t
+21,22c21
+< $o_pb->current('admin', 'richardf');
+< $o_pb->current('isatest', 1);
+---
+> my $o_test = Perlbug::Test->new($o_pb);
+24c23
+< my %map = ( # thing types 
+---
+> my %map = ( # object types 
+31c30
+< my $o_thing = $o_pb->object('thing');
+---
+> my $o_object = $o_pb->object('object');
+33c32
+< foreach my $type (sort $o_thing->col('type')) { #
+---
+> foreach my $type (sort $o_object->col('type')) { #
+37c36
+< 	foreach my $o (sort $o_thing->col('name', "type = '$type'")) {
+---
+> 	foreach my $o (sort $o_object->col('name', "type = '$type'")) {
+Index: t/31_Object.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/31_Object.t,v
+retrieving revision 1.7
+diff -r1.7 31_Object.t
+29c29
+< my $FROM	= 'Richard. J. S. Foley" <perlbug_test@rfi.net>';
+---
+> my $FROM	= $o_test->from;
+31,32c31,32
+< my $NEWBID	= '19870502.007';
+< my $MSGID 	= '19870502@rfi.net';
+---
+> my $BUGID   = $o_test->bugid;
+> my $MSGID 	= $o_test->email_messageid;
+68c68
+< # print Dumper(\%MAIL);
+---
+> # 
+103c103
+< my @objects = ($o_pb->things('mail'), 'template');
+---
+> my @objects = ($o_pb->objects('mail'), 'template');
+118c118
+< 		# $pri 	=> (($obj eq 'bug') ? $NEWBID : $oid),
+---
+> 		# $pri 	=> (($obj eq 'bug') ? $BUGID : $oid),
+131c131,133
+< 				# $o_obj->update( { $pri => $NEWBID } );
+---
+> 				my $i_del = $o_obj->delete([$BUGID])->DELETED;
+> 				output("\tdeleted($BUGID) => del($i_del)");
+> 				# $o_obj->update( { $pri => $BUGID } );
+133c135
+< 				my $update = "UPDATE pb_bug SET $pri = '$NEWBID' WHERE $pri = '$oid'";
+---
+> 				my $update = "UPDATE pb_bug SET $pri = '$BUGID' WHERE $pri = '$oid'";
+136c138
+< 					output("\tupdated($oid)->$NEWBID");
+---
+> 					output("\tupdated($oid)->$BUGID");
+Index: t/32_Object.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/32_Object.t,v
+retrieving revision 1.2
+diff -r1.2 32_Object.t
+2c2
+< # Object retrieval tests (for objects and relations) for Perlbug 
+---
+> # Object retrieval, and oid recognition tests (for objects and relations) for Perlbug 
+10c10
+< 	plan('tests' => 2);
+---
+> 	plan('tests' => 3);
+23c23
+< my @objects= $o_pb->things;
+---
+> my @objects= $o_pb->objects;
+28c28
+< $test = 1;
+---
+> $test++;
+53c53
+< $test = 2;
+---
+> $test++;
+78a79,136
+> }
+> 
+> # OID recognition
+> $test++;
+> $i_errs = 0;
+> @failed = ();
+> @objects = (defined($ARGV[0])) ? ($ARGV[0]) : @objects;
+> MATCH:
+> foreach my $obj (sort @objects) {
+> 	my $i_err = 0;
+> 	my $o_obj = $o_pb->object($obj);
+> 	my $match = $o_obj->attr('match_oid');
+> 	my $sql   = "SELECT MAX(".$o_obj->primary_key.") FROM ".$o_obj->attr('table');
+> 	my ($maxid) = $o_obj->base->get_list($sql);
+> 	if ($maxid !~ /^\w+/) {
+> 		$i_err++;
+> 		output("failed to retrieve $obj($o_obj) maxid($maxid)!");
+> 	} else {
+> 		my @failed = ();
+> 		my %type   = (
+> 			'plain'		=> [$maxid],
+> 			'dashes'	=> ['-'.$maxid,   $maxid.'-',   '-'.$maxid.'-'],
+> 			'underscore'=> ['_'.$maxid,   $maxid.'_',   '_'.$maxid.'_'],
+> 			'ampersand'	=> ['@'.$maxid,   $maxid.'@',   '@'.$maxid.'@'],
+> 			'numbers'	=> ['123'.$maxid, $maxid.'789', '123'.$maxid.'789'],
+> 			'letters'	=> ['abc'.$maxid, $maxid.'xyz', 'abc'.$maxid.'xyz'], 
+> 			# 'mixed'		=> ['abc'.$maxid, $maxid.'xy9', 'abc'.$maxid.'x8z'],
+> 			'various'	=> [map { $_.$maxid, $maxid.$_, $_.$maxid.$_ } ( 
+> 				qw(' " ` ? + _ | - * ^ & % $ \ / @ ! ~ ] [ { } . : ; > < ), ',', '(', ')'
+> 			), # ' dequote 
+> 			],
+> 		);
+> 		TYPES:
+> 		foreach my $type (sort keys %type) {
+> 			next TYPES if ($maxid =~ /^[a-z]+$/) and ($type eq 'letters');
+> 			next TYPES if ($maxid =~ /^\d+$/)    and ($type eq 'numbers');
+> 			my @fails = ();
+> 			TYPE:	
+> 			foreach my $str (@{$type{$type}}) {
+> 				my ($id) = $o_obj->str2ids($str);	
+> 				if ($id ne $maxid) {
+> 					push(@fails, "str($str) => id($id)");
+> 				}
+> 			}
+> 			push(@failed, "$type: ".join(', ', @fails)."\n") if @fails;
+> 		}
+> 		if (scalar(@failed) >= 1) {
+> 			$i_errs++;
+> 			output("Oid match errors: obj($obj) match($match) id($maxid): \n @failed\n");
+> 			last MATCH;
+> 		}
+> 	}	
+> }
+> if ($i_errs == 0) {
+> 	ok($test);
+> } else {
+> 	ok(0);
+> 	output("$i_errs objects failed matches");
+Index: t/50_Do.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/50_Do.t,v
+retrieving revision 1.8
+diff -r1.8 50_Do.t
+6,11d5
+< BEGIN {
+< 	use File::Spec; 
+< 	use lib File::Spec->updir;
+< 	use Perlbug::Test;
+< 	plan('tests' => 4);
+< }
+14d7
+< my $test = 0;
+20c13,15
+< my $o_perlbug = '';
+---
+> use Perlbug::Test;
+> my $o_perlbug = Perlbug::Base->new;
+> my $o_test = Perlbug::Test->new($o_perlbug);
+22a18,20
+> my $test = 0;
+> plan('tests' => 4);
+> 
+29,30c27
+< if ($o_perlbug = Perlbug::Base->new) {	
+< 	$o_perlbug->current('isatest', 1);
+---
+> if (ref($o_perlbug)) {
+Index: t/51_Do.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/51_Do.t,v
+retrieving revision 1.4
+diff -r1.4 51_Do.t
+9a10,12
+> 
+> my $o_perlbug = Perlbug::Base->new;
+> my $o_test = Perlbug::Test->new($o_perlbug);
+10a14
+> 
+14d17
+< my $o_perlbug = '';
+23,24c26
+< if ($o_perlbug = Perlbug::Base->new) {	# wont operate stand-alone
+< 	$o_perlbug->current('isatest', 1);
+---
+> if (ref($o_perlbug)) {
+33c35
+< $context = 'get_switches';
+---
+> $context = 'switches';
+62,73c64
+< =pod
+< # 5
+< $test++;
+< $context = 'stats'; # takes too long to bother testing
+< my %stats = %{$o_perlbug->$context()}; 
+< if ($stats{'bugs'} >= 1) { 
+< 	ok($test);
+< } else {
+< 	ok(0);
+< 	output("$context failed: ".Dumper(\%stats));
+< }
+< =cut
+---
+> # $context = 'stats'; # takes too long to bother testing
+Index: t/52_Do.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/52_Do.t,v
+retrieving revision 1.5
+diff -r1.5 52_Do.t
+20c20
+< my @tgts = grep(!/^(parent|child)$/, ($o_perlbug->things('mail'), 'group', 'user')); 
+---
+> my @tgts = grep(!/^(parent|child)$/, ($o_perlbug->objects('mail'), 'group', 'user')); 
+Index: t/60_Interface.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/60_Interface.t,v
+retrieving revision 1.1
+diff -r1.1 60_Interface.t
+25c25
+< my @interfaces = map { 'Perlbug::'.$_ } ('Base', map { 'Interface::'.$_ } qw(Cmd Email Web));
+---
+> my @interfaces = map { 'Perlbug::'.$_ } (map { 'Interface::'.$_ } qw(Cmd Email Web));
+34c34
+< my %tgt = ( # 
+---
+> my %pos = ( # 
+36c36
+< 	'c'		=> [qw(1)],
+---
+> 	'c'		=> [$o_test->changeid],
+37a38
+>   # 'e' 	=> means different things to each interface
+40a42
+> 	'j'		=> {},
+42,44c44,46
+< 	'm'		=> [qw(1)],
+< 	'n'		=> [qw(1)],
+<   # 'o'	=> '', 					# overview (takes too long)
+---
+> 	'm'		=> [$o_test->messageid],
+> 	'n'		=> [$o_test->noteid],
+>   # 'o'		=> overview (takes too long)
+47,49c49,51
+< 	'r'		=> 'not much data',		# retrieve by body 
+< 	's'		=> 'realclean',			# subject - ditto
+< 	't'		=> [qw(1)],
+---
+>   #	'r'		=> see 23_Base.t
+>   #	's'		=> see 23_Base.t
+> 	't'		=> [$o_test->testid],
+53,54c55,56
+< my %xtgt = ( # 
+< 	'b'		=> ['un-recognised bugid'],
+---
+> my %neg = ( # 
+> 	'b'		=> ['un-recogniS_able bugid'],
+62,63d63
+< 	'r'		=> 'this 41 is ext-rem_elt_tlitlty un_lik-ly 2B theirs asdl- now() ss', 
+< 	's'		=> 'no tVeRy-eq\ually likl ey to f_IND any upper(tnhi at all nghasd\\fvmn)',
+70,88c70,106
+< my $test = 0;
+< POS:
+< foreach my $interface (@interfaces) {
+< 	$i_test++;
+< 	$i_errs = 0;
+< 	$test   = 0;
+< 	my $o_interface = new $interface ('no_debug');
+< 	Perlbug::Test->new($o_interface);
+< 
+< 	# TARGET 
+< 	foreach my $tgt (sort keys %tgt) {
+< 		$test++;
+< 		my $context = "do$tgt";
+< 		my $args    = $tgt{$tgt};
+< 		my ($res)   = $o_interface->$context($args); 
+< 		if ($res !~ /\w+/) {	
+< 			$i_errs++;
+< 			output("positive $interface test($test) $context($args) failed($res)");
+< 			last POS;
+---
+> PN:
+> foreach my $cxt (qw(pos neg)) {
+> 	my $test = 0;
+> 	my %tgt  = (($cxt eq 'pos') ? %pos : %neg);
+> 
+> 	INT:	
+> 	foreach my $interface (@interfaces) {
+> 		$i_test++;
+> 		$i_errs = 0;
+> 		$test   = 0;
+> 		my $o_interface = new $interface ('no_debug');
+> 		Perlbug::Test->new($o_interface);
+> 
+> 		my @wanted = (defined($ARGV[0]) && $ARGV[0] =~ /^([a-z])$/) ? ($1) : keys %tgt;
+> 		# TARGET 
+> 		# foreach my $tgt (sort keys %tgt) {
+> 		foreach my $tgt (sort @wanted) {
+> 			$test++;
+> 			my $context = "do$tgt";
+> 			my $args    = $tgt{$tgt};
+> 			my ($res)   = $o_interface->$context($args); 
+> 			if (
+> 				($cxt eq 'pos' && !(defined($res) && $res =~ /\w+/o)) ||
+> 				($cxt eq 'neg' &&   defined($res) && $res =~ /\w+/o)
+> 			) {	
+> 				$i_errs++;
+> 				output("$cxt $interface test($test) $context($args) failed($res)");
+> 				exit;
+> 			}
+> 		}	
+> 
+> 		if ($i_errs == 0) {
+> 			ok($i_test);
+> 		} else {
+> 			ok(0);
+> 			output("$cxt $test failed($i_errs)");
+> 			last PN;
+90,127d107
+< 	}
+< 
+< 	if ($i_errs == 0) {
+< 		ok($i_test);
+< 	} else {
+< 		ok(0);
+< 		output("$test failed($i_errs)");
+< 		last POS;
+< 	}
+< }
+< 
+< NEG:
+< foreach my $interface (@interfaces) {
+< 	$i_test++;
+< 	$i_errs = 0;
+< 	$test   = 0;
+< 	my $o_interface = new $interface ('no_debug');
+< 	Perlbug::Test->new($o_interface);
+< 
+< 	# !TARGET
+< 	foreach my $xtgt (sort keys %xtgt) {
+< 		$test++;
+< 		my $context = "do$xtgt";
+< 		my $xargs   = $xtgt{$xtgt};
+< 		my ($res)   = $o_interface->$context($xargs); 
+< 		if (defined($res) && $res =~ /\w+/o) {	
+< 			$i_errs++;
+< 			output("negative $interface test($test) x $context($xargs) failed($res)");
+< 			last NEG;
+< 		}
+< 	}
+< 
+< 	if ($i_errs == 0) {
+< 		ok($i_test);
+< 	} else {
+< 		ok(0);
+< 		output("$test failed($i_errs)");
+< 		last NEG;
+Index: t/65_Cmd.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/65_Cmd.t,v
+retrieving revision 1.3
+diff -r1.3 65_Cmd.t
+22c22
+< 			'expected'	=> '\w+',
+---
+> 			'expected'	=> '^b: =>\s*.+',
+28c28
+< 			'expected'	=> '^12*$',
+---
+> 			'expected'	=> '^d: =>\s*12$',
+34c34
+< 			'expected'	=> '\w+',
+---
+> 			'expected'	=> 'q: =>\s*.+',
+Index: t/66_Web.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/66_Web.t,v
+retrieving revision 1.1
+diff -r1.1 66_Web.t
+6,11d5
+< BEGIN {
+< 	use File::Spec; 
+< 	use lib File::Spec->updir;
+< 	use Perlbug::Test;
+< 	plan('tests' => 3);
+< }
+15a10,11
+> use Perlbug::Interface::Web;
+> use Perlbug::Test;
+16a13,14
+> my $o_web = Perlbug::Interface::Web->new('x' => 'y');
+> my $o_test = Perlbug::Test->new($o_web);
+18,21c16
+< # Libs
+< # -----------------------------------------------------------------------------
+< use Perlbug::Interface::Web;
+< my $o_web = '';
+---
+> plan('tests' => 3);
+32,33c27
+< if ($o_web = Perlbug::Interface::Web->new('x' => 'y')) {	
+< 	$o_web->current('isatest', 1);
+---
+> if (ref($o_web)) {
+Index: t/70_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/70_Email.t,v
+retrieving revision 1.12
+diff -r1.12 70_Email.t
+121,125d120
+< # CLEAN_HEADER_CK822
+< #
+< #
+< 
+< 
+Index: t/72_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/72_Email.t,v
+retrieving revision 1.9
+diff -r1.9 72_Email.t
+24c24
+< 			'category' 	=> [qw(regex)],
+---
+> 			'group' 	=> [qw(regex)],
+40c40
+< 			'category'	=> [qw(core install)],
+---
+> 			'group'		=> [qw(core install)],
+58c58
+< 			'version'	=> [qw(5.0 5.005 5.0.5 5.005.03)],
+---
+> 			'version'	=> [qw(5 5.0 5.005 5.005.03)],
+66c66
+< 			'version'	=> [qw(5.6 5.6.0 5.6.0-RC1 5.7.0 5.7.0-6849 5.7.2)],
+---
+> 			'version'	=> [qw(5 5.6 5.6.0 5.6.0-RC1 5.7.0 5.7.0-6849 5.7.2)],
+132,133c132,133
+< 	my $body = $$h_test{'body'};
+< 	my %scanned = %{$o_mail->scan($body)};
+---
+> 	my $body     = $$h_test{'body'};
+> 	my %scanned  = %{$o_mail->scan($body)};
+137,149c137,139
+< 		my @expected = (ref($expected{$key}) eq 'ARRAY') ? @{$expected{$key}} : ();
+< 		my %data = (ref($scanned{$key}) eq 'HASH') ? %{$scanned{$key}} : ();
+< 		EXP:
+< 		foreach my $exp (@expected) {				# core, install
+< 			my $target = $data{$exp} || 0;
+< 			if ($target >= 1) {
+< 				delete $data{$exp};
+< 			} else {
+< 				$i_err++;
+< 				output("Failed to find $key=$exp => got($target)!");
+< 			}
+< 		}
+< 		if (!(scalar(keys %data) >= 1)) {
+---
+> 		my @expected = (ref($expected{$key}) eq 'ARRAY') ? sort @{$expected{$key}} : ();
+> 		my @scanned  = (ref($scanned{$key}{'names'}) eq 'ARRAY') ? sort @{$scanned{$key}{'names'}} : ();
+> 		if ($o_test->compare(\@expected, \@scanned)) {
+153c143
+< 			output("Redundant data: ".Dumper(\%data));
+---
+> 			output("key($key) failed to find \n\texpected(@expected) in \n\t scanned(@scanned)");
+158c148
+< 		output("Redundant scanned: ".Dumper(\%scanned));
+---
+> 		output("Redundant scanned: ".Dumper(\%scanned)) if $Perlbug::DEBUG;
+160c150
+< 	output("Failed to scan($body) with test: ".Dumper($h_test)) if $i_err != 0;
+---
+> 	output("Failed to scan($body)") if $i_err != 0;
+Index: t/73_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/73_Email.t,v
+retrieving revision 1.6
+diff -r1.6 73_Email.t
+2c2
+< # Email tests for Perlbug: parse_input($o_int) => to|subject|etc. -> $cmd{'b'} => 'bugid'
+---
+> # Email tests for Perlbug: parse_input($o_int) -> { 'b' => 'bugid' }
+5a6
+> # Note: this does NOT test parse_header()!
+24a26,28
+> my $ifadmin = $o_mail->isadmin ? 'a' : 'v';
+> my $inreplytomsgid = $o_test->inreplytomsgid;
+> my $inreplytobugid = $o_test->inreplytobugid;
+49,79c53
+< 				'bounce'	=> [$o_mail->message('nomatch')],
+< 			},
+< 			'header'	=> {
+< 				'To'		=> 'bug@'.$o_test->DOMAIN,
+< 				'Subject'	=> 'Get more hair tomorrow! but no perl in body',
+< 				'From'		=> $o_test->from,
+< 			},
+< 		},
+< 		{ # 
+< 			'expected'	=> { 
+< 				'bounce'	=> [$o_mail->message('nobugids')],
+< 			},
+< 			'header'	=> {
+< 				'To'		=> 'Note@'.$o_test->DOMAIN,
+< 				'Subject'	=> "a new note but no bugid",
+< 				'From'		=> $o_test->from,
+< 			},
+< 		},
+< 		{ # 
+< 			'expected'	=> { 
+< 				'bounce'	=> [$o_mail->message('nobugids')],
+< 			},
+< 			'header'	=> {
+< 				'To'		=> 'PATCH_xyz@'.$o_test->DOMAIN,
+< 				'Subject'	=> "a new patch but no bugid",
+< 				'From'		=> $o_test->from,
+< 			},
+< 		},
+< 		{ # 
+< 			'expected'	=> { 
+< 				'bounce'	=> [$o_mail->message('nobugids')],
+---
+> 				'nocommand'	=> [$o_mail->message('nocommand')],
+82,83c56,57
+< 				'To'		=> 'test_NOBUGID@'.$o_test->DOMAIN,
+< 				'Subject'	=> "a new test but no bugid",
+---
+> 				'To'		=> 'bugdb@'.$o_test->domain,
+> 				'Subject'	=> 'Get more rubbish today!',
+93c67
+< 				'Subject'	=> 'Get more rubbish today!',
+---
+> 				'Subject'	=> '- some non - existent -- commands',
+97c71
+< 		{ #  
+---
+> 		{ # 
+99c73
+< 				'nocommand'	=> [$o_mail->message('nocommand')],
+---
+> 				'bounce'	=> [$o_mail->message('nobugids')],
+102,103c76,77
+< 				'To'		=> 'bugdb@'.$o_test->domain,
+< 				'Subject'	=> '- some non - existent -- commands',
+---
+> 				'To'		=> 'Note@'.$o_test->DOMAIN,
+> 				'Subject'	=> 'a new note but no bugid',
+107d80
+< 
+112,114c85
+< 				'B'			=> {
+< 					'opts'	=> $o_mail->message('new'),
+< 				},	
+---
+> 				'B'		=> $o_mail->message('new'),
+127,129c98
+< 				'B'			=> {
+< 					'opts'	=> $o_mail->message('new'),
+< 				},	
+---
+> 				'B'		=> $o_mail->message('new'),
+142,144c111
+< 				'B'			=> {
+< 					'opts'	=> $o_mail->message('new'),
+< 				},	
+---
+> 				'B'	=> $o_mail->message('new'),
+157,159c124
+< 				'B'			=> {
+< 					'opts'	=> $o_mail->message('new'),
+< 				},	
+---
+> 				'B'	=> $o_mail->message('new'),
+174,176c139
+< 				'B'			=> {
+< 					'opts'	=> 'bUG_aix_high',
+< 				},	
+---
+> 				'B'	=> 'bug_aix_high',
+186a150,162
+> 		{ # 
+> 			'expected'	=> { 				
+> 				'B'	=> 'bug',
+> 			},
+> 			'header'	=> {
+> 				'To'		=> 'bUG@'.$o_test->DOMAIN,
+> 				'Subject'	=> 'a new to/body bug',
+> 				'From'		=> $o_test->from,
+> 			},
+> 			'body'		=> qq|
+> 				perl
+> 			|,
+> 		},
+191c167,168
+< 				'v'			=> [q|please forward this one|],
+---
+> 				# 'v'			=> [q|please forward this one|],
+> 				'v'			=> [q|admins|],
+194,195c171,173
+< 				'To'		=> $o_test->bugdb,
+< 				'Subject'	=> "-v please forward this one",
+---
+> 				# 'To'		=> $o_test->bugdb, # rjsf
+> 				'To'		=> 'admins@'.$o_test->DOMAIN,
+> 				'Subject'	=> '-v please forward this one',
+201c179
+< 				'v'			=> [q|ADMINS_|],
+---
+> 				'v'			=> [q|admins_|],
+205c183
+< 				'Subject'	=> "please forward this two",
+---
+> 				'Subject'	=> 'please forward this two',
+211c189
+< 				'v'			=> [q|Admins|],
+---
+> 				'v'			=> [q|admins|],
+215c193
+< 				'Subject'	=> "please forward this three",
+---
+> 				'Subject'	=> 'please forward this three',
+227c205
+< 				'Subject'	=> "-h",
+---
+> 				'Subject'	=> '-h',
+233c211
+< 				'h'			=> [qw(hElp)],
+---
+> 				'h'			=> [qw(help)],
+240a219,228
+> 		{ #  
+> 			'expected'	=> { 
+> 				'H'	=> [$o_mail->message('nocommand')],
+> 			},
+> 			'header'	=> {
+> 				'To'		=> 'not_a_bug@'.$o_test->DOMAIN,
+> 				'Subject'	=> 'Get more hair tomorrow! but no perl in body',
+> 				'From'		=> $o_test->from,
+> 			},
+> 		},
+341c329
+< 				'In-Reply-To'	=> $o_test->inreplyto,
+---
+> 				'In-Reply-To'	=> $inreplytomsgid,
+348,350c336
+< 				'N'			=> {
+< 					'opts'	=> $BUGID,
+< 				},	
+---
+> 				'N'	=> $BUGID,
+361,363c347
+< 				'N'			=> {
+< 					'opts'	=> "NoTe-$BUGID",
+< 				},	
+---
+> 				'N'	=> "note-$BUGID",
+373,375c357
+< 				'N'			=> {
+< 					'opts'	=> "NoTe_$BUGID",
+< 				},	
+---
+> 				'N'	=> "note_$BUGID",
+380c362
+< 				'Subject'	=> "ccd note",
+---
+> 				'Subject'	=> 'ccd note',
+393c375
+< 				'Subject'	=> "-o -H",
+---
+> 				'Subject'	=> '-o -H',
+403c385
+< 				'Subject'	=> "an overview request",
+---
+> 				'Subject'	=> 'an overview request',
+411,413c393
+< 				'P'			=> {
+< 					'opts'	=> '19990422.001 123',
+< 				},	
+---
+> 				'P'	=> '19990422.001 123',
+418c398
+< 				'Subject'	=> "-P 19990422.001 123",
+---
+> 				'Subject'	=> '-P 19990422.001 123',
+424,426c404
+< 				'P'			=> {
+< 					'opts'	=> 'patch_19990422.001_123',
+< 				},	
+---
+> 				'P'	=> 'patch_19990422.001_123',
+431c409
+< 				'Subject'	=> "ccd administration",
+---
+> 				'Subject'	=> 'ccd administration',
+437,439c415
+< 				'P'			=> {
+< 					'opts'	=> 'PATCH_xyz '.$BUGID,
+< 				},	
+---
+> 				'P'	=> 'patch_xyz '.$BUGID,
+451,453c427
+< 				'j'			=> {
+< 					'opts'	=> 'perlbug-test',
+< 				},	
+---
+> 				'j'	=> 'perlbug-test',
+462,464c436
+< 				'j'			=> {
+< 					'opts'	=> 'PerlBUG_test',
+< 				},	
+---
+> 				'j'	=> 'perlbug_test',
+473,475c445
+< 				'j'			=> {
+< 					'opts'	=> '',
+< 				},	
+---
+> 				'j'	=> '',
+513c483
+< 				'Subject'	=> "-q select * from pb_bug",
+---
+> 				'Subject'	=> '-q select * from pb_bug',
+523c493
+< 				'Subject'	=> "select * from pb_bug",
+---
+> 				'Subject'	=> 'select * from pb_bug',
+539d508
+< 
+592c561
+< 				'V'			=> 'HASH',
+---
+> 				'V'	=> 'register',
+602,604c571
+< 				'V'			=> {
+< 					'opts'	=> 'HASH',
+< 				},
+---
+> 				'V'	=> 'register_me',
+614c581
+< 				'V'			=> 'HASH',
+---
+> 				'V'	=> 'register_rumpelstiltskin',
+617c584
+< 				'To'		=> 'register__RumpelstiltskiN@'.$o_test->DOMAIN,
+---
+> 				'To'		=> 'register_RumpelstiltskiN@'.$o_test->DOMAIN,
+626,628c593
+< 				'M'			=> {
+< 					'opts'	=> $o_mail->message('reply'),
+< 				},	
+---
+> 				'M'		=> $o_test->bugid,
+632c597
+< 				'Subject'	=> 'Re; there bug '.$o_test->bugid,
+---
+> 				'Subject'	=> 'Re; reply via this subject line '.$BUGID,
+638,640c603
+< 				'M'			=> {
+< 					'opts'	=> $o_mail->message('reply'),
+< 				},	
+---
+> 				'M'		=> $inreplytobugid,
+644c607
+< 				'Subject'	=> 'Re; them in-reply bug',
+---
+> 				'Subject'	=> 'Re; reply via in-reply-to line',
+646c609,620
+< 				'In-Reply-To'	=> $o_test->inreplyto,
+---
+> 				'In-Reply-To'	=> $inreplytomsgid,
+> 			},
+> 		},	,
+> 		{ # 
+> 			'expected'	=> { 
+> 				'M'		=> $inreplytobugid,
+> 			},
+> 			'header'	=> {
+> 				'To'		=> $o_test->forward,
+> 				'Subject'	=> 'Re; reply via in-reply-to line',
+> 				'From'		=> $o_test->from,
+> 				'In-Reply-To'	=> ' your mail: '.$inreplytomsgid.' "xtra"',
+649,650d622
+< 	],
+< 	'test'	=> [
+653,655c625
+< 				'T'			=> {
+< 					'opts'	=> $BUGID,
+< 				},	
+---
+> 				'M'		=> 'reply_'.$BUGID,
+658,660c628,629
+< 				'To'		=> 'somebody@somewhere.com',
+< 				'Cc'		=> $o_test->bugdb,
+< 				'Subject'	=> "-T $BUGID",
+---
+> 				'To'		=> "reply_$BUGID\@".$o_test->DOMAIN,
+> 				'Subject'	=> 'Re; reply via to line',
+663c632
+< 		},
+---
+> 		},	
+666,668c635,657
+< 				'T'			=> {
+< 					'opts'	=> 'teST_'.$BUGID,
+< 				},	
+---
+> 				'M'		=> 'reply_123'.$BUGID.'789',
+> 			},
+> 			'header'	=> {
+> 				'To'		=> "reply_123${BUGID}789\@".$o_test->DOMAIN,
+> 				'Subject'	=> 'Re; reply via to line with extended bugid',
+> 				'From'		=> $o_test->from,
+> 			},
+> 		},	
+> 		{ # 
+> 			'expected'	=> { 
+> 				'M'		=> 'reply_'.$BUGID.'_'.$BUGID,
+> 			},
+> 			'header'	=> {
+> 				'To'		=> "REPLy_${BUGID}_$BUGID\@".$o_test->DOMAIN,
+> 				'Subject'	=> 'Re; reply via to line',
+> 				'From'		=> $o_test->from,
+> 			},
+> 		},	
+> 	],
+> 	'test'	=> [
+> 		{ # 
+> 			'expected'	=> { 
+> 				'T'	=> 'test_'.$BUGID,
+673c662
+< 				'Subject'	=> "ccd test",
+---
+> 				'Subject'	=> 'ccd test',
+679,681c668
+< 				'T'			=> {
+< 					'opts'	=> 'Test'.$BUGID,
+< 				},	
+---
+> 				'T'	=> 'test'.$BUGID,
+688a676,686
+> 		{ # 
+> 			'expected'	=> { 
+> 				'T'	=> $BUGID,
+> 			},
+> 			'header'	=> {
+> 				'To'		=> 'somebody@somewhere.com',
+> 				'Cc'		=> $o_test->bugdb,
+> 				'Subject'	=> "-T $BUGID",
+> 				'From'		=> $o_test->from,
+> 			},
+> 		},
+704c702
+< 				'a'			=> ["some_request_$BUGID"], # could be anything
+---
+> 				'H'	=> [$o_mail->message('nocommand')],
+714c712
+< 				'a'			=> ['some_open_close_aix_blablabla_'.$BUGID], # could be anything
+---
+> 				'H'	=> [$o_mail->message('nocommand')],
+726d723
+< 
+733c730
+< foreach my $type (sort keys %tests) {
+---
+> foreach my $type (sort keys %tests) {				# a_bounce, a_bug etc.
+738,740c735,736
+< 	foreach my $h_test (sort @{$tests{$type}}) {
+< 		last TEST unless $i_err == 0;
+< 		my %expected = %{$$h_test{'expected'}}; 
+---
+> 	foreach my $h_test (sort @{$tests{$type}}) {	# h_anon
+> 		last TEST unless $i_err == 0;				# 
+742,744c738,741
+< 		unless (ref($o_int)) {
+< 			$i_err++;
+< 		} else {
+---
+> 		my %expected = %{$$h_test{'expected'}}; 	# h_anon{
+> 		unless (ref($o_int)) {						# 	'header'	=> 'To: bla bla bla\netc.',
+> 			$i_err++;								#   'expected'	=> [qw(this and that)],
+> 		} else {									# }
+746a744
+> 			$DB::single=2;
+748c746
+< 			foreach my $key (keys %expected) {	# h, H, b, a, j, B, N, P 
+---
+> 			foreach my $key (sort keys %expected) {	# h, H, b, a, j, B, N, P 
+750,758c748,765
+< 				my @expected = (
+< 					(ref($expected{$key}) eq 'ARRAY') ? @{$expected{$key}}  : 
+< 					(ref($expected{$key}) eq 'HASH')  ? ($expected{$key}{'opts'})  : ($expected{$key} || '')
+< 				);
+< 				my @found    = (
+< 					(ref($cmds{$key}) eq 'ARRAY')     ? @{$cmds{$key}}         : 
+< 					(ref($cmds{$key}) eq 'HASH')      ? ($cmds{$key}{'opts'})  : ($cmds{$key} || '')
+< 				);
+< 				@found = ('HASH') if $key =~ /^[V]$/; # sigh
+---
+> 				my @expected = (ref($expected{$key}) eq 'ARRAY') ? @{$expected{$key}} : ($expected{$key});
+> 
+> 				my $TYP = $o_mail->return_type($key);
+> 				my @found = ();
+> 				if ($TYP eq 'HASH') { 
+> 					@found = $cmds{$key}{'opts'};
+> 				} elsif ($TYP eq 'ARRAY') {	
+> 					@found = @{$cmds{$key}};
+> 				} else {
+> 					@found = $cmds{$key};
+> 				}
+> 				my @fnd = ();
+> 				foreach my $fnd (@found) {
+> 					$fnd =~ s/^\s+//;
+> 					$fnd =~ s/\s+$//;
+> 					push(@fnd, $fnd);
+> 				}
+> 
+764c771
+< 					if (!(grep(/^$exp$/, @found))) {
+---
+> 					if (!(grep(/^$exp$/, @fnd))) {
+766c773
+< 						output("Key($key) \n\texp($exp) not found in \n\tfnd(".join(', ', @found).")\n"); 
+---
+> 						output("type($type) key($key) TYP($TYP)\n\texp($exp) not found in \n\tfnd(".join(', ', @fnd).")\n"); 
+775c782
+< 				output("Redundant commands: ".Dumper(\%cmds));
+---
+> 				output("Redundant commands: ".Dumper(\%cmds)) if $Perlbug::DEBUG;
+778c785
+< 		output("Failed to parse test($type): ".Dumper($h_test)) unless $i_err == 0; 
+---
+> 		output("Failed to parse test($type)") unless $i_err == 0; 
+Index: t/74_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/74_Email.t,v
+retrieving revision 1.7
+diff -r1.7 74_Email.t
+18,20c18,21
+< my ($INREPLYTOMSGID) = $o_mail->get_list(
+< 	"SELECT MAX(email_msgid) FROM pb_bug WHERE email_msgid LIKE '%_\@_%'"
+< );
+---
+> my $INREPLYTOMSGID = $o_test->inreplytomsgid;
+> #my ($INREPLYTOMSGID) = $o_mail->get_list(
+> #	"SELECT MAX(email_msgid) FROM pb_bug WHERE email_msgid LIKE '%_\@_%'"
+> #);
+29c30,37
+< 				'Subject'	=> 'Get more sex today! but no perl',
+---
+> 				'Subject'	=> 'Get more sex today! but no body perl',
+> 				'From'		=> $o_test->from,
+> 			},
+> 		},
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->target,
+> 				'Subject'	=> 'Get more sex today! but no perl in body',
+31a40
+> 			'body'		=> qq| a per l bug	|,
+93c102
+< 			'body'		=> qq| perl |,
+---
+> 			'body'		=> qq| xerl |,
+106a116,123
+> 				'To'		=> 'xyz@'.$o_test->DOMAIN,
+> 				'Subject'	=> 'Re; that no bug cmds',
+> 				'From'		=> $o_test->from,
+> 				'In-Reply-To'	=> '<non.existent@bugid>',
+> 			},
+> 		},
+> 		{ # 
+> 			'header'	=> {
+112d128
+< 
+198c214
+< 				output('Mail: '.Dumper($o_int->head->header).Dumper($o_int->body));
+---
+> 				output('Mail: '.Dumper($o_int->head->header).Dumper($o_int->body)) if $Perlbug::DEBUG;
+Index: t/75_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/75_Email.t,v
+retrieving revision 1.5
+diff -r1.5 75_Email.t
+98c98
+< 				output('Mail: '.Dumper($o_int->head->header).Dumper($o_int->body));
+---
+> 				output('Mail: '.Dumper($o_int->head->header).Dumper($o_int->body)) if $Perlbug::DEBUG;
+Index: t/76_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/76_Email.t,v
+retrieving revision 1.7
+diff -r1.7 76_Email.t
+2c2
+< # Email tests for from() and get_header internal functions: get_forward, default, remap
+---
+> # Email tests for returns of do(from|h|j|remap(line)|...) etc.
+9c9
+< use Data::Dumper; $Data::Dumper::Indent=1;
+---
+> use Data::Dumper; 
+143c143
+< 				output('Mail: '.Dumper($h_test));
+---
+> 				output('Mail: '.Dumper($h_test)) if $Perlbug::DEBUG;
+Index: t/77_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/77_Email.t,v
+retrieving revision 1.5
+diff -r1.5 77_Email.t
+11c11
+< use Mail::Internet; $Data::Dumper::Indent=1;
+---
+> use Mail::Internet;
+77c77
+< 	'clean_header' => [
+---
+> 	'defense' => [
+80c80
+< 				'From'		=> 'thine@rfi.net',
+---
+> 				'From'		=> 'they@rfi.net',
+87,88c87,88
+< 				'From'		=> '',
+< 				'To'		=> 'xperlbug@'.$o_test->domain,
+---
+> 				'From'		=> 'they@rfi.net',
+> 				'To'		=> '',
+92,93d91
+< 	],
+< 	'defense' => [
+96c94
+< 				'From'		=> 'they@rfi.net',
+---
+> 				'From'		=> 'thine@rfi.net',
+103,104c101,102
+< 				'From'		=> 'they@rfi.net',
+< 				'To'		=> '',
+---
+> 				'From'		=> '',
+> 				'To'		=> 'xperlbug@'.$o_test->domain,
+197c195
+< 				output('Header: '.Dumper($$h_test{'header'}));
+---
+> 				output('Header: '.Dumper($$h_test{'header'})) if $Perlbug::DEBUG;
+Index: t/78_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/78_Email.t,v
+retrieving revision 1.6
+diff -r1.6 78_Email.t
+2c2,3
+< # Email tests for do([jBGMNPT]) etc., 
+---
+> # Email tests - runs through complete (parse and process) cycle for each do([aHjBGMNPT]) etc., 
+> # Using *@bugs.perl.org approach (see 79_Email.t for bugdb@*)
+9,11c10
+< use Data::Dumper; $Data::Dumper::Indent=1;
+< use FileHandle;
+< use Mail::Internet;
+---
+> use Data::Dumper;
+14,16d12
+< use Sys::Hostname;
+< 
+< my $i_test = 0;
+25,26c21,23
+< my %tests = (
+< 	'dobounce' => [
+---
+> my %tests = ( # UC->lc
+> 	# UC
+> 	'doH' => [
+28a26
+> 				'To'		=> 'help@'.$o_test->DOMAIN,
+30,42d27
+< 				'To'		=> $o_test->target,
+< 				'Subject'	=> "should bounce with a bugid",
+< 			},
+< 			'body'		=> "with nothing relevant here",
+< 			'expected'	=> '^(\d{8}\.\d{3})$',
+< 		},
+< 	],
+< 	'donocommand' => [
+< 		{ #  
+< 			'header'	=> {
+< 				'From'		=> $o_test->from,
+< 				'To'		=> $o_test->bugdb,
+< 				'Subject'	=> 'no recognisable commands here',
+44,45c29,30
+< 			'body'		=> "with nothing in here either",
+< 			'expected'	=> '^(1)$',
+---
+> 			'body'		=> "Help request\n",
+> 			'expected'	=> '(?ms:^H: => .+)',
+47,58c32
+< 	],
+< 	'doquiet' => [
+< 		{ #  
+< 			'header'	=> {
+< 				'From'		=> $o_test->from,
+< 				'To'		=> $o_test->target,
+< 				'Subject'	=> 'Grow more hair today!',
+< 			},
+< 			'body'		=> "silent spam :-)",
+< 			'expected'	=> '^(1)$',
+< 		},
+< 	],
+---
+> 	],	
+62c36
+< 				'To'		=> 'perlbug@'.$o_test->domain,
+---
+> 				'To'		=> 'bug@'.$o_test->DOMAIN,
+66c40
+< 			'expected'	=> '^([\w\.]+)$',
+---
+> 			'expected'	=> '^B: => \d+\.\d+$'
+76,77c50,51
+< 			'body'		=> "some group\n",
+< 			'expected'	=> '^(\d+)$',
+---
+> 			'body'		=> "test insertion group from: ".$o_test->from,
+> 			'expected'	=> '^G: => \d+$'
+80,90d53
+< 	'doj' => [
+< 		{ #  
+< 			'header'	=> {
+< 				'From'		=> $o_test->from,
+< 				'To'		=> "perlbug-test@".$o_test->DOMAIN,
+< 				'Subject'	=> "just want a response",
+< 			},
+< 			'body'		=> "???\n",
+< 			'expected'	=> '^(\d+)$',
+< 		},
+< 	],
+99c62
+< 			'expected'	=> '^(\d+)$',
+---
+> 			'expected'	=> '^M: => \d+$'
+110c73
+< 			'expected'	=> '^(\d+)$',
+---
+> 			'expected'	=> '^N: => \d+$'
+121c84
+< 			'expected'	=> '^(\d+)$',
+---
+> 			'expected'	=> '^P: => \d+$'
+127a91,99
+> 				'To'		=> 'test_close_'.$BUGID.'@'.$o_test->DOMAIN,
+> 				'Subject'	=> 'this is a test',
+> 			},
+> 			'body'		=> "a test from michael schwern\n",
+> 			'expected'	=> '^T: => \d+$'
+> 		},
+> 		{ #  
+> 			'header'	=> {
+> 				'From'		=> $o_test->from,
+132c104,158
+< 			'expected'	=> '^(\d+)$',
+---
+> 			'expected'	=> '^T: => \d+$'
+> 		},
+> 	],
+> 	# lc
+> 	'doa' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> "close_$BUGID".'@'.$o_test->DOMAIN,
+> 				'From'		=> $o_test->from,
+> 			},
+> 			'body'		=> "some admin command\n",
+> 			'expected'	=> '(?ms:^a: => \w+)',
+> 		},
+> 	],	
+> 	'doh' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> 'help@'.$o_test->DOMAIN,
+> 				'From'		=> $o_test->from,
+> 			},
+> 			'body'		=> "help request\n",
+> 			'expected'	=> '(?ms:^h: => .+)',
+> 		},
+> 	],	
+> 	'doj' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'From'		=> $o_test->from,
+> 				'To'		=> "perlbug-test@".$o_test->DOMAIN,
+> 				'Subject'	=> "just want a response",
+> 			},
+> 			'body'		=> "???\n",
+> 			'expected'	=> '^j: => .*\d+$'
+> 		},
+> 	],
+> 	'donocommand' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'From'		=> $o_test->from,
+> 				'To'		=> $o_test->bugdb,
+> 				'Subject'	=> 'no recognisable commands here',
+> 			},
+> 			'body'		=> "with nothing in here either",
+> 			'expected'	=> '(?ms:^nocommand: => .+)',
+> 		},
+> 	],
+> 	'doquiet' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'From'		=> $o_test->from,
+> 				'To'		=> $o_test->target,
+> 				'Subject'	=> 'Grow more hair today!',
+> 			},
+> 			'body'		=> "silent spam :-)",
+> 			'expected'	=> '^quiet: => quiet ok$',
+138a165,166
+> my @args = (defined($ARGV[0])) ? ($ARGV[0]) : keys %tests;
+> my $i_test = 0;
+140d167
+< my $arg = $ARGV[0] || '';
+142,143c169,171
+< foreach my $type (sort keys %tests) {
+< 	if ($arg =~ /^(\w+)$/) { next TYPE unless $type eq $arg; }
+---
+> foreach my $type (sort @args) {
+> 	$i_test++; 
+> 	my $i_err = 0;
+146,147d173
+< 	my $i_err  = 0;
+< 	$i_test++; 
+152a179,180
+> 		output("call($call) cmds: ".Dumper($h_cmds)) if $Perlbug::DEBUG;
+> 		$DB::single=2;
+153a182
+> 		$DB::single=2;
+156,157c185,186
+< 			output("Mis-matching($type) process_commands($call, $h_test) => expected($expected) result($result)");
+< 			last TYPE;
+---
+> 			output("Mis-matching type($type) process_commands($call, $$h_cmds{$call}) => \n\texpected($expected) \n\t  result($result)");
+> 			last TEST;
+160d188
+< 
+162c190
+< 	# last TYPE unless $i_err == 0; 
+---
+> 	last TYPE unless $i_err == 0; 
+Index: t/79_Email.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/79_Email.t,v
+retrieving revision 1.2
+diff -r1.2 79_Email.t
+2c2,3
+< # Email tests at end of run - notify_cc(), send_mail(todo), reminder(todo), return_info()
+---
+> # Email tests - runs through complete (parse and process) cycle for each do([aHjBGMNPT]) etc., 
+> # Using bugdb@* approach (see 78_Email.t for *@bugs.perl.org)
+4c5
+< # $Id: 79_Email.t,v 1.2 2001/10/05 08:23:53 richardf Exp $
+---
+> # $Id: 79_Email.t,v 1.6 2001/10/05 08:20:58 richardf Exp $
+7d7
+< use lib qw(../);
+9c9,10
+< use Perlbug::Test;
+---
+> use lib qw(../);
+> use Data::Dumper;
+11,13c12
+< use Sys::Hostname;
+< 
+< plan('tests' => 1);
+---
+> use Perlbug::Test;
+17,18c16,17
+< my $i_test = 0;
+< my $i_err  = 0;
+---
+> 
+> my $BUGID  = $o_test->bugid;
+22,44c21,172
+< my $maintainer 	= $o_mail->system('maintainer');
+< my $hostname	= hostname;
+< my $date		= localtime(time);
+< my $mail 		= qq|To: $maintainer
+< From: $maintainer
+< Subject: Perlbug installation test message
+< |;
+< my $data = qq|Test message from Perlbug installation test run at '$hostname' 
+< 
+< $date
+< |;
+< 
+< my $h_hdr = {
+< 	'From'		=> $o_test->from,
+< 	'To'		=> $o_test->bugdb,
+< };
+< 
+< 
+< # 1
+< $i_test++; 
+< my $o_int = $o_test->setup_int($h_hdr);
+< my $i_sent = $o_mail->return_info($data, $o_int);
+< ok(($i_sent == 1) ? $i_test : 0);
+---
+> my %tests = ( # UC->lc
+> 	#
+> 	'doH' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> '-H',
+> 			},
+> 			'body'		=> "Help request\n",
+> 			'expected'	=> '(?ms:^H: => .+)',
+> 		},
+> 	],	
+> 	'doB' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> '-B this is a bug opts linux 5.7.2',
+> 			},
+> 			'body'		=> "some perl bug on linux against 5.7.2\n",
+> 			'expected'	=> '^B: => \d+\.\d+$'
+> 		},
+> 	],	
+> 	'doG' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> "-G newgroupname$$",
+> 			},
+> 			'body'		=> "test insertion group from: ".$o_test->from,
+> 			'expected'	=> '^G: => \d+$'
+> 		},
+> 	],	
+> 	'doM' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> "-M re; $BUGID",
+> 			},
+> 			'body'		=> "some reply to $BUGID\n",
+> 			'expected'	=> '^M: => \d+$'
+> 		},
+> 	],
+> 	'doN' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> "-N opts $BUGID",
+> 			},
+> 			'body'		=> "some note against $BUGID\n",
+> 			'expected'	=> '^N: => \d+$'
+> 		},
+> 	],
+> 	'doP' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> "-P opts $BUGID",
+> 			},
+> 			'body'		=> "some patch against $BUGID\n",
+> 			'expected'	=> '^P: => \d+$'
+> 		},
+> 	],
+> 	'doT' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> "-T opts $BUGID",
+> 			},
+> 			'body'		=> "some test against $BUGID\n",
+> 			'expected'	=> '^T: => \d+$'
+> 		},
+> 	],
+> 	# lc
+> 	'doa' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> "-a close $BUGID",
+> 			},
+> 			'body'		=> "some admin command\n",
+> 			'expected'	=> '(?ms:^a: => \w+)',
+> 		},
+> 	],	
+> 	'doh' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> '-h',
+> 			},
+> 			'body'		=> "help request\n",
+> 			'expected'	=> '(?ms:^h: => .+)',
+> 		},
+> 	],	
+> 	'doj' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> '-j',
+> 			},
+> 			'body'	=> "just want a response\n",
+> 			'expected'	=> '^j: => .*\d+$'
+> 		},
+> 	],
+> 	'doh' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> '-h',
+> 			},
+> 			'body'		=> "with nothing relevant here",
+> 			'expected'	=> '^h: => .+',
+> 		},
+> 	],
+> 	'donocommand' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb,
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> 'no recognisable commands here',
+> 			},
+> 			'body'		=> "with nothing in here either",
+> 			'expected'	=> '(?ms:^nocommand: => .+)',
+> 		},
+> 	],
+> 	'doquiet' => [
+> 		{ #  
+> 			'header'	=> {
+> 				'To'		=> $o_test->bugdb.'unheard-of.net',
+> 				'From'		=> $o_test->from,
+> 				'Subject'	=> 'Grow more hair today!',
+> 			},
+> 			'body'		=> "silent spam :-)",
+> 			'expected'	=> '^quiet: => quiet ok$',
+> 		},
+> 	],
+> );
+> 
+> # How many?
+> plan('tests' => scalar(keys %tests));
+> my @args = (defined($ARGV[0])) ? ($ARGV[0]) : keys %tests;
+> my $i_test = 0;
+46,48c174,208
+< # Done
+< # -----------------------------------------------------------------------------
+< # .
+---
+> TYPE:
+> foreach my $type (sort @args) {
+> 	$i_test++; 
+> 	my $i_err = 0;
+> 	my $a_type = $tests{$type};
+> 	if (ref($a_type) ne 'ARRAY') {
+> 		$i_err++;
+> 		output("no $type tests($a_type)!");
+> 	} else {
+> 		my $call   = substr($type, 2);
+> 		TEST:
+> 		foreach my $h_test (@{$a_type}) {
+> 			my $expected = $$h_test{'expected'};
+> 			my $o_int    = $o_mail->setup_int($$h_test{'header'}, $$h_test{'body'});
+> 			my $h_cmds   = $o_mail->parse_input($o_int);
+> 			my @cmds = keys %{$h_cmds};
+> 			if (!$o_mail->compare([$call], \@cmds)) {
+> 				$i_err++;
+> 				output("intended call($call) not delivered");
+> 				output(Dumper($h_cmds)) if $Perlbug::DEBUG;
+> 			} else {
+> 				my ($result) = $o_mail->process_commands({$call, $$h_cmds{$call}}, $o_int);
+> 				if ($result !~ /$expected/) {
+> 					$i_err++;
+> 					output("Mis-matching type($type) process_commands($call, $$h_cmds{$call}) => \n\texpected($expected) \n\t  result($result)");
+> 				}
+> 			}
+> 			last TEST if $i_err;
+> 		} # each test
+> 	}
+> 	$i_err == 0 ? ok($i_test) : ok(0);
+> 	last TYPE unless $i_err == 0; 
+> }
+> 
+> #
+Index: t/99_Clean.t
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/t/99_Clean.t,v
+retrieving revision 1.3
+diff -r1.3 99_Clean.t
+4c4
+< # $Id: 99_Clean.t,v 1.3 2001/10/19 12:40:21 richardf Exp $
+---
+> # $Id: 00_Clean.t,v 1.1 2001/10/19 12:40:21 richardf Exp $
+20,21c20
+< $o_pb->current('admin', 'richardf');
+< $o_pb->current('isatest', 1);
+---
+> my $o_test = Perlbug::Test->new($o_pb);
+23c22
+< my %map = ( # thing types 
+---
+> my %map = ( # object types 
+27a27
+> 	'group'			=> "description LIKE '".$o_test->from."'",
+30c30
+< my $o_thing = $o_pb->object('thing');
+---
+> my $o_object = $o_pb->object('object');
+32c32
+< foreach my $type (sort $o_thing->col('type')) { #
+---
+> foreach my $type (sort $o_object->col('type')) { #
+34c34,35
+< 	next TYPE unless $type eq 'mail';			# ! -->	
+---
+> 	next TYPE unless $type =~ /^mail$/;
+> 	# next TYPE unless $type =~ /^(item|mail)$/; # address, user, group
+36c37
+< 	foreach my $o (sort $o_thing->col('name', "type = '$type'")) {
+---
+> 	foreach my $o (sort $o_object->col('name', "type = '$type'")) {
+48d48
+< 			my $ids = join("', '", @ids);
+Index: text/footer
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/text/footer,v
+retrieving revision 1.2
+diff -r1.2 footer
+0a1,2
+> 
+> ===============================================================================
+1a4
+> 
+Index: text/header
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/text/header,v
+retrieving revision 1.1
+diff -r1.1 header
+0a1
+> 
+2c3
+< --------------------------------------------------------------------------------
+---
+> ===============================================================================
+Index: text/mailhelp
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/text/mailhelp,v
+retrieving revision 1.2
+diff -r1.2 mailhelp
+80c80
+<                 Subject: -g pat [ins]*
+---
+>                 Subject: -g patc [ins]*
+113c113
+<     group=cludge', where you should not use '-a cl', rather use '-a clo' or
+---
+>     group=cludge', where you should not use '-a cl', rather use '-a clos' or
+145c145
+<                 To: clo_19990606.002_install@bugs.perl.org
+---
+>                 To: close_19990606.002_install@bugs.perl.org
+204,206c204,214
+<     Note that in the cases where a (note|patch|test) is being assigned, this
+<     keyword should be at the beginning of the To: line, otherwise the
+<     formatting is largely irrelevant.
+---
+>             To: busy_win32_library_regex<bugid>@... 
+> 
+>             To: abandoned_aix_<bugid>@... 
+> 
+> 	Etc.
+> 
+>     Note that in the cases where a (bug|message|note|patch|reply|test) 
+> 	is being assigned, this keyword should be at the beginning of the 
+> 	To|Cc: line, otherwise the formatting is largely irrelevant.
+> 
+>     That is:
+208c216,218
+<     That is (in a slightly contrived example);
+---
+>             To: patch_close<bugid>@... 
+> 
+>             	will create a new patch and close this bug
+212c222,224
+<                     will close the bug and assign the bug to the patch group
+---
+>             	will close the bug and will ignore the 'patch'
+> 
+> 	With one exception (can't have everything :)
+221c233
+<                 To: close_irix_<bugid1>_<bugid2>_configure@bugs.perl.org
+---
+>                 To: close_IRIX_<bugid1>_<bugid2>_configure@bugs.perl.org
+223c235
+<         short forms are still acceptable:
+---
+>         short (minimum 4 character) forms are still acceptable:
+225c237
+<                 To: clo_ir_<bugid1>_<bugid2>_con@bugs.perl.org
+---
+>                 To: clos_irix_<bugid1>_<bugid2>_conf@bugs.perl.org
+240c252,257
+<                 To: patch_<bugid>@bugs.perl.org
+---
+>                 To: test_<bugid>@bugs.perl.org
+> 
+> 	N.B. replying to a thread, and merely Cc:ing to test_<bugid>@* _won't_ 
+> 	start up a new test, as the system will already have registered this 
+> 	email as a reply.  Address instead To: test_<bugid>@* and Perlbug will 
+> 	forward to the appropriate mailing list/s.
+260c277
+<                 To: busy_<bugid>_nocc_hpux@bugs.perl.org
+---
+>                 To: busy_<bugid>_NOCC_hpux@bugs.perl.org
+Index: web/footer.html
+===================================================================
+RCS file: /cvsroot/perlbug/perlbug/web/footer.html,v
+retrieving revision 1.7
+diff -r1.7 footer.html
+33,36c33,36
+< 	<td colspan=2><a href="http://www.apache.org/">Powered by Apache</a></td>
+< 	<td><a href="http://www.mysql.com/">Driven by MySQL</a></td>
+< 	<td><a href="http://www.linux.org/">Hosted by Linux</a></td>
+< 	<td><a href="http://www.perl.org/">Scriven in Perl</a></td>
+---
+> 	<td colspan=2> <!-- webserver link --> </td> 
+> 	<td> <!-- database link --> </td>
+> 	<td> <!-- os link --> </td>
+> 	<td> <!-- language link --> </td>

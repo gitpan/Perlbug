@@ -77,7 +77,7 @@ SUBJECT
 
         Note that a unique shortened form is acceptable (equivalent):
 
-                Subject: -g pat [ins]*
+                Subject: -g patc [ins]*
 
         Upper case letters usually expand upon or reverse the effect of the
         lowercase command in some way. So a B will return the messages with
@@ -110,7 +110,7 @@ SUBJECT
     Note the specific order of these commands are not relevant, the string
     is instead scanned for appropriate values. This means you should be
     careful when specifying shortened versions of say 'status=closed and
-    group=cludge', where you should not use '-a cl', rather use '-a clo' or
+    group=cludge', where you should not use '-a cl', rather use '-a clos' or
     as appropriate.
 
     To become an administrator see the section on "/register" below.
@@ -142,7 +142,7 @@ SUBJECT
     to  You may also use the (To\|Cc): addresses (described below) to
         similar effect:
 
-                To: clo_19990606.002_install@bugs.perl.org
+                To: close_19990606.002_install@bugs.perl.org
 
     more
         Below is an example email which retrieves bugs: '19990606.002',
@@ -232,9 +232,9 @@ TO
 
                 To: close_IRIX_<bugid1>_<bugid2>_configure@bugs.perl.org
 
-        short (minimum 3 character) forms are still acceptable:
+        short (minimum 4 character) forms are still acceptable:
 
-                To: clo_iri_<bugid1>_<bugid2>_con@bugs.perl.org
+                To: clos_irix_<bugid1>_<bugid2>_conf@bugs.perl.org
 
     notes
         may be assigned to a bug:
@@ -249,7 +249,12 @@ TO
     tests
         may be assigned to a bug:
 
-                To: patch_<bugid>@bugs.perl.org
+                To: test_<bugid>@bugs.perl.org
+
+	N.B. replying to a thread, and merely Cc:ing to test_<bugid>@* _won't_ 
+	start up a new test, as the system will already have registered this 
+	email as a reply.  Address instead To: test_<bugid>@* and Perlbug will 
+	forward to the appropriate mailing list/s.
 
         Patches may be assigned to one or more bugs, and should have a
         changeID assigned. The bug/s (if given) will be marked as closed and

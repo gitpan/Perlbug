@@ -1,6 +1,6 @@
 # Perlbug Bug support functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Database.pm,v 1.15 2001/09/18 13:37:49 richardf Exp $
+# $Id: Database.pm,v 1.16 2001/12/01 15:24:41 richardf Exp $
 #
 # Based on TicketMonger.pm: Copyright 1997 Christopher Masto, NetMonger Communications
 # Perlbug(::Database) integration: RFI 1998 -> 2001
@@ -15,7 +15,7 @@ Perlbug::Database - Bug support functions for Perlbug
 package Perlbug::Database;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.15 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.16 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 use Carp;
 use Data::Dumper;
@@ -128,12 +128,15 @@ sub dbh {
 	return $o_DBH;
 }
 
+=item DBConnect
 
-###
-# DBConnect() checks to see if there is an open connection to the
-# Savant database, opens one if there is not, and returns a global
-# database handle.  This eliminates opening and closing database
-# handles during a session.  undef is returned 
+DBConnect() checks to see if there is an open connection to the
+Savant database, opens one if there is not, and returns a global
+database handle.  This eliminates opening and closing database
+handles during a session.  undef is returned 
+
+=cut
+
 sub DBConnect {
 	my $self = shift;
 	if (!defined($o_DBH)) {
@@ -175,6 +178,30 @@ sub query {
     }
 
     return $sth;
+}
+
+
+=item case_sensitive
+
+Return given args(column, string) as case sensitive match
+
+	my $sql = $o_db->case_sensitive('format', 'H');
+
+=cut
+
+sub case_sensitive { 
+	my $self = shift;
+	my $col  = shift;
+	my $str  = shift;
+	my $ret  = '';
+
+	if (!($col =~ /\w+/ && $str =~ /\w+/)) {
+		$self->debug(0, "no col($col) or str($str) given!");		
+	} else {
+		$ret = "STRCMP($col, '$str') = 0"; # mysql
+	}	
+
+	return $ret;
 }
 
 

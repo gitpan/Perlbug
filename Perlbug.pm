@@ -1,6 +1,6 @@
 # Perlbug docs and placeholder
 # (C) 1999 2000 2001 Richard Foley RFI perlbug@rfi.net
-# $Id: Perlbug.pm,v 2.88 2001/10/19 12:40:20 richardf Exp $
+# $Id: Perlbug.pm,v 2.89 2001/12/01 15:24:41 richardf Exp $
 #
 # pod2text -la ~/Perlbug.pm > ~/docs/spec
 # pod2html ~/Perlbug.pm  > ~/docs/spec.html  
@@ -16,7 +16,7 @@ package Perlbug;
 use strict;
 use vars qw($VERSION);
 push @INC, qw(/home/perlbug/locallibs);
-$VERSION = do { my @r = (q$Revision: 2.88 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 2.89 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 $Perlbug::CONFIG = $ENV{'Perlbug_CONFIG'} || $Perlbug::CONFIG || '/home/perlbug/config/Configuration';
@@ -56,6 +56,8 @@ $Perlbug::FATAl  = $ENV{'Perlbug_FATAL'}  || $Perlbug::FATAL  || '0';
 	#       Consolidated all do() parameter parsing
 	#       bughist -E forwarding, template (layout) integration
 	#       fixed the errant cmd_<bugid>_var@domain parse, do(\w) and feedback 
+	#       indexes throughout, optimize tables, rr(rels)
+	# 2.90+ templates 
 	# 
 	# 3.00  Full test suite and Oracle support
 	# 	    ...
@@ -63,8 +65,9 @@ $Perlbug::FATAl  = $ENV{'Perlbug_FATAL'}  || $Perlbug::FATAL  || '0';
 
 =head1 DESCRIPTION
 
-Bug tracking system, written in perl, currently using Mysql, 
-probably running on Linux with Apache.
+Bug, and problem management, tracking system, written in perl.
+
+Currently using Mysql, probably running on Linux with Apache.
 
 For installation instructions see the INSTALL file.
 
@@ -119,16 +122,16 @@ All modules have perldocs embedded, to browse at your leisure.
 	Robust, with test suites:
 
     All tests successful.
-	Files=32,  Tests=218, 120 wallclock secs (33.67 cusr +  2.19 csys = 35.86 CPU)  
+	Files=33,  Tests=241, 127 wallclock secs (36.66 cusr +  2.66 csys = 39.32 CPU)                      
 
-	With better coverage and improved timing (more tests in less time and/or cpus :)
-    Files=28,  Tests=148, 148 wallclock secs (59.27 cusr +  2.61 csys = 61.88 CPU) 
+	Compare to June 2000 - (more tests in less time and/or cpus :)
+    Files=28,  Tests=148, 148 wallclock secs (59.27 cusr +  2.61 csys = 61.88 CPU)
 
 	Under CVS on sourceforge.net (previously stored under RCS)
 
-	Documented (in perldoc -> do what I say _and_ what I do :-)
+	Documented (in perldoc -> do what I say _and_ what I do ;-)
 
-	Freely available sourcecode and data.
+	Freely available sourcecode (on sourceforge.net)
 
 	Integrated with perlbug
 
@@ -273,6 +276,10 @@ The Tk interface
 
 Tracks mailing lists, relying on header information to identify new bugs and replies to existing ones.  Accepts mail for perlbug@perl.org and perlbug@perl.com and relevant target mailing lists.  See B<bugmail>
 
+=item bugwatcher
+
+Any mails sent to this script, if likely looking, will be forwarded FAO B<bugmaster>, to catch any which might otherwise 'fall through the cracks'.
+
 =back
 
 =cut
@@ -289,24 +296,18 @@ For those that are interested the Perlbug application module hierarchy goes some
                    |
                    Base [Interface] (HAS objects)
                    |
-                   ----------------------------------       - 
-                            |                       |       |       
-                            Cmd                     |       |
-                          ---------                 |	    |
-                          |       |                 |       |
-                          |       Email             Web     Tk
-    -----------------------       ----------        ---     --- 
-    |       |     |       |       |        |        |       | 
-    bugcron bugdb bughist bugfix  bugtron bugmail   bugcgi  bugtk
+                   --------------------------------------------------
+                          |       |                         |       |
+                        Cmd       Email                     Web     Tk
+    -----------------------       -----------------         ---     --- 
+    |       |     |       |       |       |       |         |       | 
+    bugcron bugdb bughist bugfix  bugtron bugmail bugwatch  bugcgi  bugtk
 
 
 While the Perlbug Objects themselves look a bit like this:
 
-             Template
-			 --------
-			 |
-             Format
-             ------
+      Format + Template
+      -----------------
              |
        (ISA) Object  (MAY) have Relation(s) with one another :-)
              ------             --------
@@ -376,6 +377,10 @@ or as an environment variable (in bash):
 The debug level - see B<Perlbug::Base::debug()> for the options
 
 	export Perlbug_DEBUG=1
+
+For example, to see what's going on without looking in the log file:
+
+	export Perlbug_DEBUG=012d; perl t/31_Object.t
 
 =item FATAL
 
@@ -526,7 +531,7 @@ The system was given a kick start by Christopher Masto, NetMonger Communications
 
 It's development has been overseen originally by Chip Salzenburg <chip@perlsupport.com> and later by Nathan Torkington <gnat@frii.com> (who was also responsible for the original perl bug tracking system).
 
-The current home is stolidly maintained at http://bugs.perl.org/ by Ask Bjoern Hansen <ask@valueclick.com>.
+The current home is given a stolidly home at http://bugs.perl.org/ by Ask Bjoern Hansen <ask@valueclick.com>.
 
 
 There have been numerous suggestions, feedback and even patches from various people, in particular (in purely alphabetical order):

@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: User.pm,v 1.31 2001/10/19 12:40:21 richardf Exp $
+# $Id: User.pm,v 1.32 2001/12/01 15:24:43 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Object::User - User class
 package Perlbug::Object::User;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.31 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.32 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 
@@ -143,7 +143,7 @@ sub htmlify {
         $usr{'active'}        = $cgi->popup_menu(-'name' => $userid.'_active',    -'values' => \@status, -'labels' => {1 => 'Yes', 0 => 'No'}, -'default' => $active, -'override' => 1);
         $usr{'name'}          = $cgi->textfield( -'name' => $userid.'_name',      -'value' => $name, -'size' => 25, -'maxlength' => 50, -'override' => 1);
 	    $usr{'address'}       = $cgi->textfield( -'name' => $userid.'_address',   -'value' => $address, -'size' => 35, -'maxlength' => 50, -'override' => 1);
-		$usr{'group_ids'} 	  = $o_grp->selector($userid.'_groupids', @mygids).$usr{'group_ids'};
+		$usr{'group_ids'} 	  = $o_grp->choice($userid.'_groupids', @mygids).$usr{'group_ids'};
         $usr{'match_address'} = $cgi->textfield( -'name' => $userid.'_match_address', -'value' => $match_address, -'size' => 45, -'maxlength' => 55, -'override' => 1);
         $usr{'password'}      = $cgi->textfield( -'name' => $userid.'_password',  -'value' => $password, -'size' => 16, -'maxlength' => 16, -'override' => 1);
         $usr{'select'}        = $cgi->checkbox( -'name'  => 'userids', -'checked' => '', -'value'=> $userid, -'label' => '', -'override' => 1);
@@ -156,7 +156,7 @@ sub htmlify {
         $usr{'name'}          = qq|<a href="perlbug.cgi?req=user_id&user_id=$userid">$name</a>|;
         $usr{'password'}      = '-';
         $usr{'match_address'} = '-';
-        $usr{'userid'}        = '';
+        $usr{'userid'}        = '&nbsp;';
     }
 	# print '<pre>'.Dumper(\%usr).'</pre>';
     return \%usr;

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Base parse_str tests
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 22_Base.t,v 1.1 2001/09/18 13:37:50 richardf Exp $
+# $Id: 22_Base.t,v 1.2 2001/12/01 15:24:43 richardf Exp $
 #
 
 use lib qw(../);
@@ -15,6 +15,7 @@ my $o_test = Perlbug::Test->new($o_base);
 my $i_test = 0;
 
 my $BUGID  = $o_test->bugid;
+my $CHANGENAME = $o_test->changename;
 
 # Tests
 # -----------------------------------------------------------------------------
@@ -35,7 +36,7 @@ my @tests = (
 		},
 	},
 	{ # 2 - and version number
-		'string'	=> qq|5.0.5_Aix_IRIX_${BUGID}_Etc|,
+		'string'	=> qq|5.6.0_Aix_IRIX_${BUGID}_Etc|,
 		'expected'	=> { 
 			'bug'		=> {
 				'ids' 	=> [($BUGID)],
@@ -47,18 +48,18 @@ my @tests = (
 				'names'	=> [qw(Etc _)],
 			},
 			'version'	=> {
-				'names'	=> [qw(5.0.5)],
+				'names'	=> [qw(5.6.0)],
 			},
 		},
 	},
 	{ # 3 - and change id and duplicates
-		'string'	=> qq|5.6.1_44_AIX_AIX_aix_irix_${BUGID}_${BUGID}_${BUGID}_AITXC|,
+		'string'	=> qq|5.6.1_${CHANGENAME}_AIX_AIX_aix_irix_${BUGID}_${BUGID}_${BUGID}_AITXC|,
 		'expected'	=> { 
 			'bug'		=> {
 				'ids' 	=> [($BUGID)],
 			},
 			'change'	=> {
-				'names'	=> [qw(44)],
+				'names'	=> [$CHANGENAME],
 			},
 			'osname'	=> {
 				'names'	=> [qw(AIX irix)],
@@ -72,13 +73,13 @@ my @tests = (
 		},
 	},
 	{ # 4 - and in spaces
-		'string'	=> qq|${BUGID} 5.7.2 open xto_xwin323 6644|,
+		'string'	=> qq|${BUGID} 5.7.2 open xto_xwin323 ${CHANGENAME}|,
 		'expected'	=> { 
 			'bug'		=> {
 				'ids' 	=> [($BUGID)],
 			},
 			'change'	=> {
-				'names'	=> [qw(6644)],
+				'names'	=> [$CHANGENAME],
 			},
 			'status'	=> {
 				'names'	=> [qw(open)],
@@ -109,7 +110,7 @@ my @tests = (
 		},
 	},
 	{ # 6 - and more versions and none unknown
-		'string'	=> qq|5.7.1 $BUGID $BUGID high 5.0.5 5.005.3 ${BUGID}|,
+		'string'	=> qq|5.7.1 $BUGID $BUGID high 5.6.0 5.005.3 ${BUGID}|,
 		'expected'	=> {
 			'bug'		=> {
 				'ids' 	=> [($BUGID)],
@@ -118,12 +119,12 @@ my @tests = (
 				'names'	=> [qw(high)],
 			},
 			'version'	=> {
-				'names'	=> [qw(5.0.5 5.005.3 5.7.1)],
+				'names'	=> [qw(5.6.0 5.005.3 5.7.1)],
 			},
 		},
 	},
 	{ # 7 - and more variety
-		'string'	=> qq|5.7.1 coRe MACOS iNSTALL high CLOSED 5.0.5 5.005.3 ${BUGID}|,
+		'string'	=> qq|5.7.1 coRe MACOS iNSTALL high CLOSED 5.6.0 5.005.3 ${BUGID}|,
 		'expected'	=> {
 			'bug'		=> {
 				'ids' 	=> [($BUGID)],
@@ -141,7 +142,7 @@ my @tests = (
 				'names'	=> [qw(CLOSED)],
 			},
 			'version'	=> {
-				'names'	=> [qw(5.0.5 5.005.3 5.7.1)],
+				'names'	=> [qw(5.6.0 5.005.3 5.7.1)],
 			},
 		},
 	},
@@ -161,7 +162,7 @@ foreach my $h_test (@tests) {
 	TARGET:
 	foreach my $target (sort keys %expected) {			# osname, bug
 		last TARGET unless $i_err == 0;
-		# print "target($target): ".Dumper($expected{$target});
+		# output("target($target): ".Dumper($expected{$target})) if $Perlbug::DEBUG;
 		TYPE:	
 		foreach my $type (keys %{$expected{$target}}) {	# ids, names
 			last TYPE unless $i_err == 0;
@@ -169,7 +170,7 @@ foreach my $h_test (@tests) {
 			my @data = (ref($scanned{$target}{$type}) eq 'ARRAY')  ? @{$scanned{$target}{$type}}  : ();
 			my @scan = @data;
 			EXP:
-			foreach my $exp (@expd) {					# aix, irix, $BUGID, 444
+			foreach my $exp (@expd) {					# aix, irix, $BUGID, $CHANGENAME
 				if (grep(/^$exp$/i, @data)) {
 					# output("Found key($key) exp($exp) in data(@data)");
 					@data = grep(!/^$exp$/i, @data);
@@ -192,12 +193,12 @@ foreach my $h_test (@tests) {
 			delete $scanned{$target};
 		} else {
 			$i_err++;
-			output("Redundant $target data: ".Dumper($scanned{$target}));
+			output("Redundant $target data: ".Dumper($scanned{$target})) if $Perlbug::DEBUG;
 		}
 	}
 	if (scalar(keys %scanned) >= 1) {
 		$i_err++;
-		output("Redundant scanned: ".Dumper(\%scanned));
+		output("Redundant scanned: ".Dumper(\%scanned)) if $Perlbug::DEBUG;
 	}
 	output("Failed to scan($string)") if $i_err != 0;
 	($i_err == 0) ? ok($i_test) : ok(0);

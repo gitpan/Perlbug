@@ -1,6 +1,6 @@
 # Perlbug format handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Format.pm,v 1.66 2001/10/22 15:29:50 richardf Exp $
+# $Id: Format.pm,v 1.68 2001/12/03 10:39:20 richardf Exp $
 #
 # TODO
 # formats in db
@@ -15,7 +15,7 @@ Perlbug::Format - Format class
 package Perlbug::Format;
 use strict;
 use vars qw($VERSION); 
-$VERSION = do { my @r = (q$Revision: 1.66 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.68 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Carp;
@@ -32,11 +32,15 @@ my $i_TOP = 1;
 
 =head1 DESCRIPTION
 
-Supplies formatting methods on behalf of all objects according to the following format types:
+Supplies formatting methods for object data, according to the currently supported format types:
 
     a ascii short - minimal listings default for mail interface
 
     A ASCII long  - maximal block style listings
+
+	d debug short - a|h with object attributes (unsupported)
+
+	D debug long  - A|H with object attributes (unsupported)
 
     h html short  - minimal listings default for web interface
 
@@ -181,7 +185,7 @@ Format individual entries for output, handles all available objects
 
 Certain keywords to be careful of here: keys for objects and for relations(ids, count, names)
 
-    my $h_data = $o_fmt->format_fields($h_data, [$fmt]);
+    my $h_data = $o_fmt->format_fields($h_data, [$fmt, [$i_max]]);
 
 =cut
 
@@ -189,24 +193,31 @@ sub format_fields {
     my $self = shift;
     my $h_ref= shift;
     my $fmt  = shift || 'a';
+	my $i_max= shift || 10;
 	my $h_ret= {};
 
     if (ref($h_ref) ne 'HASH') {
 		$self->error("requires a hash ref($h_ref)");
 	} else {
+		$self->debug(2, "normalising...");
 		my $n_ref = $self->normalize($h_ref);
 		if ($fmt !~ /[hHIL]/) { 	# ascii 
+			$self->debug(2, "asciifying...");
 			$h_ret = $self->asciify($n_ref); 
 		} else { 					# html 
+			$self->debug(2, "htmlifying...");
 			$h_ret = $self->htmlify($n_ref); 
-			foreach my $k (keys %{$h_ret}) {
-				if ($k =~ /body|entry|header|subject/io) {
+			$$h_ret{'select'} = '&nbsp;' unless $$h_ret{'select'};
+			foreach my $k (sort keys %{$h_ret}) {
+				if ($k =~ /body|entry|header|subject/io) { # ?!
 					$$h_ret{$k} = encode_entities($$h_ret{$k}) unless $$h_ret{$k} =~ /^\s*\&nbsp;\s*$/io;
 					$$h_ret{$k} = '<pre>'.$$h_ret{$k}.'</pre>' unless $k eq 'subject';
 				}
 			}
 		}
 	}	
+
+	$self->debug(3, "rjsf: fmt($fmt): ".Dumper($h_ret)) if $Perlbug::DEBUG;
 			
     return $h_ret;
 }
@@ -245,17 +256,18 @@ sub normalize {
 	} else {
 		my %args = %{$h_data};  
 		HASH:
-		foreach my $key (keys %args) {
+		foreach my $key (sort keys %args) {
 			if (ref($args{$key}) ne 'HASH') { 
 				$ret{$key} = $args{$key}; 					#
 			} else {
 				my %data = %{$args{$key}};
-				foreach my $hkey (keys %data) {
+				foreach my $hkey (sort keys %data) {
 					$ret{"${key}_$hkey"} = $data{$hkey}; 	#
 				}
 			}
 		}
 	}
+	$self->debug(3, "$h_data => ".Dumper(\%ret)) if $Perlbug::DEBUG;
 
 	return \%ret;
 }
@@ -279,7 +291,7 @@ sub asciify {
 	} else {
 		my %args = %{$h_data}; # 
 		HASH:
-		foreach my $key (keys %args) {
+		foreach my $key (sort keys %args) {
 			if (ref($args{$key}) ne 'ARRAY') { # 
 				$ret{$key} = $args{$key} || '0';
 			} else {
@@ -291,6 +303,7 @@ sub asciify {
 			}		
 		}
 	}
+	$self->debug(3, "$h_data => ".Dumper(\%ret)) if $Perlbug::DEBUG;
 
 	return \%ret;
 }
@@ -298,7 +311,7 @@ sub asciify {
 
 =item htmlify
 
-Returns args generically wrapped with html tags.
+Returns args generically wrapped with html tags - way to convoluted.
 
 	my \%data = $o_fmt->htmlify(\%data);
 
@@ -314,7 +327,7 @@ sub htmlify { # rjsf - hopelessly long
 	} else {
 		my %args = %{$h_data};
 		# print $self->base->html_dump($h_data);
-		foreach my $key (keys %args) { 
+		foreach my $key (sort keys %args) { 
 			$ret{$key} = '';
 			my $val = $args{$key} || '';
 			if (ref($val) eq 'ARRAY') { 				# MULTI
@@ -339,7 +352,7 @@ sub htmlify { # rjsf - hopelessly long
 							);  		
 						} else { 	 						# userid(email)
 							my @usrs = ();
-							foreach my $arg (@args) { 		# status lines
+							foreach my $arg (sort @args) { 		# status lines
 								my $stat_name = $arg;
 								my ($uid)  = $o_obj->name2id([$arg]);
 								my ($name) = $self->href("${obj}_id", [$uid], $arg, $stat_name);
@@ -362,7 +375,7 @@ sub htmlify { # rjsf - hopelessly long
 						$status = $args{'subject'}; 
 					}	
 					$ret{$key} = join('&nbsp;', $self->href("${obj}_id", [$val], $val, $status), $hdrs);
-					$self->debug(1, "obj($obj) val($val) -> ret($ret{$key})") if $Perlbug::DEBUG;
+					$self->debug(2, "obj($obj) val($val) -> ret($ret{$key})") if $Perlbug::DEBUG;
 					# print "obj($obj) key($key) val($val) -> ret($ret{$key})<hr>";
 				} elsif ($key =~ /^([a-z]+)_count$/o) {		# int
 					my $obj = $1;
@@ -389,6 +402,8 @@ sub htmlify { # rjsf - hopelessly long
 			$self->debug(2, "\tkey($key) -> ret($ret{$key})") if $Perlbug::DEBUG;
 		}
 	}
+
+	$self->debug(3, "$h_data => ".Dumper(\%ret)) if $Perlbug::DEBUG;
 
 	return \%ret;
 }
@@ -470,7 +485,7 @@ sub href { #
 
 		if ($key =~ /^\w+=\w+/o || scalar(@{$a_items}) == 0 ) { # requesting own ...
 			my ($format) = ($key =~ /format/o) ? '' : '&format='.($fmt || 'H'); #
-			my $link = qq|<a href=$url?req=${key}$format&trim=${trim}$range&target=perbug $status>$visible</a>|;
+			my $link = qq|<a href=$url?req=${key}$format&trim=${trim}$range&target=perlbug $status>$visible</a>|;
 			push (@links, $link);
 			$self->debug(3, "singular($link)") if $Perlbug::DEBUG;
 		} else {
@@ -479,7 +494,7 @@ sub href { #
 			foreach my $val (@{$a_items}) {
 				next ITEM unless defined($val) and $val =~ /\w+/o;
 				my $vis = ($visible =~ /\w+/o) ? $visible : $val;
-				my $link = qq|<a href=$url?req=$key&$key=$val&format=$fmt&trim=${trim}$range&target=perbug $status>$vis</a>|;
+				my $link = qq|<a href=$url?req=$key&$key=$val&format=$fmt&trim=${trim}$range&target=perlbug $status>$vis</a>|;
 				push (@links, $link);
 				$self->debug(3, "status($status), cgi($url), key($key), val($val), format($fmt), trim($trim), status($status), vis($vis) -> link($link)") if $Perlbug::DEBUG;
 			}
@@ -518,7 +533,7 @@ sub mailto {
 }
 
 
-=item popup
+=item xpopup
 
 Returns appropriate (cached) popup with optional default value inserted.
 
@@ -532,13 +547,13 @@ Returns appropriate (cached) popup with optional default value inserted.
 
 =cut
 
-sub popup {
+sub xpopup {
     my $self 	= shift;
-
     my $flag 	= shift;
 	my $uqid	= shift;
 	my $default = shift || '';
 	my $onchange= shift || '';
+
 	my $ok 		= 1;
     $self->debug(3, "popup: typeofflag($flag), uniqueid($uqid), default($default)") if $Perlbug::DEBUG;
 	if (($flag !~ /^\w+$/) || ($uqid !~ /\w+/)) {
@@ -556,7 +571,11 @@ sub popup {
 	if ($ok == 1) {
 		$self->{'popup'}{$flag} = ''; # for now
 		my @options = ('', sort($self->base->flags($flag)));
-		$popup = $cgi->popup_menu( -'name' => $uqid, -'values' => \@options, -'default' => $default);
+		$popup = $cgi->popup_menu( 
+			-'name' => $uqid, 
+			-'values' => \@options, 
+			-'default' => $default
+		);
     	$self->{'popup'}{$flag} = $popup;   # store the current version (without name, and without selection
 	}
 
@@ -804,7 +823,7 @@ sub FORMAT_A { # default where format or method missing!
 		$$x{'header'}, $$x{'body'}, $$x{'bug_ids'}
 	);
 	my $top = qq|
-$obj_key_oid  Name           Bugids  Created            Subject|;
+$obj_key_oid  Name           Bugids  Createdx            Subject|;
 	my $format = qq|
 -------------------------------------------------------------------------------
 @<<<<<<<<<<<  @<<<<<<<<<<<<< @<<<<<  @<<<<<<<<<<<<<<<<  @<<<<<<<<<<<<<<<<<<<<<<<

@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Relation.pm,v 1.34 2001/10/22 15:29:50 richardf Exp $
+# $Id: Relation.pm,v 1.35 2001/12/01 15:24:42 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Relation;
 use strict;
 use vars(qw($VERSION @ISA));
 @ISA = qw(Perlbug::Object); 
-$VERSION = do { my @r = (q$Revision: 1.34 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.35 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 =head1 DESCRIPTION
@@ -175,12 +175,12 @@ sub check {
 	my $table = $self->attr('table');
 
 	my $src = $o_src->key;
-	my @src_from = @{$o_src->attr('from')};
-	my @src_to = @{$o_src->attr('to')};
+	my @src_from = $o_src->attr('from');
+	my @src_to = $o_src->attr('to');
 
 	my $tgt = $o_tgt->key;
-	my @tgt_from = @{$o_tgt->attr('from')};
-	my @tgt_to   = @{$o_tgt->attr('to')};
+	my @tgt_from = $o_tgt->attr('from');
+	my @tgt_to   = $o_tgt->attr('to');
 
 	# $src = 'parent' if $o_src =~ /parent/i;
 	# $tgt = 'child'  if $o_tgt =~ /child/i;
@@ -429,15 +429,22 @@ sub assign {
 		if (!$o_src->exists([$oid])) { # rjsf - problem with sql caching!
 			$self->error("has no source valid objectid($oid) to assign from!");
 		} else {
+			my $table = $self->attr('table');
 			my $ids = join("', '", @ids);
-			$self->debug(1, "working with ids(@ids) from ".Dumper($a_input)) if $Perlbug::DEBUG;
-			foreach my $id (@ids) {
-				$self->oid($oid);
-				$self->data({ $t_key => $id, });
-				$self->create($self->_oref('data'), 'relation');
-				if ($self->CREATED) {
-					$self->ASSIGNED(1);
-					$self->debug(2, "assigned: $s_key($oid) $t_key($id)") if $Perlbug::DEBUG;
+			my $sql = "DELETE FROM $table WHERE $s_key = '".$o_src->oid()."'";		
+			my $sth = $self->base->exec($sql);
+			$self->debug(0, "non-prejudicial $sql -> sth($sth)") if $Perlbug::DEBUG;
+			if (!defined($sth)) {
+				$self->error(ref($self)." assign trim failed: sql($sql) -> sth($sth)");
+			} else {
+				foreach my $id (@ids) {
+					$self->oid($oid);
+					$self->data({ $t_key => $id, });
+					$self->create($self->_oref('data'), 'relation');
+					if ($self->CREATED) {
+						$self->ASSIGNED(1);
+						$self->debug(2, "assigned: $s_key($oid) $t_key($id)") if $Perlbug::DEBUG;
+					}
 				}
 			}
 		}
@@ -529,20 +536,20 @@ sub store {
 			if (!(scalar(@ids) >= 1)) {
 				$self->debug(0, "not trashing($oid) records unless supplied(@orig) with valid objectids(@ids)!"); # try using delete()
 			} else { # can't use $self->delete([target NOT IN (...)])
-				$self->assign(\@ids); # first!
-				$self->debug(0, "assigned(".$self->ASSIGNED.") ids(@ids)") if $Perlbug::DEBUG;
-				if ($self->ASSIGNED) {
-					my $where = " WHERE $s_key = '".$o_src->oid()."'";		
-					my $sql = "DELETE FROM ".$self->attr('table')." $where AND $t_key NOT IN ('$ids')"; 
-					my $sth = $self->base->exec($sql);
-					$self->debug(3, "prejudicial(".$self->ASSIGNED.") DELETE WHERE NOT IN ids($ids)") if $Perlbug::DEBUG;
-					if ($sth) {
+				my $table = $self->attr('table');
+				my $sql = "DELETE FROM $table WHERE $s_key = '".$o_src->oid()."'";		
+				my $sth = $self->base->exec($sql);
+				$self->debug(0, "prejudicial $sql -> sth($sth)") if $Perlbug::DEBUG;
+				if (!defined($sth)) {
+					$self->error(ref($self)." store trim failed: sql($sql) -> sth($sth)");
+				} else {
+					$self->assign(\@ids); # 
+					if ($self->ASSIGNED) {
 						$self->STORED(1);
-						$self->base->clean_cache('sql');
-					} else { 
-						$self->error(ref($self)." trim failed: sql($sql) -> sth($sth)");
+						$self->debug(0, "assigned(".$self->ASSIGNED.") ids(@ids)") if $Perlbug::DEBUG;
 					}
 				}
+				$self->base->clean_cache('sql');
 			}
 		}
 	}
@@ -599,7 +606,7 @@ sub delete {
 		my ($o_tgt, $t_key) = ($self->target, $self->key('target'));
 
 		my @ids = $o_tgt->exists($a_input);
-		$self->debug(3, "working with ids(@ids)") if $Perlbug::DEBUG;
+		$self->debug(2, "working with ids(@ids)") if $Perlbug::DEBUG;
 		my $ids = join("', '", @ids);
 		my $oid = $o_src->oid();
 		if (scalar($o_src->exists([$oid])) == 0) {
@@ -684,12 +691,14 @@ sub create_target { # by id from hashref
 				next IDENT unless $ident =~ /\w+/o;
 				$self->debug(1, "does $ident exist(@exist)?") if $Perlbug::DEBUG;
 				next IDENT if grep(/^$ident$/, @exist);
-				$self->debug(1, "NOPE($ident) -> inserting!") if $Perlbug::DEBUG;
-				$o_tgt->reinit->data({ 
+				$self->debug(1, "NOPE($ident) -> creating!") if $Perlbug::DEBUG;
+				$o_tgt->reinit->oid($ident);
+				my $h_data = { 
 					$t_key => $self->new_id,	
 					$o_tgt->identifier => $ident, 
-				});
-				$o_tgt->create($o_tgt->_oref('data')); # the new target
+				};
+				$self->debug(0, ref($o_tgt).' data: '.Dumper($h_data));
+				$o_tgt->create($h_data); # the new target
 			}
 		}
 	}

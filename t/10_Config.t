@@ -1,14 +1,14 @@
-#!/usr/bin/perl -w
-# Config pattern matches for Perlbug 
+
+# Config pattern matches for Perlbug, for ck822 email tests see t/70_Email.t 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 10_Config.t,v 1.1 2001/10/05 08:23:53 richardf Exp $
+# $Id: 10_Config.t,v 1.2 2001/12/01 15:24:43 richardf Exp $
 #
 
 use strict;
 use lib qw(../);
 use Perlbug::Config;
 use Perlbug::Test;
-plan('tests' => 20);
+plan('tests' => 21);
 use Data::Dumper;
 
 my $o_conf = Perlbug::Config->new;
@@ -22,8 +22,8 @@ my $err    = 0;
 # Tests: keys
 # -----------------------------------------------------------------------------
 my @expected = qw(
-	CURRENT DATABASE DEFAULT DIRECTORY EMAIL ENV
-	FEEDBACK FORWARD GROUP MESSAGE SEVERITY 
+	CURRENT DATABASE DEFAULT DIRECTORY EMAIL 
+	ENV FEEDBACK FORWARD GROUP LINK MESSAGE SEVERITY 
 	STATUS SYSTEM TARGET VARS VERSION WEB 
 );
 
@@ -42,13 +42,13 @@ if (ref($o_conf)) {
 }
 
 # hinweis
-output("host(".
-	$o_conf->database('sqlhost')."), user(".
-	$o_conf->system('user')."), email(".
-	$o_conf->email('mailer')."), isatest(".
-	$o_conf->current('isatest').") set properly?"
+output(join(', ', 
+	'host(' 	. $o_conf->database('sqlhost')	.')',
+	'user(' 	. $o_conf->system('user')		.')',
+	'email('  	. $o_conf->email('mailer')		.')',
+	'isatest('	. $o_conf->current('isatest')	.')',
+	).'set properly?'
 );
-
 
 # 2
 # EXPECTED
@@ -58,7 +58,6 @@ if ($o_test->compare([(sort keys %conf)], \@expected)) {
 	output("Expected configuration(\n@expected) not matched in conf(\n".join(' ', sort keys %conf).")");
 	ok(0);
 }
-
 
 # 3
 my %match   = %{&get_matches()};
@@ -108,7 +107,7 @@ foreach my $confkey (sort keys %conf) {
 
 # some errors?
 if ($err || 1) {
-#	output("Config data: ".Dumper($o_conf));
+	output("Config data: ".Dumper($o_conf)) if $Perlbug::DEBUG;
 }
 
 #
@@ -126,8 +125,7 @@ sub get_matches {
 			'format'	=> '^[aAhHiIlLxX]$',	# 
 			'framed'    => '^(0|1)$',       	# 
 			'mailing'   => '^(0|1)$',
-			'isatest'   => '^([012])$',       	# 
-			'switches'	=> '^[a-zA-Z]+$', 		#	 
+			'isatest'   => '^([01])$',       	# 
 			'user'		=> '^\w+$',				#	 
 		},
 		'database'	=> {
@@ -146,10 +144,11 @@ sub get_matches {
 			'default'	=> '\w+',
 		},
 		'email'		=> {
-			'default',		=> '\w+\@\w+',			#
-			'deny_from',	=> '\w+',
+			'default'		=> '\w+\@\w+',			#
+			'commands'		=> '\w+',				# {}
+			'deny_from'		=> '\w+',
 			'domain'		=> '[\w\.]+',			#
-			'hint',			=> '\w+',
+			'hint'			=> '\w+',
 			'mailer'		=> '\w+',				#
 			'master_list'	=> '\w+',				#
 			'match'			=> '\w+',				#
@@ -166,6 +165,9 @@ sub get_matches {
 			'dailybuild',	=> '\w+',				#
 		},
 		'group'	=> {
+			'default'	=> '\w+',
+		},
+		'link'	=> {
 			'default'	=> '\w+',
 		},
 		'message'	=> {
@@ -194,6 +196,7 @@ sub get_matches {
 			'timeout_auto'	=> '^\d+$',				#
 			'timeout_interactive'=> '^\d+$',		#
 			'user_switches'	=> '^[a-zA-Z]+$', 		# 
+			'watch'			=> '^(yes|no)$',	    # 
 		},
 		'target'	=> {
 			'default',		=> '\w+\@\w+',			#

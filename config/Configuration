@@ -1,6 +1,6 @@
 # Perlbug site configuration
-# (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Configuration,v 1.11 2001/10/22 15:29:51 richardf Exp $
+# (C) 2000 2001 Richard Foley RFI richard.foley@rfi.net
+# $Id: Configuration,v 1.12 2001/12/01 15:24:43 richardf Exp $
 #
 
 my $h_Config = {
@@ -10,13 +10,12 @@ my $h_Config = {
 		'context' 	=> 'text',                      # /(text|html)/i
 		'debug'		=> '01x',                       # /[msx0-5]/i #!
 		'fatal'  	=> 1,                           # errors are fatal(1), or debugable(0) #!
-		'format'	=> 'a',                         # /[ahilx]/i
+		'format'	=> 'l',                         # /[ahilx]/i
 		'framed'	=> 1,                           # wasn't me guv! :-)
-		'isatest'	=> 2,                           # ! 0=normal 1=maintainer 2=print #!
+		'isatest'	=> 1,                           # 0=normal 1=print
 		'log_file'	=> '',                          # placeholder
 		'mailing'	=> 1,							# 0|1
 		'renotify'	=> 0,							# 0|1
-		'switches'	=> 'bBceEfjghmMnNopPrstTuv',     # minimal
 		'tmp_file'	=> '',                          # placeholder
 		'url'		=> 'perlbug.cgi',               # start point 
 		'user'		=> 'generic',			  		# user
@@ -63,6 +62,26 @@ my $h_Config = {
 		'match'         => '\bperl|perl\b',              		# new bug recogniser
 		'test'          => 'bugdbtest@bugs.perl.org',    		# !
 		'X-Test'        => 'X-Perlbug-Test',             		# test header  
+		'commands'	=> {                                        # case-insensitive@DOMAIN 
+			'^admins'				=> 'v',
+			'^bug'					=> 'B',
+			'^db'					=> 'Q',
+			'^(faq|info|spec)'		=> 'h',
+			'^(forward|propos)'		=> 'v', # e|al
+			'^h(elp)'				=> 'h',
+			'^group'				=> 'G',
+			'^(message|reply)'		=> 'M',
+			'^(note|track)'			=> 'N',
+			'^password'				=> 'y',
+			'^patch'				=> 'P',
+			'^perlbug[\-_]*test'	=> 'j',
+			'^query'				=> 'q',
+			'^overview'				=> 'o',
+			'^regist'				=> 'V', # er|ration
+			'^renotify'				=> 'E',
+			'^schema'				=> 'Q',
+			'^test'					=> 'T',
+		},
 	}, 
 	#FEEDBACK on tickets (active|admin|cc|maintainer|group|master|source)
 	'FEEDBACK'	=> { 
@@ -79,6 +98,12 @@ my $h_Config = {
 		'win32'     	=> [qw(perl-win32-porters@activestate.com)], # f
 		'ok'            => [qw(perl-ok@perl.org)],					 # f
 		'test'          => [qw(forwardtest@bugs.perl.org)],			 # f
+	},
+	'LINK'		=> {
+		'database'      => '<a href="http://www.mysql.com/">Driven by MySQL</a>',    # link
+		'language'      => '<a href="http://www.perl.org/">Scriven in Perl</a>',     # link
+		'os'            => '<a href="http://www.linux.org/">Hosted by Linux</a>',    # link
+		'webserver'		=> '<a href="http://www.apache.org/">Powered by Apache</a>', # link
 	},
 	'MESSAGE'	=> {
 		'bounce'		=> "Inappropriate mail - please include output of 'perl -v'", 
@@ -104,7 +129,7 @@ my $h_Config = {
 		'compress'		=> 'gzip',					# compression tool
 		'enabled'		=> 1,			  			# enabler
 		'hostname'		=> 'blue.rfi.net',          # expected hostname of machine
-		'maintainer'    => 'perlbug@rfi.net',       # address
+		'maintainer'    => 'perlbug@rfi.net', 		# address
 		'max_age'       => 3,                       # max age of log files in days
 		'path'          => '/bin:/usr/bin',         # path to set for logs etc.
 		'preload'       => 0,						# objects at start, or as requested 
@@ -116,6 +141,7 @@ my $h_Config = {
 		'title'			=> 'Perlbug',		  		# :-)
 		'user'          => 'perlbug',               # username on system
 		'user_switches'	=> 'bBcdeEfghHjJlmMnNopPqQrRsStTuvV', # normal user switches
+		'watch'			=> 'yes',					# enable watch script?
 	},
 	#TARGET set off a new bug, undef -> generic
 	'TARGET'	=> {							    
@@ -126,7 +152,7 @@ my $h_Config = {
 		'module'     	=> [qw(modulebug@perl.org)],               	# t
 		'dailybuild'    => [qw(dailybuild@bugs.perl.org)],          # t
 		'ok'            => [qw(ok@bugs.perl.org)],					# t
-		'test'          => [qw(targettest@bugs.perl.org perlbug-test@perl.org perlbug-test@bugs.perl.org)],		# t
+		'test'          => [qw(perlbug-test@perl.org targettest@bugs.perl.org perlbug-test@bugs.perl.org)],		# t
 	},
 	#WEB                           
 	'WEB'	=> { 

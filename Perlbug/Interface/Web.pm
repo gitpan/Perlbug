@@ -1,6 +1,6 @@
 # Perlbug WWW interface
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Web.pm,v 1.105 2001/10/22 15:29:50 richardf Exp $
+# $Id: Web.pm,v 1.107 2001/12/03 10:39:20 richardf Exp $
 # 
 
 =head1 NAME
@@ -17,7 +17,7 @@ package Perlbug::Interface::Web;
 use strict;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Perlbug::Base);
-$VERSION = do { my @r = (q$Revision: 1.105 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.107 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
 use lib qw(../);
@@ -102,7 +102,7 @@ sub check_user {
 	my $user = '';
     if (defined($ENV{'REQUEST_URI'}) && ($ENV{'REQUEST_URI'} =~ /\/admin/io)) {
 		$user = $self->SUPER::check_user($remote_user); # Base
-		$self->debug(1, "Checked user($remote_user)->'$user'") if $Perlbug::DEBUG;
+		$self->debug(1, "checked user($remote_user)->'$user'") if $Perlbug::DEBUG;
 	} else {
 		$user = $self->SUPER::check_user(''); # Base
 		$self->debug(2, "Neutralising user($remote_user)->$user") if $Perlbug::DEBUG;
@@ -192,7 +192,11 @@ sub links {
     if ($self->isadmin) {
 		$links =~ s#\Q<!-- FAQ -->\E#<td><a href="perlbug.cgi?req=adminfaq" target="perlbug" onClick="return go('adminfaq');">Admin FAQ<\/a><\/td>#;
 	}
-	$links =~ s/(perlbug\.cgi)/_$1/gi unless $self->current('framed');# url =~ /_perlbug\.cgi/i;
+	foreach my $target (qw(database language os webserver)) {
+		my $link = $self->link($target);
+		$links =~ s#\Q<!-- $target link -->\E#$link#;
+	}
+	$links =~ s/(perlbug\.cgi)/_$1/gi unless $self->current('framed'); # url =~ /_perlbug\.cgi/i;
 
 	return $links;
 }
@@ -221,7 +225,7 @@ sub index {
 		<hr>
 
 		<a href="perlbug.cgi?req=search"><h3>Enter BUG squashing arena!</h3></a>
-		<a href="_perlbug.cgi?req=search&target=_top&frames=no"><h5>No Frames version!</h5></a>
+		<a href="_perlbug.cgi?req=search&frames=no" target="_top"><h5>No Frames version!</h5></a>
 
 		<h4>Or enter a quick search on just the subject line of submitted bugs which are still open:</h4>
 		<input type=hidden name=req value=query>
@@ -353,8 +357,6 @@ sub switch {
 
 Return appropriate start header data for web request.
 
-Varies with framed, includes dump.
-
 	print $o_web->start();
 
 =cut
@@ -470,6 +472,7 @@ sub request {
 		$req = 'web_query' 	if $req =~ /^query$/io;
     }
 	$self->debug(1, "Web::request($orig => $req) accepted") if $Perlbug::DEBUG; 
+	# print "$orig => $req: ".$cgi->dump if $Perlbug::DEBUG; 
 		
     if (!($self->can($req))) { # ok and can
 		$self->error("unable to do request($req)!");
@@ -479,7 +482,7 @@ sub request {
 		} else {
 			$DB::single=2;
 			if ($self->isadmin =~ /^(\w+)$/o) {
-				print $self->$req();
+				print $self->$req($orig);
 			} else {
 				$self->error("User(".$self->isadmin.") not permitted for action($req)");
 			}
@@ -547,8 +550,9 @@ sub finish { # index/display/bottom/base - see also start
 			-'override'	=> 1
 		);
 	}
-	$ret .= '<tr><td colspan=100%>'.$self->ranges($self->{'_range'}).'</td></tr>' if $range;
+	# $ret .= '<tr><td colspan=?>'.$self->ranges($self->{'_range'}).'</td></tr>' if $range;
 	$ret .= '</table>';
+	$ret .= '<hr>'.$self->ranges($self->{'_range'}).'<hr>' if $range;
 
 	unless ($self->current('framed')) {
 		$ret .= $self->commands($req);
@@ -662,7 +666,9 @@ sub date {
     my @bids = $o_bug->ids("TO_DAYS(created) >= $filter ORDER BY created DESC"); 
 
 	my $max = $cgi->param('trim') || 10;
-	print "found ".@bids." bugs ($filter) showing max($max)<br>\n";
+
+	my $s = (scalar(@bids) == 1) ? '' : 's';
+	print "found ".@bids." bug$s ($filter) showing max($max)<br>\n";
 	($#bids) = ($max - 1) if scalar(@bids) > $max;
 	foreach my $id (@bids) {
 		print $o_bug->read($id)->format;
@@ -686,8 +692,9 @@ sub objectids {
 
 	my ($obj) = my ($req) = lc($cgi->param('req'));
 	$obj =~ s/^(\w+)_id$/$1/;
-    my @ids = $cgi->param("${obj}_id");
+    my @ids  = $cgi->param("${obj}_id");
 	my $trim = $cgi->param('trim') || 30;
+	my $fmt  = $cgi->param('format') || 'L';
 
 	my $objects = join('|', $self->objects('mail'), $self->objects('item'), $self->objects('flag'));
 	$self->debug(1, "req($req) obj($obj) object($objects) ids(@ids)") if $Perlbug::DEBUG;
@@ -699,7 +706,7 @@ sub objectids {
 		my $o_obj = $self->object($obj);
 		foreach my $oid (@ids) {
 			$o_obj->read($oid);
-			print $o_obj->format if $o_obj->READ && $o_obj->exists([$oid]);
+			print $o_obj->format if $o_obj->READ;
 		}
     }
 
@@ -737,7 +744,7 @@ sub xobjects { # create|search|template|update
 			my $o_obj = $self->object($obj);
 			foreach my $oid (@ids) {
 				$o_obj->read($oid);
-				print $o_obj->template($call, 'h') if $o_obj->READ && $o_obj->exists([$oid]);
+				print $o_obj->format($call, 'h') if $o_obj->READ && $o_obj->exists([$oid]);
 			}
 		}
     }
@@ -840,10 +847,13 @@ sub bidmids {
     my $cgi  = $self->cgi();
 
     my @bids = $cgi->param('bidmids');
+	my $o_msg= $self->object('message');
 
 	$self->dof('H');
 	foreach my $bid (@bids) {
 		print $self->dob([$bid]);
+        my @mids = $self->object('bug')->rel_ids('message');
+        print $self->dom(\@mids);
 	}
 
     return '';
@@ -928,7 +938,7 @@ sub groups {
 		my $desc = $cgi->textfield(-'name' => 'adddescription', -'value' => '', -'size' => 35, -'maxlength' => 99, -'override' => 1);
 		$groups .= "<tr><td><b>Description for new group:</b></td><td>&nbsp;$desc</td></tr>";
 
-		my $admins = $o_usr->selector('addusers');
+		my $admins = $o_usr->choice('addusers');
 		$groups .= "<tr><td><b>New group members:</b></td><td>&nbsp;$admins</td></tr>";
 		
 		$groups .= "</table><hr>";
@@ -968,8 +978,9 @@ sub spec {
 	my $dynaspec = qq|
 		<table border=0 align=center>
 			<tr><td><pre>$dynamic</pre></td></tr>
-			<tr><td><pre>$spec</pre></td></tr>
 		</table>
+		<hr>
+		$spec
 	|;
 	print $dynaspec;
     return '';
@@ -999,9 +1010,7 @@ sub webhelp {
 			<tr><td><pre>$perlbug</pre><hr></td></tr>
 		</table>
 		<hr>
-		<table border=0 align=center>
-			<tr><td> $webhelp </td></tr>
-		</table>
+	$webhelp
     |;	
 	print $help;
 
@@ -1032,9 +1041,7 @@ sub mailhelp { #mailhelp
 			<tr><td><pre>$perlbug_help</pre><hr></td></tr>
 		</table>
 		<hr>
-		<table border=0 align=center>
-			<tr><td><pre>$help</pre></td></tr>
-		</table>
+		$help
     |;	
 	print $HELP;
 	return '';
@@ -1146,7 +1153,8 @@ sub web_query {
 
 	my $o_bug = $self->object('bug');
 	my $found = my @bids = $o_bug->ids($sql);
-	print "Found $found relevant bug ids<br>";
+	my $s = ($found == 1) ? '' : 's';
+	print "Found $found relevant bug id$s<br>";
 
 	if (@bids) {
 		my $o_rng = $self->object('range');
@@ -1258,13 +1266,13 @@ sub search {
 	my $SHOWSQL = $self->help_ref('show_sql', 'Show SQL');
 	my $ANDOR	= $self->help_ref('and_or', 'Boolean');
 	my $ASCD	= $self->help_ref('asc_desc', 'Asc/Desc by bugid');
-	my $NOTE	= $self->help_ref('note', 'Note ID');	# <a href="$url?req=help">help</a>	
+	my $NOTE	= $self->help_ref('note', 'Note ID');	# <a href="$url?req=webhelp">help</a>	
 	my $PATCH 	= $self->help_ref('patch', 'Patch ID');
 	my $TEST	= $self->help_ref('test', 'Test ID');
 	my $PROJECT = $self->help_ref('project', 'Project');
 	my $form = qq|
 	    <table border=1><tr><td colspan=5><i>
-	    Select from the options (see <a href="$url?req=help">help</a>) available, then click the query button.<br>  
+	    Select from the options (see <a href="$url?req=webhelp">help</a>) available, then click the query button.<br>  
 	    </td></tr>
 	    <tr><td><b>$BUG:</b><br>$bugid</td><td><b>$VERSION:<br></b>&nbsp;$version</td><td><b>$FIXED:<br></b>&nbsp;$fixedin</td><td><b>$CHANGE</b><br>$changeid</td></tr>
 	    <tr><td><b>$STAT:</b><br>$status</td><td><b>$CAT:</b><br>$group</td><td><b>$SEV:</b><br>$severity</td><td><b>$OS:</b><br>$osnames</td></tr>
@@ -1306,7 +1314,6 @@ sub update {
     my $self = shift;
     my $req  = shift;
 
-	my $nocc = ($req eq 'nocc') ? 1 : 0;
 	my $orig_fmt = $self->current('format');
 	my $orig_cxt = $self->current('context');
 
@@ -1418,6 +1425,7 @@ sub update {
         	# my $orig = $self->current_status($bid);
 			my $orig = $o_bug->format('a');	
         	$self->dok([$bid]);
+
 			my %update = ();
 			REL: # space separated(str2ids), store/assign(friendly/prejudicial)
 			foreach my $rel ($o_bug->rels) { 
@@ -1428,23 +1436,23 @@ sub update {
 					: $cgi->param($bid."_$rel");				# plain
 				my $type = ($rel =~ /(address|change|child|fixed|parent|version)/) 
 					? 'names' : 'ids';
-				$update{$rel}{$type} = \@update if scalar(@update) >= 1;
+				my @extant = $o_bug->rel_ids($rel);
+				$update{$rel}{$type} = [(@update, @extant)] if scalar(@update) >= 1;
 			}				
 			my $i_rel = $o_bug->relate(\%update);
 			$self->debug(1, "  called ids(".(scalar(keys %update)).") -> $i_rel");
 
 			if ($self->current('mailing') == 1) {
-				my $ix = $self->notify_cc($bid, $orig) unless $nocc eq 'nocc'; 
+				my $ix = $self->notify_cc($bid, $orig) unless $req eq 'nocc'; 
 			}
-			my $i_newnoteid  = $self->doN($bid, $cgi->param($bid.'_newnote'),  '') if $cgi->param($bid.'_newnote');
-			my $i_newpatchid = $self->doP($bid, $cgi->param($bid.'_newpatch'), '') if $cgi->param($bid.'_newpatch');
-			my $i_newtestid  = $self->doT($bid, $cgi->param($bid.'_newtest'),  '') if $cgi->param($bid.'_newtest');
-			my @cids = split(/\s+/, $cgi->param($bid.'_change'));
-			
-			if ($i_newpatchid =~ /\w+/o && scalar(@cids) >= 1) {
-				$self->debug(2, "given both a new patchid($i_newpatchid) and changeids(@cids), updating patches too!") if $Perlbug::DEBUG;
-				my $o_pat = $self->object('patch')->read($i_newpatchid);
-				$o_pat->relation('change')->assign(\@cids) if $o_pat->READ;
+
+			# my $i_newnoteid  = $self->doN($bid, $cgi->param($bid.'_new_note'),  '') 
+			foreach my $targ (qw(note patch test)) {
+				my $call = 'do'.uc(substr($targ, 0, 1));
+				my $i_newid  = $self->$call({
+					'opts'	=> "req($req): $bid", 
+					'body'	=> $cgi->param($bid.'_new_'.$targ),
+				}) if $cgi->param($bid.'_new_'.$targ);
 			}
 			my $ref = "<p>Bug ($bid) updated $Mysql::db_errstr<p>";
 			$self->debug(2, $ref) if $Perlbug::DEBUG;
@@ -1574,10 +1582,12 @@ sub current_buttons {
 	        'update'    => $cgi->submit(@name, -'value' => 'update', @submit),
 	    );
 
+		my $help = $self->help_ref('submit', 'Help');
+
         foreach my $key (@keys) { # set
 		    $buttons .= "&nbsp; $map{$key}\n";
     	} 
-		$buttons .= "<br>\n";
+		$buttons .= "&nbsp; $help<br>\n";
 	}   
 
 	return $buttons; 
@@ -1608,7 +1618,7 @@ sub file_ext { return '.html'; }
 
 =item help_ref
 
-creates something of the form: C<<a href="http://bugs.per.org/perlbug.cgi?req=help\#note">Note</a>>
+creates something of the form: C<<a href="http://bugs.per.org/perlbug.cgi?req=webhelp\#item_note">Note</a>>
 
 	my $note = $self->help_ref('note');	
 
@@ -1620,7 +1630,7 @@ sub help_ref {
 	my $title= shift || $targ; 
     my $url  = $self->myurl;
 
-	my $sect = ($targ =~ /\w+/o) ? "\#$targ" : '';
+	my $sect = ($targ =~ /\w+/o) ? "\#item_$targ" : '';
 	my $with = ($targ =~ /\w+/o) ? "help with $targ parameters" : 'general help overview';
 	my $hint = "click for $with";
 	my $help = qq|<a 
@@ -1660,8 +1670,6 @@ Can be optimised somewhat ...
 sub format_query {
     my $self = shift;
     my $cgi = $self->cgi();
-
-	print $cgi->dump if $Perlbug::DEBUG =~ /[23]/o;
 
     my %dates = $self->date_hash; 
     # parameters
@@ -1883,7 +1891,8 @@ sub format_query {
 			my $x = $1;
 			$wnt++;
 			($x) = $o_status->name2id([$x]) if $x !~ /^\d+$/;
-			$fnd += my @ids = $o_status->relation('bug')->ids("statusid = '$x'");
+			my $xtra = ($status =~ /open/i) ? "OR status = ''" : '';
+			$fnd += my @ids = $o_status->relation('bug')->ids("statusid = '$x' $xtra");
 			print "Found ".@ids." bug_status relations from statusid($x)<br>";
 			my $found = join("', '", @ids);	
 			$sql .= " $andor bugid IN ('$found') " if scalar(@ids) >= 1;

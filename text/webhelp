@@ -7,8 +7,8 @@ DESCRIPTION
 
 SEARCH
     mask
-        The search mask has no pre-selected entries, click query and an
-        indiscriminate list of all the bugs in the database will be
+        The search mask/fields, have no pre-selected entries, click query
+        and an indiscriminate list of all the bugs in the database will be
         returned.
 
         Filterering is achieved by selecting options from the popup menus,
@@ -58,6 +58,10 @@ SEARCH
         divides the remainder up into similarly sized chunks for convenient
         browsing thereafter.
 
+    messages
+        Restrict returns to bugs which have this many messages/replies in
+        the thread.
+
     show_sql
         Display the SQL executed. This may help to pinpoint problems where
         searches are not returning expected results.
@@ -68,19 +72,19 @@ SEARCH
         this document and /fixed fields are used as seen, that is, if a
         wildcard is not provided, one will not be used.
 
-        Conversly subject, body and source address fields have '%'
+        Conversly subject, body and source address fields have "%"
         pre-placed around the search query by default.
 
-        What this means is that entering '20001122.', in the bugid field,
-        will probably not return much, but '20001122.%'' might. Of course a
-        complete bugid could be entered on it's own eg: '20001122.003'
-        Whereas entering only strict in the subject field will still use
-        '%strict%' during the search.
+        What this means is that entering 20001122., in the bugid field, will
+        probably not return much, but "20001122.%"' might. Of course a
+        complete bugid could be entered on it's own eg: 20001122.003 Whereas
+        entering only strict in the subject field will still use "%strict%"
+        during the search.
 
-        The available SQL wildcards: any single character '_' and none or
-        more characters '%' are allowed in all fields. Note also that for
-        convenience(?), an asterisk('*') will be simply mapped to the sql
-        wildcard '%''.
+        The available SQL wildcards: any single character "_" and none or
+        more characters "%" are allowed in all fields. Note also that for
+        convenience(?), an asterisk("*") will be simply mapped to the sql
+        wildcard "%"'.
 
         N.B. It can be a good idea to use the the show_sql entry elsewhere
         in this document switch to display what's being searched for.
@@ -95,6 +99,41 @@ SEARCH
         without having to hop around.
 
         the DESCRIPTION manpage
+
+SUBMIT
+        The submit buttons available are as follows:
+
+    Query
+        submit the query to the database interface
+
+    Reset
+        reset the form to the default values
+
+  administrative
+
+        For admins only:
+
+    Update
+        update the selected record/s shown
+
+    Nocc
+        same as update, but don't send any email notifications of the
+        changes
+
+    Select
+        select all shown record/s
+
+    Unselect
+        deselect all shown record/s
+
+    Admin
+        switch from the noadmin view to the admin view
+
+    Noadmin
+        switch from the admin view to the noadmin view
+
+    Delete
+        delete the selected shown record/s
 
 OBJECTS
     Certain fields are common to all objects:
@@ -139,7 +178,11 @@ BUG
 
             duplicate   -       a report erroneously filed a second time
 
+            incapable   -       considered not doable
+
             ok          -       a 'build reported OK:' report, (not the same as closed)
+
+            notok         -     opposite of B<ok>
 
             onhold      -       undecided as to whether this is a bug or not
 

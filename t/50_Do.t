@@ -1,24 +1,22 @@
 #!/usr/bin/perl -w
 # Do tests for Perlbug do(f h d)
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 50_Do.t,v 1.8 2001/09/18 13:37:50 richardf Exp $
+# $Id: 50_Do.t,v 1.9 2001/12/01 15:24:43 richardf Exp $
 #
-BEGIN {
-	use File::Spec; 
-	use lib File::Spec->updir;
-	use Perlbug::Test;
-	plan('tests' => 4);
-}
 use strict;
 use lib qw(../);
-my $test = 0;
 
 
 # Libs
 # -----------------------------------------------------------------------------
 use Perlbug::Base;
-my $o_perlbug = '';
+use Perlbug::Test;
+my $o_perlbug = Perlbug::Base->new;
+my $o_test = Perlbug::Test->new($o_perlbug);
 my $context = 'not defined';
+
+my $test = 0;
+plan('tests' => 4);
 
 # Tests
 # -----------------------------------------------------------------------------
@@ -26,8 +24,7 @@ my $context = 'not defined';
 # 1
 # Libraries callable? 
 $test++; 
-if ($o_perlbug = Perlbug::Base->new) {	
-	$o_perlbug->current('isatest', 1);
+if (ref($o_perlbug)) {
 	ok($test);
 } else {
 	ok(0);

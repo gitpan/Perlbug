@@ -1,8 +1,9 @@
 #!/usr/bin/perl -w
-# Email tests for Perlbug: parse_input($o_int) => to|subject|etc. -> $cmd{'b'} => 'bugid'
+# Email tests for Perlbug: parse_input($o_int) -> { 'b' => 'bugid' }
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 73_Email.t,v 1.6 2001/10/05 08:19:45 richardf Exp $
+# $Id: 73_Email.t,v 1.7 2001/12/01 15:24:43 richardf Exp $
 #
+# Note: this does NOT test parse_header()!
 
 # Setup
 # -----------------------------------------------------------------------------
@@ -23,6 +24,8 @@ my $SUBJECT = 'some irrelevant subject matter';
 # Tests - odd=bugdb@perl.org, even=*@bugs.perl.org (equivalent)
 # -----------------------------------------------------------------------------
 my $ifadmin = $o_mail->isadmin ? 'a' : 'v';
+my $inreplytomsgid = $o_test->inreplytomsgid;
+my $inreplytobugid = $o_test->inreplytobugid;
 my %tests = (
 	'bounce'	=> [
 		{ 
@@ -47,46 +50,6 @@ my %tests = (
 		},
 		{ #  
 			'expected'	=> { 
-				'bounce'	=> [$o_mail->message('nomatch')],
-			},
-			'header'	=> {
-				'To'		=> 'bug@'.$o_test->DOMAIN,
-				'Subject'	=> 'Get more hair tomorrow! but no perl in body',
-				'From'		=> $o_test->from,
-			},
-		},
-		{ # 
-			'expected'	=> { 
-				'bounce'	=> [$o_mail->message('nobugids')],
-			},
-			'header'	=> {
-				'To'		=> 'Note@'.$o_test->DOMAIN,
-				'Subject'	=> "a new note but no bugid",
-				'From'		=> $o_test->from,
-			},
-		},
-		{ # 
-			'expected'	=> { 
-				'bounce'	=> [$o_mail->message('nobugids')],
-			},
-			'header'	=> {
-				'To'		=> 'PATCH_xyz@'.$o_test->DOMAIN,
-				'Subject'	=> "a new patch but no bugid",
-				'From'		=> $o_test->from,
-			},
-		},
-		{ # 
-			'expected'	=> { 
-				'bounce'	=> [$o_mail->message('nobugids')],
-			},
-			'header'	=> {
-				'To'		=> 'test_NOBUGID@'.$o_test->DOMAIN,
-				'Subject'	=> "a new test but no bugid",
-				'From'		=> $o_test->from,
-			},
-		},
-		{ #  
-			'expected'	=> { 
 				'nocommand'	=> [$o_mail->message('nocommand')],
 			},
 			'header'	=> {
@@ -105,7 +68,16 @@ my %tests = (
 				'From'		=> $o_test->from,
 			},
 		},
-
+		{ # 
+			'expected'	=> { 
+				'bounce'	=> [$o_mail->message('nobugids')],
+			},
+			'header'	=> {
+				'To'		=> 'Note@'.$o_test->DOMAIN,
+				'Subject'	=> 'a new note but no bugid',
+				'From'		=> $o_test->from,
+			},
+		},
 	],
 	'bug'	=> [
 		{ # 
@@ -175,15 +147,30 @@ my %tests = (
 				perl
 			|,
 		},
+		{ # 
+			'expected'	=> { 				
+				'B'	=> 'bug',
+			},
+			'header'	=> {
+				'To'		=> 'bUG@'.$o_test->DOMAIN,
+				'Subject'	=> 'a new to/body bug',
+				'From'		=> $o_test->from,
+			},
+			'body'		=> qq|
+				perl
+			|,
+		},
 	],
 	'forward'	=> [
 		{ # 
 			'expected'	=> { 
-				'v'			=> [q|please forward this one|],
+				# 'v'			=> [q|please forward this one|],
+				'v'			=> [q|admins|],
 			},
 			'header'	=> {
-				'To'		=> $o_test->bugdb,
-				'Subject'	=> "-v please forward this one",
+				# 'To'		=> $o_test->bugdb, # rjsf
+				'To'		=> 'admins@'.$o_test->DOMAIN,
+				'Subject'	=> '-v please forward this one',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -193,7 +180,7 @@ my %tests = (
 			},
 			'header'	=> {
 				'To'		=> 'ADMINS_@'.$o_test->DOMAIN,
-				'Subject'	=> "please forward this two",
+				'Subject'	=> 'please forward this two',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -203,7 +190,7 @@ my %tests = (
 			},
 			'header'	=> {
 				'To'		=> 'Admins@'.$o_test->DOMAIN,
-				'Subject'	=> "please forward this three",
+				'Subject'	=> 'please forward this three',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -215,7 +202,7 @@ my %tests = (
 			},
 			'header'	=> {
 				'To'		=> $o_test->bugdb,
-				'Subject'	=> "-h",
+				'Subject'	=> '-h',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -226,6 +213,16 @@ my %tests = (
 			'header'	=> {
 				'To'		=> 'hElp@'.$o_test->DOMAIN,
 				'Subject'	=> $SUBJECT,
+				'From'		=> $o_test->from,
+			},
+		},
+		{ #  
+			'expected'	=> { 
+				'H'	=> [$o_mail->message('nocommand')],
+			},
+			'header'	=> {
+				'To'		=> 'not_a_bug@'.$o_test->DOMAIN,
+				'Subject'	=> 'Get more hair tomorrow! but no perl in body',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -329,7 +326,7 @@ my %tests = (
 				'Cc'		=> $o_test->forward,
 				'Subject'	=> 'Re; that in - reply - to bug',
 				'From'		=> $o_test->from,
-				'In-Reply-To'	=> $o_test->inreplyto,
+				'In-Reply-To'	=> $inreplytomsgid,
 			},
 		},
 	],
@@ -362,7 +359,7 @@ my %tests = (
 			'header'	=> {
 				'To'		=> 'somebody@somewhere.com',
 				'Cc'		=> 'NoTe_'.$BUGID.'@'.$o_test->DOMAIN,
-				'Subject'	=> "ccd note",
+				'Subject'	=> 'ccd note',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -375,7 +372,7 @@ my %tests = (
 			},
 			'header'	=> {
 				'To'		=> $o_test->bugdb,
-				'Subject'	=> "-o -H",
+				'Subject'	=> '-o -H',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -385,7 +382,7 @@ my %tests = (
 			},
 			'header'	=> {
 				'To'		=> 'overview@'.$o_test->DOMAIN,
-				'Subject'	=> "an overview request",
+				'Subject'	=> 'an overview request',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -398,7 +395,7 @@ my %tests = (
 			'header'	=> {
 				'To'		=> 'somebody@somewhere.com',
 				'Cc'		=> $o_test->bugdb,
-				'Subject'	=> "-P 19990422.001 123",
+				'Subject'	=> '-P 19990422.001 123',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -409,7 +406,7 @@ my %tests = (
 			'header'	=> {
 				'To'		=> 'somebody@somewhere.com',
 				'Cc'		=> 'patch_19990422.001_123@'.$o_test->DOMAIN,
-				'Subject'	=> "ccd administration",
+				'Subject'	=> 'ccd administration',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -483,7 +480,7 @@ my %tests = (
 			},
 			'header'	=> {
 				'To'		=> $o_test->bugdb,
-				'Subject'	=> "-q select * from pb_bug",
+				'Subject'	=> '-q select * from pb_bug',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -493,7 +490,7 @@ my %tests = (
 			},
 			'header'	=> {
 				'To'		=> 'query@'.$o_test->DOMAIN,
-				'Subject'	=> "select * from pb_bug",
+				'Subject'	=> 'select * from pb_bug',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -509,7 +506,6 @@ my %tests = (
 				'From'		=> $o_test->from,
 			},
 		},
-
 		{ # 
 			'expected'	=> { 
 				'quiet'		=> [$o_mail->message('quiet')],
@@ -594,49 +590,68 @@ my %tests = (
 	'reply'	=> [
 		{ # 
 			'expected'	=> { 
-				'M'	=> $o_test->bugid,
+				'M'		=> $o_test->bugid,
 			},
 			'header'	=> {
 				'To'		=> $o_test->forward,
-				'Subject'	=> 'Re; there bug '.$o_test->bugid,
+				'Subject'	=> 'Re; reply via this subject line '.$BUGID,
 				'From'		=> $o_test->from,
 			},
 		},
 		{ # 
 			'expected'	=> { 
-				'M'	=> $o_test->irep,
+				'M'		=> $inreplytobugid,
 			},
 			'header'	=> {
 				'To'		=> $o_test->forward,
-				'Subject'	=> 'Re; them in-reply bug',
+				'Subject'	=> 'Re; reply via in-reply-to line',
 				'From'		=> $o_test->from,
-				'In-Reply-To'	=> $o_test->inreplyto,
+				'In-Reply-To'	=> $inreplytomsgid,
+			},
+		},	,
+		{ # 
+			'expected'	=> { 
+				'M'		=> $inreplytobugid,
+			},
+			'header'	=> {
+				'To'		=> $o_test->forward,
+				'Subject'	=> 'Re; reply via in-reply-to line',
+				'From'		=> $o_test->from,
+				'In-Reply-To'	=> ' your mail: '.$inreplytomsgid.' "xtra"',
 			},
 		},	
 		{ # 
 			'expected'	=> { 
-				'M'	=> 'reply_'.$BUGID,
+				'M'		=> 'reply_'.$BUGID,
 			},
 			'header'	=> {
 				'To'		=> "reply_$BUGID\@".$o_test->DOMAIN,
-				'Subject'	=> 'Re; reply in to line',
+				'Subject'	=> 'Re; reply via to line',
 				'From'		=> $o_test->from,
 			},
 		},	
-
-	],
-	'test'	=> [
 		{ # 
 			'expected'	=> { 
-				'T'	=> $BUGID,
+				'M'		=> 'reply_123'.$BUGID.'789',
 			},
 			'header'	=> {
-				'To'		=> 'somebody@somewhere.com',
-				'Cc'		=> $o_test->bugdb,
-				'Subject'	=> "-T $BUGID",
+				'To'		=> "reply_123${BUGID}789\@".$o_test->DOMAIN,
+				'Subject'	=> 'Re; reply via to line with extended bugid',
 				'From'		=> $o_test->from,
 			},
-		},
+		},	
+		{ # 
+			'expected'	=> { 
+				'M'		=> 'reply_'.$BUGID.'_'.$BUGID,
+			},
+			'header'	=> {
+				'To'		=> "REPLy_${BUGID}_$BUGID\@".$o_test->DOMAIN,
+				'Subject'	=> 'Re; reply via to line',
+				'From'		=> $o_test->from,
+			},
+		},	
+	],
+	'test'	=> [
 		{ # 
 			'expected'	=> { 
 				'T'	=> 'test_'.$BUGID,
@@ -644,7 +659,7 @@ my %tests = (
 			'header'	=> {
 				'To'		=> 'somebody@somewhere.com',
 				'Cc'		=> 'teST_'.$BUGID.'@'.$o_test->DOMAIN,
-				'Subject'	=> "ccd test",
+				'Subject'	=> 'ccd test',
 				'From'		=> $o_test->from,
 			},
 		},
@@ -655,6 +670,17 @@ my %tests = (
 			'header'	=> {
 				'To'		=> "Test$BUGID@".$o_test->DOMAIN,
 				'Subject'	=> 'a new test in to bugid',
+				'From'		=> $o_test->from,
+			},
+		},
+		{ # 
+			'expected'	=> { 
+				'T'	=> $BUGID,
+			},
+			'header'	=> {
+				'To'		=> 'somebody@somewhere.com',
+				'Cc'		=> $o_test->bugdb,
+				'Subject'	=> "-T $BUGID",
 				'From'		=> $o_test->from,
 			},
 		},
@@ -694,7 +720,6 @@ my %tests = (
 
 	],
 );
-
 
 # How many?
 plan('tests' => scalar(keys %tests));
@@ -754,10 +779,10 @@ foreach my $type (sort keys %tests) {				# a_bounce, a_bug etc.
 			}	
 			if (scalar(keys %cmds) >= 1) {
 				$i_err++;
-				output("Redundant commands: ".Dumper(\%cmds));
+				output("Redundant commands: ".Dumper(\%cmds)) if $Perlbug::DEBUG;
 			}
 		}
-		output("Failed to parse test($type): ".Dumper($h_test)) unless $i_err == 0; 
+		output("Failed to parse test($type)") unless $i_err == 0; 
 	}
 	ok(($i_err == 0) ? $i_test : 0);
 }	# each type 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Base object calls
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 21_Base.t,v 1.1 2001/09/18 13:37:50 richardf Exp $
+# $Id: 21_Base.t,v 1.2 2001/12/01 15:24:43 richardf Exp $
 #
 
 use strict;
@@ -65,7 +65,7 @@ foreach my $type (sort keys %tests) {
 		  ) {
 			$i_err++;
 			output("Mis-matching($type) args(@args) => expected($expected) result($result)");
-			output('Header: '.Dumper($h_test));
+			output('Header: '.Dumper($h_test)) if $Perlbug::DEBUG;
 			last TEST;
 		}
 	} # each test

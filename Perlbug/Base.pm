@@ -1,6 +1,6 @@
 # Perlbug base class 
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Base.pm,v 1.89 2001/10/22 15:29:50 richardf Exp $
+# $Id: Base.pm,v 1.91 2001/12/03 10:39:20 richardf Exp $
 # 
 # TODO
 # see scan
@@ -21,8 +21,8 @@ see L<Perlbug::Interface::Cmd>, L<Perlbug::Interface::Web> etc.
 package Perlbug::Base;
 use strict; 
 use vars qw($AUTOLOAD @ISA $VERSION); 
-$VERSION = do { my @r = (q$Revision: 1.89 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
-@ISA = qw(Perlbug::Do); 
+$VERSION = do { my @r = (q$Revision: 1.91 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
+@ISA = qw(Perlbug::Do Perlbug::Utility); 
 $| = 1; 
 
 # internal utilities
@@ -30,6 +30,7 @@ use Perlbug; # version, debug and docs
 use Perlbug::Config;
 use Perlbug::Database;
 use Perlbug::Do;
+use Perlbug::Utility;
 #use Perlbug::File; 
 #use Perlbug::Object;
 #use Perlbug::Relation;
@@ -121,7 +122,7 @@ sub init {
 
 	$o_CONF = $self->conf(@_); 
 
-	$CACHE_TIME{'INIT'} = Benchmark->new; 
+	$CACHE_TIME{'INIT'} = Benchmark->new if $Perlbug::DEBUG;
 	$Perlbug::i_LOG = 0;
 	%DB 	= $o_CONF->get_all('database');
 	$o_DB   = Perlbug::Database->new(%DB);
@@ -133,7 +134,7 @@ sub init {
     if (!($enabler)) {     # OK 
         croak($self, "Enabler($enabler) disabled($Perlbug::VERSION) - not OK ($$ - $0) - cutting out!");
     } else {
-		$CACHE_TIME{'PREP'} = Benchmark->new; 
+		$CACHE_TIME{'PREP'} = Benchmark->new if $Perlbug::DEBUG; 
 		my $version = $self->version;
 		my $userid  = $self->isadmin;
 		$self->debug(0, "INIT $version ($$) debug($Perlbug::DEBUG) scr($0)  user($userid)") if $Perlbug::DEBUG; 
@@ -149,7 +150,7 @@ sub init {
 				$self->debug(3, "Base: $title $version loaded($i_obj) $obj object($o_obj)") if $Perlbug::DEBUG; 
 			}
 		}
-		$CACHE_TIME{'LOAD'} = Benchmark->new; 
+		$CACHE_TIME{'LOAD'} = Benchmark->new if $Perlbug::DEBUG;
 	}
 
     return $self;
@@ -190,6 +191,7 @@ sub cgi {
 	}
 
 	unless (ref($cgi)) {
+		$req = '-nodebug' unless $0 =~ /cgi$/; # context eq 'http'
 		$cgi = $self->{'_cgi'} = CGI->new($req, @_);
 	}
 		
@@ -340,6 +342,34 @@ sub get_rand_msgid {
 }
 
 
+=item splice
+
+Returns a given Mail::Internet object s(p)liced up into useful bits.
+
+    my ($o_hdr, $header, $body) = $self->splice($o_int); # todo ---sig
+
+=cut
+
+sub splice {
+    my $self  = shift;
+	my $o_int = shift;
+
+	my @data = ();
+	if (!ref($o_int)) {	
+		$self->debug(0, "Can't splice inappropriate mail($o_int) object")
+	} else {
+		# $o_int->remove_sig;
+		@data = (
+			$o_int->head,
+			join('', @{$o_int->head->header}),
+			join('', @{$o_int->body}),
+		);
+	}
+
+	return @data;
+}
+
+
 =item object
 
 Return appropriate (cached) object:
@@ -408,17 +438,6 @@ sub object {
 }
 
 
-=item cachable
-
-Return cachable status for application
-
-	my $i_ok = $o_base->xcachable(); # 1 or 0
-
-=cut
-
-sub xcachable { my $self = shift; return $self->system('cachable'); }
-
-
 =item version
 
 Get Perlbug::Version
@@ -440,12 +459,16 @@ Get and set isa test status
 
 sub isatest { 
 	my $self = shift;
-	my $arg = shift || '';
-	if ($arg =~ /^([012])$/o) {
-		my ($res) = $self->current({'isatest', $1});
-		$self->debug(1, "setting isatest($arg)->res($res)") if $Perlbug::DEBUG;
+	my $arg  = shift || '';
+	my $res  = my $orig = $self->current('isatest');
+
+	if ($arg =~ /^([01])$/o) {
+		$res = $self->current({'isatest', $1});
 	}
-	return $self->current('isatest');
+
+	$self->debug(2, "isatest($arg) orig($orig) => res($res)") if $Perlbug::DEBUG;
+
+	return $res;
 }
 
 
@@ -487,17 +510,21 @@ sub href {
 
 =item dodgy_addresses
 
-Returns quoted, OR-d dodgy addresses prepared for a pattern match ...|...|...
+Returns quotemeta'd, OR-d dodgy addresses prepared for a pattern match ...|...|...
 
-	my $regex = $o_obj->dodgy_addresses('from'); # $rex = 'perlbug\@perl\.com|perl5\-porters\@perl\.org|...'
+	my $regex = $o_obj->dodgy_addresses('from'); 
+	
+	# $regex  = 'perlbug\@perl\.com|perl5\-porters\@perl\.org|...'
 
 =cut
+
+# rjsf: Should be addresses()
 
 sub dodgy_addresses { # context sensitive (in|out|to|from)
     my $self  = shift;
     my $scope = shift; # (from|to|cc|test...
+	my $dodgy = '';
 
-	my $i_ok  = 1;
 	my @duff  = (qw(MAILER-DAEMON postmaster)); 
 	my @targs = $self->get_vals('target');
 	my @frwds = $self->get_vals('forward');
@@ -505,23 +532,23 @@ sub dodgy_addresses { # context sensitive (in|out|to|from)
 		push(@duff, @targs, @frwds,
 				    $self->email('bugdb'),      $self->email('bugtron'));
 	} elsif ($scope =~ /^(to|cc|reply-to)$/io) {			# TO   - don't send mails in this direction
-		push(@duff, @targs,
-					$self->email('bugdb'), $self->email('bugtron'));
+		push(@duff, @targs, $self->email('bugdb'), $self->email('bugtron'));
 	} elsif ($scope =~ /^test$/io) {						# TEST
 		push(@duff, $self->email('test'), $self->target('test'), $self->forward('test'));
 	} else { 											# ANY
 		push(@duff); # could get paranoid :-)
 	}
 	chomp(@duff); # just in case
-	my $dodgy = '';
+
+	DUFF:
     foreach my $duff ( map {split(/\s+/, $_) } @duff) {
         next unless $duff =~ /\w+/o;
         $dodgy .= quotemeta($duff).'|';
     }
     chomp $dodgy; # just in case again
+
     $dodgy =~ s/^(.+)?\|/$1/;
-    undef $dodgy unless $i_ok == 1; # something in it for example?
-	$self->debug(3, "dodgy_addresses($scope) -> '$dodgy'") if $Perlbug::DEBUG;
+	$self->debug(3, "addresses($scope) -> '$dodgy'") if $Perlbug::DEBUG;
 
 	return $dodgy; # regex 
 }
@@ -588,8 +615,8 @@ sub flags {
     my $arg  = shift;
     my @flags = ();
 
-	my $types = join('|', qw(group osname project severity status version)); # yek
-	# my $types = $self->object('object')->names("type = 'flag'");
+	# my $types = join('|', qw(group osname project severity status version)); # yek
+	my $types = join('|', ($self->object('object')->names("type = 'flag'"), 'group'));
     if ($arg !~ /^($types)$/) {
         $self->error("Can't get flags for invalid arg($arg)");
     } else {
@@ -617,7 +644,8 @@ Return all flags available in db keyed by type/ident.
 sub all_flags {
     my $self  = shift;
     my %flags = ();
-	my @types = qw(group osname project severity status version); # yek
+	# my @types = qw(fixed group osname project severity status version); # yek
+	my @types = ($self->object('object')->names("type = 'flag'"), 'group');
 	foreach my $flag (@types) {
 		my @flags = $self->flags($flag);
 		$flags{$flag} = \@flags;        
@@ -747,8 +775,8 @@ sub check_user {
 			next if $id =~ /generic/io;
 	        if (($id =~ /^\w+$/o) && ($id =~ /$user/)) {
 				$self->current({'admin', $id});
-	            $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
-	            $self->debug(1, "given param ($user) taken as admin id ($id), switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
+	            # $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
+	            $self->debug(1, "given param ($user) taken as admin id ($id)"); # , switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
 	            last ID;
 	        } else {
 				$self->debug(1, "unrecognised user($user) id($id)") if $Perlbug::DEBUG;
@@ -757,8 +785,8 @@ sub check_user {
 	} else {
 		$self->debug(2, "unrestricted...") if $Perlbug::DEBUG;
         $self->current({'admin', $user});
-        $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
-	    $self->debug(1, "Non-restricted user($user) taken as admin id, switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
+        # $self->current({'switches', $self->system('user_switches').$self->system('admin_switches')});
+	    $self->debug(1, "Non-restricted user($user) taken as admin id"); # , switches set: ".$self->current('switches')) if $Perlbug::DEBUG;
 	}
 	$self->debug(1, "check_user($user)->'".$self->isadmin."'") if $Perlbug::DEBUG;
 	return $self->isadmin;
@@ -784,31 +812,33 @@ sub isadmin { # retrieve admin flag (and id)
 }
 
 
-=item get_switches
+=item switches
 
-Returns array of current switches, rather than string
+Returns array of appropriate switches based on B<isadmin> or arg.
 
-	my @switches = $o_pb->get_switches('user');
+	my @switches = $o_pb->switches([admin|user]); # exlusive
 
 =cut
 
-sub get_switches { # current or admin|user
+sub switches { # admin|user
     my $self = shift;
 	my $arg  = shift || '';
 	my @switches = ();
 
-	# my @admin_switches = split(//, $self->system('admin_switches'));
-	# my @user_switches  = split(//, $self->system('user_switches'));
+	my @admin = split(//, $self->system('admin_switches'));
+	my @user  = split(//, $self->system('user_switches'));
 
 	if ($arg eq 'admin') {
-		@switches = split(//, $self->system('admin_switches'));
+		@switches = @admin;
 	} elsif ($arg eq 'user') {
-		@switches = split(//, $self->system('user_switches'));
+		@switches = @user;
 	} else {
-		@switches = split(//, $self->current('switches'));
+		@switches = ($self->isadmin) ? (@admin, @user) : @user;
 	}
 
-	@switches = ($self->isadmin =~ /^richardf$/o) ? grep(/^(\w|\!)$/, @switches) : grep(/^\w$/, @switches);
+	@switches = sort grep(/^\w$/, @switches);
+	
+	$self->debug(2, "in($arg) out(".join(', ', @switches).')') if $Perlbug::DEBUG;
 
     return @switches;
 }
@@ -1034,11 +1064,11 @@ sub get_data {
 				}
 			}
 			# $self->rows($sth);
-    		$self->debug('S', 'found '.$sth->rows.' rows') if $Perlbug::DEBUG;
+			$CACHE_SQL{$sql} = $a_info if $self->system('cachable');
+    		$self->debug('S', 'found '.$sth->rows." rows($a_info): ".Dumper($a_info)) if $Perlbug::DEBUG;
     	}
 		undef $sth;
 	}
-	$CACHE_SQL{$sql} = $a_info if $self->system('cachable');
 	# $self->debug('S', $a_info) if $Perlbug::DEBUG;
 	return @{$a_info}; 
 }    
@@ -1145,37 +1175,39 @@ sub notify {
 					$replyto = $o_hdr->get('Reply-To');
 					$to      = $o_hdr->get('To');
 					chomp(@cc, $from, $orig, $replyto, $subject, $to); 
-					$subject  = " [ID $oid] $orig"; # ucfirst($obj)
+					$subject  = ($obj =~ 'bug' ? '' : ucfirst($obj))." [ID $oid] $orig";
 
-					# ACKNOWLEDGE 
-					if ($body =~ /(ack(knowledge)*=no)/iso) {
-						$self->debug(1, "body contains ack(\w+)=no -> not acknowledging!") if $Perlbug::DEBUG;
+					# ACKNOWLEDGE - noack
+					if (grep(/noack/io, $to, @cc) || $body =~ /(ack(knowledge)*=no)/iso) {
+						$self->debug(1, "body(to|cc) contains ack(\w+)=no -> not acknowledging!") if $Perlbug::DEBUG;
 					} else {
+						$self->debug(1, "body(to|cc) doesn't contain ack(\w+)=no -> acknowledging") if $Perlbug::DEBUG;
 						my $o_ack = $self->get_header($o_hdr);
 						$o_ack->replace('Subject', "Ack - $subject");
 						$o_ack->replace('To', $self->from($replyto, $from)); 
-
 						my $response = join('', $self->read('response'));
 						my $footer   = join('', $self->read('footer'));
-						$response =~ s/(An ID)/A $obj ID ($oid)/;
-						$response =~ s/(Original\ssubject:)/$1 $orig/;
+						$response =~ s/(An ID)/A $obj ID ($oid)/;	    # clunk
+						$response =~ s/(Original\ssubject:)/$1 $orig/;	# clunk
 						$i_ok = $self->send_mail($o_ack, $response.$footer);
 					}
 
-					# NOTIFY
-					if (grep(/nocc/i, $to, @cc)) {
-						$self->debug(1, "to($to), cc(@cc) contains nocc - not notifying!") if $Perlbug::DEBUG;
+					# NOTIFY - nocc
+					if (grep(/no(cc|notify)/io, $to, @cc)) {
+						$self->debug(1, "to($to), cc(@cc) contains no(cc|notify) -> not notifying!") if $Perlbug::DEBUG;
 					} else {
+						$self->debug(1, "to($to), cc(@cc) doesn't contain no(cc|notify) -> notifying") if $Perlbug::DEBUG;
 						my @ccs = ($obj eq 'bug' ) ? $self->bugid_2_addresses($oid, 'new') : ();
 						$o_hdr  = $self->addurls($o_hdr, $obj, $oid);
 						$o_hdr->replace('Subject', $subject);
 						my $type = ($subject =~ /^\s*OK/io) ? 'ok' : 'remap';
-						my $o_notify = $self->get_header($o_hdr, $type);	# p5p (not!?)
+	$DB::single=2;
+						my $o_notify = $self->get_header($o_hdr, $type);	
+	$DB::single=2;
 						$o_notify->replace('Cc', join(', ', @ccs));
 						$i_ok = $self->send_mail($o_notify, $body); # auto
 					}
 				}
-
 			}
 		}
     }
@@ -1206,11 +1238,11 @@ sub setup_int {
 	if (ref($header) eq 'HASH') {
 		%header = %{$header};
 	} else {
-		if ($header =~ /^([^:]+:\s*\w+.*)/mo) { # unfold
-			$header =~ s/\r?\n\s+/ /sog;
+		if ($header =~ /^([^:]+:\s*\w+.*)/mo) { 
+			$header =~ s/\r?\n\s+/ /sog; # unfold
 			%header = ($header =~ /^([^:]+):(.*)$/gmo);	
 		} else { 
-			$self->error("Can't setup int from invalid header($header)!");
+			$self->debug(0, "Can't setup int from invalid header($header)!");
 		}
 	}
 
@@ -1219,6 +1251,7 @@ sub setup_int {
 		TAG:
 		foreach my $tag (keys %header) {
 			my @tags = (ref($header{$tag})) eq 'ARRAY' ? @{$header{$tag}} : ($header{$tag});
+			$tag =~ s/^\s*//; $tag =~ s/\s*$//; # stray newlines creeping in?
 			$o_hdr->add($tag, @tags);
 		}
 		$o_hdr->add('Message-Id', $self->get_rand_msgid) unless $o_hdr->get('Message-Id'); 
@@ -1261,24 +1294,17 @@ sub notify_cc {
 		my $bugdb = $self->email('bugdb');
 		my $url = 'http://'.$self->web('domain').'/'.$self->web('cgi')."?req=bug_id&bug_id=$bid\n";
 		my ($bug) = $o_bug->read($bid)->format('a'); # a bit less more data :-)
+		my $diff = $o_bug->diff($orig, $bug);
 		my $status = qq|The status of bug($bid) has been updated:
 $bug
 
-The original:
-$orig
+The difference from the original:
+$diff
 		|;
-		# 
-		# should be a diff?
-		# 
 		$status .= qq|
-To see this data on the web, visit:
+To see this (and more) data on the web, visit:
 
 	$url
-
-To see current data on this bug($bid) send an email of the following form:
-
-	To: $bugdb
-	Subject: -B $bid
 
 		|;
 		my ($addr) = $o_bug->col('sourceaddr');
@@ -1331,7 +1357,7 @@ sub todo {
 
 Track some function or modification to the db.
 
-	$sth = $self->track($type, $id, $entry);
+	$sth = $self->track($obj, $id, $entry);
 
 =cut
 
@@ -1494,14 +1520,15 @@ sub clean_up {
         	}   
 		}
     }
-    $self->debug(2, "Cleaned up: age($max) -> files($cleaned) of($found)") if $Perlbug::DEBUG;
-	# 
+    $self->debug(3, "Cleaned up: age($max) -> files($cleaned) of($found)") if $Perlbug::DEBUG;
+	
+	return ();
 }
 
 
 =item tell_time
 
-Put runtime info in log file
+Put runtime info in log file, if $Perlbug::DEBUG 
 
 	my $feedback = $o_base->tell_time(Benchmark->new);
 
@@ -1509,33 +1536,37 @@ Put runtime info in log file
 
 sub tell_time {
 	my $self = shift;
-	my $now  = shift || Benchmark->new; 
+	my $feedback = ' ';
 
-	$CACHE_TIME{'DONE'} = $now;
+	if ($Perlbug::DEBUG) {
+		my $now  = shift || Benchmark->new; 
 
-	my $start = $CACHE_TIME{'INIT'} || 0;
-	my $prep  = $CACHE_TIME{'PREP'} || 0;
-	my $load  = $CACHE_TIME{'LOAD'} || 0;
-	my $done  = $CACHE_TIME{'DONE'} || 0;
-	my $x = qq|start($start), prep($prep), load($load), done($done)|;
+		$CACHE_TIME{'DONE'} = $now;
 
-	my $started = timediff($prep, $start);
-	my $loaded  = timediff($load, $prep);
-	my $runtime = timediff($done, $load);
-	my $total   = timediff($done, $start);
+		my $start = $CACHE_TIME{'INIT'} || 0;
+		my $prep  = $CACHE_TIME{'PREP'} || 0;
+		my $load  = $CACHE_TIME{'LOAD'} || 0;
+		my $done  = $CACHE_TIME{'DONE'} || 0;
+		my $x = qq|start($start), prep($prep), load($load), done($done)|;
 
-	my $feedback = ($started && $loaded && $runtime && $total) 
-		? qq|$0 debug($Perlbug::DEBUG)
-	Startup: @{[timestr($started)]}
-	Loaded : @{[timestr($loaded)]}
-	Runtime: @{[timestr($runtime)]}
-	Alltook: @{[timestr($total)]}
-        including $Perlbug::Database::SQL SQL statements 
-        using $Perlbug::Database::HANDLE database handle/s
-	|
-		: '';
+		my $started = timediff($prep, $start);
+		my $loaded  = timediff($load, $prep);
+		my $runtime = timediff($done, $load);
+		my $total   = timediff($done, $start);
 
-	$self->debug(1, $feedback) if $Perlbug::DEBUG;
+		$feedback = ($started && $loaded && $runtime && $total) 
+			? qq|$0 debug($Perlbug::DEBUG)
+		Startup: @{[timestr($started)]}
+		Loaded : @{[timestr($loaded)]}
+		Runtime: @{[timestr($runtime)]}
+		Alltook: @{[timestr($total)]}
+			including $Perlbug::Database::SQL SQL statements 
+			using $Perlbug::Database::HANDLE database handle/s
+		|
+			: '';
+		$self->debug(1, $feedback); 
+	}
+
 	return $feedback;
 } 
 
@@ -1582,9 +1613,10 @@ sub parse_str {
 		next ARG unless $arg =~ /\w+/o;
 		next ARG if $seen{$arg};
 		my $arg4 = substr($arg, 0, 4);
+		# print "arg($arg) => arg4($arg4)<hr>";
 		if ($o_bug->ok_ids([$arg])) {	# bugid
 			push(@{$cmds{'bug'}{'ids'}}, $arg);
-		} elsif (grep(/^$arg4/i, @names)) {				
+		} elsif (grep(/^\Q$arg4/i, @names)) {				
 			foreach my $flag (@flags) {					# flag
 				my $o_obj = $self->object($flag);
 				my @types = $o_obj->col('name');
@@ -1603,7 +1635,7 @@ sub parse_str {
 		}
 		$seen{$arg}++;
 	}
-	$DB::single=2;
+	# $DB::single=2;
 	$self->debug(1, "parse in($str), out-> ".Dumper(\%cmds)) if $Perlbug::DEBUG;
 
 	return %cmds;
@@ -1701,6 +1733,7 @@ sub scan { # ids/names
 		# $data{$key} = [$self->default_flag($key)] unless ref($data{$key}) eq 'ARRAY'; 
 		push(@{$rel{$key}{'names'}}, keys %{$data{$key}});
 	}
+	$rel{'status'}{'names'} = [qw(open)] unless ref($rel{'status'}{'names'}) eq 'ARRAY';
 
     my $rel = scalar keys %rel;
     $self->debug(2, "Scanned count($i_cnt), found($rel): ".$self->dump(\%rel)) if $Perlbug::DEBUG;  
@@ -1772,50 +1805,6 @@ sub bugid_2_addresses {
 
 
     return @addrs;
-}
-
-
-=item dump
-
-Wraps Dumper() and dumps given args
-
-	print $o_base->dump($h_data);
-
-=cut
-
-sub dump {
-	my $self = shift;
-	my @args = @_;
-	my $res  = "rjsf dump: \n";
-
-	foreach my $arg (@args) {
-		$res .= "\targ($arg): ".Dumper(\$arg);
-	}
-	$res .= "\n";
-
-	return $res;
-}
-
-
-=item html_dump
-
-Encodes and dumps given args
-
-	print $o_base->html_dump($h_data);
-
-=cut
-
-sub html_dump {
-	my $self = shift;
-	my @args = @_;
-	my $res  = '<table><tr><td>rjsf html_dump: </td></tr>';
-
-	foreach my $arg (@args) {
-		$res .= qq|<tr><td><pre>|.encode_entities(Dumper($arg)).qq|&nbsp;</pre></td></tr>|;	
-	}
-	$res .= '</table>';
-
-	return $res;
 }
 
 

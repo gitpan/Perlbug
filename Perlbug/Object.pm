@@ -1,6 +1,6 @@
 # Perlbug object attribute handler
 # (C) 2000 Richard Foley RFI perlbug@rfi.net
-# $Id: Object.pm,v 1.45 2001/10/22 15:29:50 richardf Exp $
+# $Id: Object.pm,v 1.47 2001/12/03 07:35:49 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Object;
 use strict;
 use vars(qw($VERSION @ISA $AUTOLOAD));
 @ISA = qw(Perlbug::Format); 
-$VERSION = do { my @r = (q$Revision: 1.45 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.47 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Carp;
@@ -22,6 +22,7 @@ use Data::Dumper;
 use Perlbug::Format; 
 # use Perlbug::Template; 
 my $o_Perlbug_Base = '';
+%Perlbug::Object::Data = (); # ?
 %Perlbug::Object::Data = (
 	'relation'	=> {
 		'from'	=> [],
@@ -111,7 +112,7 @@ sub new { # table, key
 			'hint'		=> "$name($key)",	# Bug(Child)...
 		    'key'		=> $key,			# bug
 		    'name'  	=> $name,			# Bug
-			'match_oid'	=> '(\d+)',  		# default
+			'match_oid'	=> '[\b\D]*(\d+)[\b\D]*',  		# default
 		    'objectid'	=> '',				# 21, 200011122.003
 			'primary_key'=> $key.'id',		# bugid
 			'printed'	=> 0,				# i_cnt
@@ -151,13 +152,9 @@ sub new { # table, key
 
 =item init_data 
 
-Initialise generic object attr, columns and column_types from table in db.
-
-Returns object
+Initialise generic object attr, columns and column_types from table in db (specific).
 
 	my $o_obj = $o_obj->init_data($table);
-
-N.B. this may be a bit unstable against different databases (Oracle/Mysql/etc.)
 
 =cut
 
@@ -202,7 +199,7 @@ sub init_types { # generic attr from db
 	
 	$self->{'_relation'} = {}; # 
 	foreach my $type (@types) { # float|from|to
-		foreach my $targ ( @{$self->attr($type)} ) { # patch change bug address user
+		foreach my $targ ( $self->attr($type) ) { # patch change bug address user
 			$self->{'_relation'}{$targ}{'type'} = $type;
 			push(@rels, $targ);
 		}
@@ -226,7 +223,7 @@ To check whether the object was succesfully reinit, ask:
 
 sub reinit { 
 	my $self = shift; 
-	my $oid = shift || $self->oid;
+	my $oid = shift || ''; #  || $self->oid;
 
 	$self->CREATED(0);
 	$self->READ(0);
@@ -237,11 +234,13 @@ sub reinit {
 	$self->REINIT(1);
 
 	my @fields = $self->init_data($self->attr('table'));
-	my $i_ok = $self->check();
-
-	my @types  = @{$self->attr('types')};
+	my $i_ok   = $self->check();
+	my @types  = $self->attr('types');
 	my @rels   = $self->init_types(@types);
-	# $self->oid($oid) if $oid;
+
+	$self->attr( { 'objectid', $oid} ); # explicit	
+	$self->data( { $self->attr('primary_key'), $oid} );
+
 	$self->debug(3, "rjsf: object($oid) reinit(".$self->attr('key').") types(@types) rels(@rels)") if $Perlbug::DEBUG;
 
 	return $self;
@@ -250,20 +249,34 @@ sub reinit {
 
 =item refresh_relations
 
-Refresh relation data
+Refresh relation data, optionally restricted to only those given, others are cleared.
+
+	$self->refresh_relations([\@wanted]);
 
 =cut
 
 sub refresh_relations {
 	my $self = shift;
+	my @args = my @rels = @_;
 
-	foreach my $rel ($self->relations) { # should not be here! -> call rel($rel, 'ids')
-		my @rids  = $self->rel_ids($rel, '', 'refresh');	# refresh
-		my @names = $self->rel_names($rel); 	# $self->relation($rel)->id2name(\@rids);
-		$self->{'_relation'}{$rel}{'ids'}   = \@rids; # need this for format/templates
+	my $rellies = join('|', my @rellies = $self->rels);
+	@rels = grep(/($rellies)/, @args);
+	$self->debug(2, ref($self).": args(@args) rellies($rellies) => rels(@rels)") if $Perlbug::DEBUG;
+
+	my $obj  = $self->key;
+	$self->{'_relation'} = {};	
+
+	REL:
+	foreach my $rel (@rels) {
+		next REL if $rel =~ /^$obj$/i; # no recurse
+		my @rids  = $self->rel_ids($rel, '', 'refresh');		# if ids	
+		my @names = $self->rel_names($rel, '', 'refresh');		# if ids	
+		# my @names = $self->id2name(\@rids);		# if names
+		$self->{'_relation'}{$rel}{'ids'}   = \@rids; 
 		$self->{'_relation'}{$rel}{'count'} =  @rids;	
 		$self->{'_relation'}{$rel}{'names'} = \@names;	
 	}
+	$self->debug(3, 'relations: '.Dumper($self->{'_relation'})) if $Perlbug::DEBUG;
 
 	return $self;
 }
@@ -273,11 +286,11 @@ sub refresh_relations {
 
 Check all attr are initialised
 
-	my $i_ok = $o_obj->check(@keys_to_check);
+	my $i_ok = $o_obj->check(\%attributes);
 
 =cut
 
-sub check{
+sub check {
 	my $self  = shift;
 	my $h_ref = shift || $self->_oref('attr');
 
@@ -285,9 +298,11 @@ sub check{
 
 	CHECK:
 	foreach my $key (keys %{$h_ref}) {
-		if ($$h_ref{$key} !~ /\w+/ && $key !~ /(debug|objectid)/i) {
-			$i_ok = 0;
-			$self->error(" is incomplete key($key) val($$h_ref{$key}): ".Dumper($h_ref));
+		unless ($key =~ /(debug|objectid)/) {
+			if ($$h_ref{$key} !~ /\w+/) {
+				$i_ok = 0;
+				$self->error(" is incomplete key($key) val($$h_ref{$key}): ".Dumper($h_ref));
+			}
 		}
 	}
 
@@ -412,7 +427,7 @@ sub str2ids {
 	} else {
 		my $match = $self->attr('match_oid');
 		# my %x = ($dmc =~ /\<(\w+)\>(\w+)?(?:)\<\/\1\>/gi)
-		@ids = ($str =~ /$match/gs);
+		@ids = ($str =~ /$match/cgs);
 		$self->debug(2, "str($str) match($match) -> ids(@ids)") if $Perlbug::DEBUG;
 	}
 
@@ -507,9 +522,9 @@ Wrapper to get and set objectid, (and data(<objectid>) at the same time.
 
 =cut
 
-sub oid { my $self = shift; return $self->objectid(@_); } # shortcut
+sub objectid { my $self = shift; return $self->oid(@_); } # shortcut
 
-sub objectid {
+sub oid {
 	my $self = shift;
 	my $in = shift || '';
 
@@ -557,8 +572,7 @@ sub ids {
 	$sql .= " ORDER BY name " if $self->identifier eq 'name';
 	
 	@ids = $self->base->get_list($sql, $refresh);
-	# print "rjsf: <hr>$self, input($input), extra($extra), refresh($refresh) -> ids(@ids)<hr>";
-	$self->debug(2, "input($input) extra($extra) -> ids(@ids)") if $Perlbug::DEBUG;
+	$self->debug(3, "input($input) extra($extra) -> ids(@ids)") if $Perlbug::DEBUG;
 
 	return @ids;
 }
@@ -810,11 +824,30 @@ sub keys_sorted_by_value {
 
 # -----------------------------------------------------------------------------
 
+=item choice
+
+Returns appropriate B<popup()> or B<selector()> for object, based on B<prejudicial> setting.
+
+	print $o_obj->choice($unique_name, [$selected]); # or none('') 
+
+=cut
+
+sub choice {
+	my $self = shift;
+
+	my $choice = ($self->attr('prejudicial') == 1) ? 'popup' : 'selector';
+
+	$self->debug(3, "choice($choice)...");
+
+	return $self->$choice(@_);
+}
+
+
 =item popup 
 
 Create scrolling web list popup with given pre-selection (or B<any>), with (alphabetically sorted) names where possible
 
-	my $popup = $o_obj->popup('unique_name', [$selected]); # or none('') 
+	my $popup = $o_obj->popup('unique_name', $selected); # or none('') 
 
 =cut
 
@@ -822,9 +855,9 @@ sub popup {
 	my $self = shift;
 	my $name = shift || $self->attr('name');
 	my $sel  = shift || '';
+	($sel)   = @{$sel} if ref($sel) eq 'ARRAY';
 
 	my $cgi  = $self->base->cgi;
-	($sel)  = @{$sel} if ref($sel) eq 'ARRAY';
 
 	my %map = ('any' => 'any', '' => '',);
 	my $pri = $self->attr('primary_key');
@@ -856,16 +889,18 @@ sub popup {
 		-'override' => 1,
 		@_,
 	);
-	# $self->debug(3, "name($name) pop($pop)") if $Perlbug::DEBUG;
+	
+	$self->debug(3, "name($name) selected($sel) pop($pop)") if $Perlbug::DEBUG;
+
 	return $pop;
 }
 
 
 =item selector
 
-Create scrolling web list selector with given pre-selections, with names where possible
+Create scrolling web list selector with given pre-selections, with names where possible.  Also appends simple list of selected items.
 
-	my $selctr = $o_obj->selector('unique_name', @pre_selected);
+	my $selctr = $o_obj->selector('unique_name', \@pre_selected);
 
 =cut
 
@@ -893,7 +928,7 @@ sub selector {
 		foreach my $id (@ids) {
 			($map{$id}) = $self->col($col, "WHERE ".$self->attr('primary_key')." LIKE '$id'");
 		}
-	}
+1	}
 
 	my @sorted = $self->keys_sorted_by_value(\%map);
 
@@ -907,8 +942,10 @@ sub selector {
 		-'override' => 1,
 		-'onChange'	=> 'pick(this);',
 		@_,
-	);
-	# $self->debug(3, "name($name) sel($sel)") if $Perlbug::DEBUG;
+	).'<br>'.join(', ', map { $map{$_} } @selected);
+	
+	$self->debug(3, "name($name) selected(@selected) => sel($sel)") if $Perlbug::DEBUG;
+
 	return $sel;
 }
 
@@ -938,6 +975,9 @@ sub text_area {
 		-'cols'		=> 25,
 		@_, 							# etc. 
 	);
+
+	$self->debug(3, "name($name) val($val) => txta($txt)") if $Perlbug::DEBUG;
+
 	return $txt;
 }
 
@@ -967,6 +1007,9 @@ sub text_field {
 		-'maxlength'=> 12,
 		@_, 							# etc. 
 	);
+
+	$self->debug(3, "name($name) val($val) => txtf($txt)") if $Perlbug::DEBUG;
+
 	return $txt;
 }
 
@@ -981,7 +1024,7 @@ Generate code to handle get and set object fields, returns 1|0
 
 =cut
 
-sub _gen_field_handler {
+sub x_gen_field_handler { # AUTOLOAD'd
     my $self  = shift;
     my $field = shift;
     # if (!(grep(/^$field$/, $self->data_fields))) { 
@@ -1030,18 +1073,21 @@ sub base {
 
 
 sub _oref { # unsupported 
-	my $self = shift;
-	my $key  = shift;
-	my $href = ''; # !
+	my $self  = shift;
+	my $key   = shift;
+	my $h_ref = ''; # !
 
 	my @refs = keys %{$self};
 	# if (!grep(/^_$key$/, @refs)) { # sneaky :-]
 	if (!(map { ($_ =~ /^_$key$/ ? 1 : 0) } @refs)) {
 		$self->error("unknown key($key) requested! valid keys(@refs)");	
 	} else {
-		$href = { %{$self->{"_$key"}} }; # copy
+		$h_ref = { %{$self->{"_$key"}} }; # copy
 	}
-	return $href;
+
+	$self->debug(3, "key($key) => href: ".Dumper($h_ref)) if $Perlbug::DEBUG;
+	
+	return $h_ref;
 }
 
 =pod
@@ -1076,11 +1122,11 @@ Return relation types for current object
 
 =cut
 
-sub rel_types { my $self = shift; return $self->relation_types(@_); } # wrapper for relation_types()
+sub relation_types { my $self = shift; return $self->rel_types(@_); } # wrapper for rel_types()
 
-sub relation_types {
+sub rel_types {
 	my $self = shift;
-	return @{$self->attr('types')};
+	return $self->attr('types');
 }
 
 
@@ -1118,17 +1164,19 @@ Return relations, filtered by arg, or all if none given
 
 =cut
 
-sub rels { my $self = shift; return $self->relations(@_); } # wrapper for relations()
+sub relations { my $self = shift; return $self->rels(@_); } # wrapper for rels()
 
-sub relations {
+sub rels { 
 	my $self = shift;
 	my $type = shift || ''; # float|from|to
 	my @rels = ();
 	if (defined($type) && $type =~ /\w+/o) {
-		@rels = @{$self->attr($type)}; 
+		@rels = $self->attr($type); 
 	} else {	
-		@rels = map { @{$self->attr($_)} } $self->rel_types;
+		@rels = map { $self->attr($_) } $self->rel_types;
 	}
+	$self->debug(3, "type($type) => rels(@rels)") if $Perlbug::DEBUG;
+
 	return @rels;
 }
 
@@ -1151,9 +1199,9 @@ See L<Perlbug::Relation> for more info on relation methods.
 
 =cut
 
-sub rel { my $self = shift; return $self->relation(@_); } # wrapper for relation()
+sub relation { my $self = shift; return $self->rel(@_); } # wrapper for rel()
 
-sub relation {
+sub rel {
 	my $self = shift;
 	my $rel  = shift;
 	my $o_rel = undef;
@@ -1185,9 +1233,9 @@ Return relation IDs for given object
 
 =cut
 
-sub rel_ids { my $self = shift; return $self->relation_ids(@_); } # wrapper for relation_ids()
+sub relation_ids { my $self = shift; return $self->rel_ids(@_); } # wrapper for rel_ids()
 
-sub relation_ids { # object 
+sub rel_ids { # object 
 	my $self = shift;
 	my $rel  = shift;
 	my $args = shift || '';
@@ -1228,9 +1276,9 @@ Return relation names for given object, or empty list() if no names, or not iden
 
 =cut
 
-sub rel_names { my $self = shift; return $self->relation_names(@_); } # wrapper for relation_names()
+sub relation_names { my $self = shift; return $self->rel_names(@_); } # wrapper for rel_names()
 
-sub relation_names { # object 
+sub rel_names { # object 
 	my $self = shift;
 	my $rel  = shift;
 	my $args = shift || '';
@@ -1249,15 +1297,16 @@ sub relation_names { # object
 
 =item relate
 
-Work through the given hash using the objects' B<relations()>,  
-B<assign()>ing any relation-ids found, alternatively,  
-B<_assign()>ing any relation-names found. 
+Work through the given hash using the objects' B<relations()>:
 
-Prejudicial against $o_rel->attr('prejudicial') relationships.
+	B<assign()>ing any relation-ids found
 
-Designed to take the output of B<Perlbug::Base::parse_str()>:
+	B<_assign()>ing any relation-names found
 
-Returns number of objects assigned to.
+Prejudicial against $o_rel->attr('prejudicial') relationships, and 
+is designed to take the output of B<Perlbug::Base::parse_str()>.
+
+Returns name of objects assigned to.
 
 	my $i_rels = my @rels = $o_obj->relate(\%relationships);
 
@@ -1287,6 +1336,8 @@ Returns number of objects assigned to.
 		},
 	); 
 
+See also L<rtrack()>
+
 =cut
 
 sub relate {
@@ -1301,11 +1352,12 @@ sub relate {
 		if ($oid !~ /\w+/) {
 			$self->error("$self has no object id($oid) to relate with!");
 		} else {
-			my $track = '';
 			my %track = ();
-			$self->debug(2, "relating for oid: ".$self->oid);
+			$self->debug(1, 'oid: '.$self->oid.' relatable: '.Dumper($h_ships)) if $Perlbug::DEBUG;
+			$DB::single=2;
 			RELATE:
 			foreach my $rel ($self->rels) {
+			# foreach my $rel (keys %{$h_ships}) {
 				next RELATE unless $rel =~ /\w+/o;
 				my $prej  = ($self->object($rel)->attr('prejudicial') == 1) ? 1 : 0;
 				my $o_rel = $self->rel($rel);
@@ -1313,24 +1365,60 @@ sub relate {
 				my $call  = $prej ? 'store' : 'assign';
 				if (ref($$h_ships{$rel}{'ids'})) {
 					$o_rel->$call($a_ids);
-					$track{$rel}{'ids'} = $o_rel->ASSIGNED.' of ('.join(', ', @{$a_ids}).')';
+					$track{$rel}{'ids'} = $o_rel->ASSIGNED.' <= ('.join(', ', @{$a_ids}).')';
 				} 
 				my $a_names = $$h_ships{$rel}{'names'} || [];
-				if (ref($$h_ships{$rel}{'names'}) eq 'ARRAY') {
+				if (ref($$h_ships{$rel}{'names'})) { 
 					my $call  = $prej ? '_store' : '_assign';
 					$o_rel->$call($a_names);
-					$track{$rel}{'names'} = $o_rel->ASSIGNED.' of ('.join(', ', @{$a_names}).')';
+					$track{$rel}{'names'} = $o_rel->ASSIGNED.' <= ('.join(', ', @{$a_names}).')';
 				}
 				if (ref($track{$rel})) {
 					push(@rels, $rel) if keys %{$track{$rel}} >= 1;
 				}	
 			}
-			$self->debug(2, 'oid('.$self->oid.') related: '.Dumper(\%track)) if $Perlbug::DEBUG;
-			$self->track($track);
+			$self->debug(1, 'oid('.$self->oid.') related: '.Dumper(\%track)) if $Perlbug::DEBUG;
+			$self->rtrack(\%track);
 		}
 	}
 
 	return @rels;
+}
+
+
+=item appropriate
+
+Attempts to relate relatable bug relations to relevant bugs :-)
+
+The idea is that a test can call B<appropriate()> after a B<relate()>, 
+and this will apply appropriate status flags to any bugids found, etc.
+
+See L</relate()> for more info.
+
+	my @bugids = $o_obj->appropriate(\%rels);
+
+=cut
+
+sub appropriate {
+	my $self    = shift;
+	my $h_ships = shift;
+	my @bugids  = ();
+
+	if (ref($h_ships) ne 'HASH') {
+		$self->debug(0, "requires relationships: ".Dumper($h_ships)) if $Perlbug::DEBUG;
+	} else {
+		@bugids   = (ref($$h_ships{'bug'}{'ids'}) eq 'ARRAY') 
+			? @{$$h_ships{'bug'}{'ids'}}
+			: ();
+		if (scalar(@bugids) >= 1) {
+			my $o_bug = $self->object('bug');
+			foreach my $bugid (@bugids) {
+				$o_bug->read($bugid)->relate($h_ships);
+			}
+		}
+	}
+
+	return @bugids;
 }
 
 
@@ -1367,8 +1455,7 @@ To check whether the object was succesfully read, ask:
 sub read {
 	my $self = shift;
 	my $oid = shift || $self->oid;
-	# $self->reinit; # always want a fresh one
-	$self->READ(0);
+	$self->reinit(''); # always want a fresh one
 	if ($self->ok_ids([$oid]) != 1) {
 		$self->debug(0, "$self requires a valid id($oid) to read against!");
 	} else {
@@ -1381,6 +1468,7 @@ sub read {
 			$self->debug(0, "failed to retrieve data($h_data) with $pri = '$oid' in table($table)"); 
 		} else {
 			$self->debug(2, $self->key." oid($oid)") if $Perlbug::DEBUG;
+			$DB::single=2;
 			my $res = $self->data($h_data); 			# set
 			my $xoid = $self->oid($oid);				# set
 			# $self = $self->object($self->attr('key'), $self); # cache
@@ -1496,8 +1584,8 @@ sub prep {
 			my $type = $self->column_type($key); # def = (VARCHAR|BLOB)
 			my $val = $$h_data{$key};
 			$self->debug(3, "key($key) type($type) val(".length($val).")") if $Perlbug::DEBUG;
-			$val =~ s/^\s+//o;		# front
-			$val =~ s/\s+$//o;		# back
+			# $val =~ s/^\s+//o;		# front
+			# $val =~ s/\s+$//o;		# back
 			my $data = '';
 			if ($type eq 'DATETIME') {
 				$data = "$key = SYSDATE()";
@@ -1554,7 +1642,7 @@ sub create {
 	} else {
 		my $oid = $$h_data{$pri} || '';
 		if ($oid !~ /\w+/) {
-			$self->error("requires an objectid($oid) to create record".Dumper($h_data));
+			$self->error("requires an objectid($oid) to create record: ".Dumper($h_data));
 		} else {
 			if ($flag eq '' && $oid ne 'NULL' && $self->exists([$oid])) {	# relations (clunky) ...
 				$self->error("can't create already existing $pri($oid) in $table");
@@ -1572,7 +1660,7 @@ sub create {
 					} else {
 						$self->CREATED(1);
 						$oid = $self->oid($oid); # if $oid =~ /\w+/ && $oid !~ '0';
-						$self->track($sql." -> oid($oid)");
+						# $self->track($sql." -> oid($oid)"); rjsf !
 					}
 					$self->base->clean_cache('sql', 'force');
 				}
@@ -1714,7 +1802,7 @@ sub update {
 					$self->error("Failed($oid) $type sql($sql)!");
 				} else {	
 					$self->UPDATED(1);
-					$self->track($sql); # rjsf: too much (remove msgheader/body/entry) 
+					# $self->track($sql); # rjsf: too much (remove msgheader/body/entry) 
 					$self->base->clean_cache('sql');
 				}
 			}
@@ -1778,7 +1866,7 @@ sub delete {
 					$self->error("Delete($oid) failed: sql($sql)!");
 				} else {	
 					$self->DELETED(1); 
-					$self->track($sql);
+					# $self->track($sql);
 					$self->base->clean_cache('sql');
 				}	
 			}	
@@ -1877,7 +1965,7 @@ sub new_id {
 	my $self = shift;
 
 	my $newid = 'NULL'; 
-	$self->debug(1, "new objectid($newid)") if $Perlbug::DEBUG;
+	$self->debug(1, 'new '.ref($self)." objectid($newid)") if $Perlbug::DEBUG;
 	
 	return $newid;
 }
@@ -1953,68 +2041,43 @@ sub format { # return $o_fmt->FORMAT(@_)
 	);
 	$self->max($map{$fmt}); # !
 
-	$self->refresh_relations; # ek
-
-	return $self->FORMAT($fmt, @_); # Perlbug::FORMAT
-	return $self->template($func, $fmt, @_);
+	if (0) { # too late to turn back now :-]
+		$self->refresh_relations; # ek
+		return $self->FORMAT($fmt, @_); # Perlbug::FORMAT
+	} else {
+		return $self->template($fmt);
+	}
 }
 
 
 =item template
 
-Simple wrapper for L<TEMPLATE()>
+Applies appropriate template to this object, based on optional format.  
 
-	my $str = $o_obj->template([$fmt, [$h_data, [$h_rels]]]);
-
-Unless given, this uses the internal object structures B<data> and B<rel>, (if primed).
+	my $str = $o_obj->template($fmt); # [ahl...]
 
 =cut
 
-sub template { # return $o_template->TEMPLATE(@_)  
+sub template { # return $o_template->merge($self, $fmt)  
 	my $self   = shift;
 	my $fmt    = shift || $self->base->current('format');
-	my $h_data = shift || $self->_oref('data');
-	my $h_rel  = shift || $self->_oref('relation'); # :-\
-	my $str    = '';
+	my $obj    = $self->key;
 
-	$self->refresh_relations; # ek
-
-	my $o_object   = $self->object('object');
 	my $o_template = $self->object('template');
-	my $o_user     = $self->object('user');
-	my $o_tmpusr   = $o_template->rel('user');
+	my ($hdr, $str, $ftr) = $o_template->merge($self, $fmt);
 
-	my $obj        = $self->key;
-	my ($type)     = $o_object->col('type', "name = '$obj'");
-	my $userid     = $self->base->isadmin;
-	
-	my $template_user = "SELECT ".$o_template->primary_key." FROM ".$o_tmpusr->attr('table')." WHERE userid = '$userid'";
-	my @tempids  = $self->base->get_list($template_user);
-	my $tempids  = join("', '", @tempids);
+	my $i_printing = $self->attr({'printed', $self->attr('printed') + 1});
 
-	my $cond = "object = '$obj' AND format = '$fmt' AND templateid IN('$tempids')";
-	my ($tempid) = reverse sort { $a <=> $b } my @tids = $o_template->ids($cond);
-	$self->debug(0, "template($tempid) for user($userid) from($cond)");
-	if (!$tempid) { # default?
-		$cond = "object = '' AND type = '$type' AND format = '$fmt' AND templateid IN('$tempids')";
-		($tempid) = reverse sort { $a <=> $b } my @tids = $o_template->ids($cond);
+	my $i_rep = my $i_reporig = $o_template->data('repeat') || 0; 
+	if ($i_rep > 1) {
+		my $i_res = $i_printing % $i_rep;
+		$i_rep = 0 unless $i_res == 1;
 	}
+	$self->debug(3, "i_printing($i_printing) % orig($i_reporig) => rep($i_rep)") if $Perlbug::DEBUG;
 
-	my $withheader = 0;
-	$self->attr({'printed', $self->attr('printed') + 1});
-	if ($self->attr('printed') >= $o_template->data('repeat')) {
-		$withheader = 1;
-		$self->attr({'printed', 0});
-	}
+	$str = $hdr.$str.$ftr if $i_rep;
 
-	if ($tempid !~ /^\d+$/) {
-		$self->debug(0, "using default display!");	
-		$str = $o_template->_template($h_data, $h_rel, $fmt, $withheader);
-	} else {
-		$o_template->read($tempid);
-		$self->debug(0, "using template($tempid) read(".$o_template->READ.")");	
-		$str = $o_template->template($h_data, $h_rel, $fmt, $withheader);
-	}
+	$self->debug(3, "!$i_printing!: fmt($fmt) obj($obj) => ".$str) if $Perlbug::DEBUG;
 
 	return $str;
 }
@@ -2023,6 +2086,8 @@ sub template { # return $o_template->TEMPLATE(@_)
 =item diff
 
 Returns differences between two (format|templat)ed strings, on a per line basis.
+
+Note that multiple blank lines are reduced to a single blank line.
 
 	my $diff = $o_obj->diff("this\nand\that", "this\nor\nthat\netc.");
 
@@ -2047,6 +2112,8 @@ sub diff {
 	unless (defined($xone) and defined($xtwo)) {
 		$self->debug(0, "requires one($xone) and two($xtwo) to differentiate") if $Perlbug::DEBUG;
 	} else { 
+		$xone =~ s/^(\s*\n)+/\n/g;
+		$xtwo =~ s/^(\s*\n)+/\n/g;
 		my $i_one = my @one = split("\s*\n\s*", $xone);
 		my $i_two = my @two = split("\s*\n\s*", $xtwo);
 
@@ -2072,22 +2139,25 @@ sub diff {
 }
 
 
-=item track 
+=item rtrack 
 
-Tracks object administration, where $entry is the relevant statement, etc.
+Tracks object administration (relations), where %entry is the relevant B<relate()> data, etc.
 
-	$o_obj = $o_obj->track($entry, 'bug', '<bugoid>');
+	$o_obj = $o_obj->rtrack(\%data, [$obj, [$objectid]]);
 
 =cut
 
-sub track {
-	my $self = shift;
-	my $data = shift || '';
-	my $type = shift || $self->key;
-	my $oid  = shift || $self->oid;
+sub rtrack {
+	my $self   = shift;
+	my $h_data = shift || '';
+	my $type   = shift || $self->key;
+	my $oid    = shift || $self->oid;
 	
-	my $i_tracked = $self->base->track($type, $oid, $data) 
-		unless $type =~ /(log|range)/io; # || $type =~ /^pb_[a-z]+_[a-z]+$/); # relly
+	my $indent = $Data::Dumper::Indent;
+	$Data::Dumper::Indent=0;
+	my $i_tracked = $self->base->track($type, $oid, Dumper($h_data)) 
+		unless $type =~ /(log|range)/io; #
+	$Data::Dumper::Indent=$indent;
 
 	$self->TRACKED(1) if $i_tracked;
 
@@ -2220,31 +2290,30 @@ sub AUTOLOAD {
 			my $get  = shift;
 			my @ret  = ();
 
-			# if (ref($self->{"_$meth"}) ne 'HASH') {
-			#	$self->error("invalid object($pkg) structure($meth): ".Dumper($self));
-			# } else {
-				if (!defined($get)) {
-					@ret = keys %{$self->{"_$meth"}}; 			# ref
-				} else {
-					if (ref($get) ne 'HASH') { 					# get
-						@ret = ($self->{"_$meth"}{$get});
-					} else {									# set
-						my $keys = join('|', keys %{$self->{"_$meth"}}); 	# ref
-						SET:
-						foreach my $key (keys %{$get}) {
-							if ($key =~ /^($keys)$/) {
-								$self->{"_$meth"}->{$key} = $$get{$key}; # SET
-								push(@ret, $$get{$key});
-							} else {
-								$self->debug(2, "$pkg has no such $meth key($key) valid($keys)") if $Perlbug::DEBUG;
-							}
+			if (!defined($get)) {
+				@ret = keys %{$self->{"_$meth"}}; 			# ref
+			} else {
+				if (ref($get) ne 'HASH') { 					# get
+					@ret = ref($self->{"_$meth"}{$get}) eq 'ARRAY' 
+						? @{$self->{"_$meth"}{$get}} 
+						:  ($self->{"_$meth"}{$get});
+				} else {									# set the hashref
+					my $keys = join('|', keys %{$self->{"_$meth"}}); 	# ref
+					SET:
+					foreach my $key (keys %{$get}) {
+						if ($key =~ /^($keys)$/) {
+							$self->{"_$meth"}->{$key} = $$get{$key}; # SET
+							push(@ret, $$get{$key});
+						} else {
+							$self->debug(2, "$pkg has no such $meth key($key) valid($keys)") if $Perlbug::DEBUG;
 						}
 					}
 				}
-				return wantarray ? @ret : $ret[0];
-			# }	
+			}
+			return wantarray ? @ret : $ret[0];
 		}
     }
+
 	return wantarray ? @ret : $ret[0];
 }
 

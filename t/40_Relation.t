@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Relations line tests for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 40_Relations.t,v 1.3 2001/09/18 13:37:50 richardf Exp $
+# $Id: 40_Relation.t,v 1.1 2001/12/01 15:24:43 richardf Exp $
 #
 use strict;
 use lib qw(../);
@@ -38,16 +38,18 @@ $test++;
 my $BUGID = $o_test->bugid;
 my $o_bug = $o_base->object('bug')->read($BUGID);
 my @rels  = qw(message note patch test);
+my @related = ();
 my $i_related = 0;
 foreach my $rel (@rels) {
 	my $o_obj = $o_base->object($rel);
 	my $testids = "sourceaddr = '".$o_test->from."'";
 	my ($rid) = $o_obj->ids($testids);
 	$i_related += my $i_stored = $o_bug->rel($rel)->store([$rid])->STORED;
+	push(@related, "$rel($rid)") if $i_stored;
 }
 if ($i_related == scalar(@rels)) {
 	ok($test);
-	output("bug($BUGID) related($i_related) relations: ".join(', ', @rels).")");
+	output("bug($BUGID) related($i_related) relations: ".join(', ', @related).")");
 } else {
 	ok(0);
 	output("failed to relate(@rels) -> related($i_related)");

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Object Relation tests for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 34_Object.t,v 1.2 2001/09/18 13:37:50 richardf Exp $
+# $Id: 41_Relation.t,v 1.1 2001/12/01 15:24:43 richardf Exp $
 #
 use strict;
 use lib qw(../);
@@ -139,7 +139,8 @@ if ($i_related == $i_relatable) {
 	ok($test);
 } else {
 	ok(0);
-	output("related($i_related) doesn't match relatable($i_relatable)".Dumper(\%rellies));
+	output("related($i_related) doesn't match relatable($i_relatable)");
+	ouput(Dumper(\%rellies)) if $Perlbug::DEBUG;
 }
 
 # 11

@@ -2,7 +2,7 @@
 # Perlbug object runner
 # (C) 2000 Richard Foley RFI perlbug@rfi.net 
 # 
-# $Id: bugobj,v 1.5 2001/10/19 12:40:21 richardf Exp $
+# $Id: bugobj,v 1.6 2001/12/01 15:24:43 richardf Exp $
 
 =head1 NAME
 
@@ -13,7 +13,7 @@ BUGOBJ - run a series of relation inserts against each object
 # LIBs
 use strict;
 use vars(qw($VERSION));
-$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 use Data::Dumper;
 use FindBin;

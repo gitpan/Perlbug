@@ -1,15 +1,15 @@
-# $Id: Test.pm,v 1.1 2001/09/18 13:37:49 richardf Exp $ 
+# $Id: Test.pm,v 1.2 2001/12/01 15:24:42 richardf Exp $ 
 
 =head1 NAME
 
-Perlbug::Test- Perlbug testing module
+Perlbug::Test - Perlbug testing module
 
 =cut
 
 use Test; # plan, ok, notok
 
 package Perlbug::Test;
-$VERSION = do { my @r = (q$Revision: 1.1 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 
 use Carp;
 use Data::Dumper;
@@ -52,7 +52,7 @@ Set the current admin to the userid of the local B<bugmaster>.
 		output("passed");
 	} else {
 		notok($test);
-		output("failed".Dumper($o_int));
+		output("failed: $switch, $msg");
 	}
 
 =cut
@@ -66,7 +66,11 @@ Set the current admin to the userid of the local B<bugmaster>.
 
 Create new Perlbug::Test object.
 
-Sets current(isatest=>1, admin=>$bugmaster):
+Sets current (
+	admin	=> $bugmaster,
+	fatal	=> 0,
+	isatest	=> 1
+):
 
     my $o_test = Perlbug::Test->new();              # generic
 
@@ -80,41 +84,59 @@ sub new {
 	my $o_arg = shift || '';
 	my $self  = {};
 
+	my $BUGID = '19870502.007';
 	if (!(ref($o_arg) && ($o_arg->isa('Perlbug::Config') || $o_arg->can('conf')))) {
 		Perlbug::Config->error(__PACKAGE__."->new($o_arg) requires a configurable object!");
 	} else {
 		$o_arg->current({'admin'   => $o_arg->system('bugmaster')}); 
-		$o_arg->current({'fatal' => 0});
+		$o_arg->current({'fatal'   => 0}); $Perlbug::FATAL=0; 
 		$o_arg->current({'isatest' => 1});
-		my $switches = $o_arg->system('user_switches').$o_arg->system('admin_switches');
-		$o_arg->current({'switches'   => $switches});
-		my ($INREPLYTO, $INREPLYTOBUGID) = ('', '');
+		# my $switches = $o_arg->system('user_switches').$o_arg->system('admin_switches');
+		# $o_arg->current({'switches'=> $switches});
+		my $FROM = 'perlbugtrontest.run@rfi.net';
+		my ($CHANGEID, $CHANGENAME, $INREPLYTOMSGID, $MESSAGEID, $NOTEID, $PATCHID, $TESTID) 
+			= ('', '', '', '', '', '', '');
 		if ($o_arg->can('get_list')) {
-			my $inreplyto = "SELECT max(email_msgid) FROM pb_bug WHERE email_msgid LIKE '%_\@_%'";
-			($INREPLYTO)  = $o_arg->get_list($inreplyto);
-			my $inreplytobugid = "SELECT bugid FROM pb_bug WHERE email_msgid LIKE '".$o_arg->db->quote($INREPLYTO)."'";
-			($INREPLYTOBUGID) = $o_arg->get_list($inreplytobugid);
+			my $inreplytomsgid = "SELECT email_msgid FROM pb_bug WHERE bugid = '$BUGID'";
+			($INREPLYTOMSGID)  = $o_arg->get_list($inreplytomsgid);
+			my $getchangeid  = "SELECT MAX(changeid)  FROM pb_change";
+			my $getchangename= "SELECT MAX(name)      FROM pb_change";
+			my $getmessageid = "SELECT MAX(messageid) FROM pb_message WHERE sourceaddr = '$FROM'";
+			my $getnoteid    = "SELECT MAX(noteid)    FROM pb_note WHERE sourceaddr    = '$FROM'";
+			my $getpatchid   = "SELECT MAX(patchid)   FROM pb_patch WHERE sourceaddr   = '$FROM'";
+			my $gettestid    = "SELECT MAX(testid)    FROM pb_test WHERE sourceaddr    = '$FROM'";
+			($CHANGEID)  = $o_arg->get_list($getchangeid);
+			($CHANGENAME)= $o_arg->get_list($getchangename);
+			($MESSAGEID) = $o_arg->get_list($getmessageid);
+			($NOTEID)    = $o_arg->get_list($getnoteid);
+			($PATCHID)   = $o_arg->get_list($getpatchid);
+			($TESTID)    = $o_arg->get_list($gettestid);
 		}
-		my ($MESSAGEID)  = $o_arg->get_rand_msgid if $o_arg->can('get_rand_msgid');
+		my ($EMAIL_MESSAGEID) = $o_arg->get_rand_msgid if $o_arg->can('get_rand_msgid');
 
-		my $BUGID = '19870502.007';
 		$self = {
 			'admin'		=> 'richard.foley@rfi.net',
 			'base'		=> $o_arg,
-			'bugid'     => $BUGID,
+			'body'      => qq|some irrelevant body matter\n---\nsig\n|,
 			'bugdb'     => 'bugdb@perl.org',
-			'domain'    => 'perl.org',
+			'bugid'     => $BUGID,
+			'changeid'  => $CHANGEID,
+			'changename'=> $CHANGENAME,
 			'DOMAIN'    => 'bugs.perl.org',
+			'domain'    => 'perl.org',
+			'email_messageid' => $EMAIL_MESSAGEID || 'no-email_messageid',
 			'from'      => 'perlbugtrontest.run@rfi.net',
 			'fulladdr'  => '"Perlbugtron" <perlbugtrontest.run@rfi.net>',
-			'inreplyto' => $INREPLYTO || '',
-			'irep' 		=> $INREPLYTOBUGID || '',
+			'inreplytobugid' => $BUGID || 'no-bugid',
+			'inreplytomsgid' => $INREPLYTOMSGID || 'no-inreplytomsgid',
 			'isadmin'   => 'perlbug',
-			'messageid' => $MESSAGEID || '',
+			'messageid' => $MESSAGEID || 'no-messageid',
+			'noteid'	=> $NOTEID    || 'no-noteid',
+			'patchid'	=> $PATCHID   || 'no-patchid',
 			'ref'       => 'X-Placeholder: perlbug test run',
 			'replyto'   => 'perlbugtrontest.run@rfi.net',
 			'subject'   => 'some irrelevant subject matter',
-			'body'      => qq|some irrelevant body matter\n---\nsig\n|,
+			'testid'	=> $TESTID,
 		};
 	}		
 

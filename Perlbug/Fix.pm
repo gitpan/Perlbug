@@ -1,4 +1,4 @@
-# $Id: Fix.pm,v 1.36 2001/10/22 15:29:50 richardf Exp $ 
+# $Id: Fix.pm,v 1.37 2001/12/01 15:24:42 richardf Exp $ 
 # 	
 
 =head1 NAME
@@ -10,7 +10,7 @@ Perlbug::Fix - Command line interface to fixing perlbug database.
 package Perlbug::Fix;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.36 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.37 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -81,6 +81,7 @@ my $FIX = 0;
 my $MAX = $ENV{'Perlbug_Max'} || 33;
 my %MAP = ( # a=pb_address bu=pb_bug_user l=pb_log...
 	'a' 	=> 'address      [bugid%]',		'ah' 	=> 'trawls for in/valid addresses - see also "r (bug|group) address"',
+	'b' 	=> 'scan_body    [bugid%]',    	'bh' 	=> 'scan bug bodies (see <s>)',
 	'c'		=> 'change       [filename',  	'ch'	=> 'trawls given file for bugid=>patchid=>changid relations',
 	'd'		=> 'discard      [bugid%]',		'dh'	=> 'discard duplicates or redundant data, see also r=relations',
 #	'e' 	=> 'forward      [bugid%]',		'wh' 	=> 'forward non-forwarded mails',
@@ -92,7 +93,7 @@ my %MAP = ( # a=pb_address bu=pb_bug_user l=pb_log...
 	'm'		=> 'message      [messageid%]',	'mh'	=> 'message fix for subject lines',
 	'q' 	=> 'doq          [sql]',    	'qh' 	=> 'query the database (Q for the schema)',
 	'r'		=> 'references   [bugid%]',		'rh'	=> 'deletes non-existent pb_\w_\w references, see also d=discard',
-	's' 	=> 'scan_bugs    [bugid%]',    	'sh' 	=> 'scan all bugs for group, osname, version, etc.',
+	's' 	=> 'scan_header  [bugid%]',    	'sh' 	=> 'scan bug headers (see <b>)',
 #	't' 	=> 'tables       [primaryid%]',	'th' 	=> 'tidy all tables created=SYSDATE(), etc.',
 	'u' 	=> 'users        [userid%]',	'uh' 	=> 'de-activate non-valid users',
 	'x'		=> 'execute      [sql]',		'xh'	=> 'xecute sql on db!', # only if bugmaster
@@ -846,14 +847,40 @@ sub forward { # e
 }
 
 
+=item scan_header
+
+Scan only the header portion of the bug
+
+=cut
+
+sub scan_header {
+	my $self = shift;
+	return $self->scan_bugs('header', @_);
+}
+
+=item scan_body
+
+Scan only the body portion of the bug
+
+=cut
+
+sub scan_body {
+	my $self = shift;
+	return $self->scan_bugs('body', @_);
+}
+
+
 =item scan_bugs
 
 Trawls and updates bug group, osname, versions etc.
+
+	$o_fix->scan_bugs([header|body], [bugid%]);
 
 =cut
 
 sub scan_bugs { # s 
 	my $self 	= shift;
+	my $which   = shift;
 	my $bugid   = shift || '';
 	my $and     = ($bugid =~ /\w+/o) ? "bugid LIKE '$bugid'" : "bugid LIKE '%_.___'";
 
@@ -877,7 +904,7 @@ sub scan_bugs { # s
 		my $o_int  = $self->setup_int($header);
 		my @cc     = ();	
 
-		if (ref($o_int)) {
+		if (ref($o_int) and $which eq 'header') {
 			my $o_hdr  = $o_int->head; 
 			@cc        = $o_hdr->get('Cc');
 			my $from   = $o_hdr->get('From');
@@ -905,13 +932,15 @@ sub scan_bugs { # s
 			}
 		}
 
-		if (length($body) >= 1) {
-			print '... ';
-			my $h_scan = $self->scan($body);
-			$$h_scan{'address'}{'names'} = \@cc if scalar(@cc) >= 1;
-			print 'scanned('.length($body).') '; # .(Dumper($h_scan));		
-			my $i_rels = my @rels = $o_bug->relate($h_scan);
-			print "-> fixed $i_rels rels(@rels)\n";
+		if ($which eq 'body') {
+			if (length($body) >= 1) {
+				print '... ';
+				my $h_scan = $self->scan($body);
+				$$h_scan{'address'}{'names'} = \@cc if scalar(@cc) >= 1;
+				print 'scanned('.length($body).') '; # .(Dumper($h_scan));		
+				my $i_rels = my @rels = $o_bug->relate($h_scan);
+				print "-> fixed $i_rels rels(@rels)\n";
+			}
 		}
 		print "\n";		
 		last BUG if $i_cnt >= $MAX;

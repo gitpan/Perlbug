@@ -1,6 +1,6 @@
 # Perlbug configuration data
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Config.pm,v 1.50 2001/10/22 15:29:50 richardf Exp $
+# $Id: Config.pm,v 1.51 2001/12/01 15:24:41 richardf Exp $
 #
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Config - Perlbug Configuration data handler
 package Perlbug::Config;
 use strict;
 use vars(qw($VERSION @ISA $AUTOLOAD));
-$VERSION = do { my @r = (q$Revision: 1.50 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.51 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 # print map { $_=$ENV{$_} . "\n" } grep(/Perlbug/i, keys %ENV);
 $|=1;
 
@@ -60,15 +60,14 @@ sub new {
 	my $self = { '_config' => '' };
     bless($self, $class);
 
-
     my $h_data = $self->get_config_data($cfg);
 	$self->{'_config'} = $h_data;
     $h_data = $self->update_data($h_data);
     $self->prime_data($h_data);
-	# $self->relog if $Perlbug::DEBUG =~ /dD/;
+	$self->relog if $Perlbug::DEBUG =~ /[dD]/;
     $self->set_alarm($h_data);
-	$self->("suspect Perlbug::Config data: ".Dumper($self->{'_config'})) 
-		unless keys %{$self->{'_config'}} >= 7; # ?
+	$self->error(0, "suspect Perlbug::Config data: ".Dumper($self->{'_config'})) 
+		unless keys %{$self->{'_config'}} >= 16; # ?
 
 	return $self;
 }
@@ -76,7 +75,7 @@ sub new {
 
 =item relog
 
-Redirect log output to STDOUT
+Redirect log output to STDOUT (if $Perlbug_DEBUG =~ /[dD]/
 
 	$o_conf->relog;
 
@@ -111,13 +110,12 @@ sub error {
 	# print "Config DEBUG($Perlbug::DEBUG) FATAL($Perlbug::FATAL)\n";
 	$self->debug(0, $err) if $self->can('debug'); # if $Perlbug::DEBUG;
 	if ($Perlbug::FATAL == 1) {
-		my @res = ($0 =~ /t\/\w+\.t$/) ? print($err) : confess($err);
+		# my @res = ($0 =~ /t\/\w+\.t$/) ? print($err) : confess($err);
+		confess($err);
 	} else {
-		if ($Perlbug::DEBUG =~ /[23]/o) {
-			cluck($err);
-		} else {
-			print($err);
-		}	
+		my @ignored = ($Perlbug::DEBUG =~ /[23]/o) 
+			? cluck($err) 
+			: print($err);
 	}
 
 	$i_ok;
@@ -475,6 +473,12 @@ sub forward {
 	return @ret;
 }
 
+my $VALID = join('|', qw( 
+	CURRENT SYSTEM DATABASE DIRECTORY 
+	LINK ENV FEEDBACK MESSAGE EMAIL WEB VARS
+	DEFAULT GROUP SEVERITY STATUS VERSION
+));
+
 sub AUTOLOAD {
 	my $self = shift;
 	my $get  = shift;	# get || { set => 'this' }
@@ -486,53 +490,43 @@ sub AUTOLOAD {
 	my $pkg = ref($self);
 	my @ret = ();
 
-	# TARGET FORWARD taken care of above
-	my $valid = join('|', qw( 
-		CURRENT SYSTEM DATABASE DIRECTORY 
-		ENV FEEDBACK MESSAGE EMAIL WEB VARS
-		DEFAULT GROUP SEVERITY STATUS VERSION
-	));
-
-	if ($meth !~ /^($valid)$/) { # not one of ours :-)
+	if ($meth !~ /^($VALID)$/) { # not one of ours :-)
 		$self->error("$pkg->$meth(@_) called with a duff method($AUTOLOAD)!  \nTry: 'perldoc $pkg'");
 	} else { 
 		no strict 'refs';
 		*{$AUTOLOAD} = sub {
 			my $self = shift;
 			my $get  = shift;	# get || { set => 'this' }
-			my @ret = ();
+			my @ret  = ();
 
-			# if (ref($self->{'_config'}{$meth}) ne 'HASH') {
-			#	$self->error("invalid config($pkg) structure($meth): ".Dumper($self));
-			#} else {
-				if (!defined($get)) {
-					@ret = keys %{$self->{'_config'}{$meth}};
-				} else {
-					if (ref($get) ne 'HASH') { 						# get ...
-						@ret = ($self->{'_config'}{$meth}{$get});	#  
-					} else {										# set ...
-						if ($meth !~ /^current$/i) { 				# current 
-							$self->error("structure($meth) not settable: ".Dumper($get));
-						} else {
-							my $keys = join('|', keys %{$self->{'_config'}{"$meth"}}); 	# ref
-							SET:
-							foreach my $key (keys %{$get}) {
-								if ($key !~ /^($keys)$/) {
-									$self->error("unrecognised key($key) in $meth structure($keys)!");
-								} else {
-									if ($key =~ /^(\w{3})_file$/o) { # setting new file?
-										undef $self->{'_config'}{$meth}{$1.'_fh'};
-									}
-									$self->{'_config'}{$meth}{$key} = $$get{$key}; # 
-									push(@ret, $$get{$key});		# 
+			if (!defined($get)) {
+				@ret = keys %{$self->{'_config'}{$meth}};
+			} else {
+				if (ref($get) ne 'HASH') { 						# get ...
+					@ret = ($self->{'_config'}{$meth}{$get});	#  
+				} else {										# set ...
+					if ($meth !~ /^current$/i) { 				# current 
+						$self->error("structure($meth) not settable: ".Dumper($get));
+					} else {
+						my $keys = join('|', keys %{$self->{'_config'}{"$meth"}}); 	# ref
+						SET:
+						foreach my $key (keys %{$get}) {
+							if ($key !~ /^($keys)$/) {
+								$self->error("unrecognised key($key) in $meth structure($keys)!");
+							} else {
+								if ($key =~ /^(\w{3})_file$/o) { # setting new file?
+									undef $self->{'_config'}{$meth}{$1.'_fh'};
 								}
+								$self->{'_config'}{$meth}{$key} = $$get{$key}; # 
+								push(@ret, $$get{$key});		# 
 							}
 						}
 					}
 				}
-			#}
+			}
+
 			return wantarray ? @ret : $ret[0];
-		}			
+		}	# autoload
     }
 	return wantarray ? @ret : $ret[0];
 }

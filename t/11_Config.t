@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Actual configuration tests (dir., files, perms., email addresses etc.) for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 11.Config.t,v 1.1 2001/10/05 08:23:53 richardf Exp $
+# $Id: 11_Config.t,v 1.1 2001/12/01 15:24:43 richardf Exp $
 #
 use strict;
 use lib qw(../);
@@ -17,10 +17,6 @@ use Perlbug::Config;
 use Data::Dumper;
 my $o_conf = Perlbug::Config->new; 
 my $o_test = Perlbug::Test->new($o_conf);
-$o_conf->current('isatest', 1);
-
-# Tests: spool and other dirs
-# -----------------------------------------------------------------------------
 
 # 1-6
 # Directories 

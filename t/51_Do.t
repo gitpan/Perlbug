@@ -1,17 +1,20 @@
 #!/usr/bin/perl 
 #
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 51_Do.t,v 1.4 2001/09/18 13:37:50 richardf Exp $
+# $Id: 51_Do.t,v 1.5 2001/12/01 15:24:43 richardf Exp $
 #
 use strict;
 use Data::Dumper;
 use Perlbug::Base;
 use Perlbug::Test;
+
+my $o_perlbug = Perlbug::Base->new;
+my $o_test = Perlbug::Test->new($o_perlbug);
 plan('tests' => 4);
+
 use lib qw(../);
 my $test = 0;
 my $context = 'not defined';
-my $o_perlbug = '';
 
 # Tests
 # -----------------------------------------------------------------------------
@@ -20,8 +23,7 @@ my $o_perlbug = '';
 # Libraries callable? 
 $test++; 
 $context = 'new';
-if ($o_perlbug = Perlbug::Base->new) {	# wont operate stand-alone
-	$o_perlbug->current('isatest', 1);
+if (ref($o_perlbug)) {
 	ok($test);
 } else {
 	ok(0);
@@ -30,7 +32,7 @@ if ($o_perlbug = Perlbug::Base->new) {	# wont operate stand-alone
 
 # 2
 $test++;
-$context = 'get_switches';
+$context = 'switches';
 my @switches = $o_perlbug->$context(); 
 if (grep(/^h$/, @switches) and grep(!/^a$/, @switches)) {	
 	ok($test);
@@ -59,18 +61,7 @@ if (grep(/^a$/, @switches) and grep(/^x$/, @switches)) {
 	output("$context('admin') failed(@switches)");
 }
 
-=pod
-# 5
-$test++;
-$context = 'stats'; # takes too long to bother testing
-my %stats = %{$o_perlbug->$context()}; 
-if ($stats{'bugs'} >= 1) { 
-	ok($test);
-} else {
-	ok(0);
-	output("$context failed: ".Dumper(\%stats));
-}
-=cut
+# $context = 'stats'; # takes too long to bother testing
 
 # Done
 # -----------------------------------------------------------------------------

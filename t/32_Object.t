@@ -1,83 +1,150 @@
 #!/usr/bin/perl -w
-# Object retrieval tests (for objects and relations) for Perlbug 
+# Object method tests for Perlbug attr|data|exists|etc.
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 32_Object.t,v 1.2 2001/09/18 13:37:50 richardf Exp $
+# $Id: 32_Object.t,v 1.4 2001/12/03 07:35:50 richardf Exp $
 #
-BEGIN {
+BEGIN { 
 	use File::Spec; 
 	use lib File::Spec->updir;
-	use Perlbug::Test;
-	plan('tests' => 2);
+	use Perlbug::Test; 
+	plan('tests' => 11); 
 }
 use strict;
 use lib qw(../);
+use Carp;
 my $test = 0;
-my $err = 0;
-
 
 # Libs
 # -----------------------------------------------------------------------------
-use Perlbug::Base;
-my $o_pb   = Perlbug::Base->new;
-my $o_test = Perlbug::Test->new($o_pb);
-my @objects= $o_pb->objects;
+use Perlbug::Object::Bug;
+my $o_obj = Perlbug::Object::Bug->new();
 
 # Tests
 # -----------------------------------------------------------------------------
 
-$test = 1;
-my $i_errs = 0;
-my @failed = ();
-foreach my $obj (@objects) {
-	my $i_err = 0;
-	my $o_obj = $o_pb->object($obj);
-	my $ref = ref($o_obj);
-	my $match = 'Perlbug::Object::'.ucfirst($obj);
-	if ($ref !~ /^$match$/) {
-		$i_err++;
-		output("$obj failed to retrieve correct($match) ref($ref) object($o_obj)");
-	}
-	if ($i_err != 0) {
-		$i_errs++;
-		push(@failed, $obj);
-	}
-		
-}
-if ($i_errs == 0) {
+# 1
+# object?
+$test++; 
+if (ref($o_obj)) {	
 	ok($test);
 } else {
 	ok(0);
-	output("$i_errs objects failed(@failed)");
+	output("Can't retrieve object($o_obj)");
 }
 
-$test = 2;
-$i_errs = 0;
-@failed = ();
-my $i_rels = 0;
-foreach my $obj (@objects) {
-	my $i_err = 0;
-	my $o_obj = $o_pb->object($obj);
-	foreach my $rel ($o_obj->rels) {
-		my $o_rel = $o_pb->object($rel);
-		my $ref = ref($o_rel);
-		my $match = 'Perlbug::Object::'.ucfirst($rel);
-		if ($ref !~ /^$match$/) {
-			$i_err++;
-			output("$obj rel($rel) failed to retrieve correct($match) ref($ref) relation($o_rel)");
-		}
-		if ($i_err != 0) {
-			$i_errs++;
-			push(@failed, "$obj:$rel");
-		}
-	}	
-}
-if ($i_errs == 0) {
+# 2
+# exists?
+$test++; 
+my $exists = $o_obj->exists;
+if ($exists == 0) {
 	ok($test);
 } else {
 	ok(0);
-	output("$i_errs objects failed $i_rels relations(@failed)");
+	output("non-valid bugid() should NOT exist($exists)");
 }
 
-# Done
-# -----------------------------------------------------------------------------
-#
+# 3
+# read
+$test++; 
+my $oid = '19870502.007';
+$exists = $o_obj->read($oid)->exists;
+if ($exists == 1) {
+	ok($test);
+} else {
+	ok(0);
+	output("valid bugid($oid) SHOULD exist($exists)");
+}
+
+# 4
+# get attributes
+$test++; 
+my $key = $o_obj->attr('objectid'); 
+if ($key eq $oid) {	
+	ok($test);
+} else {
+	ok(0);
+	output("get attr(objectid=$oid) failed -> '$key'");
+}
+
+# 5
+# data 
+$DB::single=2;
+my $created = $o_obj->data('created');
+$test++; 
+if ($created =~ /^\d+/o) {
+	ok($test);
+} else {
+	ok(0);
+	output("get data(created=some_date) NOT ok -> '$created'");
+}
+
+# 6
+# fields 
+$test++; 
+my @fields = $o_obj->data_fields;
+if (grep(/^created$/, @fields)) {
+	ok($test);
+} else {
+	ok(0);
+	output("no 'created' data field found(@fields)");
+}
+
+# 7
+# ids 
+$test++; 
+my $table = $o_obj->attr('table');
+my ($i_all) = my @all = $o_obj->base->get_list("SELECT COUNT(*) FROM $table"); # !
+my $i_ids   = my @ids = $o_obj->ids();
+if ($i_all == $i_ids && $i_ids >= 1) {
+	ok($test);
+} else {
+	ok(0);
+	output("all($i_all) should numerically match ids($i_ids)!");
+}
+
+# 8
+# ids+
+my $pri = $o_obj->primary_key;
+my ($bid) = $o_obj->ids("WHERE $pri = '$oid'");
+$test++; 
+if ($bid eq $oid) {
+	ok($test);
+} else {
+	ok(0);
+	output("retrieved $pri($bid) NOT matches objectid($oid)!");
+}
+
+# 9
+# _gen_field_handler - migrated
+my ($subject) = $o_obj->data('subject');
+$test++; 
+if ($subject =~ /\w+/o) {
+	ok($test);
+} else {
+	ok(0);
+	output("field_handler failure: subject($subject)");
+}
+
+# 10 
+# ref
+my $href = $o_obj->_oref('attr');
+$test++; 
+if (ref($href) eq 'HASH') {
+	ok($test);
+} else {
+	ok(0);
+	output("oref failed to retrieve attributes href($href)!");
+}
+
+# 11 
+# base 
+my $o_base = $o_obj->base;
+my $o_object = $o_base->object('bug');
+$test++; 
+if (ref($o_object)) {
+	ok($test);
+} else {
+	ok(0);
+	output("failed to retrieve base($o_base) object($o_object)!");
+}
+

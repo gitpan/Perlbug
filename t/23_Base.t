@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Base tests for help(), spec() etc., things that return swathes of data etc.
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 23_Base.t,v 1.1 2001/09/18 13:37:50 richardf Exp $
+# $Id: 23_Base.t,v 1.2 2001/12/01 15:24:43 richardf Exp $
 #
 
 use strict;
@@ -32,10 +32,23 @@ my %tests = (
 			'expected' 	=> '[a-zA-Z]+',
 		},	
 	],
+	'dor'	=> [
+		{ 
+			'args'		=> ['not much data'],
+			'expected' 	=> '[a-zA-Z]+',
+		},	
+		
+	],
+	'dos'	=> [
+		{ 
+			'args'		=> ['realclean'],
+			'expected' 	=> '[a-zA-Z]+',
+		},	
+	],
 	'tell_time'	=> [
 		{ 
 			'args'		=> [()],
-			'expected' 	=> '[a-zA-Z]+',
+			'expected' 	=> '[a-z\sA-Z]+',
 		},	
 		
 	],

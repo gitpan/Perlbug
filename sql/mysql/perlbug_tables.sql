@@ -5,14 +5,6 @@
 # Server version	3.22.32
 
 #
-# Table structure for table 'bug_msgs_count'
-#
-CREATE TABLE bug_msgs_count (
-  bugid varchar(12),
-  msgcount int(5)
-);
-
-#
 # Table structure for table 'pb_address'
 #
 CREATE TABLE pb_address (
@@ -51,18 +43,19 @@ CREATE TABLE pb_bug (
   created datetime,
   modified datetime,
   bugid varchar(12) DEFAULT '' NOT NULL,
-  subject varchar(100) DEFAULT '' NOT NULL,
-  sourceaddr varchar(100) DEFAULT '' NOT NULL,
-  toaddr varchar(100) DEFAULT '' NOT NULL,
+  subject varchar(255) DEFAULT '' NOT NULL,
+  sourceaddr varchar(255) DEFAULT '' NOT NULL,
+  toaddr varchar(100),
   header blob,
   body blob,
   email_msgid varchar(100) DEFAULT '' NOT NULL,
   PRIMARY KEY (bugid),
-  UNIQUE tm_bug_id_i (bugid),
-  KEY tm_bug_subject (subject),
-  KEY tm_bug_sourceaddr_i (sourceaddr),
-  KEY tm_bug_toaddr_i (toaddr),
-  KEY pb_bug_emailmsgid_i (email_msgid)
+  UNIQUE bug_id (bugid),
+  KEY pb_bug_emailmsgid_i (email_msgid),
+  KEY bugid (bugid),
+  KEY subject (subject),
+  KEY email_msgid (email_msgid),
+  KEY sourceaddr (sourceaddr)
 );
 
 #
@@ -234,6 +227,15 @@ CREATE TABLE pb_bug_version (
 );
 
 #
+# Table structure for table 'pb_bugid'
+#
+CREATE TABLE pb_bugid (
+  created datetime,
+  modified datetime,
+  bugid varchar(12) DEFAULT '' NOT NULL
+);
+
+#
 # Table structure for table 'pb_change'
 #
 CREATE TABLE pb_change (
@@ -242,7 +244,6 @@ CREATE TABLE pb_change (
   changeid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(16) DEFAULT '' NOT NULL,
   PRIMARY KEY (changeid),
-  UNIQUE tm_change_name_u (name),
   UNIQUE change_name_i (name)
 );
 
@@ -265,9 +266,7 @@ CREATE TABLE pb_group (
   groupid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(25) DEFAULT '' NOT NULL,
   description varchar(150) DEFAULT '' NOT NULL,
-  PRIMARY KEY (groupid),
-  UNIQUE tm_group_id_i (groupid),
-  UNIQUE group_name_i (name)
+  PRIMARY KEY (groupid)
 );
 
 #
@@ -291,8 +290,7 @@ CREATE TABLE pb_log (
   userid varchar(16),
   objectid varchar(16),
   objectkey varchar(16),
-  PRIMARY KEY (logid),
-  UNIQUE tm_log_id_i (logid)
+  PRIMARY KEY (logid)
 );
 
 #
@@ -302,18 +300,19 @@ CREATE TABLE pb_message (
   created datetime,
   modified datetime,
   messageid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
-  subject varchar(100) DEFAULT '' NOT NULL,
-  sourceaddr varchar(100) DEFAULT '' NOT NULL,
-  toaddr varchar(100) DEFAULT '' NOT NULL,
+  subject varchar(255) DEFAULT '' NOT NULL,
+  sourceaddr varchar(255) DEFAULT '' NOT NULL,
+  toaddr varchar(100),
   header blob,
   body blob,
   email_msgid varchar(100) DEFAULT '' NOT NULL,
   PRIMARY KEY (messageid),
-  UNIQUE tm_message_id_i (messageid),
-  KEY tm_message_subject_i (subject),
-  KEY tm_message_sourceaddr_i (sourceaddr),
-  KEY tm_message_toaddr_i (toaddr),
-  KEY pb_message_emailmsgid_i (email_msgid)
+  UNIQUE message_id (messageid),
+  KEY pb_message_emailmsgid_i (email_msgid),
+  KEY subject (subject),
+  KEY email_msgid (email_msgid),
+  KEY sourceaddr (sourceaddr),
+  KEY messageid (messageid)
 );
 
 #
@@ -323,15 +322,29 @@ CREATE TABLE pb_note (
   created datetime,
   modified datetime,
   noteid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
-  subject varchar(100),
-  sourceaddr varchar(100),
+  subject varchar(255) DEFAULT '' NOT NULL,
+  sourceaddr varchar(255) DEFAULT '' NOT NULL,
   toaddr varchar(100),
   header blob,
   body blob,
   email_msgid varchar(100) DEFAULT '' NOT NULL,
   PRIMARY KEY (noteid),
-  UNIQUE tm_note_id_i (noteid),
-  KEY pb_note_emailmsgid_i (email_msgid)
+  KEY pb_note_emailmsgid_i (email_msgid),
+  KEY email_msgid (email_msgid),
+  KEY sourceaddr (sourceaddr),
+  KEY noteid (noteid)
+);
+
+#
+# Table structure for table 'pb_object'
+#
+CREATE TABLE pb_object (
+  created datetime,
+  ts timestamp(14),
+  objectid smallint(5),
+  type char(16),
+  name char(25) DEFAULT '' NOT NULL,
+  description char(150)
 );
 
 #
@@ -343,7 +356,6 @@ CREATE TABLE pb_osname (
   osnameid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(16) DEFAULT '' NOT NULL,
   PRIMARY KEY (osnameid),
-  UNIQUE tm_osname_name_u (name),
   UNIQUE osname_name_i (name)
 );
 
@@ -354,15 +366,19 @@ CREATE TABLE pb_patch (
   created datetime,
   modified datetime,
   patchid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
-  subject varchar(100),
-  sourceaddr varchar(100),
+  subject varchar(255) DEFAULT '' NOT NULL,
+  sourceaddr varchar(255) DEFAULT '' NOT NULL,
   toaddr varchar(100),
   header blob,
   body blob,
   email_msgid varchar(100) DEFAULT '' NOT NULL,
   PRIMARY KEY (patchid),
-  UNIQUE tm_patch_id_i (patchid),
-  KEY pb_patch_emailmsgid_i (email_msgid)
+  KEY pb_patch_emailmsgid_i (email_msgid),
+  KEY email_msgid (email_msgid),
+  KEY sourceaddr (sourceaddr),
+  KEY sourceaddr_2 (sourceaddr),
+  KEY sourceaddr_3 (sourceaddr),
+  KEY patchid (patchid)
 );
 
 #
@@ -383,7 +399,7 @@ CREATE TABLE pb_project (
   ts timestamp(14),
   projectid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(25) DEFAULT '' NOT NULL,
-  description varchar(150) DEFAULT '' NOT NULL,
+  description varchar(150),
   PRIMARY KEY (projectid),
   UNIQUE project_name_i (name)
 );
@@ -409,7 +425,6 @@ CREATE TABLE pb_severity (
   severityid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(16) DEFAULT '' NOT NULL,
   PRIMARY KEY (severityid),
-  UNIQUE tm_severity_name_u (name),
   UNIQUE severity_name_i (name)
 );
 
@@ -422,7 +437,6 @@ CREATE TABLE pb_status (
   statusid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(16) DEFAULT '' NOT NULL,
   PRIMARY KEY (statusid),
-  UNIQUE tm_status_name_u (name),
   UNIQUE status_name_i (name)
 );
 
@@ -461,15 +475,18 @@ CREATE TABLE pb_test (
   created datetime,
   modified datetime,
   testid bigint(20) unsigned DEFAULT '0' NOT NULL auto_increment,
-  subject varchar(100) DEFAULT '',
-  sourceaddr varchar(100) DEFAULT '',
+  subject varchar(255) DEFAULT '' NOT NULL,
+  sourceaddr varchar(255) DEFAULT '' NOT NULL,
   toaddr varchar(100),
   header blob,
   body blob,
   email_msgid varchar(100) DEFAULT '' NOT NULL,
   PRIMARY KEY (testid),
-  UNIQUE tm_test_id_i (testid),
-  KEY pb_test_emailmsgid_i (email_msgid)
+  KEY pb_test_emailmsgid_i (email_msgid),
+  KEY email_msgid (email_msgid),
+  KEY sourceaddr (sourceaddr),
+  KEY testid (testid),
+  KEY testid_2 (testid)
 );
 
 #
@@ -497,19 +514,6 @@ CREATE TABLE pb_thing (
 );
 
 #
-# Table structure for table 'pb_type'
-#
-CREATE TABLE pb_type (
-  created datetime,
-  ts timestamp(14),
-  typeid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
-  type varchar(16),
-  name varchar(25) DEFAULT '' NOT NULL,
-  description varchar(150),
-  PRIMARY KEY (typeid)
-);
-
-#
 # Table structure for table 'pb_user'
 #
 CREATE TABLE pb_user (
@@ -521,9 +525,8 @@ CREATE TABLE pb_user (
   name varchar(50),
   match_address varchar(150),
   active char(1),
-  public_key blob,
-  PRIMARY KEY (userid),
-  UNIQUE tm_user_id_i (userid)
+  p5p_key blob,
+  PRIMARY KEY (userid)
 );
 
 #
@@ -535,7 +538,6 @@ CREATE TABLE pb_version (
   versionid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
   name varchar(16) DEFAULT '' NOT NULL,
   PRIMARY KEY (versionid),
-  UNIQUE tm_version_name_u (name),
   UNIQUE version_name_i (name)
 );
 

@@ -1,4 +1,4 @@
-# $Id: webhelp,v 1.3 2001/07/05 08:27:04 richardf Exp $
+# $Id: webhelp,v 1.4 2001/12/03 10:39:21 richardf Exp $
 
 =head1 NAME 
 
@@ -18,7 +18,7 @@ Help for users of the web interface, searching, objects and their fields, etc.
 
 =item mask 
 
-The search mask has no pre-selected entries, click B<query> and an indiscriminate 
+The search mask/fields, have no pre-selected entries, click B<query> and an indiscriminate 
 list of all the bugs in the database will be returned.  
 
 Filterering is achieved by selecting options from the popup menus, or entering data in the text fields, as described below.
@@ -100,6 +100,58 @@ L<DESCRIPTION>
 =cut
 
 
+=head1 SUBMIT
+
+=over 4
+
+The submit buttons available are as follows:
+
+=item Query
+
+submit the query to the database interface
+
+=item Reset
+
+reset the form to the default values
+
+
+=head2 administrative
+
+For admins only:
+
+=item Update
+
+update the selected record/s shown
+
+=item Nocc
+
+same as update, but don't send any email notifications of the changes
+
+=item Select
+
+select all shown record/s
+
+=item Unselect
+
+deselect all shown record/s
+
+=item Admin
+
+switch from the B<noadmin> view to the B<admin> view
+
+=item Noadmin
+
+switch from the B<admin> view to the B<noadmin> view
+
+=item Delete
+
+delete the selected shown record/s
+
+=back
+
+=cut
+
+
 =head1 OBJECTS
 
 Certain fields are common to all objects:
@@ -161,7 +213,11 @@ The status of the bug, with the following options:
 
     duplicate   -	a report erroneously filed a second time
 
+    incapable	-	considered not doable
+
     ok          -	a 'build reported OK:' report, (not the same as closed)
+
+    notok         -	opposite of B<ok>
 
     onhold      -	undecided as to whether this is a bug or not
 

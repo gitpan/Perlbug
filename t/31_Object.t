@@ -1,153 +1,141 @@
 #!/usr/bin/perl -w
-# Setup test data for Perlbug: insert: user, bug, patch, note, test, claimants, ccs
+# Object retrieval, and oid recognition tests (for objects and relations) for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 31_Object.t,v 1.7 2001/10/19 12:40:21 richardf Exp $
+# $Id: 32_Object.t,v 1.3 2001/12/01 15:24:43 richardf Exp $
 #
-use Perlbug::Test;
+BEGIN {
+	use File::Spec; 
+	use lib File::Spec->updir;
+	use Perlbug::Test;
+	plan('tests' => 3);
+}
 use strict;
-use lib qw(../); 
+use lib qw(../);
+my $test = 0;
+my $err = 0;
+
 
 # Libs
 # -----------------------------------------------------------------------------
-use Data::Dumper;
-use FileHandle;
-use Mail::Internet;
 use Perlbug::Base;
-use Sys::Hostname;
-my $o_pb = Perlbug::Base->new;
+my $o_pb   = Perlbug::Base->new;
 my $o_test = Perlbug::Test->new($o_pb);
-$o_pb->current('admin', 'richardf');
-
-# Setup
-# -----------------------------------------------------------------------------
-my $err  = 0;
-my $test = 0;
-
-# SETUP
-# -----------------------------------------------------------------------------
-my $TO		= '"Perlbug DB" <perlbug@perl.com>';
-my $FROM	= $o_test->from;
-my $SUBJECT = 'some email -> "make realclean" eats my patches :-)';
-my $BUGID   = $o_test->bugid;
-my $MSGID 	= $o_test->messageid;
-my $REPLYID = '';
-my %MAIL 	= (
-	'toaddr'		=> $TO,
-	'sourceaddr'	=> $FROM,
-	'subject'		=> $SUBJECT,
-	'email_msgid'	=> $MSGID,
-	'body'			=> q#
-	This is a perlbug(<unrecognised>) of some _  ' ' sort...
-	
-	os=irix status=onhold 
-	
-	(not much data... here perl etc...)
-
-	on behalf a perl bug test report
-
-	#,
-	'header'		=> qq#
-Return-path: <perl5-porters-return-14508-p5p=rfi.net\@perl.org>
-Date: Wed, 12 Jul 2000 15:26:47 +0100
-From: $FROM
-Subject: $SUBJECT
-To: $TO
-Cc: perlbug_test_cc\@rfi.net
-Cc: cc_perlbug_interest\@rfi.net
-Message-ID: <$MSGID>
-MIME-version: 1.0
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-Delivered-to: mailing list perl5-porters\@perl.org
-Delivered-to: perlmail-perlbug\@perl.org
-Mailing-List: contact perl5-porters-help\@perl.org; run by ezmlm
-X-Comment: Message Virus scanned by m.dasa.de
-X-UIDL:  !!!!01JROPXND8ZK8Y7ZAG0
-	#,
-);
-# print Dumper(\%MAIL);
-my %TEMPLATE = (
-	'name'			=> 'bug',
-	'format'		=> 'a',
-	'wrap'			=> '75',
-	'description'	=> 'test insertion of bug template', 
-	'header'		=> '', 
-	'body'			=> q#
-Bug: <{bugid}>  Created: <{created}>  Modified: <{created}>
-Subject: <{subject}>
-
-Status:   <{status_names}>
-OS:       <{osname_names}>
-Severity: <{severity_names}>
-Group:    <{group_names}>
-
-Message ids: <{patch_ids}>
-Patch ids:   <{patch_ids}>
-
-Header:   
-<{header}>
-
-Body:
-<{body}>
-
-	#,
-);	
-
+my @objects= $o_pb->objects;
 
 # Tests
 # -----------------------------------------------------------------------------
 
-# 1 - 8
-# INSERT for Test
-# 
-my @objects = ($o_pb->objects('mail'), 'template');
-plan('tests' => scalar(@objects));
-
-OBJ:
-foreach my $obj (sort @objects) {
-	$test++; 
-	next OBJ unless $obj =~ /\w+/o;
+$test++;
+my $i_errs = 0;
+my @failed = ();
+foreach my $obj (@objects) {
+	my $i_err = 0;
 	my $o_obj = $o_pb->object($obj);
-	if (!(ref($o_obj))) {
-		output("\tobj($obj) failed to retrieve object($o_obj)!");
+	my $ref = ref($o_obj);
+	my $match = 'Perlbug::Object::'.ucfirst($obj);
+	if ($ref !~ /^$match$/) {
+		$i_err++;
+		output("$obj failed to retrieve correct($match) ref($ref) object($o_obj)");
+	}
+	if ($i_err != 0) {
+		$i_errs++;
+		push(@failed, $obj);
+	}
+		
+}
+if ($i_errs == 0) {
+	ok($test);
+} else {
+	ok(0);
+	output("$i_errs objects failed(@failed)");
+}
+
+$test++;
+$i_errs = 0;
+@failed = ();
+my $i_rels = 0;
+foreach my $obj (@objects) {
+	my $i_err = 0;
+	my $o_obj = $o_pb->object($obj);
+	foreach my $rel ($o_obj->rels) {
+		my $o_rel = $o_pb->object($rel);
+		my $ref = ref($o_rel);
+		my $match = 'Perlbug::Object::'.ucfirst($rel);
+		if ($ref !~ /^$match$/) {
+			$i_err++;
+			output("$obj rel($rel) failed to retrieve correct($match) ref($ref) relation($o_rel)");
+		}
+		if ($i_err != 0) {
+			$i_errs++;
+			push(@failed, "$obj:$rel");
+		}
+	}	
+}
+if ($i_errs == 0) {
+	ok($test);
+} else {
+	ok(0);
+	output("$i_errs objects failed $i_rels relations(@failed)");
+}
+
+# OID recognition
+$test++;
+$i_errs = 0;
+@failed = ();
+@objects = (defined($ARGV[0])) ? ($ARGV[0]) : @objects;
+MATCH:
+foreach my $obj (sort @objects) {
+	my $i_err = 0;
+	my $o_obj = $o_pb->object($obj);
+	my $match = $o_obj->attr('match_oid');
+	my $sql   = "SELECT MAX(".$o_obj->primary_key.") FROM ".$o_obj->attr('table');
+	my ($maxid) = $o_obj->base->get_list($sql);
+	if ($maxid !~ /^\w+/) {
+		$i_err++;
+		output("failed to retrieve $obj($o_obj) maxid($maxid)!");
 	} else {
-		my $pri = $o_obj->primary_key;
-		my $oid = $o_obj->new_id;
-		$MAIL{'body'} =~ s/\<unrecognised\>/$obj/si;
-		# output("\tusing new $obj oid($oid)");
-		# $pri 	=> (($obj eq 'bug') ? $BUGID : $oid),
-		my %DATA = ($obj eq 'template') ? %TEMPLATE : %MAIL;
-		$o_obj->create({
-			$pri 	=> $oid, # actually we DO need to do it this way
-			%DATA, 
-		});
-		my $i_ok = $o_obj->CREATED;
-		if ($i_ok != 1) {
-			output("\tfailed to insert $obj($i_ok)!"); 
-		} else {	
-			my $oid = $o_obj->oid;
-			output("\tinstalled object($obj) oid($oid)");
-			if ($obj eq 'bug') {
-				# $o_obj->update( { $pri => $BUGID } );
-				# $i_ok = $o_obj->UPDATED;
-				my $update = "UPDATE pb_bug SET $pri = '$BUGID' WHERE $pri = '$oid'";
-				my $sth = $o_pb->exec($update);
-				if (defined($sth)) {
-					output("\tupdated($oid)->$BUGID");
-				} else {
-					output("\tfailed to update $obj($sth)!");
-					$i_ok = 0;
+		my @failed = ();
+		my %type   = (
+			'plain'		=> [$maxid],
+			'dashes'	=> ['-'.$maxid,   $maxid.'-',   '-'.$maxid.'-'],
+			'underscore'=> ['_'.$maxid,   $maxid.'_',   '_'.$maxid.'_'],
+			'ampersand'	=> ['@'.$maxid,   $maxid.'@',   '@'.$maxid.'@'],
+			'numbers'	=> ['123'.$maxid, $maxid.'789', '123'.$maxid.'789'],
+			'letters'	=> ['abc'.$maxid, $maxid.'xyz', 'abc'.$maxid.'xyz'], 
+			# 'mixed'		=> ['abc'.$maxid, $maxid.'xy9', 'abc'.$maxid.'x8z'],
+			'various'	=> [map { $_.$maxid, $maxid.$_, $_.$maxid.$_ } ( 
+				qw(' " ` ? + _ | - * ^ & % $ \ / @ ! ~ ] [ { } . : ; > < ), ',', '(', ')'
+			), # ' dequote 
+			],
+		);
+		TYPES:
+		foreach my $type (sort keys %type) {
+			next TYPES if ($maxid =~ /^[a-z]+$/) and ($type eq 'letters');
+			next TYPES if ($maxid =~ /^\d+$/)    and ($type eq 'numbers');
+			my @fails = ();
+			TYPE:	
+			foreach my $str (@{$type{$type}}) {
+				my ($id) = $o_obj->str2ids($str);	
+				if ($id ne $maxid) {
+					push(@fails, "str($str) => id($id)");
 				}
 			}
+			push(@failed, "$type: ".join(', ', @fails)."\n") if @fails;
 		}
-		ok(($i_ok == 1) ? $test : 0);
-	} 
+		if (scalar(@failed) >= 1) {
+			$i_errs++;
+			output("Oid match errors: obj($obj) match($match) id($maxid): \n @failed\n");
+			last MATCH;
+		}
+	}	
 }
-if ($err == 0) {	
-	output("...installed ".@objects." objects");
+if ($i_errs == 0) {
+	ok($test);
 } else {
-	output("...failed($err) on objects installation"); 
+	ok(0);
+	output("$i_errs objects failed matches");
 }
-   
-# done.
 
+# Done
+# -----------------------------------------------------------------------------
+#

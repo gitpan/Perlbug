@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: decisions of switch() => do_...() 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 74_Email.t,v 1.7 2001/10/11 08:07:58 richardf Exp $
+# $Id: 74_Email.t,v 1.8 2001/12/01 15:24:43 richardf Exp $
 #
 
 use lib qw(../);
@@ -15,9 +15,10 @@ my $o_test = Perlbug::Test->new($o_mail);
 my $i_test = 0;
 
 my $BUGID  = $o_test->bugid;
-my ($INREPLYTOMSGID) = $o_mail->get_list(
-	"SELECT MAX(email_msgid) FROM pb_bug WHERE email_msgid LIKE '%_\@_%'"
-);
+my $INREPLYTOMSGID = $o_test->inreplytomsgid;
+#my ($INREPLYTOMSGID) = $o_mail->get_list(
+#	"SELECT MAX(email_msgid) FROM pb_bug WHERE email_msgid LIKE '%_\@_%'"
+#);
 
 # Tests 
 # -----------------------------------------------------------------------------
@@ -26,9 +27,17 @@ my %tests = (
 		{ #  
 			'header'	=> {
 				'To'		=> $o_test->target,
-				'Subject'	=> 'Get more sex today! but no perl',
+				'Subject'	=> 'Get more sex today! but no body perl',
 				'From'		=> $o_test->from,
 			},
+		},
+		{ #  
+			'header'	=> {
+				'To'		=> $o_test->target,
+				'Subject'	=> 'Get more sex today! but no perl in body',
+				'From'		=> $o_test->from,
+			},
+			'body'		=> qq| a per l bug	|,
 		},
 	],
 	'B'	=> [ # bug
@@ -90,7 +99,7 @@ my %tests = (
 				'Subject'	=> 'from us with no cmds?',
 				'From'		=> $o_test->from,
 			},
-			'body'		=> qq| perl |,
+			'body'		=> qq| xerl |,
 		},
 		{ # 
 			'header'	=> {
@@ -104,12 +113,19 @@ my %tests = (
 	'quiet'		=> [
 		{ # 
 			'header'	=> {
+				'To'		=> 'xyz@'.$o_test->DOMAIN,
+				'Subject'	=> 'Re; that no bug cmds',
+				'From'		=> $o_test->from,
+				'In-Reply-To'	=> '<non.existent@bugid>',
+			},
+		},
+		{ # 
+			'header'	=> {
 				'To'		=> $o_mail->email('bugdb').'x',
 				'Subject'	=> 'a non=recognised address',
 				'From'		=> $o_test->from,
 			},
 		},
-
 		{ # 
 			'header'	=> {
 				'To'		=> 'Note@'.$o_test->domain,
@@ -195,7 +211,7 @@ foreach my $expected (sort keys %tests) {
 			if ($switch ne $expected) {
 				$i_err++;
 				output("Mis-matching switch($switch) expected($expected): msg($msg)");
-				output('Mail: '.Dumper($o_int->head->header).Dumper($o_int->body));
+				output('Mail: '.Dumper($o_int->head->header).Dumper($o_int->body)) if $Perlbug::DEBUG;
 				last TEST;
 			}
 		}

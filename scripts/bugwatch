@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+# Perlbug list watcher - subscribe to any lists/target addresses
+# (C) 1999 2000 Richard Foley RFI perlbug@rfi.net 
+# $Id: bugwatch,v 1.2 2001/12/03 07:35:50 richardf Exp $
+#
+use strict;
+use vars(qw($VERSION));
+$VERSION = do { my @r = (q$Revision: 1.2 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+
+use Data::Dumper;
+use FindBin;
+use lib "$FindBin::Bin/..";
+use Mail::Internet;
+use Perlbug::Interface::Email;
+$|=1;
+
+my $o_int = Mail::Internet->new(\*STDIN);
+my $o_email = Perlbug::Interface::Email->new;
+
+if ($o_email->system('watch') eq 'yes') {
+	my ($o_hdr, $header, $body) = $o_email->splice($o_int);
+	if (ref($o_hdr)) {
+		chomp(my $subject = $o_hdr->get('Subject'));
+		chomp(my @addrs = ($o_hdr->get('To'), $o_hdr->get('Cc')));
+		$o_email->debug(1, "addrs(@addrs)") if $Perlbug::DEBUG;
+		my $match   = $o_email->email('match');
+		my $targets = $o_email->dodgy_addresses('to').'|.*@'.quotemeta($o_email->email('domain'));
+		$o_email->debug(1, "match($match), targets($targets)") if $Perlbug::DEBUG;
+		my $i_alert = 0;
+		if (grep(/$targets/, @addrs) && $body =~ /$match/) {
+			$i_alert++;
+			my $o_alert = $o_email->get_header;
+			$o_alert->add('To' => $o_email->system('maintainer'));
+			$o_alert->add('Subject' => $o_email->system('title').' ALERT - '.$subject);
+			my $alert = qq|
+*** This email looks as though it might generate a new report? ***
+
+$header
+$body
+
+		|;
+			$i_alert += $o_email->send_mail($o_alert, $alert);
+			$o_email->debug(1, "alerted($i_alert)") if $Perlbug::DEBUG;
+		}
+		$o_email->debug(1, "relevant($i_alert)? <= @addrs") if $Perlbug::DEBUG;
+
+		$o_email->clean_up("$0 -> i_alert($i_alert) addrs(@addrs)");
+	}
+}
+
+exit 0;

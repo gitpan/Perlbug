@@ -1,8 +1,27 @@
 # rjsf: template, thing->object
 
-ALTER TABLE pb_thing RENAME pb_object;
-ALTER TABLE pb_object MODIFY COLUMN thingid objectid;
+# ALTER TABLE pb_thing RENAME pb_object;
+# ALTER TABLE pb_object MODIFY COLUMN thingid objectid;
 
-CREATE TABLE pb_template...;
-CREATE TABLE pb_template_user...;
+# CREATE TABLE pb_template...;
+# CREATE TABLE pb_template_user...;
+
+#
+# Table structure for table 'pb_fixed'
+#
+CREATE TABLE pb_fixed (
+  created datetime,
+  modified datetime,
+  fixedid smallint(5) unsigned DEFAULT '0' NOT NULL auto_increment,
+  name varchar(16) DEFAULT '' NOT NULL,
+  PRIMARY KEY (fixedid),
+  UNIQUE fixed_name_i (name)
+);
+
+DELETE FROM pb_object WHERE name = 'thing';
+DELETE FROM pb_group  WHERE name = 'patch';
+DELETE FROM pb_group  WHERE name LIKE 'x-test%';
+DELETE FROM pb_group  WHERE name LIKE '%group%';
+
+ALTER table pb_bug_user ADD owner VARCHAR(3) DEFAULT ' ';
 

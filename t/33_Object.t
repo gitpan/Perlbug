@@ -1,150 +1,55 @@
 #!/usr/bin/perl -w
-# Object Utility tests for Perlbug 
+# Object utility tests diff()
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 33_Object.t,v 1.3 2001/10/05 08:23:53 richardf Exp $
+# $Id: 33_Object.t,v 1.4 2001/12/03 07:35:50 richardf Exp $
 #
-BEGIN { 
-	use File::Spec; 
-	use lib File::Spec->updir;
-	use Perlbug::Test; 
-	plan('tests' => 11); 
-}
 use strict;
 use lib qw(../);
-use Carp;
-my $test = 0;
+use Perlbug::Base;
+use Perlbug::Test;
 
-# Libs
-# -----------------------------------------------------------------------------
-use Perlbug::Object::Bug;
-my $o_obj = Perlbug::Object::Bug->new();
+my $o_base = Perlbug::Base->new;
+my $o_test = Perlbug::Test->new($o_base);
+my $o_obj  = $o_base->object('bug');
+
+plan('tests' => 3);
+my $i_test = 0;
+my $i_err  = 0;
 
 # Tests
 # -----------------------------------------------------------------------------
 
 # 1
-# object?
-$test++; 
-if (ref($o_obj)) {	
-	ok($test);
+# callable? 
+$i_test++; 
+if (ref($o_base) and ref($o_test) and ref($o_obj)) {
+	ok($i_test);
 } else {
 	ok(0);
-	output("Can't retrieve object($o_obj)");
+	output("object($o_obj) not retrieved");
 }
 
 # 2
-# exists?
-$test++; 
-my $exists = $o_obj->exists;
-if ($exists == 0) {
-	ok($test);
+# data structures
+my $orig = q|
+	original 
+	data
+|;
+my $chan = q|
+
+	xriginal 
+	data
+|;
+
+my $diff = $o_obj->diff($orig, $chan);
+if ($diff =~ /^old:\s*\n2\s+original\s*\nnew:\s*\n2\s+xriginal\s*\n$/ms) {
+	ok($i_test);
 } else {
 	ok(0);
-	output("non-valid bugid() should NOT exist($exists)");
+	output("Failed diff($diff) from orig($orig) changed($chan)");
 }
 
-# 3
-# read
-$test++; 
-my $oid = '19870502.007';
-$exists = $o_obj->read($oid)->exists;
-if ($exists == 1) {
-	ok($test);
-} else {
-	ok(0);
-	output("valid bugid($oid) SHOULD exist($exists)");
-}
 
-# 4
-# get attributes
-$test++; 
-my $key = $o_obj->attr('objectid'); 
-if ($key eq $oid) {	
-	ok($test);
-} else {
-	ok(0);
-	output("get attr(objectid=$oid) failed -> '$key'");
-}
-
-# 5
-# data 
-$DB::single=2;
-my $created = $o_obj->data('created');
-$test++; 
-if ($created =~ /^\d+/o) {
-	ok($test);
-} else {
-	ok(0);
-	output("get data(created=some_date) NOT ok -> '$created'");
-}
-
-# 6
-# fields 
-$test++; 
-my @fields = $o_obj->data_fields;
-if (grep(/^created$/, @fields)) {
-	ok($test);
-} else {
-	ok(0);
-	output("no 'created' data field found(@fields)");
-}
-
-# 7
-# ids 
-$test++; 
-my $table = $o_obj->attr('table');
-my ($i_all) = my @all = $o_obj->base->get_list("SELECT COUNT(*) FROM $table"); # !
-my $i_ids   = my @ids = $o_obj->ids();
-if ($i_all == $i_ids && $i_ids >= 1) {
-	ok($test);
-} else {
-	ok(0);
-	output("all($i_all) should numerically match ids($i_ids)!");
-}
-
-# 8
-# ids+
-my $pri = $o_obj->primary_key;
-my ($bid) = $o_obj->ids("WHERE $pri = '$oid'");
-$test++; 
-if ($bid eq $oid) {
-	ok($test);
-} else {
-	ok(0);
-	output("retrieved $pri($bid) NOT matches objectid($oid)!");
-}
-
-# 9
-# _gen_field_handler - migrated
-my ($subject) = $o_obj->data('subject');
-$test++; 
-if ($subject =~ /\w+/o) {
-	ok($test);
-} else {
-	ok(0);
-	output("field_handler failure: subject($subject)");
-}
-
-# 10 
-# ref
-my $href = $o_obj->_oref('attr');
-$test++; 
-if (ref($href) eq 'HASH') {
-	ok($test);
-} else {
-	ok(0);
-	output("oref failed to retrieve attributes href($href)!");
-}
-
-# 11 
-# base 
-my $o_base = $o_obj->base;
-my $o_object = $o_base->object('bug');
-$test++; 
-if (ref($o_object)) {
-	ok($test);
-} else {
-	ok(0);
-	output("failed to retrieve base($o_base) object($o_object)!");
-}
-
+# Done
+# -----------------------------------------------------------------------------
+# .

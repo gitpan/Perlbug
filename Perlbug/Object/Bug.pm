@@ -1,4 +1,4 @@
-# $Id: Bug.pm,v 1.39 2001/10/19 12:40:20 richardf Exp $
+# $Id: Bug.pm,v 1.40 2001/12/01 15:24:42 richardf Exp $
 #
 
 =head1 NAME
@@ -10,7 +10,7 @@ Perlbug::Object::Bug - Bug class
 package Perlbug::Object::Bug;
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.39 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.40 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 my %fmt = ();
@@ -102,7 +102,7 @@ Return valid new object id for bug, wrapper for base->new_id
 
 # =cut redundant
 
-sub new_id {
+sub xnew_id {
 	my $self = shift;
 
 	my $newid = $self->base->new_id;	
@@ -175,18 +175,19 @@ sub htmlify {
 			my $stat_item = $item."(".@items.") for bug($bid)";
 			($bug{$item}) = join(', ', $self->href('bug_id', \@items, $item, $stat_item));
 		} else {
-			$bug{$item} = '';
+			$bug{$item} = '&nbsp;';
 		}
 	}
 		
 	# admin?
+	$bug{'select'} = '&nbsp;' unless $bug{'select'}; 
     if ($self->base->isadmin && $self->base->current('format') ne 'L' && $req ne 'noadmin') { # LEAN for browsing...
 	    $self->debug(3, "Admin of bug($bid) called.") if $Perlbug::DEBUG;
-		my ($group)    = @{$$h_bug{'group_ids'}}    if $$h_bug{'group_ids'};
-		my ($osname)   = @{$$h_bug{'osname_ids'}}   if $$h_bug{'osname_ids'};
+		my @groups     = @{$$h_bug{'group_ids'}}    if $$h_bug{'group_ids'};
+		my @osnames    = @{$$h_bug{'osname_ids'}}   if $$h_bug{'osname_ids'};
 		my ($severity) = @{$$h_bug{'severity_ids'}} if $$h_bug{'severity_ids'};
 		my ($status)   = @{$$h_bug{'status_ids'}}   if $$h_bug{'status_ids'};
-		my ($user)     = @{$$h_bug{'user_ids'}}     if $$h_bug{'user_ids'};
+		my @users      = @{$$h_bug{'user_ids'}}     if $$h_bug{'user_ids'};
 		my ($fixed)    = $self->object('fixed')->id2name($$h_bug{'fixed_ids'})     if $$h_bug{'fixed_ids'};
 		my ($version)  = $self->object('version')->id2name($$h_bug{'version_ids'}) if $$h_bug{'version_ids'};
 		# print "<hr>c($group) o($osname) sev($severity) stat($status) u($user) ver($version)<hr>";
@@ -194,28 +195,28 @@ sub htmlify {
 		$bug{'help'}.= q|Enter new <b>data</b> in the row <i>below</i> to create a new note, patch or test.  With a new patch, consider entering a <b>changeID</b> at the same time!|;
 		$bug{'address_names'} = $self->object('address')->text_field($bid.'_address', '', -'size' => 55).$bug{'address_ids'};
 		$bug{'note_names'}   	= $self->object('note')->text_field($bid.'_note', '').$bug{'note_ids'};
-		$bug{'group_names'}  	= $self->object('group')->popup($bid.'_group', $group); 
+		$bug{'group_names'}  	= $self->object('group')->choice($bid.'_group', @groups); 
 		$bug{'change_names'}  = $self->object('change')->text_field($bid.'_change', '').$bug{'change_ids'};
 		$bug{'child_ids'}   = $self->object('child')->text_field($bid.'_child', '').$bug{'child_ids'};
-        $bug{'fixed'}       = $self->object('fixed')->text_field($bid.'_fixed', $fixed);
+        $bug{'fixed_names'} = $self->object('fixed')->text_field($bid.'_fixed', $fixed);
 		# new stuff is only for format::H
-		$bug{'newnote'}     = $cgi->textarea(-'name'  => $bid.'_newnote',  -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1, 'onChange' => 'pick(this)');
-		$bug{'newpatch'}    = $cgi->textarea(-'name'  => $bid.'_newpatch', -'value' => '', -'rows' => 3, -'cols' => 35, -'override' => 1, 'onChange' => 'pick(this)');
-		$bug{'newtest'}     = $cgi->textarea(-'name'  => $bid.'_newtest',  -'value' => '', -'rows' => 3, -'cols' => 25, -'override' => 1, 'onChange' => 'pick(this)');
+		$bug{'new_note'}     = $cgi->textarea(-'name'  => $bid.'_new_note',  -'value' => '', -'rows' => 3, -'cols' => 20, -'override' => 1, 'onChange' => 'pick(this)');
+		$bug{'new_patch'}    = $cgi->textarea(-'name'  => $bid.'_new_patch', -'value' => '', -'rows' => 3, -'cols' => 20, -'override' => 1, 'onChange' => 'pick(this)');
+		$bug{'new_test'}     = $cgi->textarea(-'name'  => $bid.'_new_test',  -'value' => '', -'rows' => 3, -'cols' => 20, -'override' => 1, 'onChange' => 'pick(this)');
 		# end newstuff
 		$bug{'note_ids'}  = $self->object('note')->text_field($bid.'_note', '').$bug{'note_ids'};
-		$bug{'osname_names'}  = $self->object('osname')->popup($bid.'_osname', $osname);
+		$bug{'osname_names'}  = $self->object('osname')->choice($bid.'_osname', @osnames);
 		$bug{'parent_ids'}  = $self->object('parent')->text_field($bid.'_parent', '').$bug{'parent_ids'};
 		$bug{'patch_ids'}   = $self->object('patch')->text_field($bid.'_patch', '').$bug{'patch_ids'};
 		$bug{'test_ids'}    = $self->object('test')->text_field($bid.'_test', '').$bug{'test_ids'};
-		$bug{'severity_names'}= $self->object('severity')->popup($bid.'_severity', $severity);
-        $bug{'status_names'}  = $self->object('status')->popup($bid.'_status', $status);
+		$bug{'severity_names'}= $self->object('severity')->choice($bid.'_severity', $severity);
+        $bug{'status_names'}  = $self->object('status')->choice($bid.'_status', $status);
     	$bug{'select'}      = $cgi->checkbox(-'name'=>'bugids', -'checked' => '', -'value'=> $bid, -'label' => '', -'override' => 1);
-        # $bug{'user_ids'}  = $self->object('user')->selector($bid.'_user', $user);
+        # $bug{'user_ids'}  = $self->object('user')->choice($bid.'_user', @users);
         $bug{'version_names'} = $self->object('version')->text_field($bid.'_version', $version);
 	}
-	# print '<pre>h_bug'.encode_entities(Dumper($h_bug)).'</pre>'; 
-	# print '<pre>bug'.encode_entities(Dumper(\%bug)).'</pre>'; 
+	# print '<pre>h_bug: '.encode_entities(Dumper($h_bug)).'</pre>'; 
+	# print '<pre>bug: '.encode_entities(Dumper(\%bug)).'</pre>'; 
 	return \%bug;
 }
 
@@ -524,7 +525,7 @@ $$x{'group_names'} &nbsp;</td>
 <td><b>Test Ids:</b> $$x{'test_ids'} &nbsp;</td>
 </tr>
 <tr><td colspan=4> $$x{'help'} </td></tr>
-<tr><td>$$x{'newnote'}</td><td colspan=2>$$x{'newpatch'}</td><td>$$x{'newtest'}</td></tr>
+<tr><td>$$x{'new_note'}</td><td colspan=2>$$x{'new_patch'}</td><td>$$x{'new_test'}</td></tr>
 </table>
 <table border=1 width=100%>
 <tr> <td colspan=4> $$x{'body'}</td></tr>
@@ -549,7 +550,7 @@ sub new_id {
 	my @extant = ($self->base->get_list("SELECT max(bugid) FROM pb_bug"), $self->base->extant);
 	my ($max)  = sort { $b <=> $a } @extant;
 	if ($max =~ /^(\d{8})\.(\d{3})$/o) {
-		my $num = $2 + 1;
+		my $num = ($1 eq $today) ? $2 + 1 : 1;
 		$newid = $today.'.'.sprintf("%03d", $num);
 		if (grep(/^$newid$/, @extant)) {
 			$newid = $today.'.'.sprintf("%03d", $num + 1);

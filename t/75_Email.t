@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Email tests: checking returns from admin checking methods eg; check_user('spaceship') => 0
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 75_Email.t,v 1.5 2001/09/18 13:37:50 richardf Exp $
+# $Id: 75_Email.t,v 1.6 2001/12/01 15:24:43 richardf Exp $
 #
 
 use strict;
@@ -95,7 +95,7 @@ foreach my $type (sort keys %tests) {
 			if ($result !~ /$expected/) {
 				$i_err++;
 				output("Mis-matching($type) result($result) expected($expected)");
-				output('Mail: '.Dumper($o_int->head->header).Dumper($o_int->body));
+				output('Mail: '.Dumper($o_int->head->header).Dumper($o_int->body)) if $Perlbug::DEBUG;
 				last TYPE;
 			}
 		}

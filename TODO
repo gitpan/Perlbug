@@ -1,27 +1,38 @@
-# SQL
-	DELETE FROM pb_object WHERE name  = 'thing';
-	DELETE FROM pb_group WHERE name  = 'patch';
+cvs add t/34_Object.t
 
-# CVS
-	move t/34_Object.t -> t/41_Relation.t
-	move t/40_Relationst t/40_Relation.t
+# ============================================================================
 
-# Ack has no content
+# appropriate buttons in each window (query|update|etc)
 
-# remove t/53_Do.t
+# assign(), _store(), etc. => relate() ... 
+# relate() packages up small report on this modification 
+# into a trackable item against discrete objects
 
-# closures in OBJECT::AUTOLOAD
- 
-# templates need to have default behaviour as per Format
-
-# absorb patches/changeids - ask Jarkho
-
-# (admin|user)_switches only
-
+# parse log file into relate()
+#
+# trim log file
+# 
 # pb_log hash redo track->history
+
+# userid i_num + name + fullname
+
+# ============================================================================
+
+# CVS - diffs -> add/remove -> commit
+
+# script watches incoming mails reports if any 
+# bug, test, etc. don't land in p5p within one hour
+
+# bugid eq pb_bug::name
+
+# absorb [PATCH]es/changeids - ask Jarkho
 
 # if you're an object, your generic name links to a search/create page
 # 	sourceaddr|patch|admin|status->search/create
+
+# message->reply, etc.
+#  => -m messageid (all tables)
+#  => -r replyid 
 
 # CVS::docs - rename directories so ~perlbug/Perlbug/...
 

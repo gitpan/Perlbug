@@ -1,6 +1,6 @@
 # Perlbug bug record handler
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Template.pm,v 1.8 2001/10/19 12:40:21 richardf Exp $
+# $Id: Template.pm,v 1.9 2001/12/01 15:24:43 richardf Exp $
 #
 
 =head1 NAME
@@ -13,7 +13,7 @@ package Perlbug::Object::Template;
 use strict;
 use Text::Wrap;
 use vars qw($VERSION @ISA);
-$VERSION = do { my @r = (q$Revision: 1.8 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.9 $ =~ /\d+/go); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Data::Dumper;
@@ -40,11 +40,9 @@ For inherited methods, see L<Perlbug::Object>
 
 	use Perlbug::Object::Template;
 
-	my $o_template = Perlbug::Object:;Template->new();
+	my $o_tmp = Perlbug::Object:;Template->new();
 
-	print $o_template->read('7')->format('h');
-
-	print $o_template->object('bug')->read('19870502.007')->template('display', 'h');
+	print $o_tmp->object('bug')->read('19870502.007')->template('h');
 
 =cut
 
@@ -70,7 +68,7 @@ Example using bug object:
   Column names:
 
 	bugid:   <{bugid}>
-	created: <{created}>
+	created: <{created}> 		
 	author:  <{sourceaddr}>
 	subject: <{subject}>
 
@@ -83,6 +81,25 @@ Example using bug object:
 	admins:     <{user_names}>
 	CC list:    <{address_names}>
 	status:     <{status_names}>
+	<{ifadmin}>
+		this bit only if admin
+	</{ifadmin}>
+
+=head2 FORMATTING
+
+To assist with formatting of ascii templates, an integer followed by white space may be placed between the last two special characters of the placeholders.  The (internal) white space will be stripped, and the number will be used to pad out the given variable, with spaces, using sprintf to that length.
+
+N.B. this will not trim the field, but pad it.
+
+	bugid:    <{bugid}15    > status: <{status_names}>
+	severity: <{severity_names}  15 > osname: <{osname_names}>
+	messages: <{message_count}  15  > <{message_ids}>
+
+will produce
+
+	bugid:    19870502.007   status: open
+	severity: high           osname: linux aix etc.
+	messages: 5              22 23 41 72 102 
 
 =back
 
@@ -97,7 +114,7 @@ Example using bug object:
 
 Create new Template object:
 
-	my $o_template = Perlbug::Object::Template->new();
+	my $o_merge = Perlbug::Object::Template->new();
 
 =cut
 
@@ -115,63 +132,109 @@ sub new {
 	bless($self, $class);
 }
 
+=item object2id
 
-=item _template 
+Return template id given current object key type and perhaps format and/or user
+
+	my $templateid = $o_tmp->object2id('bug', ['a', ['perlbug']]);
+
+=cut
+
+sub object2id {
+	my $self   = shift;
+	my $obj    = shift;
+	my $fmt    = shift || $self->base->current('format');
+	my $userid = shift || $self->base->isadmin;
+	my $tempid = '';
+
+	my $straight = "object = '$obj' AND ".$self->base->db->case_sensitive('format', $fmt);
+	my @tmpids = $self->ids($straight);
+	$self->debug(3, "straight($straight) => tmpids(@tmpids)") if $Perlbug::DEBUG;
+
+	if (scalar(@tmpids) == 0) { 	# default?
+		my ($type) = $self->object('object')->col('type', "name = '$obj'");
+		my $default = "type = '$type' AND ".$self->base->db->case_sensitive('format', $fmt);
+		@tmpids = $self->ids($default);
+		$self->debug(3, "default($default) => tmpids(@tmpids)") if $Perlbug::DEBUG;
+	}
+
+	if (scalar(@tmpids) == 1) { 	# gotcha
+		($tempid) = @tmpids;
+	} elsif (scalar(@tmpids) > 1) {	# shrinkit
+		my $tmpids  = join("', '", @tmpids);
+		my $user = 'templateid', "userid = '$userid' AND templateid IN('$tmpids')";
+		my @utmpids = $self->rel('user')->col($user);
+		$self->debug(0, "user($user) => tmpids(@utmpids)") if $Perlbug::DEBUG;
+		@tmpids = @utmpids if scalar(@utmpids) >= 1;
+		($tempid) = reverse sort { $a <=> $b } @tmpids; # latest in every case
+	} # else zip found
+
+	$self->debug((($tempid) ? 2 : 0), "obj($obj) fmt($fmt) user($userid) => templateid($tempid)") if $Perlbug::DEBUG;
+
+	return $tempid;
+}
+
+
+=item _merge 
 
 Return B<catchall> object data laid out against format(B<a>).
 
 Long lines will be wrapped - if you want a better format, define a template :-)
 
-	my $str = $o_tmp->_template($h_data, $h_rels);
+	my $str = $o_tmp->_merge($h_data, $h_rels);
 
-	my $str = $o_tmp->_template($h_data, $h_rels, [$fmt, [$i_withhdr]]]);
+	my $str = $o_tmp->_merge($h_data, $h_rels, [$fmt]);
 
 =cut
 
-sub _template {
+sub _merge {
 	my $self   = shift;
 	my $h_data = shift;
 	my $h_rels = shift;
 	my $fmt    = shift || $self->base->current('format');
-	my $withhdr= shift || 0;
 	my $str    = '';
 
 	if (ref($h_data) ne 'HASH' or ref($h_rels) ne 'HASH') {
-		$self->error("non-valid required args: data_href($h_data) and relations_href($h_rels)!");		
+		$self->error("non-valid required args: data_href($h_data) and rels_href($h_rels)!");		
 	} else {
-		# my $h_dat = $self->format_fields({%{$h_data}, %{$h_rels}}, $fmt);
-		# my $br   = ($fmt =~ /[hHIL]/) ? "<br>\n" : "\n";
-
-		my $br   = "\n";
+		my $h_dat  = $self->format_fields({%{$h_data}, %{$h_rels}}, $fmt); # i_max?
+		my $br     = "\n";
 		my ($dmax) = reverse sort {$a <=> $b} map { length($_) } keys %{$h_data};
 		my ($rmax) = reverse sort {$a <=> $b} map { length($_) } keys %{$h_rels};
 
+		# $^W = 0;
 		$str .= "DATA:$br";
 		DATA:
-		foreach my $xdata (keys %{$h_data}) {
-			$^W = 0;
-			my $data = ' '.sprintf('%-'.$dmax.'s', $xdata).' = '.$$h_data{$xdata}.$br;
-			$^W = 1;
-			$str .= wrap('', '', $data);
+		foreach my $xdata (sort keys %{$h_data}) {
+			$str .= ' '.sprintf('%-'.$dmax.'s', $xdata).' = '.$$h_dat{$xdata}.$br;
 		}
 
 		$str .= "RELATIONS:$br";
+		my $xmax = '%-'.($rmax + 8).'s'; # '$rel (ids|names): '
 		RELS:
-		foreach my $rel (keys %{$h_rels}) {
-			$^W = 0;
-			my $data = '  '.sprintf('%-'.$rmax.'s', $rel).' ids:   '.join("', '", @{$$h_rels{$rel}{'ids'}}).$br 
-				if @{$$h_rels{$rel}{'ids'}} >= 1;
-			$data = '  '.sprintf('%-'.$rmax.'s', $rel).' names: '.join("', '", @{$$h_rels{$rel}{'names'}}).$br 
-				if @{$$h_rels{$rel}{'names'}} >= 1;
-			$^W = 1;
-			$str .= wrap('', '', $data);
+		foreach my $rel (sort keys %{$h_rels}) {
+			if ($fmt =~ /^[a-z]$/) { 
+				my $tgt = 'count';
+				if ($$h_dat{$rel.'_'.$tgt}) {
+					$str .= '  '.sprintf($xmax, "$rel $tgt: ").$$h_dat{$rel.'_'.$tgt}.$br;
+				}
+			} else {
+				foreach my $tgt (sort qw(count ids names)) {
+					if ($$h_dat{$rel.'_'.$tgt}) {
+						$str .= '  '.sprintf($xmax, "$rel $tgt: ").$$h_dat{$rel.'_'.$tgt}.$br;
+					}
+				}
+			}
+		}
+		# $^W = 1;
+
+		if ($self->base->current('context') eq 'http' || $fmt =~ /[hHIL]/) {
+			# encode_entities done in format_fields
+			$str = '<pre>'.$str.'</pre>'; # maintain formatting
+		} elsif ($self->data('wrap') =~ /^([1-9])/o) { # WRAP
+			$str = wrap('', '', $str) if $str; #  .
 		}
 
-		# if ($self->base->current('context') eq 'http' && $fmt !~ /[hHIL]/) {
-		if ($self->base->current('context') eq 'http') {
-			$str = encode_entities($str);
-			$str = '<pre>'.$str.'</pre>';
-		}
 
 		$self->debug(3, "str($str)") if $Perlbug::DEBUG;
 	}
@@ -181,67 +244,111 @@ sub _template {
 
 
 
-=item template 
+=item merge 
 
-Return object in template layout according to format(B<a>).
+Return object in template layout according to format(B<a>), relations are called from the object given.
 
-See also L<_template()>
+	my ($hdr, $str, $ftr) = $o_tmp->merge($o_obj, $fmt, [\%data]);
 
-	my $str = $o_tmp->template($h_data, $h_rels);
-
-	my $str = $o_tmp->_template($h_data, $h_rels, [$fmt, [$i_withhdr]]);
+If no template found, calls L<_merge()>
 
 =cut
 
-sub template {
+sub merge {
+	my $self   = shift;
+	my $o_obj  = shift;
+	my $fmt    = shift;
+	my $h_data = shift || $o_obj->_oref('data');
+	my ($hdr, $str, $ftr) = ('', '', '');
+
+	if (!(ref($o_obj) && $fmt =~ /^\w$/ && ref($h_data) eq 'HASH')) {
+		$self->error("required args: obj($o_obj), fmt($fmt), h_data($h_data)!");		
+	} else {
+		my $obj    = $o_obj->key;
+		my $tempid = $self->object2id($obj, $fmt); 
+		my $i_read = ($tempid =~ /\d+/ && $self->read($tempid)->READ) ? 1 : 0;
+		my $h_attr = ($fmt =~ /[dD]/) ? $o_obj->_oref('attr') : {};
+		$self->debug(1, "temp($tempid) read($i_read)") if $Perlbug::DEBUG;
+
+		if (!($tempid && $i_read)) { 	# long way to do it
+			my $h_rels = $o_obj->refresh_relations()->_oref('relation');
+			$h_data = $self->xtra($h_data, $obj, $o_obj->oid, $h_attr);
+			$str = $self->_merge($h_data, $h_rels, $fmt);
+		} else {						# a bit snappier now with rr() [ except message/s ]
+			$hdr = $self->data('header') || ''; 
+			$str = $self->data('body')   || ''; 
+			$ftr = $self->data('footer') || ''; 
+			unless ($self->base->isadmin) {
+				$hdr =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos;
+				$str =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos;
+				$ftr =~ s/\Q<{ifadmin}>\E.*?(\<\/\Q{ifadmin}>\E)//gimos;
+			}
+			my $tmp = $hdr.$str.$ftr;
+			$self->debug(0, "template: \n$tmp") if $Perlbug::DEBUG;
+
+			my %map = ();
+			%map = map { $_ => ++$map{$_} } ($tmp =~ 
+				/<{([a-z]+)(?:_count|id|_ids|_names)}[\s\d]*>/gi); # better _with_ ids|names?
+			my $h_rels = $o_obj->refresh_relations(keys %map)->_oref('relation');
+			$self->debug(3, "rels: ".Dumper($h_rels)) if $Perlbug::DEBUG;
+			$h_data = $self->xtra($h_data, $obj, $o_obj->oid, $h_attr);
+			my $h_dat = $o_obj->format_fields({%{$h_data}, %{$h_rels}}, $fmt);
+			$self->debug(3, "data: ".Dumper($h_dat)) if $Perlbug::DEBUG;
+
+			# $^W = 0;
+			my %seen = ();
+			DATA:
+			foreach my $data (keys %{$h_dat}) {
+				my $replace = $$h_dat{$data};
+				if (ref($data) eq 'HASH') {
+					$seen{ref($data)}++;
+					redo DATA unless $seen{ref($data)} >= 9; # ?-]
+				} elsif (ref($$h_dat{$data}) eq 'ARRAY') {
+					$replace = join(', ', @{$$h_dat{$data}});
+				}
+				$hdr =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $hdr;
+				$str =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $str;
+				$ftr =~ s/\<\{$data\}\s*(\d*)\s*\>/sprintf('%-'.($1).'s', $replace)/gmsie if $ftr;
+			}
+			# $^W = 1;
+			$hdr =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos if $hdr;
+			$str =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos if $str;
+			$ftr =~ s/\<.{0,1}\Q{ifadmin}>\E//gimos if $ftr;
+
+			if ($self->data('wrap') =~ /^([1-9])/o) { # WRAP
+				$hdr = wrap('', '', $hdr) if $hdr; # $1
+				$str = wrap('', '', $str) if $str; #  .
+				$ftr = wrap('', '', $ftr) if $ftr; #  .
+			}
+		}
+	}
+
+	$self->debug(2, "obj($o_obj) fmt($fmt) => str(".$hdr.$str.$ftr.")") if $Perlbug::DEBUG;
+
+	return ($hdr, $str, $ftr);
+}
+
+
+=item xtra
+
+Add a little extra to the data, as a helper for default templates
+
+	my $h_data = $o_tmp->xtra($key, $o_obj->oid, $h_attr);
+
+=cut
+
+sub xtra {
 	my $self   = shift;
 	my $h_data = shift;
-	my $h_rels = shift;
-	my $fmt    = shift || $self->base->current('format');
-	my $withhdr= shift || 0;
-	my $str    = '';
+	my $key    = shift || 'unknown-obj';
+	my $oid    = shift || 'unknown-oid';
+	my $h_attr = shift || {};
 
-	if (ref($h_data) ne 'HASH' or ref($h_rels) ne 'HASH') {
-		$self->error("non-valid required args: data_href($h_data) and relations_href($h_rels)!");		
-	} else {
-		my $h_dat = $self->format_fields({%{$h_data}, %{$h_rels}}, $fmt);
-		my $br    = ($fmt =~ /[hHIL]/) ? "<br>\n" : "\n";
-		my $hdr   = $self->data('header'); 
-		$str      = $self->data('body'); 
+	$$h_data{'attr'}   = $h_attr;
+	$$h_data{'id4key'} = $oid; # santa's little helper 
+	$$h_data{'key'}    = $key; # for default templates 
 
-		# $^W = 0;
-		DATA:
-		foreach my $data (keys %{$h_dat}) {
-			if (ref($data) eq 'HASH') {
-				redo DATA;
-			} elsif (ref($$h_dat{$data}) eq 'ARRAY') {
-				my $replace = join(', ', @{$$h_dat{$data}});
-				$str =~ s/\<\{$data\}\>/$replace/gmsi;
-				$hdr =~ s/\<\{$data\}\>/$replace/gmsi if $withhdr;
-			} else {
-				$str =~ s/\<\{$data\}\>/$$h_dat{$data}/gmsi;
-				$hdr =~ s/\<\{$data\}\>/$$h_dat{$data}/gmsi if $withhdr;
-			}
-		}
-		# $^W = 1;
-
-		# Wrap
-		if ($self->data('wrap') =~ /^[1-9]/) {
-			$str = wrap('', '', $str);
-			if ($withhdr) {
-				$hdr = wrap('', '', $hdr);
-				$str = $hdr.$br.$str;
-			}
-		}
-
-		# if ($self->base->current('context') eq 'http' && $fmt !~ /[hHIL]/) {
-		#	$str = encode_entities($str);
-		#	$str = '<pre>'.$str.'</pre>';
-		#}
-	}
-	$self->debug(3, "str($str)") if $Perlbug::DEBUG;
-
-	return $str;
+	return $h_data;
 }
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
-# Object Utility tests for Perlbug 
+# Object read tests for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 35_Object.t,v 1.2 2001/09/18 13:37:50 richardf Exp $
+# $Id: 34_Object.t,v 1.3 2001/12/03 07:35:50 richardf Exp $
 #
 BEGIN { 
 	use File::Spec; 

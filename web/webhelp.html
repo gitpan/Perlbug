@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
 <TITLE>Webhelp - help for the web interface</TITLE>
-<LINK REV="made" HREF="mailto:root@pc026991.otn.m.dasa.de">
+<LINK REV="made" HREF="mailto:root@blue.rfi.net">
 </HEAD>
 
 <BODY>
@@ -13,6 +13,12 @@
 	<LI><A HREF="#NAME">NAME </A>
 	<LI><A HREF="#DESCRIPTION">DESCRIPTION</A>
 	<LI><A HREF="#SEARCH">SEARCH </A>
+	<LI><A HREF="#SUBMIT">SUBMIT</A>
+	<UL>
+
+		<LI><A HREF="#administrative">administrative</A>
+	</UL>
+
 	<LI><A HREF="#OBJECTS">OBJECTS</A>
 	<LI><A HREF="#BUG">BUG</A>
 	<LI><A HREF="#NOTE">NOTE</A>
@@ -41,7 +47,7 @@ etc.
 <DL>
 <DT><STRONG><A NAME="item_mask">mask</A></STRONG><DD>
 <P>
-The search mask has no pre-selected entries, click <STRONG>query</STRONG> and an indiscriminate list of all the bugs in the database will be
+The search mask/fields, have no pre-selected entries, click <STRONG>query</STRONG> and an indiscriminate list of all the bugs in the database will be
 returned.  
 
 <P>
@@ -99,6 +105,11 @@ Restrict the number of found records to the given number. Also divides the
 remainder up into similarly sized chunks for convenient browsing
 thereafter.
 
+<DT><STRONG><A NAME="item_messages">messages</A></STRONG><DD>
+<P>
+Restrict returns to bugs which have this many messages/replies in the
+thread.
+
 <DT><STRONG><A NAME="item_show_sql">show_sql</A></STRONG><DD>
 <P>
 Display the <STRONG>SQL</STRONG> executed. This may help to pinpoint problems where searches are not
@@ -137,6 +148,54 @@ around.
 <A HREF="#DESCRIPTION">DESCRIPTION</A>
 
 
+
+</DL>
+<P>
+<HR>
+<H1><A NAME="SUBMIT">SUBMIT</A></H1>
+<P>
+The submit buttons available are as follows:
+
+<DL>
+<DT><STRONG><A NAME="item_Query">Query</A></STRONG><DD>
+<P>
+submit the query to the database interface
+
+<DT><STRONG><A NAME="item_Reset">Reset</A></STRONG><DD>
+<P>
+reset the form to the default values
+
+<H2><A NAME="administrative">administrative</A></H2>
+<P>
+For admins only:
+
+<DT><STRONG><A NAME="item_Update">Update</A></STRONG><DD>
+<P>
+update the selected record/s shown
+
+<DT><STRONG><A NAME="item_Nocc">Nocc</A></STRONG><DD>
+<P>
+same as update, but don't send any email notifications of the changes
+
+<DT><STRONG><A NAME="item_Select">Select</A></STRONG><DD>
+<P>
+select all shown record/s
+
+<DT><STRONG><A NAME="item_Unselect">Unselect</A></STRONG><DD>
+<P>
+deselect all shown record/s
+
+<DT><STRONG><A NAME="item_Admin">Admin</A></STRONG><DD>
+<P>
+switch from the <STRONG>noadmin</STRONG> view to the <STRONG>admin</STRONG> view
+
+<DT><STRONG><A NAME="item_Noadmin">Noadmin</A></STRONG><DD>
+<P>
+switch from the <STRONG>admin</STRONG> view to the <STRONG>noadmin</STRONG> view
+
+<DT><STRONG><A NAME="item_Delete">Delete</A></STRONG><DD>
+<P>
+delete the selected shown record/s
 
 </DL>
 <P>
@@ -203,7 +262,13 @@ The status of the bug, with the following options:
 <PRE>    duplicate   -       a report erroneously filed a second time
 </PRE>
 <P>
+<PRE>    incapable   -       considered not doable
+</PRE>
+<P>
 <PRE>    ok          -       a 'build reported OK:' report, (not the same as closed)
+</PRE>
+<P>
+<PRE>    notok         -     opposite of B&lt;ok&gt;
 </PRE>
 <P>
 <PRE>    onhold      -       undecided as to whether this is a bug or not

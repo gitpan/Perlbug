@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Do retrieval by objectid tests for Perlbug: do (b m p t n u)
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 52_Do.t,v 1.5 2001/09/18 13:37:50 richardf Exp $
+# $Id: 52_Do.t,v 1.6 2001/12/01 15:24:43 richardf Exp $
 #
 use strict;
 use Data::Dumper;

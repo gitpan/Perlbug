@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # TicketMonger tests for Perlbug 
 # Richard Foley RFI db@rfi.net
-# $Id: 16_Database.t,v 1.1 2001/10/05 08:23:53 richardf Exp $
+# $Id: 16_Database.t,v 1.2 2001/12/01 15:24:43 richardf Exp $
 #
 use Perlbug::Config;
 use Perlbug::Database;

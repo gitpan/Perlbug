@@ -1,0 +1,273 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD><TITLE>Perlbug Web Interface 2.89 bidmids</TITLE>
+<SCRIPT LANGUAGE="JavaScript"><!-- Hide script
+
+		function pick (item) {
+			var nam = item.name;
+			var pre = nam.substring(0, nam.indexOf("_"));
+			elems = document.forms[0].elements;
+			for (var i = 0; i < elems.length; i++) {
+				e = elems[i];
+				if (e.name == "bugids" && e.value == pre) {
+					/* if (confirm(
+						"SELECT ? e(" + e + ")\n" + 
+						"\tname(" + e.name + ")\n" +
+						"\tval(" + e.value + ")\n" +
+						"\tpre(" + pre + ")\n" +
+						"\tchecked(" + e.checked + ")?\n"
+					)) {
+					*/
+						e.checked = true; 
+					//	confirm("SELECTED(" + e.checked + ")?\n")
+				}
+			}
+		}
+	
+// End script hiding --></SCRIPT>
+</HEAD><BODY><table border=1 width=100%><FORM name="perlbug" method="post" action="http://blue.rfi.net/perlbug/perlbug.cgi">
+<table border=1 width=100%>
+
+<table border=1 width=100%>
+<tr><td colspan=2><b>&nbsp; Bug id</b>: <a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Bug in Time::Local'; return true;">20011016.029</a>&nbsp;<a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_header&bug_header=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Email headers'; return true;">headers<br></a> &nbsp; <a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bidmids&bidmids=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='5 messages for bug(20011016.029)'; return true;">(5 msgs)</a></td>
+	<td><b>Change ids</b></td><td>&nbsp;</td></tr>
+<tr><td><b>Status</b></td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=status_id&status_id=3&format=H&trim=25&range=4007&target=perlbug >open</a></td>
+	<td><b>Severity</b></td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=severity_id&severity_id=4&format=H&trim=25&range=4007&target=perlbug >medium</a></td></tr>
+<tr><td><b>Created</b></td><td>2001-10-16 07:14:31 </td>
+	<td><b>Modified</b></td><td>2001-10-16 07:14:31 </td></tr>
+<tr><td><b>Groups</b></td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=group_id&group_id=5&format=H&trim=25&range=4007&target=perlbug >core</a></td>
+	<td><b>Osname</b></td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=osname_id&osname_id=7&format=H&trim=25&range=4007&target=perlbug >linux</a></td></tr>
+<tr><td><b>Version</b></td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=version_id&version_id=5&format=H&trim=25&range=4007&target=perlbug >5.00503</a>, <a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=version_id&version_id=1&format=H&trim=25&range=4007&target=perlbug >5.053</a></td>
+	<td><b>Fixed in</b></td><td>&nbsp;</td></tr>
+<tr><td><b>Subject</b></td><td colspan=3>Bug in Time::Local )</td></tr>
+<tr><td><b>Source</b></td><td colspan=3><a href="mailto:cons@mail.cern.ch">cons@mail.cern.ch</a>)</td></tr>
+<tr><td><b>Admins</b>:</td><td colspan=3>&nbsp;</td></tr>
+<tr><td><b>Messages</b>:</td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=message_id&message_id=15630&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Bug in Time::Local'; return true;">15630</a>, <a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=message_id&message_id=15631&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Bug in Time::Local'; return true;">15631</a>, <a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=message_id&message_id=15632&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Bug in Time::Local'; return true;">15632</a>, <a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=message_id&message_id=15633&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Bug in Time::Local'; return true;">15633</a>, <a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=message_id&message_id=15634&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Bug in Time::Local'; return true;">15634</a></td>
+	<td><b>Notes</b></td><td>&nbsp;</td></tr>
+<tr><td><b>Patches</b>:</td><td>&nbsp;</td>
+	<td><b>Tests</b></td><td>&nbsp;</td></tr>
+<tr><td><b>Parents</b>:</td><td>&nbsp;</td>
+	<td><b>Children</b></td><td>&nbsp;</td></tr>
+
+</table>
+<table border=1>
+<tr><td width=100%><pre>This is a bug report for perl from lionel.cons@cern.ch,
+generated with the help of perlbug 1.26 running under perl 5.00503.
+
+
+-----------------------------------------------------------------
+[Please enter your report here]
+
+timelocal does not handle correctly dates close to DST changes.
+The included program tests T == timelocal(localtime(T)) for
+some values of T.
+
+  use Time::Local;
+  
+  sub test {
+      my($time) = @_;
+      my(@local, $test);
+  
+      printf(&quot;testing %d [%s]\n&quot;, $time, scalar(localtime($time)));
+      @local = localtime($time);
+      $test = timelocal(@local);
+      printf(&quot;timelocal %d %s\n&quot;, $test, $test == $time ? &quot;ok&quot; : &quot;not ok&quot;);
+  }
+  
+  $time = 1004226198;
+  
+  foreach (1 .. 10) {
+      test($time);
+      $time += 300;
+  }
+
+and here is the output:
+
+testing 1004226198 [Sun Oct 28 01:43:18 2001]
+timelocal 1004226198 ok
+testing 1004226498 [Sun Oct 28 01:48:18 2001]
+timelocal 1004226498 ok
+testing 1004226798 [Sun Oct 28 01:53:18 2001]
+timelocal 1004226798 ok
+testing 1004227098 [Sun Oct 28 01:58:18 2001]
+timelocal 1004227098 ok
+testing 1004227398 [Sun Oct 28 02:03:18 2001]
+timelocal 1004230998 not ok
+testing 1004227698 [Sun Oct 28 02:08:18 2001]
+timelocal 1004231298 not ok
+testing 1004227998 [Sun Oct 28 02:13:18 2001]
+timelocal 1004231598 not ok
+testing 1004228298 [Sun Oct 28 02:18:18 2001]
+timelocal 1004231898 not ok
+testing 1004228598 [Sun Oct 28 02:23:18 2001]
+timelocal 1004232198 not ok
+testing 1004228898 [Sun Oct 28 02:28:18 2001]
+timelocal 1004232498 not ok
+
+[Please do not change anything below this line]
+-----------------------------------------------------------------
+
+---
+Site configuration information for perl 5.00503:
+
+Configured by root at Thu Aug 10 15:31:56 EDT 2000.
+
+Summary of my perl5 (5.0 patchlevel 5 subversion 3) configuration:
+  Platform:
+    osname=linux, osvers=2.2.5-22smp, archname=i386-linux
+    uname='linux porky.devel.redhat.com 2.2.5-22smp #1 smp wed jun 2 09:11:51 edt 1999 i686 unknown '
+    hint=recommended, useposix=true, d_sigaction=define
+    usethreads=undef useperlio=undef d_sfio=undef
+  Compiler:
+    cc='cc', optimize='-O2 -m486 -fno-strength-reduce', gccversion=egcs-2.91.66 19990314/Linux (egcs-1.1.2 release)
+    cppflags='-Dbool=char -DHAS_BOOL -I/usr/local/include'
+    ccflags ='-Dbool=char -DHAS_BOOL -I/usr/local/include'
+    stdchar='char', d_stdstdio=undef, usevfork=false
+    intsize=4, longsize=4, ptrsize=4, doublesize=8
+    d_longlong=define, longlongsize=8, d_longdbl=define, longdblsize=12
+    alignbytes=4, usemymalloc=n, prototype=define
+  Linker and Libraries:
+    ld='cc', ldflags =' -L/usr/local/lib'
+    libpth=/usr/local/lib /lib /usr/lib
+    libs=-lnsl -ldl -lm -lc -lposix -lcrypt
+    libc=, so=so, useshrplib=false, libperl=libperl.a
+  Dynamic Linking:
+    dlsrc=dl_dlopen.xs, dlext=so, d_dlsymun=undef, ccdlflags='-rdynamic'
+    cccdlflags='-fpic', lddlflags='-shared -L/usr/local/lib'
+
+Locally applied patches:
+    
+
+---
+@INC for perl 5.00503:
+    /afs/cern.ch/user/c/cons/public/perl/lib
+    /usr/lib/perl5/5.00503/i386-linux
+    /usr/lib/perl5/5.00503
+    /usr/lib/perl5/site_perl/5.005/i386-linux
+    /usr/lib/perl5/site_perl/5.005
+    .
+
+---
+Environment for perl 5.00503:
+    HOME=/afs/cern.ch/user/c/cons
+    LANG=en_US
+    LANGUAGE (unset)
+    LC_ALL=en_US
+    LD_LIBRARY_PATH (unset)
+    LOGDIR (unset)
+    PATH=/afs/cern.ch/user/c/cons/bin:/afs/cern.ch/user/c/cons/scripts:/afs/cern.ch/user/c/cons/bin:/afs/cern.ch/user/c/cons/scripts:/usr/sue/bin:/usr/local/bin:/bin:/usr/bin:/usr/X11R6/bin:/usr/afsws/bin:/usr/bin/X11:/usr/local/bin/X11:/usr/X11R6/bin
+    PERLLIB=/afs/cern.ch/user/c/cons/public/perl/lib
+    PERL_BADLANG (unset)
+    SHELL=/bin/tcsh </pre></td></tr>
+<tr><td><hr></td></tr>
+</table>
+
+<table border=1 width=100%>
+
+<tr><td><b>message  id</b></td><td>15630 </td>
+	<td><b>Created</b></td><td>2001-10-24 15:40:36 </td></tr>
+<tr><td><b>Bugids</b>(<a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='1 bug\'s'; return true;">1</a>)</td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Re: [ID 20011016.029] Bug in Time::Local'; return true;">20011016.029</a></td>
+	<td><b>Modified</b></td><td>2001-10-24 15:40:36 </td></tr>
+<tr><td><b>Subject</b></td><td colspan=3>Re: [ID 20011016.029] Bug in Time::Local )</td></tr>
+<tr><td><b>Source</b></td><td colspan=3><a href="mailto:schwern@pobox.com">schwern@pobox.com</a>)</td></tr>
+<tr><td colspan=4><pre>On Wed, Oct 24, 2001 at 02:56:23PM +0200, Lionel CONS wrote:
+&gt; @_MonthDays = qw(0 31 59 90 120 151 181 212 243 273 304 334);
+
+Silly question... where are you accounting for leap years?
+
+
+-- 
+
+Michael G. Schwern   &lt;schwern@pobox.com&gt;    http://www.pobox.com/~schwern/
+Perl6 Quality Assurance     &lt;perl-qa@perl.org&gt;	     Kwalitee Is Job One
+Milk is timeless. </pre></td></tr>
+
+<table border=1 width=100%>
+
+<tr><td><b>message  id</b></td><td>15631 </td>
+	<td><b>Created</b></td><td>2001-10-25 00:08:46 </td></tr>
+<tr><td><b>Bugids</b>(<a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='1 bug\'s'; return true;">1</a>)</td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Re: [ID 20011016.029] Bug in Time::Local'; return true;">20011016.029</a></td>
+	<td><b>Modified</b></td><td>2001-10-25 00:08:46 </td></tr>
+<tr><td><b>Subject</b></td><td colspan=3>Re: [ID 20011016.029] Bug in Time::Local )</td></tr>
+<tr><td><b>Source</b></td><td colspan=3><a href="mailto:lionel.cons@cern.ch">lionel.cons@cern.ch</a>)</td></tr>
+<tr><td colspan=4><pre>Michael G Schwern writes:
+ &gt; On Wed, Oct 24, 2001 at 02:56:23PM +0200, Lionel CONS wrote:
+ &gt; &gt; @_MonthDays = qw(0 31 59 90 120 151 181 212 243 273 304 334);
+ &gt; 
+ &gt; Silly question... where are you accounting for leap years?
+
+I don't need to...
+
+@_MonthDays is only used to get closer to the real date and the while
+loop will take care of the rest.
+
+__________________________________________________________
+Lionel Cons        http://cern.ch/lionel.cons
+CERN               http://www.cern.ch
+ 
+If at first you don't succeed, destroy all evidence that you tried. </pre></td></tr>
+
+<table border=1 width=100%>
+
+<tr><td><b>message  id</b></td><td>15632 </td>
+	<td><b>Created</b></td><td>2001-10-25 01:24:55 </td></tr>
+<tr><td><b>Bugids</b>(<a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='1 bug\'s'; return true;">1</a>)</td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Re: [ID 20011016.029] Bug in Time::Local'; return true;">20011016.029</a></td>
+	<td><b>Modified</b></td><td>2001-10-25 01:24:55 </td></tr>
+<tr><td><b>Subject</b></td><td colspan=3>Re: [ID 20011016.029] Bug in Time::Local )</td></tr>
+<tr><td><b>Source</b></td><td colspan=3><a href="mailto:goldbb2@earthlink.net">goldbb2@earthlink.net</a>)</td></tr>
+<tr><td colspan=4><pre>Michael G Schwern wrote:
+&gt; 
+&gt; On Wed, Oct 24, 2001 at 02:56:23PM +0200, Lionel CONS wrote:
+&gt; &gt; @_MonthDays = qw(0 31 59 90 120 151 181 212 243 273 304 334);
+&gt; 
+&gt; Silly question... where are you accounting for leap years?
+
+In two places: &quot;if ($offset == 0 &quot; and &quot; * 31557600; # * 365.25 days&quot;
+
+-- 
+Klein bottle for rent - inquire within. </pre></td></tr>
+
+<table border=1 width=100%>
+
+<tr><td><b>message  id</b></td><td>15633 </td>
+	<td><b>Created</b></td><td>2001-10-25 06:40:39 </td></tr>
+<tr><td><b>Bugids</b>(<a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='1 bug\'s'; return true;">1</a>)</td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Re: [ID 20011016.029] Bug in Time::Local'; return true;">20011016.029</a></td>
+	<td><b>Modified</b></td><td>2001-10-25 06:40:39 </td></tr>
+<tr><td><b>Subject</b></td><td colspan=3>Re: [ID 20011016.029] Bug in Time::Local )</td></tr>
+<tr><td><b>Source</b></td><td colspan=3><a href="mailto:jhi@iki.fi">jhi@iki.fi</a>)</td></tr>
+<tr><td colspan=4><pre>Could I get a patch against the bleadperl version of lib/Time/Local.pm
+and its test, lib/Time/Local.t?
+
+-- 
+$jhi++; # http://www.iki.fi/jhi/
+        # There is this special biologist word we use for 'stable'.
+        # It is 'dead'. -- Jack Cohen </pre></td></tr>
+
+<table border=1 width=100%>
+
+<tr><td><b>message  id</b></td><td>15634 </td>
+	<td><b>Created</b></td><td>2001-10-25 14:25:11 </td></tr>
+<tr><td><b>Bugids</b>(<a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='1 bug\'s'; return true;">1</a>)</td><td><a href=http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&format=H&trim=25&range=4007&target=perlbug onMouseOver="status='Re: [ID 20011016.029] Bug in Time::Local'; return true;">20011016.029</a></td>
+	<td><b>Modified</b></td><td>2001-10-25 14:25:11 </td></tr>
+<tr><td><b>Subject</b></td><td colspan=3>Re: [ID 20011016.029] Bug in Time::Local )</td></tr>
+<tr><td><b>Source</b></td><td colspan=3><a href="mailto:schwern@pobox.com">schwern@pobox.com</a>)</td></tr>
+<tr><td colspan=4><pre>On Thu, Oct 25, 2001 at 04:39:58PM +0300, Jarkko Hietaniemi wrote:
+&gt; Could I get a patch against the bleadperl version of lib/Time/Local.pm
+&gt; and its test, lib/Time/Local.t?
+
+Lionel and I are still working out the kinks off-list.
+
+
+-- 
+
+Michael G. Schwern   &lt;schwern@pobox.com&gt;    http://www.pobox.com/~schwern/
+Perl6 Quality Assurance     &lt;perl-qa@perl.org&gt;	     Kwalitee Is Job One
+conway: unit of mind expansion.  One Conway == ~20 lines of Perl code
+  found in $CPAN/authors/id/D/DC/DCONWAY, which gives the sensation
+  of your brain being wrapped around a brick, with kiwi juice squeezed
+  on top.
+	-- Ziggy </pre></td></tr>
+<INPUT TYPE="hidden" NAME="req" VALUE=""><INPUT TYPE="hidden" NAME="range" VALUE="4007"></table><hr><a href="http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20011016.029&bug_id=20010723.001&bug_id=20010721.003&bug_id=20010716.005&bug_id=20010704.007&bug_id=20010703.002&bug_id=20010626.005&bug_id=20010626.001&bug_id=20010622.002&bug_id=20010621.007&bug_id=20010619.002&bug_id=20010530.004&bug_id=20010529.005&bug_id=20010524.001&bug_id=20010514.042&bug_id=20010426.005&bug_id=20010426.002&bug_id=20010423.002&bug_id=20010422.006&bug_id=20010414.001&bug_id=20010411.002&bug_id=20010331.003&bug_id=20010328.016&bug_id=20010328.001&bug_id=20010225.003&format=H&trim=25&range=4007">1 to 25</a>&nbsp;
+<a href="http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20010224.002&bug_id=20010220.007&bug_id=20010219.002&bug_id=20010218.003&bug_id=20010105.023&bug_id=20010103.001&bug_id=20001223.002&bug_id=20001210.008&bug_id=20001122.003&bug_id=20001013.008&bug_id=20001009.009&bug_id=20001002.002&bug_id=20000902.022&bug_id=20000827.006&bug_id=20000826.007&bug_id=20000819.005&bug_id=20000818.008&bug_id=20000818.001&bug_id=20000815.001&bug_id=20000810.008&bug_id=20000808.005&bug_id=20000804.007&bug_id=20000722.002&bug_id=20000718.003&bug_id=20000716.011&format=H&trim=25&range=4007">26 to 50</a>&nbsp;
+<a href="http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20000716.007&bug_id=20000706.002&bug_id=20000626.002&bug_id=20000616.001&bug_id=20000615.007&bug_id=20000612.001&bug_id=20000606.003&bug_id=20000602.004&bug_id=20000525.007&bug_id=20000519.006&bug_id=20000515.005&bug_id=20000511.003&bug_id=20000505.002&bug_id=20000504.004&bug_id=20000427.007&bug_id=20000425.009&bug_id=20000425.002&bug_id=20000419.004&bug_id=20000418.006&bug_id=20000415.005&bug_id=20000415.002&bug_id=20000402.013&bug_id=20000330.049&bug_id=20000325.008&bug_id=20000324.027&format=H&trim=25&range=4007">51 to 75</a>&nbsp;
+<a href="http://blue.rfi.net/perlbug/perlbug.cgi?req=bug_id&bug_id=20000316.002&bug_id=20000313.006&bug_id=20000306.002&bug_id=20000301.006&bug_id=20000220.003&bug_id=20000218.005&bug_id=20000125.002&bug_id=20000124.004&bug_id=20000118.004&bug_id=20000117.002&bug_id=20000114.001&bug_id=19991217.006&bug_id=19991114.001&bug_id=19991103.009&bug_id=19991004.002&format=H&trim=25&range=4007">76 to 90</a>&nbsp;
+<hr></FORM></BODY></HTML>

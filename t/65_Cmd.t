@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Cmd tests for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 65_Cmd.t,v 1.3 2001/10/19 12:40:21 richardf Exp $
+# $Id: 65_Cmd.t,v 1.4 2001/12/01 15:24:43 richardf Exp $
 #
 use Perlbug::Test;
 use Perlbug::Interface::Cmd;
@@ -19,19 +19,19 @@ my %tests = (
 	'dob'	=> [
 		{ 
 			'string'	=> 'b 19870502.007',
-			'expected'	=> 'Subject:\s+some email\s+->.+',
+			'expected'	=> '^b: =>\s*.+',
 		},
 	],
 	'dod'	=> [
 		{ 
 			'string'	=> 'd 12 ',
-			'expected'	=> '^d: 12 => 12$',
+			'expected'	=> '^d: =>\s*12$',
 		}
 	],
 	'doq'	=> [
 		{ 
 			'string'	=> 'q SELECT COUNT(bugid) FROM pb_bug',
-			'expected'	=> '\w+',
+			'expected'	=> 'q: =>\s*.+',
 		}
 	],
 );

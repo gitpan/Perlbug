@@ -1,4 +1,4 @@
-# $Id: README,v 1.4 2001/03/23 14:36:43 perlbug Exp $
+# $Id: README,v 1.5 2001/12/03 10:39:21 richardf Exp $
 
 Docs in this dir expect to be transformed with a pod2* translator into:
 
@@ -18,4 +18,14 @@ pod2html webhelp > ~/web/webhelp.html
 etc.
 
 perlbug pod docs
+
+# docs
+# create pod docs in ./docs
+# then...
+
+pod2text ./docs/webhelp > ./text/webhelp
+pod2html ./docs/webhelp > ./web/webhelp.html
+
+pod2text -la ~/Perlbug.pm > ~/text/spec
+pod2html ~/Perlbug.pm  > ~/web/spec.html  
 

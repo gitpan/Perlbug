@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: check the bugtron scan($mailbody) for category, etc.
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 72_Email.t,v 1.9 2001/09/19 07:30:31 richardf Exp $
+# $Id: 72_Email.t,v 1.10 2001/12/01 15:24:43 richardf Exp $
 #
 
 use lib qw(../);
@@ -55,7 +55,7 @@ STATUS  =  opEN
 	},
 	{ # 3 - version
 		'expected'	=> { 
-			'version'	=> [qw(5.0 5.005 5.0.5 5.005.03)],
+			'version'	=> [qw(5 5.0 5.005 5.005.03)],
 		},
 		'body'		=> qq|
 	version=5.005.03
@@ -63,7 +63,7 @@ STATUS  =  opEN
 	},
 	{ # 4 - version
 		'expected'	=> { 
-			'version'	=> [qw(5.6 5.6.0 5.6.0-RC1 5.7.0 5.7.0-6849 5.7.2)],
+			'version'	=> [qw(5 5.6 5.6.0 5.6.0-RC1 5.7.0 5.7.0-6849 5.7.2)],
 		},
 		'body'		=> qq|
 	version=5.6.0-RC1
@@ -145,9 +145,9 @@ foreach my $h_test (@tests) {
 	}
 	if (scalar(keys %scanned) >= 1) {
 		$i_err++;
-		output("Redundant scanned: ".Dumper(\%scanned));
+		output("Redundant scanned: ".Dumper(\%scanned)) if $Perlbug::DEBUG;
 	}
-	output("Failed to scan($body) scanned: ".Dumper(\%scanned)) if $i_err != 0;
+	output("Failed to scan($body)") if $i_err != 0;
 	($i_err == 0) ? ok($i_test) : ok(0);
 }	# each test
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Email tests for Perlbug: check email functions against config data
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 70_Email.t,v 1.12 2001/09/18 13:37:50 richardf Exp $
+# $Id: 70_Email.t,v 1.13 2001/12/01 15:24:43 richardf Exp $
 #
 
 use lib qw(../);
@@ -117,11 +117,6 @@ foreach my $tgt (keys %map) {
 }
 output("$context -> err($i_err)") if $i_err;
 ok(($i_err == 0) ? $i_test : 0);
-
-# CLEAN_HEADER_CK822
-#
-#
-
 
 # Done
 # -----------------------------------------------------------------------------

@@ -1,24 +1,19 @@
 #!/usr/bin/perl -w
 # WWW tests for Perlbug 
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 66_Web.t,v 1.1 2001/09/18 13:52:39 richardf Exp $
+# $Id: 66_Web.t,v 1.2 2001/12/01 15:24:43 richardf Exp $
 #
-BEGIN {
-	use File::Spec; 
-	use lib File::Spec->updir;
-	use Perlbug::Test;
-	plan('tests' => 3);
-}
 use strict;
 use lib qw(../);
 my $test = 0;
 my $err = 0;
-
-
-# Libs
-# -----------------------------------------------------------------------------
 use Perlbug::Interface::Web;
-my $o_web = '';
+use Perlbug::Test;
+
+my $o_web = Perlbug::Interface::Web->new('x' => 'y');
+my $o_test = Perlbug::Test->new($o_web);
+
+plan('tests' => 3);
 
 # Tests
 # -----------------------------------------------------------------------------
@@ -29,8 +24,7 @@ my $o_web = '';
 # 1
 # callable? 
 $test++; 
-if ($o_web = Perlbug::Interface::Web->new('x' => 'y')) {	
-	$o_web->current('isatest', 1);
+if (ref($o_web)) {
 	ok($test);
 } else {
 	ok(0);

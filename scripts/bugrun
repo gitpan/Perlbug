@@ -1,7 +1,7 @@
 #!/usr/bin/perl 
 # Perlbug runnable interface (for tests etc.)
 # (C) 2000 Richard Foley RFI perlbug@rfi.net 
-# $Id: bugdb,v 1.5 2001/02/18 13:55:56 perlbug Exp $
+# $Id: bugrun,v 1.1 2001/12/01 15:24:43 richardf Exp $
 # 
 # 
 
@@ -9,7 +9,7 @@ package Testit;
 
 use strict;
 use vars(qw($VERSION $AUTOLOAD));
-$VERSION = do { my @r = (q$Revision: 1.5 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.1 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $|=1;
 
 use Benchmark;

@@ -1,14 +1,14 @@
 #!/usr/bin/perl -w
 # Email tests against(o_hdr) -> out=ref(o_hdr|o_send|undef|1|0)?
 # Richard Foley RFI perlbug@rfi.net
-# $Id: 77_Email.t,v 1.5 2001/09/18 13:37:50 richardf Exp $
+# $Id: 77_Email.t,v 1.6 2001/12/01 15:24:43 richardf Exp $
 #
 
 use strict;
 use lib qw(../);
 use Data::Dumper;
 use FileHandle;
-use Mail::Internet; $Data::Dumper::Indent=1;
+use Mail::Internet;
 use Perlbug::Interface::Email;
 use Perlbug::Test;
 use Sys::Hostname;
@@ -74,22 +74,6 @@ my %tests = (
 			'expected' 	=> '0', 
 		},
 	],
-	'clean_header' => [
-		{ 
-			'header'	=> {
-				'From'		=> 'thine@rfi.net',
-				'To'		=> 'xperlbug@'.$o_test->domain,
-			},
-			'expected' 	=> 'ref', 
-		},
-		{ 
-			'header'	=> {
-				'From'		=> '',
-				'To'		=> 'xperlbug@'.$o_test->domain,
-			},
-			'expected' 	=> 'undef', 
-		},
-	],
 	'defense' => [
 		{ 
 			'header'	=> {
@@ -102,6 +86,20 @@ my %tests = (
 			'header'	=> {
 				'From'		=> 'they@rfi.net',
 				'To'		=> '',
+			},
+			'expected' 	=> 'undef', 
+		},
+		{ 
+			'header'	=> {
+				'From'		=> 'thine@rfi.net',
+				'To'		=> 'xperlbug@'.$o_test->domain,
+			},
+			'expected' 	=> 'ref', 
+		},
+		{ 
+			'header'	=> {
+				'From'		=> '',
+				'To'		=> 'xperlbug@'.$o_test->domain,
 			},
 			'expected' 	=> 'undef', 
 		},
@@ -194,7 +192,7 @@ foreach my $type (sort keys %tests) {
 			  ) {
 				$i_err++;
 				output("Mis-matching($type) expected($expected) result($result)");
-				output('Header: '.Dumper($$h_test{'header'}));
+				output('Header: '.Dumper($$h_test{'header'})) if $Perlbug::DEBUG;
 				last TEST;
 			#} else {
 			#	output("expected($expected) got($result)");

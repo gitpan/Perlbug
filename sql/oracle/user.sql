@@ -2,7 +2,7 @@
 # Basic perlbug user
 #
 
-CREATE USER perbug IDENTIFIED BY 'gublrep';
+CREATE USER perlbug IDENTIFIED BY 'gublrep';
 
 ALTER USER perlbug DEFAULT TABLESPACE perlbug; 
 

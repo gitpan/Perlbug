@@ -1,6 +1,6 @@
 # Perlbug functions
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Do.pm,v 1.65 2001/10/22 15:29:50 richardf Exp $
+# $Id: Do.pm,v 1.66 2001/12/01 15:24:42 richardf Exp $
 #
 # TODO 
 # see doh
@@ -16,7 +16,7 @@ package Perlbug::Do;
 use Data::Dumper;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.65 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.66 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1; 
 
 
@@ -230,18 +230,19 @@ sub process_commands {
 	} else {
 		my %cmds = %{$h_cmds}; 
 		$self->debug(2, "processing(\%cmds): ".Dumper(\%cmds)) if $Perlbug::DEBUG;
-		my %adminable = ();
-		%adminable = map { $_ => ++$adminable{$_} } $self->get_switches('admin');
+		# my %adminable = ();
+		# %adminable = map { $_ => ++$adminable{$_} } $self->switches('admin');
 		SWITCH:
 		foreach my $switch (keys %cmds) {
 			next SWITCH unless $switch =~ /^\w+$/o;
-			next SWITCH unless grep(/^$switch$/, $self->get_switches);
-			if (!$self->isadmin) {
-				next SWITCH if $adminable{$switch};
-			}
+			next SWITCH unless grep(/^$switch$/, $self->switches);
+			# if (!$self->isadmin) {
+			#	next SWITCH if $adminable{$switch};
+			#}
 			if (!($self->can("do$switch"))) {
 				$self->error("Unrecognised switch($switch) next..."); 
 			} else {
+				$cmds{$switch} = '' unless $cmds{$switch};
 				$self->debug(1, "processing($switch, $cmds{$switch})...") if $Perlbug::DEBUG;
 				my @result = $self->do($switch, $cmds{$switch}); 
 				push(@res, "$switch: => ".join("\n", @result));
@@ -316,7 +317,6 @@ sub doa {
 		my $o_bug = $self->object('bug');
 		my $o_note = $self->object('note');
 
-	$DB::single=2;
 	    foreach my $b (@bids) {
 	        next unless $o_bug->ok_ids([$b]);
 			my $orig = $o_bug->read($b)->format('a');
@@ -324,7 +324,6 @@ sub doa {
 				push(@res, "Bugid($b) read failure");
 			} else {
 				my $i_rel = $o_bug->relate(\%cmds);
-				$self->debug(0, "related($b): ".Dumper(\%cmds));
 				my $o_int = $self->setup_int($o_bug->data('header'), $o_bug->data('body'));
 				my ($o_hdr, $header, $body) = $self->splice($o_int);
 				chomp(my $to = $o_hdr->get('To'));
@@ -483,8 +482,8 @@ sub doc {
 		$self->debug(2, "found pids(@pids) related to changeid($id)") if $Perlbug::DEBUG;
 		if (scalar(@pids) >= 1) {
 			push(@res, $self->dop(\@pids));
-        } else {
-			print "No patches found with changeid($id), trying with bugs...<br>\n"; 
+        } else { # 
+			print "No patches found with changeid($id), trying with bugs...<br>\n" if $0 =~ /cgi$/; 
 			my @bids = $o_chg->relation('bug')->ids($o_chg);
 			$self->debug(2, "found bids(@bids) related to changeid($id)") if $Perlbug::DEBUG;
 			if (scalar(@bids) >= 1) {
@@ -876,7 +875,7 @@ Switches are sent on the subject line, dash may be omitted if only option:
 	); 
 	SWITCH: 
 	foreach my $key (sort { lc($a) cmp lc($b) } keys %data) { 
-		next SWITCH unless grep(/^$key$/, $self->get_switches); 
+		next SWITCH unless grep(/^$key$/, $self->switches); 
 		# next SWITCH unless $key =~ /^\w$/; 
 		if ($data{$key} =~ /^\s*([^(]+)\((.*)\)\s*$/o) { 
 			my ($desc, $args) = ($1, $2); 
@@ -1107,8 +1106,9 @@ sub dom {
 	my $fmt   = $self->current('format');
 	my $o_obj = $self->object('message');
 
+	ID:
 	foreach my $i (@ids) {
-	    next unless $i =~ /^\d+$/o;
+	    next ID unless $i =~ /^\d+$/o;
 		my $str = $o_obj->read($i)->format($fmt);
 		push(@res, $str);
 	} 
@@ -1154,6 +1154,7 @@ sub doM {
 			$id = $o_obj->oid; 
 			my %cmds = $self->parse_str($args{'opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
+			my $i_don = $o_obj->appropriate(\%cmds);
 			# $self->notify($target, $id); - track only
 		}
 	}
@@ -1226,6 +1227,7 @@ sub doN {
 			$id = $o_obj->oid;
 			my %cmds = $self->parse_str($args{'opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
+			my $i_don = $o_obj->appropriate(\%cmds);
 			# $self->notify($target, $id);
 		}
 	}
@@ -1410,6 +1412,7 @@ sub doP {
 			$id = $o_obj->oid;
 			my %cmds = $self->parse_str($args{'opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
+			my $i_don = $o_obj->appropriate(\%cmds);
 			$self->notify($target, $id);
 		}	
 	}
@@ -1634,12 +1637,15 @@ sub dot {
 
 	my $fmt   = $self->current('format');
 	my $o_obj = $self->object('test');
+	my $o_tmp = $self->object('template');
 
+	# push(@res, $o_tmp->start('test', $fmt);
 	foreach my $i (@ids) {
 	    next unless $i =~ /^\d+$/o;
 		my $str = $o_obj->read($i)->format($fmt);
 		push(@res, $str);
 	} 
+	# push(@res, $o_tmp->finish('test', $fmt);
 
 	$self->debug(2, "test ids(@ids)") if $Perlbug::DEBUG;
 
@@ -1680,6 +1686,7 @@ sub doT {
 			$id = $o_obj->oid;
 			my %cmds = $self->parse_str($args{'opts'});
 			my $i_rel = $o_obj->relate(\%cmds);
+			my $i_don = $o_obj->appropriate(\%cmds);
 			$self->notify($target, $id);
 		}
 	}

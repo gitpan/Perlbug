@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # Insert templates
 # Richard Foley RFI perlbug@rfi.net
-# $Id: bugtemplates,v 1.2 2001/10/22 15:29:51 richardf Exp $
+# $Id: bugtemplates,v 1.4 2001/12/03 10:39:21 richardf Exp $
 #
 use Perlbug::Test;
 use strict;
@@ -22,14 +22,29 @@ bugtemplates - insert object templates
 
 =head1 DESCRIPTION
 
-Inserts templates on behalf of all/any objects into database
+Inserts <Perlbug::Object::Template>s on behalf of all/any objects into database.
+
+Object type based on contents of B<Perlbug::Object::Object> table.
+
+For this to be practical, each format type should have, in addition to default types for Flag and Mail objects, a distinct template for corresponding Bug, Group and User objects.  Application and Item defaults can use the _merge routine with no great loss (except beauty :-)
 
 =head1 USAGE
 
 	./bugtemplates -[dfFhmoqtux]
 
+=head1 SYNOPSIS
+
+Only insert ascii bug templates against user perlbug, richardf and mickey mouse
+
+	./bugtemplates -f a -o bug -u perlbug:richardf:mm
+
+Force insert of default html templates only
+
+	./bugtemplates -f h -x default -F
 
 =head1 SWITCHES
+
+=over 4
 
 =item d
 
@@ -37,11 +52,11 @@ debug level
 
 =item f
 
-format (a|h|H|i|L|...) default is all (regex)
+format (a|h|H|i|L|...) default is all /\w+/
 
 =item F
 
-Force insert, even though comparable exists(delete) in DB
+Force insert, even though comparable exists (will overwrite) in DB
 
 =item h
 
@@ -93,112 +108,712 @@ foreach my $switch (keys %arg) {
 	$$switch = $arg{$switch};
 }
 
+if ($h) {
+	exec "perldoc $0";
+}
+
+=back
+
+
+=head1 TEMPLATES
+
+Divided by format, default or object type, object key:
+
+For an explanation of each format see L<Perlbug::Format>
+
+	+ means the template is supplied here and will be B<merge()>'d
+
+	- means it isn't (and will use the default B<_merge()> unless template provided)
+
+  Formats: a A h H i I l L x X
+  ============================
+  APPLIC:  a A h H i I l L x X
+  default  - - - - - - - - - -
+  log      - - - - - - - - - -
+  range    - - - - - - - - - -
+
+  FLAG:    a A h H i I l L x X
+  default  + + + + + + + + - -
+  change   - - - - - - - - - - 
+  fixed    - - - - - - - - - -
+  osname   - - - - - - - - - -
+  project  - - - - - - - - - -
+  severity - - - - - - - - - -
+  status   - - - - - - - - - -
+  version  - - - - - - - - - -
+
+  ITEM:    a A h H i I l L x X
+  default  - - - - + + + + - -
+  address  + + - - - - - - - -   
+  group    + + + + - - + + - - 
+  user     + + + + - - + - - - 
+
+  MAIL:    a A h H i I l L x X
+  default  + + + + + + + + - -
+  bug      + + + + - - + + - -  
+  child    - - - - - - - - - -
+  message  - - - - - - - - - -
+  note     - - - - - - - - - -
+  parent   - - - - - - - - - -
+  patch    - - - - - - - - - -
+  test     - - - - - - - - - -
+
+=cut
+
 my %TEMPLATES = (
-	'a'	=> {
-		'default'	=> {
-			'mail'	=> {
-				'description'	=> 'default for mail type objects where none given',
-			},
-			'flag'	=> {
-				'description'	=> 'default for flag type objects where none given',
-			},
-		},
-		'object'	=> {
-			'bug'	=> {
+	'A' => { 					# ASCII - long
+		'default'	=> {		# DEFAULT A
+			# 'application'	=>  # A
+			'flag'	=> {		# A
+				'description'	=> 'ASCII flag template', 
 				'wrap'			=> '75',
-				'description'	=> 'ascii bug template', 
+				'repeat'	=> 50,
 				'header'		=> "\n",
 				'body'			=> q#
-Bug: <{bugid}>  Created: <{created}>  Modified: <{created}>
+<{name}> 
+<{key}>id: <{id4key}>  Created: <{created}>  Modified: <{created}>
+Bug ids: <{bug_count}> <{bug_ids}>
+#,
+			},
+			#'item'	=> {},		# A 
+			'mail'	=> {		# A
+				'description'	=> 'ASCII mail template', 
+				'wrap'			=> '75',
+				'repeat'	=> 50,
+				'header'		=> "\n",
+				'body'			=> q#
+<{key}>id: <{id4key}>  Created: <{created}>  Modified: <{created}>
 Subject: <{subject}>
+Source:  <{sourceaddr}>
 
-Status:   <{status_names}>
-OS:       <{osname_names}>
-Severity: <{severity_names}>
-Group:    <{group_names}>
-
-Message ids: <{patch_ids}>
-Patch ids:   <{patch_ids}>
+Bug ids: <{bug_count}> <{bug_ids}>
 
 Header:   
 <{header}>
 
 Body:
 <{body}>
-				#,
-			},
-			'user' => {
-				'wrap'			=> '75',
-				'description'	=> 'ascii user template', 
-				'header'		=> "\n", 
-				'body'			=> q#
-userid:  <{userid}>   name: <{name}>
-created: <{created}>  modified: <{created}>
-address: <{address}>
-
-bug ids: <{bug_ids}>
-				#,
+#,
 			},
 		},
-	},
-	,
-	'h'	=> {
-		'default'	=> {
-			'mail'	=> {
-				'description'	=> 'default for mail type objects where none given',
+		'object'	=> {		# OBJECT A
+			'address'	=> {	# A
+				'description'	=> 'ASCII address template', 
+				'repeat'	=> 40,
+				'header'		=> "\n",
+				'body'			=> q#
+Address:   <{name}> 
+Addressid: <{addressid}5>  Bug count: <{bug_count}>  ids: <{bug_ids}>
+Created:   <{created}>  Modified: <{created}>
+#,
 			},
+			'bug'	=> {		# A
+				'description'	=> 'ASCII bug template', 
+				'repeat'	=> 50,
+				'header'		=> "\n",
+				'body'			=> q#
+Bug:      <{bugid}15>  
+Subject:  <{subject}>
+From:     <{sourceaddr}>
+Created:  <{created}>  Modified: <{created}>
+
+Status:   <{status_names}15 >  Severity: <{severity_names}>
+OS names: <{osname_names}>
+Group:    <{group_names}>
+Version:  <{version_names}15>  Fixed in:  <{fixed_names}>
+
+Message ids: <{message_count}5>  <{message_ids}>
+Patch ids:   <{patch_count}  5>  <{patch_ids}>
+Test ids:    <{test_count}   5>  <{test_ids}>
+Note ids:    <{note_count}   5>  <{note_ids}>
+Change ids:  <{change_count} 5>  <{change_ids}>
+Parent ids:  <{parent_count} 5>  <{parent_ids}>
+Child ids:   <{child_count}  5>  <{child_ids}>
+Address ids: <{address_count}5>  <{address_names}>
+	
+Header:   
+<{header}>
+
+Body:
+<{body}>
+#,
+			},
+			'group' => {		# A
+				'description'	=> 'ascii group template', 
+				'repeat'	=> 50,
+				'header'		=> "\n",
+				'body'			=> q#
+Group:       <{name}>
+Groupid:     <{groupid}> Created: <{created}>  Modified: <{created}>
+Description: <{description}>
+Address ids: <{address_count}5>  <{address_ids}>
+User ids:    <{user_count}5   >  <{user_ids}>
+Bug  ids:    <{bug_count} 5   >  <{bug_ids}>
+#,
+			},
+			'user' => {			# A
+				'description'	=> 'ascii user template', 
+				'repeat'	=> 50,
+				'header'		=> "\n",
+				'body'			=> q#
+Userid:     <{userid}15>  Name: <{name}>  Active: <{active}>
+Created:    <{created}>  Modified: <{created}>
+Address:    <{address}>
+Match address: <{match_address}>
+Password:   <{password}>
+Groups:     <{group_count}   5> <{group_ids}>
+Bug ids:    <{bug_count}     5> <{bug_ids}>
+#,
+			},
+		},
+	},	# end A
+	'a'	=> {					# ascii - short
+		'default'	=> {		# DEFAULT a
+			#'application'	=> {},
+			'flag'	=> {		# a
+				'repeat'	=> 40,
+				'header'		=> "\n",
+				'body'			=> q#
+<{key}>id <{id4key}>  
+Created: <{created}>  Modified: <{created}>
+Bug ids: <{bug_count}>
+#,
+			},
+			#'item'	=> {},		# a
+			'mail'	=> {		# a
+				'repeat'	=> 50,
+				'header'		=> "\n",
+				'body'			=> q#
+<{key}>id  <{id4key}>
+Created: <{created}>  Modified: <{created}>
+Subject: <{subject}>
+Source:  <{sourceaddr}>
+Bug ids: <{bug_count}>
+#,
+			},
+		},
+		'object'	=> {		# OBJECT a
+			'address'	=> {	# a
+				'repeat'	=> 50,
+				'header'		=> "\n",
+				'body'			=> q#
+
+Address:   <{name}> 
+Addressid: <{addressid}5>  Bug count: <{bug_count}>
+Created:   <{created}>  Modified: <{created}>
+#,
+			},
+			'bug'	=> {		# a
+				'header'		=> "\n",
+				'repeat'	=> 25,
+				'body'			=> q#
+Bug:      <{bugid}15>  
+Subject:  <{subject}>
+From:     <{sourceaddr}>
+Created:  <{created}>  Modified: <{created}>
+
+Status:   <{status_names}15 >  Severity: <{severity_names}>
+OS names: <{osname_names}>
+Group:    <{group_names}>
+Version:  <{version_names}15>  Fixed in:  <{fixed_names}>
+
+Message ids: <{message_count}5>  
+Patch ids:   <{patch_count}  5> 
+Test ids:    <{test_count}   5>
+Note ids:    <{note_count}   5>
+Change ids:  <{change_count} 5>
+Parent ids:  <{parent_count} 5>
+Child ids:   <{child_count}  5>
+Address ids: <{address_count}5>
+#,
+			},
+			'group' => {		# a
+				'description'	=> 'ascii group template', 
+				'repeat'	=> 50,
+				'header'		=> "\n",
+				'body'			=> q#
+Groupid:     <{groupid}5      >  Name: <{name}>
+Created:     <{created}>  Modified: <{created}>
+Description: <{description}>
+Address ids: <{address_count}5>  User ids: <{user_count}5   >
+Bug ids:     <{bug_count} 5   > 
+#,
+			},
+			'user' => {			# a
+				'description'	=> 'ascii user template', 
+				'repeat'	=> 50,
+				'header'		=> "\n",
+				'body'			=> q#
+Userid:     <{userid}15>  Name: <{name}>  Active: <{active}>
+Created:    <{created}>  Modified: <{created}>
+Address:    <{address}>
+Groups:     <{group_count}   5> <{group_names}>
+Bug ids:    <{bug_count}     5> 
+		#,
+			},
+		},
+	},	# end a
+	'H' => { 					# HTML - long
+		'default'	=> {
+			# 'application'	=>  # H
 			'flag'	=> {
-				'description'	=> 'default for flag type objects where none given',
+				'repeat'	=> 1,
+				'header'		=> q#
+<tr>
+<td><b><{key}></b></td><td><b>Bug ids</b></td><td><b>Created</b></td><td><b>Modified</b></td>
+</tr>
+#,
+				'body'			=> q#
+<tr>
+<td><{id4key}>: <{name}></td>
+<td>Bug ids: <{bug_count}></td>
+<td>Created: <{created}></td><td>Modified: <{created}></td>
+</tr>
+<tr>
+<{bug_ids}>
+</tr>
+#,
+			},
+			# 'item'	=>  	# H rjsf
+			'mail'	=> {		# H
+				'description'	=> 'HTML mail template', 
+				'repeat'	=> 1,
+				'header'		=> q#
+#,
+				'footer'		=> q#
+#,
+				'body'		=> q#
+<table border=1 width=100%>
+<tr><td><b><{key}> id</b></td><td><{id4key}></td>
+	<td><b>Created</b></td><td><{created}></td></tr>
+<tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
+	<td><b>Modified</b></td><td><{modified}></td></tr>
+<tr><td><b>Subject</b></td><td colspan=3><{subject}>)</td></tr>
+<tr><td><b>Source</b></td><td colspan=3><{sourceaddr}>)</td></tr>
+<tr><td colspan=4><{body}></td></tr>
+</table>
+#,
 			},
 		},
 		'object'	=> {
-			'bug'	=> {	
-				'repeat'		=> '7',
-				'description'	=> 'html bug template', 
+			'bug'		=> 	{ # H rjsf
+				'description'	=> 'HTML mail template', 
+				'repeat'	=> 1,
 				'header'		=> q#
-<table>
-<tr><td>Bug</td> <td>Created></td> <td>Modified</td></tr>
-			#,
-			'body'			=> q#
-<tr><td><{bugid}></td> <td><{created}></td> <td><{created}></td></tr>
+<table border=1 width=100%>
+#,
+				'footer'		=> q#
 </table>
-<pre>
-Header:   
-<{header}>
-
-Body:
-<{body}>
-</pre>
-<hr>
-				#,
+#,
+				'body'		=> q#
+<table border=1 width=100%>
+<tr><td colspan=2><b><{select}> Bug id</b>: <{bugid}></td>
+	<td><b>Change ids</b></td><td><{change_names}></td></tr>
+<tr><td><b>Status</b></td><td><{status_names}></td>
+	<td><b>Severity</b></td><td><{severity_names}></td></tr>
+<tr><td><b>Created</b></td><td><{created}></td>
+	<td><b>Modified</b></td><td><{modified}></td></tr>
+<tr><td><b>Groups</b></td><td><{group_names}></td>
+	<td><b>Osname</b></td><td><{osname_names}></td></tr>
+<tr><td><b>Version</b></td><td><{version_names}></td>
+	<td><b>Fixed in</b></td><td><{fixed_names}></td></tr>
+<tr><td><b>Subject</b></td><td colspan=3><{subject}>)</td></tr>
+<tr><td><b>Source</b></td><td colspan=3><{sourceaddr}>)</td></tr>
+<tr><td><b>Admins</b>:</td><td colspan=3><{user_names}></td></tr>
+<tr><td><b>Messages</b>:</td><td><{message_ids}></td>
+	<td><b>Notes</b></td><td><{note_ids}></td></tr>
+<tr><td><b>Patches</b>:</td><td><{patch_ids}></td>
+	<td><b>Tests</b></td><td><{test_ids}></td></tr>
+<tr><td><b>Parents</b>:</td><td><{parent_ids}></td>
+	<td><b>Children</b></td><td><{child_ids}></td></tr>
+<{ifadmin}>
+<tr><td colspan=4>
+  <table><tr>
+    <td><b>New Note </b>:<br><{new_note}></td>
+	<td><b>New Patch</b>:<br><{new_patch}></td>
+	<td><b>New Test </b>:<br><{new_test}></td>
+    </tr></table>
+  </td></tr>
+</{ifadmin}>
+</table>
+<table border=1>
+<tr><td><{body}></td></tr>
+<tr><td>&nbsp;</td></tr>
+</table>
+#,
 			},
-			'user'	=> {
-				'repeat'		=> '15',
-				'description'	=> 'html user template', 
+			'group'	=> {		# H 
+				'description'	=> 'HTML group template', 
+				'repeat'	=> 1,
+				'header'		=> q#
+<table border=1 width=100%>
+#,
+				'footer'		=> q#
+<tr><td colspan=4>&nbsp;</td></tr>
+</table>
+#,
+				'body'		=> q#
+<tr><td><b>Group id</b></td><td><{groupid}></td>
+	<td><b>Created</b></td><td><{created}></td></tr>
+<tr><td><b>Name</b></td><td><{name}></td>
+	<td><b>Modified</b></td><td><{modified}></td></tr>
+<tr><td><b>Description</b></td><td colspan=3><{description}></td></tr>
+<tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
+	<td><b>Userids</b>(<{user_count}>)</td><td><{user_names}></td></tr>
+#,
+			},
+			'user'	=> {		# H
+				'description'	=> 'HTML user template', 
+				'repeat'		=> 1,
+				'header'		=> qq#<table border=1 width=100%>\n#,
+				'footer'		=> q#
+<tr><td colspan=4>&nbsp;</td></tr>
+</table>
+#,
+				'body'			=> q#
+<tr><td><b>User id</b></td><td><{userid}></td>
+	<td><b>Created</b></td><td><{created}></td></tr>
+<tr><td><b>Name</b></td><td><{name}></td>
+	<td><b>Modified</b></td><td><{modified}></td></tr>
+<tr><td><b>Address</b></td><td><{address}></td>
+	<td><b>Match addresss</b></td><td><{match_address}></td></tr>
+<tr><td><b>Password</b></td><td><{password}></td>
+	<td><b>Active</b></td><td><{active}></td></tr>
+<tr><td><b>Bugids</b>(<{bug_count}>)</td><td><{bug_ids}></td>
+	<td><b>Groups</b>(<{group_count}>)</td><td><{group_names}></td></tr>
+#, 
+			},
+		},
+	},	# end H 
+	'h'	=> {					# html - short
+		'default'	=> {		# DEFAULT h
+			# 'application'	=>  # h
+			'mail'	=> {		# h
+				'description'	=> 'html mail template', 
+				'header'		=> # '<tr><td colspan=15><hr></td></tr>',
+					'<tr><td>'.join('</td><td>', (
+					'<b>&nbsp;</b>',
+					'<b><{key}>id</b>',
+					'<b>bugids</b>',
+					'<b>Subject</b>',
+				))."</td></tr>\n",
+				'repeat'	=> 5,
+				'footer'		=> '',
+				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{select}>&nbsp;',
+					'<{id4key}>&nbsp;',
+					'<{bug_ids}>&nbsp;',
+					'<{subject}>&nbsp;',
+					'<{body}>&nbsp;',
+				))."</td></tr>\n",
+			},
+			'flag'	=> {		# h
+				'description'	=> 'html flag template', 
+				'repeat'	=> 15,
+				'header'		=> q#
+<tr>
+<td><b><{key}></b></td><td><b>Bug ids</b></td><td><b>Created</b></td><td><b>Modified</b></td>
+</tr>
+#,
+				'body'			=> q#
+<tr>
+<td><{id4key}>: <{name}></td>
+<td>Bug ids: <{bug_count}></td>
+<td>Created: <{created}></td><td>Modified: <{created}></td>
+</tr>
+#,
+			},
+		},
+		'object'	=> {		# OBJECT h
+			'bug'	=> {		# h
+				'description'	=> 'html bug template', 
+				'repeat'		=> 5,
+				'footer'		=> '',
+				'header'		=> # '<tr><td colspan=15><hr></td></tr>',
+					'<tr><td>'.join('</td><td>', (
+					'<b>&nbsp;</b>',
+					'<b>Bugid</b>',
+					'<b>Status</b>',
+					'<b>version</b>',
+					'<b>fixed in</b>',
+					'<b>group</b>',
+					'<b>severity</b>',
+					'<b>osname</b>',
+					'<b>messageids</b>',
+					'<b>change ids</b>',
+					'<b>note ids</b>',
+					'<b>patch ids</b>',
+					'<b>test ids</b>',
+					'<b>user ids</b>',
+					'<b>Subject</b>',
+				))."</td></tr>\n",
+				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{select}>&nbsp;',
+					'<{bugid}>&nbsp;',
+					'<{status_names}>&nbsp;', 
+					'<{version_names}>&nbsp;', 
+					'<{fixed_names}>&nbsp;', 
+					'<{group_names}>&nbsp;', 
+					'<{severity_names}>&nbsp;', 
+					'<{osname_names}>&nbsp;', 
+					'<{message_count}>&nbsp;', 
+					'<{change_names}>&nbsp;',
+					'<{note_count}>&nbsp;', 
+					'<{patch_count}>&nbsp;',
+					'<{test_count}>&nbsp;', 
+					'<{user_count}>&nbsp;',
+					'<{subject}>&nbsp;',
+				))."</td></tr>\n",
+			},
+			'group' => {		# h
+				'description'	=> 'html group template', 
+				'repeat'	=> 15,
 				'header'		=> q#
 <table border=1 width=100%>
 <tr>
-	<td><b>userid</b></td>
+	<td><b>groupid</b></td>
 	<td><b>name</b></td>
-	<td><b>address</b></td>
+	<td><b>userids</b></td>
+	<td><b>description</b></td>
 	<td><b>created</b></td>
 	<td><b>modified</b></td>
 </tr>
-				#,
+#,
+				'body'			=> q#
+<tr>
+	<td><{groupid}> &nbsp;</td>
+	<td><{name}> &nbsp;</td>
+	<td><{user_count}> &nbsp;</td>
+	<td><{description}> &nbsp;</td>
+	<td><{created}> &nbsp;</td>
+	<td><{modified}> &nbsp;</td>
+</tr>
+</table>
+#,
+			},
+			'user'	=> {		# h
+				'description'	=> 'html user template', 
+				'repeat'	=> 15,
+				'header'		=> q#
+<table border=1 width=100%>
+<tr>
+	<td><b>Userid</b></td>
+	<td><b>Name</b></td>
+	<td><b>Bugids</b></td>
+	<td><b>Groups</b></td>
+	<td><b>Address</b></td>
+	<td><b>Created</b></td>
+	<td><b>Modified</b></td>
+</tr>
+#,
 				'body'			=> q#
 <tr>
 	<td><{userid}> &nbsp;</td>
 	<td><{name}> &nbsp;</td>
+	<td><{bug_count}> &nbsp;</td>
+	<td><{group_names}> &nbsp;</td>
 	<td><{address}> &nbsp;</td>
 	<td><{created}> &nbsp;</td>
 	<td><{modified}> &nbsp;</td>
 </tr>
 </table>
-				#, 
+#, 
 			},
 		},
-	},
+	},	# end h
+	'I'	=> {					# INDEX - html
+		'default'	=> {		# DEFAULT I
+			# 'application'	=>  # I
+			'flag'	=> {		# I
+				'description'	=> 'INDEX flag template', 
+				'repeat'	=> 30,
+				'header'		=> qq#<b><{key}></b> ids:<br>\n#,
+				'body'			=> qq#<{id4key}><br>\n#,
+			},
+			'item'	=> {		# I
+				'description'	=> 'INDEX item template', 
+				'repeat'	=> 30,
+				'header'		=> qq#<b><{key}></b> ids:<br>\n#,
+				'body'			=> qq#<{id4key}><br>\n#,
+			},
+			'mail'	=> {		# I
+				'description'	=> 'INDEX mail template', 
+				'repeat'	=> 30,
+				'header'		=> qq#<b><{key}></b> ids:<br>\n#,
+				'body'			=> qq#<{id4key}><br>\n#,
+			},
+		},
+	},	# end I
+	'i'	=> {					# index - short
+		'default'	=> {		# DEFAULT i
+			# 'application'	=>  # i
+			'flag'	=> {		# i
+				'description'	=> 'index flag template', 
+				'repeat'	=> 30,
+				'header'		=> qq#<{key}> ids:\n#,
+				'body'			=> qq#<{id4key}>\n#,
+			},
+			'item'	=> {		# i
+				'description'	=> 'index item template', 
+				'repeat'	=> 30,
+				'header'		=> qq#<{key}> ids:\n#,
+				'body'			=> qq#<{id4key}>\n#,
+			},
+			'mail'	=> {		# i
+				'description'	=> 'index mail template', 
+				'repeat'	=> 30,
+				'header'		=> qq#<{key}> ids:\n#,
+				'body'			=> qq#<{id4key}>\n#,
+			},
+		},
+	},	# end i
+	'L'	=> {					# List - html 
+		'default'	=> {		# DEFAULT L
+			# 'application'	=>  # L
+			'flag'	=> {		# L
+				'description'	=> 'LIST flag template', 
+				'repeat'	=> 10,
+				'header'		=> '<tr><td>'.join('</td><td>', (
+					'<b><{key}> ids</b>',
+					'<b>Bug ids</b>',
+					'<b>Created</b>',
+					'<b>Modified</b>',
+				))."</td></tr>\n",
+				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{id4key}>',
+					'<{bug_count}>',
+					'<{created}>',
+					'<{modified}>',
+				))."</td></tr>\n",
+			},
+			'item'	=> {		# L
+				'description'	=> 'LIST item template', 
+				'repeat'	=> 10,
+				'header'		=> '<tr><td>'.join('</td><td>', (
+					'<b><{key}> ids</b>',
+					'<b>Bug ids</b>',
+					'<b>Created</b>',
+					'<b>Modified</b>',
+				))."</td></tr>\n",
+				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{id4key}>',
+					'<{bug_count}>',
+					'<{created}>',
+					'<{modified}>',
+				))."</td></tr>\n",
+			},
+			'mail'	=> {		# L
+				'description'	=> 'LIST mail template', 
+				'repeat'	=> 10,
+				'header'		=> '<tr><td>'.join('</td><td>', (
+					'<b><{key}> ids</b>',
+					'<b>Bug ids</b>',
+					'<b>Subject</b>',
+				))."</td></tr>\n",
+				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{id4key}>',
+					'<{bug_count}>',
+					'<{subject}>',
+				))."</td></tr>\n",
+			},
+		},
+		'object'	=> {
+			'bug'	=> {		# L
+				'description'	=> 'LIST bug template', 
+				'header'		=> # '<tr><td colspan=15><hr></td></tr>',
+					'<tr><td>'.join('</td><td>', (
+					'<b>&nbsp;</b>',
+					'<b>Bugid</b>',
+					'<b>Status</b>',
+					'<b>version</b>',
+					'<b>group</b>',
+					'<b>severity</b>',
+					'<b>osname</b>',
+					'<b>fixed</b>',
+					'<b>messageids</b>',
+					'<b>changees</b>',
+					'<b>note ids</b>',
+					'<b>patch ids</b>',
+					'<b>test ids</b>',
+					'<b>user ids</b>',
+					'<b>Subject</b>',
+				))."</td></tr>\n",
+				'repeat'	=> 5,
+				'body'			=> '<tr><td>'.join('</td><td>', (
+					'<{select}>&nbsp;',
+					'<{bugid}>&nbsp;',
+					'<{status_names}>&nbsp;', 
+					'<{version_names}>&nbsp;', 
+					'<{group_names}>&nbsp;', 
+					'<{severity_names}>&nbsp;', 
+					'<{osname_names}>&nbsp;', 
+					'<{fixed_names}>&nbsp;', 
+					'<{message_count}>&nbsp;', 
+					'<{change_count}>&nbsp;',
+					'<{note_count}>&nbsp;', 
+					'<{patch_count}>&nbsp;',
+					'<{test_count}>&nbsp;', 
+					'<{user_count}>&nbsp;',
+					'<{subject}>&nbsp;',
+				))."</td></tr>\n",
+			},
+		},	
+	},	# end L
+	'l'	=> {					# list - short
+		'default'	=> {		# DEFAULT l
+			# 'application'	=> {		# l
+			'flag'	=> {		# l
+				'description'	=> 'list flag template', 
+				'repeat'	=> 20,
+				'header'		=> qq#<{key}>:\n#,
+				'body'			=> q#<{id4key}3>  <{name}>  bugids: <{bug_count}5> - Created: <{created}> 
+#,
+			},
+			'item'	=> {		# l
+				'description'	=> 'list item template', 
+				'repeat'	=> 20,
+				'header'		=> qq#<{key}>:\n#,
+				'body'			=> q#<{id4key}3>  <{name}>  bugids: <{bug_count}5> - Created: <{created}> 
+#,
+			},
+			'mail'	=> {		# l
+				'description'	=> 'list mail template', 
+				'repeat'	=> 20,
+				'header'		=> qq#<{key}>:\n#,
+				'body'			=> q#<{id4key}3>  bugids: <{bug_count}5> - Subject: <{subject}>
+#,
+			},
+		},
+		'object'	=> {	
+			'bug'	=> {		# l
+				'description'	=> 'list bug template', 
+				'repeat'	=> 50,
+				'header'		=> q#bugid         messageids  subject 
+#,
+				'body'			=> q#<{bugid}13> <{message_count}10>  <{subject}>
+#,
+			},
+			'group'	=> {		# l
+				'description'	=> 'list group template', 
+				'repeat'	=> 50,
+				'header'		=> q#groupid     name             bugs     description 
+#,
+				'body'			=> q#<{groupid}10>  <{name}15>  <{bug_count}7>  <{description}>
+#,
+			},
+			'user'	=> {		# l
+				'description'	=> 'list user template', 
+				'repeat'	=> 50,
+				'header'		=> q#userid      name                       bugs     address 
+#,
+				'body'			=> q#<{userid}10>  <{name}25>  <{bug_count}7>  <{address}>
+#,
+			},
+		},
+	},	# end l
 );
+
+# $o_tmp->template
 
 my $err    = 0;
 my $test   = 0;
@@ -214,33 +829,35 @@ foreach my $format (sort keys %TEMPLATES) {					# 'a' => []
 	next FORMAT unless ref($h_format) eq 'HASH'; 
 	$test++;
 	next FORMAT unless $format =~ /$f/;
+	output("[$f] -> format($format)");
 
 	DEFOBJ:
 	foreach my $defobj (sort keys %{$h_format}) {
 		my $h_defobj = $$h_format{$defobj};					# 'object'	=> {} or
 		next DEFOBJ unless ref($h_defobj) eq 'HASH';		# 'default'	=> {} 
 		next DEFOBJ unless $defobj =~ /$x/;
+		output("[$x] --> defobj($defobj)");
 
 		OBJECTTYPE:
 		foreach my $objtype (sort keys %{$h_defobj}) {		# 'bug'		=> {} object 
 			my $h_temp = $$h_defobj{$objtype};				# 'mail'	=> {} or default
 			next OBJECTTYPE unless ref($h_temp) eq 'HASH'; 
 			next OBJECTTYPE unless $objtype =~ /$o/;
+			next OBJECTTYPE unless $$h_temp{'body'} =~ /\w+/;
+			output("[$o] ---> objtype($objtype)");
 
 			my $i_ok   = 1;
 			my $o_tmp  = $o_pb->object('template');
-			my $pri    = $o_tmp->primary_key;
+			my $pri    = $o_tmp->attr('primary_key');
 			my $oid    = $o_tmp->new_id;
-			my ($object, $type) = ( ($defobj eq 'default')
-				? ('', $objtype)
-				: ($objtype, '')
-			);
+			my ($object, $type) = (($defobj eq 'default') ? ('', $objtype) : ($objtype, ''));
 			my %data = (
-				'body'			=> 'no body', 
+				'body'			=> "no template body\n", 
 				'description'	=> "$format $objtype template ($defobj)", 
 				'format' 		=> $format,
-				'header'		=> 'no header', 
-				'repeat'		=> '1',
+				'header'		=> '',
+				'repeat'	=> '0',
+				'footer'		=> '',
 				'wrap'			=> '',
 				'object' 		=> $object,
 				'type' 			=> $type, 
@@ -248,11 +865,15 @@ foreach my $format (sort keys %TEMPLATES) {					# 'a' => []
 				$pri     		=> $oid, 
 			);
 
-			my $cond = "format = '$format' AND object = '$object' AND type = '$type'";
+			my $cond = "object = '$object' AND type = '$type' AND ".
+				$o_pb->db->case_sensitive('format', $format);
 			my @exists = $o_tmp->col('templateid', $cond);
+			my @userids = ();
 			if (@exists) {
 				output("existing($cond) records(@exists)!");
-				if ($F) {
+				if ($F) { # rjsf: _NOT_ if related to anybody!
+					my $exists = join("', '", @exists);
+					@userids = $o_tmp->rel('user')->ids("templateid IN('$exists')");
 					$i_ok = $o_tmp->delete(\@exists)->DELETED;
 					output("repeating insert deleted($i_ok)");
 				} else {
@@ -270,17 +891,16 @@ foreach my $format (sort keys %TEMPLATES) {					# 'a' => []
 				my $oid = $o_tmp->oid;
 				push(@oids, $oid);
 				$i_ok = 0 unless $oid =~ /^\d+$/;
+				# if ($F) { # rjsf: _NOT_ if related to anybody!
 				$o_tmp->delete([$oid]) if $t;	
 				output("\tinstalled => oid($oid)");
+				# if ($F) { # rjsf: _NOT_ if related to anybody!
 				if ($i_ok == 1) { # !
 					$i_inst++;
-					my @users = split(':', $u);
+					my @users = (split(':', $u), @userids);
+					my $i_del = $o_tmp->rel('user')->delete(\@exists)->DELETED;
 					my $i_rel = $o_tmp->relate({ 'user' => { 'ids' => \@users }, });
 					output("\trelated to user(@users)");
-					my $blank = '';
-					my $default = "INSERT INTO pb_template_user SET created = sysdate(), templateid = '$oid', userid = '$blank'";
-					my $i_defres = $o_tmp->base->exec($default); # special case while userid = ''
-					output("\trelated to user($blank)");
 				}
 			} 
 			ok(($i_ok == 1) ? $test : 0);
@@ -290,7 +910,7 @@ foreach my $format (sort keys %TEMPLATES) {					# 'a' => []
 if ($err == 0) {	
 	output("...installed $i_inst templates(@oids)");
 } else {
-	output("...failed($err) of $i_wanted templates installation"); 
+	output("...failed($err) of $i_wanted types(".join(', ', keys %TEMPLATES).") of template installations ok($i_inst)"); 
 }
    
 # done.

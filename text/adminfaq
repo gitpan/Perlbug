@@ -1,10 +1,10 @@
 NAME
-    The Perl Bug Administrator FAQ
+    AdminFAQ - The Perl Bug Administrator FAQ
 
 DESCRIPTION
     Frequently Asked Questions related to Perl Bug Administration.
 
-    $Revision: 1.2 $ $Date: 2001/05/29 01:10:43 $
+    $Revision: 1.3 $ $Date: 2001/12/03 10:39:21 $
 
 This FAQ
     This FAQ is intended for use by the perlbug administrators. The latest
@@ -76,6 +76,11 @@ When do I delete a bug?
     another bug report. (And in the duplicate case, it's probably better to
     link the bug to the other copy, to make sure the threads keep properly.)
 
+I don't want to bother p5p with a bug related email.  How do I get it in the database?
+    Send (or CC) the email to track@bugs.perl.org -- it needs to have a
+    subject line that perlbug can understand. i.e. it must contain "[ID
+    <bugid>]".
+
 What versions of perl should I check for bugs to have been fixed in?
     This depends greatly on when the bug was created. Generally, you should
     check 5.00503, 5.6.0, perl-current, and perl-5.6.x-current.
@@ -116,12 +121,14 @@ How do I get more help?
     To get more help on the email interface, send a message with the subject
     '-h' to bugdb@perl.org. For more detailed help, use '-H';
 
+    Or you can use http://bugs.perl.org/perlbug.cgi?req=mailhelp
+
     The definitive location for more help on the web interface is
 
-    http://bugs.perl.org/admin/perlbug.cgi?req=help if you are an
+    http://bugs.perl.org/admin/perlbug.cgi?req=webhelp if you are an
     administrator
 
-    http://bugs.perl.org/perlbug.cgi?req=help for normal users
+    Which is http://bugs.perl.org/perlbug.cgi?req=webhelp for normal users
 
 AUTHOR
     Robert Spier <rspier at cpan.org>

@@ -1,6 +1,6 @@
 # Perlbug Logging and file accessor
 # (C) 1999 Richard Foley RFI perlbug@rfi.net
-# $Id: Log.pm,v 1.52 2001/09/18 13:37:49 richardf Exp $
+# $Id: Log.pm,v 1.53 2001/12/01 15:24:42 richardf Exp $
 # 
 
 =head1 NAME
@@ -12,7 +12,7 @@ Perlbug::Log - Module for generic logging/debugging functions to all Perlbug.
 package Perlbug::Log;
 use strict;
 use vars qw($VERSION);
-$VERSION = do { my @r = (q$Revision: 1.52 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
+$VERSION = do { my @r = (q$Revision: 1.53 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; 
 $| = 1;
 
 use Carp;
@@ -267,7 +267,8 @@ sub logg { #
 	unshift(@args, (ref($self)) ? '' : $self); # trim obj and position left side
     my $data = substr("[$LOG_COUNTER] ", 0, 15).join(' ', @args, "\n");  # uninitialised value???
     if (length($data) >= 25600) {
-        $data = "Excessive data length(".length($data).") called!\n"; 
+		my @caller = caller(2);
+        $data = "Excessive data length(".length($data).") called from @caller!\n"; 
     }
 	my $fh = $self->fh('log', '+>>', 0766);
 	if (defined $fh) {

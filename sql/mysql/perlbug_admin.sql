@@ -11,5 +11,6 @@ INSERT INTO pb_user VALUES (
 	'perlbug\@rfi.net', 
 	'Perlbug Administrator Dummy', 
 	'perlbug\@rfi\.net', 
-	'1'
+	'1',
+	''
 );
