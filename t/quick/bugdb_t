@@ -1,0 +1,16 @@
+From: perlbug_test@rfi.net
+To: bugdb@perl.org
+Subject: -t 11
+X-Header: some stuff
+Message-Id: getabug@fromdb.pc 
+
+some body stuff...
+
+should get a new Message-Id
+return to  perlbug_test@rfi.net
+should lose the X-Header
+from maintainer...
+
+---
+sig
+

@@ -1,0 +1,9 @@
+X-traneous: mail header
+
+Gruesse
+
+Should fail with an empty set of lines
+
+Ciao
+---
+Sig here

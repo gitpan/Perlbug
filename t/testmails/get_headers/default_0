@@ -1,0 +1,15 @@
+Subject: -h -o 
+To: perlbug@perl.com 
+From: perlbug_test@rfi.net
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+And-some-other-stuff
+X-Perlbug-Hint:  to perlbug_test, from(perlbug), cc() 
+
+
+Gruesse
+
+Should be OK
+
+Ciao
+---
+Sig here

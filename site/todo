@@ -1,0 +1,27 @@
+	.	
+
+	userFAQ and adminFAQ
+	
+	v2.5 Oracle support
+
+	X-Perlbug: [ID ...]
+	[ID]  new ticket id has been assigned to this message
+	[ID*] this is a reply to an existing non-open ticket
+	[ID+] this is a reply to an existing open ticket 
+	[ID-] this is a reply to a ticket which has been deleted or is non-existent
+
+	time related links on web overview
+
+	check overview ratios
+
+	rsync data (and source) to various machines: US/EUR/ASIA
+
+	Tests support
+	
+	----------------------------------------------------------------------------
+	Email suggestions to: <a href="mailto:perl5-porters@perl.org">perl5-porters@perl.org</a> or <a href="mailto:perlbug@rfi.net">perlbug@rfi.net</a> 
+	or use this form to append a small something... 
+	NB. appended data is <i>appended</i> below!
+	<form><input type="text" name="append" value="" size="50" maxlength="500"><input type="hidden" name="req" value="todo"><input type="submit" name="todo" value="Append"></form>
+	----------------------------------------------------------------------------
+	

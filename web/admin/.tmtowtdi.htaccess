@@ -1,0 +1,6 @@
+AuthType Basic
+AuthName perlbug
+AuthUserFile /home/richard/config/.htpasswd 
+<Limit GET POST>
+require valid-user
+</Limit>

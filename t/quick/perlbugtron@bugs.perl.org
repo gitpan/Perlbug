@@ -1,0 +1,10 @@
+From: perlbug_test@rfi.net
+To: perlbugtron@bugs.perl.org
+Subject: abc 
+X-Header: some stuff
+Message-Id: shouldmaptohelp@fromdb.pc 
+
+some body stuff
+--
+sig
+

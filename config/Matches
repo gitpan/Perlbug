@@ -1,0 +1,63 @@
+# Perlbug Mail Matches for new bugs
+# (C) 2000 Richard Foley RFI perlbug@rfi.net
+# $Id: Matches,v 1.3 2000/07/17 07:13:41 perlbug Exp perlbug $
+#
+# NB: These lines are /\s*\,\s*/ parsed, beware of stray commas!
+# 
+
+# MATCH 
+-------------------------------------------------------------------------------- 
+match,		\bperl|perl\b,		new,		# bug recogniser
+bugid,      \d{8}\.\d{3},       ok,         # ok
+messageid,  \d+,                ok,         # ok
+patchid,    \d+,                ok,         # ok
+noteid,     \d+,                ok,         # ok
+testid,     \d+,                ok,         # ok
+userid,     \d+,                ok,         # ok
+version,    \d+\.[\d\.]+,       ok,         # ok
+changeid,   \d\d+,              ok,         # ok
+
+
+# DEFAULT 
+-------------------------------------------------------------------------------- 
+default,	category,	unknown,		# d
+default,	osname,		generic,		# d
+default,	severity,	low,			# d
+default,	status,		open,			# d
+default,	version,	5,				# d
+
+
+# CATEGORY
+-------------------------------------------------------------------------------- 
+category,	\binstall\b, 		install,    # installation
+category,   \bdocs\b,			docs,		# documentation
+category,   \bsuccess\sreport\sfor\sperl\sfrom\b, ok, # OK report 
+category, 	\bfailure\sreport\sfor\sperl\sfrom, install, # Not OK report
+category, 	\btron_internal\b, 	notabug, # tron_internal
+
+# OSNAME
+-------------------------------------------------------------------------------- 
+osname,      	\bosname\=macos\b,	macos,		# assign to MacOS
+osname,      	\bosname\=win32\b,	win32,		# assign to Win32
+osname,      	\bosname\=unix\b,	generic,	# assign to Generic
+
+# SEVERITY
+-------------------------------------------------------------------------------- 
+severity,   \bseverity\=fatal\b,	fatal,		# set to fatal
+severity,	\bsuccess\sreport\sfor\sperl\sfrom\b, zero, # OK report 
+severity, 	\bbuild\sfailure\sreport\sfor\sperl\sfrom, high, # Not OK report
+severity, 	\btron_internal\b, zero, 			# tron_internal
+
+# STATUS
+-------------------------------------------------------------------------------- 
+status,		\bsuccess\sreport\sfor\sperl\sfrom\b, ok, # OK report 
+status, 	\btron_internal\b, 	closed, # tron_internal
+
+# VERSION
+-------------------------------------------------------------------------------- 
+version,	\brunning\sunder\sperl\s([\d\.]+)\b, $1, # catch it 
+version,    \bperl\s+version\s+([\d\._]+)\s+built\s+for[\w\s\-]+, $1, # catch it
+version,    \bSummary\sof\smy\sperl\d\s\(*(\d+\.*\d*)\spatchlevel\s(\d+)\ssubversion\s(\d+)\)*\sconfiguration\b, $1.$2.$3, # catch them
+version,	\bconfiguration\sinformation\sfor\sperl\s([\d\.]+)\b, $1, # catch it
+
+# .

@@ -1,0 +1,29 @@
+Perlbug README
+
+Short instructions:
+
+    unpack Perlbug_2.22.tar.gz
+    
+    cd ./Perlbug_2.22
+    
+	modify ./config/Configuration
+	
+    perl Makefile.PL PREFIX=Perlbug_installation
+
+    make 
+ 
+    make test
+    
+    make install
+    
+
+Long instructions:
+
+    See INSTALL and 'perldoc Perlbug'
+ 
+	More docs under construction
+
+Copyright (c) 1999 2000 Richard Foley. All rights reserved.
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+                          

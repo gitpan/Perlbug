@@ -1,0 +1,59 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Mailing-List: contact perl5-porters-help@perl.org; run by ezmlm
+Delivered-To: mailing list perl5-porters@perl.org
+Received: (qmail 9800 invoked by uid 511); 19 Nov 1999 21:17:10 -0000
+Subject: null conditionals should not be allowed
+Sender: schwern@athens.arena-i.com
+To: perlbug@perl.org
+From: perlbug_test@rfi.net
+Received: (qmail 9792 invoked by uid 508); 19 Nov 1999 21:17:09 -0000
+Content-Type: text/plain; charset=us-ascii
+User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+X-Matches:  version=5.003 osname=win32
+
+For some reason, Perl accepts a while loop with an empty conditional.
+	while ( ) { print "TRUE";  sleep 1;  }
+results in a big list of TRUEs.  This is odd in several ways:
+
+	1)  Everything else (until, if, unless...) is a syntax error with an
+		empty condition.
+	2)  The empty condition of a while loop is TRUE!  If anything I would
+		expect false.
+	3)	There's no warning.
+
+At minimum there should be a warning, at best it should be made a
+syntax error.
+
+This looks like  a documentation problem.
+
+Here's another intersting problem:
+
+do { print "TRUE";  sleep 1 } while ();
+This produces one iteration of TRUE.
+
+do { print "TRUE";  sleep 1 } until ();
+This produces an infinite loop.
+
+Again, the oddness:
+	1)  Unlike with while () {...}, the null condition is false!
+	2)  Again, no warning.
+
+IMHO do {...} while () and do {...} until () should both be syntax
+errors, or at least warnings.
+osname=WIN32
+Unless there's a backwards compatibility issue, all instances of an
+empty conditional should probably be a syntax error.  I can't think of
+any time when it would be useful.
+
+If I'm feeling brave I'll submit a patch.
+
+
+PS  This problem occurs under 5.005_03 and 5.005_62
+
+lkjdlkasjdklasdjf running under perl 5.003 oidflskdfjf jlsd dk33323 skjsdf
+
+
+

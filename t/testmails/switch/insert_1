@@ -1,0 +1,21 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Mailing-List: contact perl5-porters-help@perl.org; run by ezmlm
+Delivered-To: mailing list perl5-porters@perl.org
+Subject: null conditionals should not be allowed ...
+Sender: schwern@athens.arena-i.com
+To: perlbug@perl.com
+From: perlbug_test@rfi.net
+Content-Type: text/plain; charset=us-ascii
+User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <ABC01119161704.insert_1@bugs.perl.org>
+Reply-To: perlbug@rfi.net
+X-Matches:  addressed to perlbug, perl in body -> do_new
+
+some perl bug insert 1
+here
+and
+---
+a sig
+

@@ -1,0 +1,11 @@
+From: perlbug_test@rfi.net
+To: bugdb@perl.org
+Subject:  -h 
+X-Header: some stuff
+Message-Id: getabug@fromdb.pc 
+
+some body stuff
+help
+--
+sig
+

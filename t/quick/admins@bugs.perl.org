@@ -1,0 +1,11 @@
+From: perlbug_test@rfi.net
+To: admins@bugs.perl.org
+Subject: admins 
+X-Header: some stuff
+Message-Id: getabug@fromdb.pc 
+
+please close this bug, or some other useful message
+
+--
+sig
+

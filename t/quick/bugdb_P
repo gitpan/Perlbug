@@ -1,0 +1,17 @@
+From: perlbug_test@rfi.net
+To: bugdb@perl.org
+Subject: -P 
+X-Header: some stuff
+Message-Id: getabug@fromdb.pc 
+
+this is some patch
+
+against 
+	ticket 19990608.001
+	version 5.6.0
+	changeid 23
+
+or other
+--
+sig
+

@@ -1,0 +1,17 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Subject: register request
+Sender: schwern@athens.arena-i.com
+To: admins@bugs.perl.org
+From: "Richard Foley" <not_in_any_list_I_know_of@rfi.net>
+Reply-To: "Rumpelstiltskin" <probably_not_here_either@perl.org>
+Content-Type: text/plain; charset=us-ascii_---User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+X-Matches:  ((?msi).+)
+
+Should NOT be OK
+
+---
+x@y.z
+

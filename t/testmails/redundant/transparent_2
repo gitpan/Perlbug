@@ -1,0 +1,27 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Mailing-List: contact perl5-porters-help@perl.org; run by ezmlm
+Delivered-To: mailing list perl5-porters@perl.org
+Received: (qmail 9800 invoked by uid 511); 19 Nov 1999 21:17:10 -0000
+Subject: -h -o 
+Sender: schwern@athens.arena-i.com
+To: perl-win32-porters@perl.org
+Cc: perlbug_test@rfi.net
+Cc: perl5-porters-perl.org 
+From: perlbug_test@rfi.net
+Received: (qmail 9792 invoked by uid 508); 19 Nov 1999 21:17:09 -0000
+Content-Type: text/plain; charset=us-ascii
+User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+X-Matches:  win32->activestate, same message-id, x-tags 
+
+To:\s*perl\-win32\-porters\@perl\.org
+Cc:\s*perlbug_test\@rfi\.net
+Cc:\s*perl5\-porters\-perl\.org 
+From:\s*perlbug_test\@rfi\.net
+Message\-Id:\s*\<19991119161704\.ABCDE\@bugs\.perl\.org\>
+X\-Perlbug:\s*perlbug\@perl\.org
+X\-Errors\-To:\s*perlbug\@rfi\.net
+!To:\s*perl5\-porters\@perl\.org
+

@@ -1,0 +1,24 @@
+X-traneous: mail header
+Return-Path: 'X-at-here' <richard@tmtowtdi.perl.org>
+Mailing-List: contact perl5-porters-help@perl.org; run by ezmlm
+Delivered-To: mailing list perl5-porters@perl.orgSubject: -h -o 
+X-traneous: mail header
+Return-Path: 'X-at-here' <richard@tmtowtdi.perl.org>
+Mailing-List: contact perl5-porters-help@perl.org; run by ezmlm
+Delivered-To: mailing list perl5-porters@perl.org
+# To: perl5-porters@perl.org 
+# Subject: -h -o 
+# Cc: perl5-porters@perl.org
+# From: perlbug_test@rfi.net
+# Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+# X-Loop: perlbug@perl.org
+# X-Perlbug-Matches:  to perlbug_test, from(perlbug), cc() 
+# X-Perlbug: perlbug@perl.com
+
+Gruesse
+
+Should fail with an empty set of lines
+
+Ciao
+---
+Sig here

@@ -1,0 +1,48 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Mailing-List: contact perl5-porters-help@perl.org; run by ezmlm
+Delivered-To: mailing list perl5-porters@perl.org
+Received: (qmail 9800 invoked by uid 511); 19 Nov 1999 21:17:10 -0000
+Subject: some reply via message-id 
+Sender: schwern@athens.arena-i.com
+To: perl5-porters@perl.org
+From: perlbug_test@rfi.net
+Received: (qmail 9792 invoked by uid 508); 19 Nov 1999 21:17:09 -0000
+Content-Type: text/plain; charset=us-ascii
+User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.@bugs.perl.org>
+In-Reply-To: <19991120.001>
+X-Matches:  in-reply-to initial install via in-reply-to -> do_reply
+
+For some reason, Perl accepts a while loop with an empty conditional.
+	while ( ) { print "TRUE";  sleep 1;  }
+results in a big list of TRUEs.  This is odd in several ways:
+
+	1)  Everything else (until, if, unless...) is a syntax error with an
+		empty condition.
+	2)  The empty condition of a while loop is TRUE!  If anything I would
+		expect false.
+	3)	There's no warning.
+
+Characteristics of this binary (from libperl): 
+  Compile-time options: DEBUGGING
+  Built under linux
+  Compiled at Oct 16 1999 16:16:24
+  %ENV:
+    PERL5LIB="/home/schwern/lib/perl5/site_perl/5.005:/web/sites/test/mp"
+  @INC:
+    /home/schwern/lib/perl5/site_perl/5.005/i686-linux
+    /home/schwern/lib/perl5/site_perl/5.005
+    /web/sites/test/mp
+    /usr/local/perl5.005_62/lib/5.00562/i686-linux
+    /usr/local/perl5.005_62/lib/5.00562
+    /usr/local/perl5.005_62/lib/site_perl/5.00562/i686-linux
+    /usr/local/perl5.005_62/lib/site_perl
+    .
+
+-- 
+
+Michael G Schwern                                           schwern@pobox.com
+                    http://www.pobox.com/~schwern
+     /(?:(?:(1)[.-]?)?\(?(\d{3})\)?[.-]?)?(\d{3})[.-]?(\d{4})(x\d+)?/i

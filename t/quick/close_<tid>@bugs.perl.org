@@ -1,0 +1,10 @@
+From: perlbug_test@rfi.net
+To: CLOSE_20000717.001@bugs.perl.org
+Subject: close bugid
+X-Header: some stuff
+Message-Id: getabug@fromdb.pc 
+
+some body stuff
+--
+sig
+

@@ -1,0 +1,35 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Mailing-List: contact perl5-porters-help@perl.org; run by ezmlm
+Delivered-To: mailing list perl5-porters@perl.org
+Received: (qmail 9800 invoked by uid 511); 19 Nov 1999 21:17:10 -0000
+Subject: -h -o 
+Sender: schwern@athens.arena-i.com
+To: perlbug@perl.org 
+From: perlbug@perl.com
+Received: (qmail 9792 invoked by uid 508); 19 Nov 1999 21:17:09 -0000
+Content-Type: text/plain; charset=us-ascii
+User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+X-Perlbug-Splitter: ------------------------------------------------------------
+X-Perlbug-Instruction: sent to p5p -> transparently acquire Perlbug and Errors-To headers and maintain Message-Id
+X-Perlbug-Splitter: ------------------------------------------------------------
+X-Perlbug-Match:	 Subject: 		\-h\s\-o 
+X-Perlbug-Match:     Message-Id:    \<19991119161704\.ABCDE\@bugs\.perl\.org\>
+X-Perlbug-Match:	 X-Perlbug:		perlbug\@perl\.(org|com)
+X-Perlbug-Match:	 X-Errors-To:	richard\@perl\.org
+X-Perlbug-Splitter: ------------------------------------------------------------
+X-Perlbug-Non-Match: From:			xyz\@perl\.com
+X-Perlbug-Non-Match: From:			perlbug\@perl\.com	
+X-Perlbug-Non-Match: From[fail]:	perlbug\@perl\.com					
+X-Perlbug-Splitter: ------------------------------------------------------------
+X-Perlbug-Should-Fail: with 'From: perlbug\@perl\.com'   
+
+
+Gruesse
+Body of mail here
+Should fail with From:
+Ciao
+---
+Sig here

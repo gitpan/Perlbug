@@ -1,0 +1,17 @@
+Return-Path: <richard@tmtowtdi.perl.org>
+Subject: -o
+Sender: schwern@athens.arena-i.com
+To: bugdb@perl.org
+From: "Richard Foley" <perlbug_test@rfi.net>
+Content-Type: text/plain; charset=us-ascii
+_---User-Agent: Mutt/1.0i
+Mime-Version: 1.0
+Date: Fri, 19 Nov 1999 16:17:04 -0500
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+X-Matches:  ((?smi)o=\s*)
+
+Request an overview
+
+---
+x@y.z
+

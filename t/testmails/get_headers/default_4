@@ -1,0 +1,12 @@
+Subject: -h -o 
+To: perlbug@perl.com 
+From: perlbug_test@rfi.net
+Message-Id: <19991119161704.ABCDE@bugs.perl.org>
+
+Gruesse
+
+Should succeed with full set of lines
+
+Ciao
+---
+Sig here

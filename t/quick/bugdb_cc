@@ -1,0 +1,11 @@
+From: perlbug_test@rfi.net
+To: clo_hig_20000809.004_5.6.53.1_win@bugs.perl.org
+Cc: me@rfi.net, you@rfi.net, test@rfi.net, you@rfi.net, me@rfi.net, you@rfi.net
+Subject: many ccs 
+X-Header: some stuff
+Message-Id: getabug@fromdb.pc 
+
+some body stuff
+--
+sig
+

@@ -1,0 +1,116 @@
+# Perlbug Changes 
+# $id$
+			This file no longer maintained:
+
+Apr 2000:   See RCS files (this kind of applies to everything in 2000++
+
+Mar 2000:   Perlbug created from PbDb
+
+Feb 2000:   Email and Web tests functional
+
+Jan 2000:   PbDb brought under Revision Control (RCS)
+            Separate configuration file
+            Added 'generic' and 'module' categories
+			Test scripts (make test)
+                
+Dec 1999:   Improved debugging messaging
+      		scripts dir cleaned up
+		  
+21.02.1999  Base.pm Clean up results and log files.
+23.02.1999  Base.pm Generic urls etc.
+10.07.1999  Base.pm Cached user and flags data
+
+Email.pm
+# Further modifications: 
+#   11.02.1999  ... 
+#   22.06.1999 incorporated tm_mailproc.pl functionality
+#   01.07.1999 fixed From: bug in send_mail
+#   22.07.1999 macos/win32 support
+#   18.08.1999 fixed body/sig bug in scan_mail_update
+#   15.10.1999 tm_mail_proc decision
+#   21.10.1999 check messageid of unseen ticketid
+#   28.10.1999 Config, send_mail($seen{$address}), debug, v1.01
+#
+
+Format.pm
+# 
+# Further modifications: 
+#   21.02.1999 Default and Html overview formatting handled.
+#   27.02.1999 Included all messages in optional ticket view.
+#   18.05.1999 Hyperlinks in overview
+#   27.05.1999 Overview has open/all listings
+#   03.07.1999 notabug added to categories (may include spam)
+#   10.07.1999 Cached user formats
+#   22.07.1999 macperl support
+#   27.08.1999 os formatting in overview
+#   22.10.1999 Config, debug, %fmt, v1.01
+#
+
+
+Log.pm
+# Further modifications: 
+#   22.12.1999  Resource limits applied.
+#   11.01.1999  set_user routine.
+#   16.02.1999  alarm sig set.
+#   12.06.1999  application filehandle
+#   03.07.1999  debug cleaned up
+#   15.10.1999  Configuration brought in to clean up initialisation
+#   21.10.1999  Config data, debug mods, RFgen -> Log (v1.01)
+#   mod for rcs2
+#
+
+Do.pm
+#   21.02.9999 doo formatting passed to PbDb::Format
+#   22.05.9999 admin initiate sub
+#   27.05.1999 Overview has open/all listings
+#   30.05.1999 add administrators (doi) enabled, db entries, htpasswd etc.
+#   01.06.1999 delete tickets (dox) and messages(doX) added
+#   27.08.1999 doo(os calls)
+#   25.10.1999 debugs, format_ticket, Dox -> Do v1.01
+
+TM.pm
+# Further modifications: 
+# Mods and catch fatal's: 1998 Richard Foley RFI richard@rfi.net
+#   11.02.1999  modify ticket id (YYYYMMDD.027)
+#   13.02.1999  remove duplicate mail messages.
+#   14.02.1999  anti-loop x-header
+#   25.05.1999  incorporated generic send_mail routine.
+#   26.05.1999  fixed message_add bug introduced from tm_mailproc.pl
+#   01.06.1999  infinite loop suspect found { do until defined($sth) } ?
+#   26.06.1999  migrate to $self->style for ease of integration
+#   03.07.1999  remove logg and fatal subs (unnecessary)
+#   21.10.1999  Config data, debug mods, TicketMonger -> Ticket (v1.01)
+#
+
+Web.pm
+#   22.02.1999 Specifications included
+#   04.03.1999 Integrated pbdb functionality.
+#   16.04.1999 Totals in Spec
+#   18.05.1999 Found in results
+#   01.06.1999 Restrict results shown
+#   01.06.1999 Web delete functionality
+#   03.06.1999 Range included at base of results page
+#   24.06.1999 Linked index.html -> ../index.html -> ../../index.html
+#   29.06.1999 Incorporated pbdb.cgi wrapping
+#   10.07.1999 Cached flags data popups
+#   22.07.1999 macperl support
+#   31.08.1999 todo list added
+#   xxxx       debug, v1.01
+#
+#
+ 
+pbdt_tron.pl
+# 15.01.1999 Change of policy: no replies except on new ticket.
+# 14.02.1999 X-loop and don't copy p5p on replies.
+# 23.02.1999 set perl version in ticket (version, patchlevel, subversion?).
+# 25.02.1999 remove admins from cc:
+# 25.02.1999 set status, category, severity, perlversion in incoming new tickets.
+# 31.05.1999 bounce non perlbug@perl.org (spam) mails, make perlbugtron near-invisible to p5p
+# 02.06.1999 catch non perlbug new mails /\bperl/i
+# 04.06.1999 move processing to Email.pm (error handling etc.)
+# 20.09.1999 catch unknown ids, deal with all known probabilities (hopefully, sigh)
+# 30.09.1999 ...
+# 15.10.1999 migrate decisions to Email::switch() v1.01
+# 
+x 1997:     Initial groundwork
+

@@ -1,0 +1,106 @@
+# Perlbug site configuration
+# (C) 2000 Richard Foley RFI perlbug@rfi.net
+# $Id: Configuration,v 1.9 2000/08/02 05:57:05 perlbug Exp perlbug $
+#
+# NB: These lines are /(\s|\s*\,\s*)/ parsed, beware of commas!
+#
+
+# CURRENT                       
+--------------------------------------------------------------------------------
+current, debug,    3,                           # level
+current, format,   a,                           # a, A, h, H, l, L
+current, isatest,  2,                           #! 0=normal 1=maintainer 2=print
+current, switches, bfhmnoprstu,	 			    # minimal
+current, url,      perlbug.cgi,                 # start point 
+current, user,     generic,			  			# user
+--------------------------------------------------------------------------------
+
+# SYSTEM   
+--------------------------------------------------------------------------------
+system, admin_switches, aAdDiILNPQTxXz,	 	  	# admin switches
+system, assign,         5,                  	# max tickets to assign/admin
+system, bugmaster,		richardf,		  		# master admin 
+system, enabled,		1,			  			# enabler
+system, maintainer,     richard@perl.org,       # address
+system, max_age,        3,                      # max age of log files in days
+system, path,           /bin:/usr/bin,          # path to set for logs etc.
+system, restricted,     1,                      # (0|1) (all|admin)->can(modify) 
+system, separator,      /,                      # directory separator (/;\:...)
+system, source,			Perlbug.tar.gz,			# name for latest backup
+system, title,			Perlbug,		  		# :-)
+system, user,           perlbug,                # username on system
+system, user_switches,  bBcCdefhHlmnopqrRsStuvVw, # normal user switches
+
+# DIRECTORY 
+--------------------------------------------------------------------------------
+directory, arch,    	/home/perlbug/spool/archive, # archival storage (/var/bak)
+directory, config,		/home/perlbug/config,	  # site config directory (/root)
+directory, lists,       /home/perlmail/perl5-porters/archive, # mailing lists (multiple)
+directory, perlbug,     /home/perlbug,       	  # root directory of Perlbug :-)
+directory, spool, 		/home/perlbug/spool,      # spool dir (could be /tmp)
+directory, site,  		/home/perlbug/site,       # site specific dir (~user/text)
+
+# DATABASE                              
+--------------------------------------------------------------------------------
+# N.B. leave 'latest' in the next line! archives have the form $arch/Perlbug.sql.20001027.gz
+database, backup,       /usr/bin/mysqldump -pm0use1 perlbug | gzip > latest, # !
+database, backup_age,   7, 						  # in days
+database, connect, 	    '', 					  # use this if set
+database, database,     perlbug,                  # database to connect to
+database, engine,       Mysql,                    # Mysql | Oracle support (via DBI!)
+database, latest,       Perlbug.sql.gz,    	  	  # name for latest db backup
+database, passfile,     x2,                       # database password 
+database, password,     m0use1,                   # database password
+database, sqlhost,      localhost,                # host machine (209.45.167.243)
+database, user,         perlbug,                  # username on db
+
+# TARGET set off a new bug, undef -> generic
+--------------------------------------------------------------------------------
+target, generic,     	perlbug@perl.com perlbug@perl.org,  # t
+target, macos,        	macperlbug@perl.org,              	# t
+target, unix,     		perlbug@perl.com perlbug@perl.org, 	# t
+target, win32,     		perl-win32-porters@perl.org,   	 	# t
+target, module,     	modulebug@perl.org,               	# t
+target, test,           targettest@bugs.perl.org,			# !
+--------------------------------------------------------------------------------
+
+# FORWARD (transparent forwards to address, undef -> generic) - was reply
+--------------------------------------------------------------------------------
+forward, generic,   	perl5-porters@perl.org,             # f
+forward, macos,     	macperl-porters@macperl.org,        # f
+forward, unix,      	perl5-porters@perl.org,             # f
+forward, win32,     	perl-win32-porters@activestate.com, # f
+forward, module,    	perl5-porters@perl.org,             # f
+forward, test,          forwardtest@bugs.perl.org,			# !
+
+# FEEDBACK on tickets (active_admin|bugmaster|sourceaddr)
+--------------------------------------------------------------------------------
+feedback, new,     		(active_admin|sourceaddr),	# 
+feedback, update,     	(claimants|sourceaddr|cc), 	# 
+feedback, delete,     	(bugmaster|sourceaddr),  	# 
+
+# EMAIL                             
+--------------------------------------------------------------------------------
+email, bugdb,           bugdb@perl.org,             # mail interface
+email, bugtron,         perlbug@perl.org,           # perlbug report new bugs -> target!
+email, deny_from,       (postmaster|MAILER\-DAEMON),# (regex) don't accept mail from here
+email, domain,          bugs.perl.org,				# for administration, etc
+email, from,            perlbugtron@bugs.perl.org,  # safe from address (safe sink)
+email, hint,            Hint: mail should include output from 'perl -V'", # hint
+email, help,            help@bugs.perl.org, 		# help
+email, mailer,          sendmail,      				# mailer to use
+email, master_list,     p5p_list,      			    # in config dir! list of admin ok mail addresses
+email, match,           \bperl|perl\b,              # new bug recogniser
+email, test,            bugdbtest@bugs.perl.org,    # !
+email, X-Test,          X-Perlbug-Test,             # test header  
+--------------------------------------------------------------------------------
+
+# WEB                           
+--------------------------------------------------------------------------------
+web, cgi,            perlbug.cgi,               	   # base script
+web, domain,         bugs.perl.org,                    # top level domain
+web, home,           index.html,                       # home address page
+web, hard_wired_url, http://bugs.perl.org/perlbug.cgi, # hard-wired-url
+web, htpasswd,       .htpasswd,                        # in config dir!
+--------------------------------------------------------------------------------
+

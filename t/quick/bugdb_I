@@ -1,0 +1,10 @@
+From: perlbug_test@rfi.net
+To: bugdb@perl.org
+Subject: -Irobertx -d2 -l
+X-Header: some stuff
+Message-Id: newadmin@fromdb.pc 
+ 
+disable an admin
+---
+sig
+
